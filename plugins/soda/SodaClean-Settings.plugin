@@ -1,0 +1,104 @@
+#!name=汽水音乐 · 配置层净化（实验）
+#!desc=通过 TTKitchen 设置端点 conf.qishui.com/service/settings/v3/ 清空广告配置并关闭广告位开关。实验性：需 MITM conf.qishui.com；默认不关全局广告开关，不改发奖、时长与风控字段。
+#!author=edy
+#!version=0.1.2
+#!homepage=https://github.com/3kaiu/loon-plugins
+#!system=ios
+#!tag=汽水音乐,去广告,TTKitchen,Loon
+
+# ============================================================================
+# 这是什么
+# ----------------------------------------------------------------------------
+# 主插件 SodaClean.plugin 在 api.qishui.com 的广告响应上做字段级裁剪。
+# 本插件走另一条更靠上游的链路：
+#
+#   conf.qishui.com/service/settings/v3/  (TTKitchen 设置下发)
+#     -> commerce_ad_config
+#     -> commerce_ad_feed_config
+#     -> reward_ad_fallback_config
+#     -> feed_reward_ad_config
+#     -> splash_ad_early_load_config
+#     -> ad_webview_sdk_config
+#     -> splash_ad_config / reward_ad_config / adn_group_config
+#     -> commerce_libra_ad_config / commerce_common_ad_config
+#     -> splash_dsp_config / preload_dsp_config / splash_mannor_config
+#
+# 这些键来自字段描述符与 ADRP+ADD 代码引用，都是广告专用；命中才清。
+# 另可选启用 i.snssdk.com / is.snssdk.com 的 /service/settings/v3/：
+#   is.snssdk.com 是 BDADSDK.SettingsManager 的广告 SDK 设置端点；
+#   i.snssdk.com  是 Unisus 通用设置端点。默认注释，见 [Script] 段。
+#
+# 把这些配置清空后，App 内部的广告位/兜底广告/开屏预加载会拿不到配置。
+# 默认只清配置与广告位开关；只有 AGGRESSIVE=true 时才会把
+# timor_should_enable_ad / switch_show_all_ad 置 false、
+# 把 ad_reward_position_exp 置 0。
+#
+# 与主插件的关系：
+#   - 可以单独安装：本插件自带 L1 域名拦截，但没有字段级裁剪。
+#   - 推荐与主插件一起安装：主插件负责响应字段，本插件负责设置层。
+#   - 保奖励模式（SodaClean-Reward.plugin）不要安装本插件：
+#     本插件会清 reward_ad_config / incentive_advert_config / adn_group_config，
+#     激励视频可能无法加载。
+#   - 两个插件同时装时，[Rule] 有重复域名，Loon 会去重，不影响使用。
+#
+# 风险（务必先看）：
+#   1. conf.qishui.com 若启用证书固定，MITM 会失败，App 可能无法加载设置。
+#      出现无法联网/设置加载失败时，停用本插件即可回滚。
+#   2. 清空广告配置后，App 可能提示「广告能力暂不可用」或隐藏广告入口，
+#      这是预期行为，不是故障。
+#   3. 本插件不碰 advert_duration、reward_details、validate_reward 等发奖字段，
+#      也不缩短广告时长、不伪造 SDK 回调。
+#   4. 若免费畅听依赖广告，关闭全局广告开关后可能影响播放；settings.js 里
+#      AGGRESSIVE 默认 false，只清配置，不关全局开关。
+#
+# 回滚：
+#   - 在 Loon 里停用本插件，或在 settings.js 顶部把 ENABLED 改为 false。
+#   - 若只想观察不改写，把 DRY_RUN 改为 true，日志里会出现 DRY_RUN。
+# ============================================================================
+
+
+# ============================================================================
+# 1. [Rule] 域名拦截（与主插件一致；单独安装时也能拦广告 SDK）
+# ============================================================================
+
+[Rule]
+
+DOMAIN,ad.zijieapi.com,REJECT
+DOMAIN,lianmengapi.snssdk.com,REJECT
+DOMAIN,ads5-normal-hl.zijieapi.com,REJECT
+DOMAIN,zlink.ugsdk.cn,REJECT
+DOMAIN,praisewindow.ugsdk.cn,REJECT
+
+
+# ============================================================================
+# 2. [Script] TTKitchen 设置层
+# ----------------------------------------------------------------------------
+# 只匹配设置端点；响应为 GET + JSON。
+# 脚本兼容扁平字典、{settings:{...}}、{data:{...}}、{key,value} 数组和
+# 整个响应是 JSON 字符串的形态。
+# ============================================================================
+
+[Script]
+
+http-response ^https?://conf\.qishui\.com/service/settings/v3/ script-path=scripts/settings.min.js, requires-body=true, timeout=10
+
+# ---- 可选：SDK 设置服务 ----
+# 二进制里还存在 i.snssdk.com / is.snssdk.com 的 /service/settings/v3/。
+# 这两个是共享 SDK 端点，证书固定风险更高；确认 conf.qishui.com 不命中再启用。
+# http-response ^https?://(?:i|is)\.snssdk\.com/service/settings/v3/ script-path=scripts/settings.min.js, requires-body=true, timeout=10
+
+# ---- 诊断（开发期用；会打印设置响应的结构摘要，不改写）----
+# http-response ^https?://conf\.qishui\.com/service/settings/v3/ script-path=scripts/diag.min.js, requires-body=true, timeout=10
+
+
+# ============================================================================
+# 3. [MITM]
+# ----------------------------------------------------------------------------
+# 默认只加 conf.qishui.com，不碰 api.qishui.com；后者由主插件负责。
+# 启用上面的 SDK 设置服务时，再取消下一行注释。
+# ============================================================================
+
+[MITM]
+
+hostname = %APPEND% conf.qishui.com
+# hostname = %APPEND% i.snssdk.com,is.snssdk.com

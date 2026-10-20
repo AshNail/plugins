@@ -1,0 +1,20 @@
+{
+  "name": "loon-plugins",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal Loon plugin collection",
+  "scripts": {
+    "build": "node tools/build.js",
+    "test": "python3 tests/run-all.py",
+    "test:src": "python3 tests/run-all.py --src",
+    "test:dist": "python3 tests/run-all.py --dist",
+    "lint": "python3 tests/lint-plugins.py",
+    "check": "npm run build && npm run lint && npm test"
+  },
+  "devDependencies": {
+    "terser": "^5.51.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

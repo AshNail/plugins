@@ -1,0 +1,104 @@
+#!name=汽水音乐 · 保奖励（Reward Safe）
+#!desc=保留激励视频、奖励任务与发奖链路，只清开屏品牌广告；不拦任何业务/广告域名，也不清 upsell（可能承载激励广告入口），确保激励广告能加载。适合“完整看完广告后正常领奖”，不提供跳过广告或伪造完成。
+#!author=edy
+#!version=0.2.3
+#!homepage=https://github.com/3kaiu/loon-plugins
+#!system=ios
+#!tag=汽水音乐,激励奖励,保奖励,Loon
+
+# ============================================================================
+# 这个插件解决什么问题
+# ----------------------------------------------------------------------------
+# 主插件 SodaClean.plugin 是“去广告优先”：
+#   - [Rule] 拦掉 ad.zijieapi.com / lianmengapi.snssdk.com / ads5-normal-hl...
+#   - [Script] 清空 incentive/config 的 advert_sources、incentive/retrieve 的
+#     ad_infos_map、ads/config 的 ad_unit_configs / reward_config
+#   - [Script] 从 task/view 摘掉 reward_ads 任务，从 treasure/entrance 摘掉
+#     reward_ad_banner
+#
+# 这些操作会让激励视频“没有广告可播”，自然也就拿不到奖励。
+# 本插件是“保奖励优先”：
+#   - 不拦任何广告 SDK / 素材域名；
+#   - 不碰 incentive/config、incentive/retrieve、ads/config、ads/retrieve；
+#   - 不碰 task/view、treasure/entrance、growth/activity_entrance；
+#   - 不碰 incentive/done、ads/reward/receive|settle、commerce/validate_reward；
+#   - 只做一件与奖励无关的事：清开屏品牌广告；
+#   - 0.2.2 起不拦任何域名：praisewindow.ugsdk.cn 已确认是 App Store
+#     评分弹窗（/zebra/praise/click、AppStoreStarAdapter），不是激励广告
+#     域名；为了不误伤“去评分/引导”类非广告任务，保奖励模式也不拦它；
+#   - 刻意不跑 upsell：二进制里有 UpsellStyleRewardAdsDefault /
+#     UpsellStyleRewardAdsExposureReward / reward_btn_text /
+#     reward_ads_cold_start_style，说明 upsell 可能承载“看广告得奖励”入口，
+#     清掉会减少奖励机会。
+#
+# 代价：信息流广告、DSP 广告、商业弹窗可能仍然出现。这是为了不破坏激励链路。
+# 本插件与主插件是二选一，不要同时启用；也不要安装
+# SodaClean-Settings.plugin（它会清 reward_ad_config / incentive_advert_config）。
+#
+# 合规边界：
+#   - 不缩短广告时长；
+#   - 不伪造 SDK 回调；
+#   - 不屏蔽广告后领奖；
+#   - 只保证“广告正常播放后，奖励链路不被插件破坏”。
+#
+# 如果 MITM 被证书固定拦截（App 断网/广告 SDK 初始化失败）：
+#   注释掉 [Rewrite]、[Script]、[MITM] 三段即可（[Rule] 本来就是空的）；
+#   奖励按 App 原始流程走，不会受影响。
+# ============================================================================
+
+
+# ============================================================================
+# 1. [Rule] 域名拦截（本模式刻意留空）
+# ----------------------------------------------------------------------------
+# 关键：不要拦 ad.zijieapi.com / lianmengapi.snssdk.com /
+# ads5-normal-hl.zijieapi.com，否则激励视频无法加载。
+#
+# praisewindow.ugsdk.cn 也不再拦：
+#   - 它是 App Store 评分弹窗域名，字符串与 AppStoreStarAdapter、
+#     /zebra/praise/click 一起出现；
+#   - 它不是广告 SDK，也不属于激励发奖链路；
+#   - 但“去评分/引导”可能是非广告任务，保奖励模式不应误伤。
+#
+# 如果只想减少评分弹窗，可在主插件里拦；保奖励模式保持零域名规则。
+# ============================================================================
+
+[Rule]
+
+# 故意留空：不拦任何域名，确保广告 SDK、激励回调和非广告任务都不被误伤。
+
+
+# ============================================================================
+# 2. [Rewrite] 只断开屏上报
+# ----------------------------------------------------------------------------
+# 开屏上报是 fire-and-forget，返回 200 空包即可。
+# 刻意不碰 DSP 展示上报：它可能参与广告展示/归因，保奖励模式不介入。
+# ============================================================================
+
+[Rewrite]
+
+^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report reject-200
+
+
+# ============================================================================
+# 3. [Script] 只处理与奖励无关的响应
+# ----------------------------------------------------------------------------
+# splash-brand：清开屏品牌广告
+# 注意：这里刻意不写 upsell / incentive / ads / treasure / feed 的 Script 行。
+# upsell 可能包含 UpsellStyleRewardAdsDefault / reward_btn_text 等激励广告入口，
+# 保奖励模式不能清它。
+# ============================================================================
+
+[Script]
+
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/retrieve script-path=scripts/sanitize.min.js, requires-body=true, timeout=10
+
+
+# ============================================================================
+# 4. [MITM]
+# ----------------------------------------------------------------------------
+# 只解密 api.qishui.com；不碰广告 SDK 域名，避免破坏激励回调。
+# ============================================================================
+
+[MITM]
+
+hostname = %APPEND% api.qishui.com
