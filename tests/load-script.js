@@ -4,21 +4,23 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const SET = process.env.SODA_SCRIPT_SET || "src";
+const SET = process.env.SCRIPT_SET || process.env.SODA_SCRIPT_SET || "src";
 
 if (SET !== "src" && SET !== "dist") {
-  throw new Error(`unknown SODA_SCRIPT_SET: ${SET}`);
+  throw new Error(`unknown script set: ${SET}`);
 }
 
-const SCRIPT_DIR =
-  SET === "dist"
-    ? path.join(ROOT, "plugins", "soda", "scripts")
-    : path.join(ROOT, "src", "soda");
+function scriptDir(family) {
+  return SET === "dist"
+    ? path.join(ROOT, "plugins", family, "scripts")
+    : path.join(ROOT, "src", family);
+}
 
-module.exports = function loadScript(name) {
+module.exports = function loadScript(name, family) {
+  const fam = family || "soda";
   const file = SET === "dist" ? name.replace(/\.js$/, ".min.js") : name;
-  return fs.readFileSync(path.join(SCRIPT_DIR, file), "utf8");
+  return fs.readFileSync(path.join(scriptDir(fam), file), "utf8");
 };
 
 module.exports.SET = SET;
-module.exports.SCRIPT_DIR = SCRIPT_DIR;
+module.exports.scriptDir = scriptDir;

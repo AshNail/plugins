@@ -21,6 +21,8 @@ SUITES = [
     "test_reward_observe.js",
     "test_unified_args.js",
     "test_block_domains.js",
+    "test_douyin_treasure.js",
+    "test_douyin_clean.js",
 ]
 
 parser = argparse.ArgumentParser()
@@ -38,6 +40,7 @@ for script_set in script_sets:
         path = ROOT / "tests" / name
         env = os.environ.copy()
         env["SODA_SCRIPT_SET"] = script_set
+        env["SCRIPT_SET"] = script_set
         proc = subprocess.run(
             ["node", str(path)],
             cwd=ROOT,
