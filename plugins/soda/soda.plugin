@@ -1,0 +1,175 @@
+#!name=汽水音乐 · soda
+#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音，全部用 [Argument] 开关控制。默认保奖励，不拦任何域名。
+#!author=edy
+#!version=2.1.1
+#!homepage=https://github.com/AshNail/plugins
+#!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
+#!system=ios
+#!loon_version=3.2.1(734)
+#!tag=汽水音乐,统一,开关,Loon
+
+# ============================================================================
+# soda.plugin · 聚合开关版（一个 App 一个插件）
+# ----------------------------------------------------------------------------
+# 目标：Soda 只保留一个 .plugin，所有功能都在本插件里用 [Argument] 开关控制。
+#
+# 开关：
+#   rewardSafe     保奖励模式（默认开）
+#   cleanAds       去广告脚本（默认关：广告配置/信息流/福利页广告任务）
+#   blockAdDomains 广告域名拦截（默认关：MITM + http-request 脚本）
+#   settingsClean  设置层净化（默认关，实验）
+#   debugLog       只读日志（默认关）
+#   splashClean    清开屏品牌广告（默认开）
+#   hideDouyinTab  隐藏福利页【听抖音】tab/任务（默认关）
+#
+# 推荐组合：
+#   正常领奖励：rewardSafe=true，其余默认
+#   排障：      保奖励基础上打开 debugLog
+#   去广告：    rewardSafe=false, cleanAds=true, splashClean=true
+#   强力去广告：rewardSafe=false, cleanAds=true, blockAdDomains=true
+#   设置层：    rewardSafe=false, settingsClean=true
+#
+# 不要这样开：
+#   rewardSafe=true + cleanAds=true
+#   rewardSafe=true + settingsClean=true
+#   脚本里有保护（rewardSafe 优先），但最稳妥的是只开一种模式。
+#
+# 重要限制（Loon 语法决定）：
+#   1. [Rule] 是静态配置，不能按 [Argument] 开关启停。
+#      所以“域名拦截”用 http-request 脚本实现（blockAdDomains 开关）：
+#      HTTPS 需要 MITM，HTTP/3(QUIC) 不走 MITM 时可能拦不住；
+#      想要 100% 拦截（不依赖 MITM），取消下面 [Rule] 段 5 行 DOMAIN 注释，
+#      但那会阻断激励广告，不能领奖励。
+#   2. [MITM] 也是静态配置。广告域名写进 [MITM] 后，即使 blockAdDomains
+#      关闭也会被解密；如果激励广告因此播不了（证书固定），把 [MITM] 里
+#      那 5 个广告域名注释掉即可。
+#   3. rewardSafe=true 时，域名拦截脚本会直接放行，保证激励广告正常播放。
+#
+# 风险：
+#   - settingsClean 需要 MITM conf.qishui.com；证书固定时可能影响设置加载。
+#   - cleanAds 会清广告配置/福利页广告任务，开启后通常无法再领激励奖励。
+#   - blockAdDomains 会让广告 SDK 拿不到广告，App 可能出现补偿提示。
+#   - hideDouyinTab 只删福利页里带“抖音”的列表项，不动其它任务。
+# ============================================================================
+
+[Argument]
+rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
+cleanAds = switch,false,tag=去广告脚本,desc=清理激励广告配置、广告位、信息流和福利页广告任务；开启后通常无法再领激励奖励。
+blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）；保奖励模式下自动放行。
+settingsClean = switch,false,tag=设置层净化（实验）,desc=清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。
+debugLog = switch,false,tag=只读日志,desc=记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。
+splashClean = switch,true,tag=清开屏品牌广告,desc=清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
+hideDouyinTab = switch,false,tag=隐藏【听抖音】,desc=删除福利页里带“抖音”的 tab/任务条目；默认保留。
+
+
+# ============================================================================
+# 1. [Rule]
+# ----------------------------------------------------------------------------
+# 默认不拦任何域名，保证 rewardSafe 不被静态规则破坏。
+#
+# 正常去广告请用 blockAdDomains 开关（脚本实现，可开关、可回退）。
+# 如果要 100% 拦截（不依赖 MITM、能挡 HTTP/3），关闭 rewardSafe 后
+# 取消下面 5 行注释并重新保存插件。
+# 注意：这会直接阻断激励广告，开启后不能领奖励。
+# ============================================================================
+
+[Rule]
+
+# ---- 严格模式：取消注释后生效 ----
+# DOMAIN,ad.zijieapi.com,REJECT
+# DOMAIN,lianmengapi.snssdk.com,REJECT
+# DOMAIN,ads5-normal-hl.zijieapi.com,REJECT
+# DOMAIN,zlink.ugsdk.cn,REJECT
+# DOMAIN,praisewindow.ugsdk.cn,REJECT
+
+
+# ============================================================================
+# 2. [Rewrite]
+# ----------------------------------------------------------------------------
+# 开屏上报是 fire-and-forget，返回 200 空包，减少 SDK 重试。
+# 这个改写对保奖励和去广告模式都安全，因此不单独做开关。
+# ============================================================================
+
+[Rewrite]
+
+^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report reject-200
+
+
+# ============================================================================
+# 3. [Script]
+# ----------------------------------------------------------------------------
+# 所有脚本都通过 enable={开关名} 控制。
+# 保奖励模式优先：rewardSafe=true 时，sanitize 只处理开屏；
+# settings 脚本在 rewardSafe=true 时直接放行。
+# ============================================================================
+
+[Script]
+
+# ---- 广告域名拦截：blockAdDomains 开关 ----
+# HTTPS 必须先 MITM 解密才能匹配到域名；rewardSafe=true 时脚本直接放行。
+http-request ^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\/ script-path=scripts/block-domains.min.js, timeout=10, argument=[{rewardSafe},{blockAdDomains}], enable={blockAdDomains}
+
+# ---- 开屏品牌广告：保奖励/去广告共用 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/retrieve script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={splashClean}
+
+# ---- 去广告脚本：激励广告配置 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+
+# ---- 去广告脚本：激励素材预拉取 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+
+# ---- 去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info) script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+
+# ---- 去广告脚本：信息流广告 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card) script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+
+# ---- 去广告脚本：商业化弹窗 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/upsells script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:_sort_decision)? script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+
+# ---- 去广告脚本：福利页只摘 reward_ads ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds},{hideDouyinTab}], enable={cleanAds}
+
+# ---- 设置层净化（实验）：默认关闭 ----
+http-response ^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\/ script-path=scripts/settings.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{settingsClean}], enable={settingsClean}
+
+# ---- 只读日志：20 个激励/任务/入口端点，不修改响应 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/done script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/dsp\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/receive script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/settle script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/validate_reward script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/reward_ads\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/fallback\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/flip_card\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/guide\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/browse_mall\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity\/finish script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/done\/info script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:\?|$) script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+
+
+# ============================================================================
+# 4. [MITM]
+# ----------------------------------------------------------------------------
+# api.qishui.com：保奖励、去广告、日志都需要。
+# conf.qishui.com：settingsClean 打开时才会处理；证书固定导致设置加载失败，
+#                关闭 settingsClean 或停用本插件。
+# 下面 5 个广告域名：blockAdDomains 开关需要它们（HTTPS 必须先解密）。
+#                如果开启后激励广告播不了（证书固定），把这 5 个域名注释掉，
+#                改用 [Rule] 手动严格模式。
+# ============================================================================
+
+[MITM]
+
+hostname = %APPEND% api.qishui.com, conf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads5-normal-hl.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn
