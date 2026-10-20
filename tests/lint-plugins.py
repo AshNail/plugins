@@ -108,6 +108,19 @@ def parse_plugin(path):
     return data, sections
 
 
+def parse_meta(path):
+    meta = {}
+    for line in path.read_text().splitlines():
+        s = line.strip()
+        if not s.startswith("#!"):
+            continue
+        if "=" not in s:
+            continue
+        key, value = s[2:].split("=", 1)
+        meta[key.strip()] = value.strip()
+    return meta
+
+
 for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGINS:
     path = ROOT / fp
     data, sections = parse_plugin(path)
@@ -187,6 +200,14 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
     )
 
     spec = FAMILY_CHECKS[family]
+
+    meta = parse_meta(path)
+    for key in ("name", "desc", "author", "version", "homepage", "icon"):
+        if key not in meta:
+            errors.append(f"{fp}: missing #!{key} metadata")
+    if "icon" in meta and not meta["icon"].startswith("https://"):
+        errors.append(f"{fp}: #!icon must be an https URL, got {meta['icon'][:60]}")
+    print(f"  meta: {meta.get('name', '?')} v{meta.get('version', '?')} icon={meta.get('icon', '-')[:60]}")
 
     arg_text = "\n".join(data.get("Argument", []))
     for name, default in spec["switches"]:

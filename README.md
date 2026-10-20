@@ -13,10 +13,21 @@
 
 | 插件 | 版本 | 用途 | 兼容性 |
 |---|---:|---|---|
-| `soda.plugin` | 2.1.0 | 汽水音乐唯一插件：保奖励 / 去广告脚本 / 广告域名拦截 / 设置层 / 只读日志 / 隐藏【听抖音】，全部用 `[Argument]` 开关控制 | 一个 App 只装这一个；域名拦截走 MITM+脚本，HTTP/3 可能漏过 |
-| `douyin.plugin` | 0.2.0 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、激励广告开关、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
+| `soda.plugin` | 2.1.1 | 汽水音乐唯一插件：保奖励 / 去广告脚本 / 广告域名拦截 / 设置层 / 只读日志 / 隐藏【听抖音】，全部用 `[Argument]` 开关控制 | 一个 App 只装这一个；域名拦截走 MITM+脚本，HTTP/3 可能漏过 |
+| `douyin.plugin` | 0.2.1 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、激励广告开关、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
 
 > 一个 App 只保留一个 `.plugin`。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进 `soda.plugin`，不再单独部署；历史版本可在 git 历史中找回。
+
+### 插件图标（`#!icon`）
+
+| 插件 | 图标来源 | URL |
+|---|---|---|
+| `soda.plugin` | 汽水音乐官方 logo（字节静态 CDN，256×256 PNG） | `https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png` |
+| `douyin.plugin` | 抖音官方 App 图标（App Store CDN，512×512） | `https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg` |
+
+> 抖音若要改用字节自家 CDN 的网页版 favicon（32×32，清晰度较低）：
+> `https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.png`
+> （`s3.bytecdn.cn` 上的 `favicon_v2_7145ff0.ico` 在部分网络不可达，不建议用）
 
 > 保奖励模式只保证“完整看完广告后正常领奖”，不提供跳过广告、伪造回调、重复领奖或未看完就发奖。
 

@@ -7,6 +7,10 @@
 
 **架构**：一个 App 一个插件。抖音只部署 `plugins/douyin/douyin.plugin`，所有功能用 Loon `[Argument]` 开关控制。
 
+**图标**：`#!icon` 用抖音官方 App 图标（App Store CDN，512×512）；
+若要换成字节自家 CDN 的网页版 favicon（32×32，清晰度较低）：
+`https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.png`。
+
 | 开关 | 默认 | 作用 |
 |---|---|---|
 | `treasureMinimal` | 开 | 福利页只保留【攒时长 听歌不中断】 |

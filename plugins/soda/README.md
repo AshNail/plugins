@@ -6,7 +6,7 @@
 > 类型：Loon 插件（聚合开关 / 字段级响应改写 / 诊断脚本）
 > 取证：Ghidra 全量分析 + ARM64 `ADRP+ADD` 字符串引用扫描（详见配套逆向报告）
 
-**v2.1.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】全部通过 Loon `[Argument]` 开关控制：`rewardSafe`、`cleanAds`、`blockAdDomains`、`settingsClean`、`debugLog`、`splashClean`、`hideDouyinTab`。默认 `rewardSafe=true`，只清开屏品牌广告。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进本插件，不再单独安装。
+**v2.1.1 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】全部通过 Loon `[Argument]` 开关控制：`rewardSafe`、`cleanAds`、`blockAdDomains`、`settingsClean`、`debugLog`、`splashClean`、`hideDouyinTab`。默认 `rewardSafe=true`，只清开屏品牌广告。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进本插件，不再单独安装。
 
 > 以下 v1.x / 0.x 段落保留为历史设计记录；当前安装和使用只看 `soda.plugin`。
 
