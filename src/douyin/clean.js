@@ -3,7 +3,17 @@
  * ------------------------------------------------------------
  * 全部字段来自 HAR 实测（381_1792495728793.har、383_1792495850343.har）。
  *
- * 1. 激励广告配置
+ * 开关分工（务必分清，v0.2.0 起）：
+ *   cleanFeedAds   信息流/广告位广告（ads/config、ads/dsp/retrieve）
+ *                   —— 不影响激励奖励，可以随便开。
+ *   killRewardAds  激励广告素材与预拉取（advert/incentive/config|retrieve）
+ *                   —— 开这个等于“广告完全不发”，攒时长/看广告赚金币随之失效。
+ *                   抓包实测：广告素材是 30 秒（launch_duration=30），
+ *                   config 里 preload=true + vids[]（33 个预拉取 id）是“下一次广告秒开”的关键，
+ *                   清掉它会让每次广告都变成“点了才现下载”，反而更慢。
+ *   cleanUpsell    商业化弹窗 / 商城 / 演出
+ *
+ * 1. 激励广告配置（killRewardAds）
  *    beta-luna.douyin.com/luna/advert/incentive/config
  *      advert_sources[]      广告源（type 3 rit 73009 cid 10000 / type 5 rit 1000）
  *      feed_advert_config    信息流广告配置（advert_duration=30 / forbid_first_slide）
@@ -13,9 +23,9 @@
  *      ad_infos_map          素材表（每条含 launch_duration=30 / video_list / component.countdown）
  *      ad_infos[]
  *    beta-luna.douyin.com/luna/ads/config、/luna/ads/dsp/retrieve
- *      广告容器（无样本，按常见键名保守清理）
+ *      广告容器（cleanFeedAds；本次抓包里服务端本身就返回 {}）
  *
- * 2. 商业化弹窗 / 商城
+ * 2. 商业化弹窗 / 商城（cleanUpsell）
  *    beta-luna.douyin.com/luna/commerce/v2/upsell
  *      upsell_map{}          93 个弹窗，键名即 unique_name
  *        browse_mall_popup_acc_amount  逛商城赚金币（= 福利页【商城】弹窗）
@@ -24,7 +34,7 @@
  *        同步清掉被删的 unique_name，否则排序/冷启动仍会引用空弹窗
  *      variables{}           入口资格变量，保持原样（不改发奖/资格判断）
  *
- * 3. 演出（汽水音乐节）
+ * 3. 演出（汽水音乐节）（cleanUpsell）
  *    beta-luna.douyin.com/luna/growth/music_festival/performance_details
  *      detail_list[]         演出列表（title=汽水音乐节 / performance_stop_name=常州站…）
  *
@@ -139,6 +149,27 @@ function handleMusicFestival(obj, log) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    const args = (typeof $argument === "object" && $argument) ? $argument : null;
+    if (!args) return $done({});
+
+    /* 决定这次请求归哪个开关管：没开的开关一律放行 */
+    let mode = null;
+    if (/\/luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
+      if (args.killRewardAds === true) mode = "incentive";
+    } else if (/\/luna\/ads\/(?:config|dsp\/retrieve)/.test(url)) {
+      if (args.cleanFeedAds === true) mode = "feed-ads";
+    } else if (/\/luna\/commerce\/v2\/upsell/.test(url)) {
+      if (args.cleanUpsell === true) mode = "upsell";
+    } else if (/\/luna\/growth\/music_festival\/performance_details/.test(url)) {
+      if (args.cleanUpsell === true) mode = "music-festival";
+    } else {
+      return $done({});
+    }
+    if (mode === null) {
+      console.log("[douyin-clean] switch off, passthrough: " + url);
+      return $done({});
+    }
+
     const raw = ($response && $response.body) || "";
     if (typeof raw !== "string" || raw.length === 0) return $done({});
     const head = raw.trimStart().slice(0, 1);
@@ -154,18 +185,18 @@ function handleMusicFestival(obj, log) {
 
     const log = [];
 
-    if (/\/luna\/advert\/incentive\/config/.test(url)) {
-      killContainers(obj, KILL_CONTAINERS["incentive-config"], log, "$", 0);
-    } else if (/\/luna\/advert\/incentive\/retrieve/.test(url)) {
-      killContainers(obj, KILL_CONTAINERS["incentive-retrieve"], log, "$", 0);
-    } else if (/\/luna\/ads\/(?:config|dsp\/retrieve)/.test(url)) {
+    if (mode === "incentive") {
+      if (/\/luna\/advert\/incentive\/config/.test(url)) {
+        killContainers(obj, KILL_CONTAINERS["incentive-config"], log, "$", 0);
+      } else {
+        killContainers(obj, KILL_CONTAINERS["incentive-retrieve"], log, "$", 0);
+      }
+    } else if (mode === "feed-ads") {
       killContainers(obj, KILL_CONTAINERS["ads-config"], log, "$", 0);
-    } else if (/\/luna\/commerce\/v2\/upsell/.test(url)) {
+    } else if (mode === "upsell") {
       handleUpsell(obj, log);
-    } else if (/\/luna\/growth\/music_festival\/performance_details/.test(url)) {
+    } else if (mode === "music-festival") {
       handleMusicFestival(obj, log);
-    } else {
-      return $done({});
     }
 
     if (log.length === 0) {

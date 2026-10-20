@@ -10,10 +10,16 @@
 | 开关 | 默认 | 作用 |
 |---|---|---|
 | `treasureMinimal` | 开 | 福利页只保留【攒时长 听歌不中断】 |
-| `cleanAds` | 关 | 清空激励广告源/素材/信息流广告配置 |
+| `cleanFeedAds` | 关 | 清掉信息流/广告位广告容器（**不影响激励奖励**） |
+| `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]` |
+
+> v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：
+> 原实现会连 `incentive/config`（`preload=true` + `vids[]` 预拉取列表）和 `incentive/retrieve`（素材表）一起清掉，
+> 而那正是“下一次广告秒开”的关键，清掉后每次广告都要现下载，反而更慢 —— 而【攒时长】本来就靠看广告结算。
+> 所以现在默认两个开关都关：**要看广告、要奖励，就别开这两个**。
 
 ---
 
@@ -91,6 +97,28 @@ settings.treasure.sign_in.listen_duration_seconds = 30
 
 ## 3. 广告时长在哪里，能不能改短
 
+### 3.1 实测时间线（`381_1792495728793.har`，t=0 是 `incentive/config` 到达时刻）
+
+```text
+ 0.0s  /luna/advert/incentive/config      736 B   广告源 + preload=true + vids[33] + advert_duration=30
+ 1.0s  /luna/advert/incentive/retrieve   4106 B   素材表（5 条 creative，launch_duration=30）
+12.0s  /luna/treasure/task/listen_music/do_action          其它任务
+34.0s  /luna/treasure/task/flip_card/do_action             翻卡
+42.0s  /luna/treasure/task/box/do_action                   开宝箱
+49.0s  p6-luna.douyinpic.com/...e78a3d8e....mp4  206      ← 广告素材真正开始下载（点了“去完成”之后）
+74.0s  p6-luna.douyinpic.com/...{5 个 mp4}  206            ← 预拉取批次启动（为下一次广告预热）
+76.0s  /luna/advert/incentive/done          191 B         ← 发奖成功
+```
+
+读出来的三件事：
+
+1. **广告本体确实是 30 秒**：素材下载 49s → 发奖 76s，正好 30s（= `launch_duration`）。
+2. **第一次点广告前有一段下载空转**（49s 才开始拉 mp4），预拉取批次要到 74s 才起来。
+   `incentive/config` 里的 `preload=true` + `vids[]` 就是给这件事用的 —— **别清它**（v0.2.0 已把开关拆开）。
+3. **只有看广告这一段是硬成本**，其余等待（翻卡、开宝箱、红包雨、签到、商城、演出）都已从福利页移除。
+
+### 3.2 改短时长的技术结论
+
 实测到的时长字段（都在客户端下发，**不等于发奖条件**）：
 
 | 位置 | 字段 | 实测值 |
@@ -117,8 +145,14 @@ settings.treasure.sign_in.listen_duration_seconds = 30
 
 - 客户端时长（`launch_duration` / `advert_duration`）可以改，但**改了也拿不到奖励**：
   服务端用 `time_token` / `nonce` / `req_id` 这类一次性凭证 + `valid_duration` 校验真实观看时长；
+  真机验证方法：开 `debugLog`，对比 `incentive/retrieve` 里的 `launch_duration` 与 `incentive/done` 的到达时间，
+  以及 `fallback/done/info` 的 `post_done_extra` 是否带出 `time_token`；
 - 更重要的是，**少看广告再领奖属于广告欺诈**（ad fraud），本仓库不做，也不建议做：
   它违反 App 协议与广告主投放约定，账号会被风控（你这次的 `210021 设备异常` 就是风控长相）。
+
+> 换算一下性价比：攒时长模块是 **1 次广告 = 1 天畅听**（`assets[].amount=1, amount_type=day`，
+> 副标题“再看3次提前解锁下一天”），30 秒换一天不中断，这已经是最划算的路径。
+> 签到则是**纯听歌 30 秒**、不看广告（但目前被服务端设备风控挡着，见 §2）。
 
 合规可行的只有两种：要么**广告完全不看**（本插件 `cleanAds` / `blockAdDomains` 走的路，此时也不能领该广告对应的奖励），
 要么**完整看完**再领。本插件的原则是：前者可以，后者不造假。
@@ -165,7 +199,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
 |---|---|
 | 福利页是否只剩攒时长 | 打开福利页，只应看到【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱都消失 |
 | 攒时长是否仍可点 | 按钮应能进入看广告结算流程（`ad_type=ads_get_duration`） |
-| 广告是否还在 | `cleanAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空 |
+| 广告是否还在 | `killRewardAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空；`cleanFeedAds` 只影响信息流广告 |
 | 弹窗/演出是否消失 | `cleanUpsell` 打开后，`upsell_map` 里不应再有 `*ads*` 与 `browse_mall_popup_acc_amount`；音乐节列表为空 |
 | 链路取证 | `debugLog` 打开后，日志搜 `[douyin-reward]` |
 

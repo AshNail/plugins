@@ -1,15 +1,18 @@
 const load = require("./load-script");
 const code = load("clean.js", "douyin");
 
-function run(url, body) {
+function run(url, body, argument) {
   let out = null;
   const logs = [];
-  const fn = new Function("$request", "$response", "$done", "console", "$argument", code);
+  const fn = new Function(
+    "$request", "$response", "$done", "console", "$argument", code
+  );
   fn(
     { url },
     { body: typeof body === "string" ? body : JSON.stringify(body) },
     (v) => { out = v; },
-    { log: (...a) => logs.push(a.join(" ")) }
+    { log: (...a) => logs.push(a.join(" ")) },
+    argument
   );
   return { out, logs };
 }
@@ -30,7 +33,13 @@ function parse(out) {
   try { return JSON.parse(out.body); } catch (e) { return null; }
 }
 
-console.log("\n== 1. incentive/config：清广告源/信息流配置/预拉取 ==");
+const INCENTIVE_CONFIG = "https://beta-luna.douyin.com/luna/advert/incentive/config";
+const INCENTIVE_RETRIEVE = "https://beta-luna.douyin.com/luna/advert/incentive/retrieve";
+const FEED_ADS = "https://beta-luna.douyin.com/luna/ads/dsp/retrieve";
+const UPSELL = "https://beta-luna.douyin.com/luna/commerce/v2/upsell";
+const FESTIVAL = "https://beta-luna.douyin.com/luna/growth/music_festival/performance_details";
+
+console.log("\n== 1. killRewardAds：清广告源/信息流配置/预拉取 ==");
 {
   const body = {
     status_code: 0,
@@ -41,7 +50,7 @@ console.log("\n== 1. incentive/config：清广告源/信息流配置/预拉取 =
     vids: ["18616728", "6840291"],
     status_info: { now: 1792495720, status_msg: "success" }
   };
-  const r = run("https://beta-luna.douyin.com/luna/advert/incentive/config", body);
+  const r = run(INCENTIVE_CONFIG, body, { killRewardAds: true });
   const o = parse(r.out);
   check("advert_sources -> []", o && Array.isArray(o.advert_sources) && o.advert_sources.length === 0,
     JSON.stringify(o));
@@ -52,7 +61,7 @@ console.log("\n== 1. incentive/config：清广告源/信息流配置/预拉取 =
   check("包络保留", o && o.status_code === 0 && o.status_info.status_msg === "success");
 }
 
-console.log("\n== 2. incentive/retrieve：清素材表 ==");
+console.log("\n== 2. killRewardAds：清素材表 ==");
 {
   const body = {
     status_code: 0,
@@ -70,13 +79,52 @@ console.log("\n== 2. incentive/retrieve：清素材表 ==");
       }
     }
   };
-  const r = run("https://beta-luna.douyin.com/luna/advert/incentive/retrieve", body);
+  const r = run(INCENTIVE_RETRIEVE, body, { killRewardAds: true });
   const o = parse(r.out);
   check("ad_infos_map -> {}", o && Object.keys(o.ad_infos_map).length === 0, JSON.stringify(o));
   check("素材不再下发", o && !JSON.stringify(o).includes("launch_id"));
 }
 
-console.log("\n== 3. upsell：删广告弹窗与商城弹窗，保留其它 ==");
+console.log("\n== 3. 只开 cleanFeedAds：激励广告素材/预拉取必须原样保留 ==");
+{
+  const config = {
+    status_code: 0,
+    preload: true,
+    feed_advert_config: { advert_duration: 30 },
+    vids: ["18616728", "6840291"],
+    advert_sources: [{ type: 3, rit: "73009" }]
+  };
+  const r = run(INCENTIVE_CONFIG, config, { cleanFeedAds: true });
+  check("不改写激励广告配置", !(r.out && r.out.body), JSON.stringify(r.out));
+  check("日志说明开关未开",
+    r.logs.join(" ").includes("switch off"), r.logs.join(" "));
+
+  const material = {
+    status_code: 0,
+    ad_infos_map: { default: { ad_infos: [{ launch_id: "x.mp4", launch_duration: 30 }] } }
+  };
+  const r2 = run(INCENTIVE_RETRIEVE, material, { cleanFeedAds: true });
+  check("不改写激励广告素材", !(r2.out && r2.out.body), JSON.stringify(r2.out));
+}
+
+console.log("\n== 4. cleanFeedAds：清信息流广告容器 ==");
+{
+  const body = {
+    status_code: 0,
+    ads: [{ id: 1 }],
+    ads_info: { a: 1 },
+    ad_infos: [{ id: 2 }],
+    ad_unit_configs: { x: 1 }
+  };
+  const r = run(FEED_ADS, body, { cleanFeedAds: true });
+  const o = parse(r.out);
+  check("ads -> []", o && Array.isArray(o.ads) && o.ads.length === 0, JSON.stringify(o));
+  check("ads_info -> {}", o && Object.keys(o.ads_info).length === 0, JSON.stringify(o));
+  check("ad_infos -> []", o && Array.isArray(o.ad_infos) && o.ad_infos.length === 0);
+  check("ad_unit_configs -> {}", o && Object.keys(o.ad_unit_configs).length === 0);
+}
+
+console.log("\n== 5. cleanUpsell：删广告弹窗与商城弹窗，保留其它 ==");
 {
   const body = {
     status_code: 0,
@@ -95,7 +143,7 @@ console.log("\n== 3. upsell：删广告弹窗与商城弹窗，保留其它 ==")
     },
     variables: { ads_days_obtained: "if(...)", is_svip: "..." }
   };
-  const r = run("https://beta-luna.douyin.com/luna/commerce/v2/upsell", body);
+  const r = run(UPSELL, body, { cleanUpsell: true });
   const o = parse(r.out);
   const names = Object.keys(o.upsell_map);
   check("商城弹窗被删", names.indexOf("browse_mall_popup_acc_amount") === -1, names.join(","));
@@ -114,7 +162,7 @@ console.log("\n== 3. upsell：删广告弹窗与商城弹窗，保留其它 ==")
   check("variables 不动", !!o.variables && !!o.variables.ads_days_obtained);
 }
 
-console.log("\n== 4. 演出（汽水音乐节）：detail_list 清空 ==");
+console.log("\n== 6. cleanUpsell：演出（汽水音乐节）detail_list 清空 ==");
 {
   const body = {
     status_code: 0,
@@ -122,21 +170,28 @@ console.log("\n== 4. 演出（汽水音乐节）：detail_list 清空 ==");
       { id: "26", title: "汽水音乐节", performance_stop_name: "常州站", price_desc: "198" }
     ]
   };
-  const r = run("https://beta-luna.douyin.com/luna/growth/music_festival/performance_details", body);
+  const r = run(FESTIVAL, body, { cleanUpsell: true });
   const o = parse(r.out);
   check("detail_list -> []", o && Array.isArray(o.detail_list) && o.detail_list.length === 0,
     JSON.stringify(o));
 }
 
-console.log("\n== 5. 未匹配的接口：原样放行 ==");
+console.log("\n== 7. 开关全关：原样放行 ==");
 {
-  const r = run("https://beta-luna.douyin.com/luna/treasure/task/box/do_action", { status_code: 0 });
+  const r = run(INCENTIVE_CONFIG, { status_code: 0, preload: true }, {});
   check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
 }
 
-console.log("\n== 6. 非 JSON：原样放行 ==");
+console.log("\n== 8. 未匹配的接口：原样放行 ==");
 {
-  const r = run("https://beta-luna.douyin.com/luna/advert/incentive/config", "{oops");
+  const r = run("https://beta-luna.douyin.com/luna/treasure/task/box/do_action",
+    { status_code: 0 }, { cleanUpsell: true, cleanFeedAds: true, killRewardAds: true });
+  check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
+}
+
+console.log("\n== 9. 非 JSON：原样放行 ==");
+{
+  const r = run(INCENTIVE_CONFIG, "{oops", { killRewardAds: true });
   check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
 }
 

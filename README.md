@@ -14,7 +14,7 @@
 | 插件 | 版本 | 用途 | 兼容性 |
 |---|---:|---|---|
 | `soda.plugin` | 2.1.0 | 汽水音乐唯一插件：保奖励 / 去广告脚本 / 广告域名拦截 / 设置层 / 只读日志 / 隐藏【听抖音】，全部用 `[Argument]` 开关控制 | 一个 App 只装这一个；域名拦截走 MITM+脚本，HTTP/3 可能漏过 |
-| `douyin.plugin` | 0.1.0 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、广告配置清理、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
+| `douyin.plugin` | 0.2.0 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、激励广告开关、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
 
 > 一个 App 只保留一个 `.plugin`。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进 `soda.plugin`，不再单独部署；历史版本可在 git 历史中找回。
 
@@ -86,11 +86,11 @@
 | `src/soda/request.js` | 3,401 B | `plugins/soda/scripts/request.min.js` | 1,195 B |
 | `src/soda/diag.js` | 2,996 B | `plugins/soda/scripts/diag.min.js` | 1,320 B |
 | `src/douyin/treasure.js` | 4,733 B | `plugins/douyin/scripts/treasure.min.js` | 1,864 B |
-| `src/douyin/clean.js` | 6,597 B | `plugins/douyin/scripts/clean.min.js` | 2,676 B |
-| `src/douyin/observe.js` | 7,033 B | `plugins/douyin/scripts/observe.min.js` | 4,135 B |
+| `src/douyin/clean.js` | 8,196 B | `plugins/douyin/scripts/clean.min.js` | 3,073 B |
+| `src/douyin/observe.js` | 8,274 B | `plugins/douyin/scripts/observe.min.js` | 4,849 B |
 | `src/douyin/block-domains.js` | 2,655 B | `plugins/douyin/scripts/block-domains.min.js` | 830 B |
 
-合计 **83,480 B → 37,786 B（约 -54.7%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–575 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
+合计 **86,320 B → 38,897 B（约 -54.9%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–575 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
 
 ---
 
@@ -149,10 +149,16 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyi
 | 开关 | 默认 | 作用 |
 |---|---|---|
 | `treasureMinimal` | 开 | 福利页只保留【攒时长 听歌不中断】 |
-| `cleanAds` | 关 | 清空激励广告源/素材/信息流广告配置（会让攒时长失效） |
+| `cleanFeedAds` | 关 | 清掉信息流/广告位广告容器（**不影响激励奖励**） |
+| `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `blockAdDomains` | 关 | 广告域名拦截（MITM + `http-request` 脚本） |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]` |
+
+> 激励广告 30 秒是硬成本（服务端按 `valid_duration` 校验真实观看时长），本仓库不做“改短时长照常领奖”；
+> 能省的是**等待里的空转**：v0.2.0 起 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`，
+> 默认两者都关，`incentive/config` 的 `preload=true` + `vids[]` 预拉取列表会完整保留，
+> 第一次广告也能秒开。
 
 安装注意：
 
@@ -192,7 +198,7 @@ npm run test:dist   # 只测压缩版
 npm test            # 源码 + 压缩版都跑
 ```
 
-当前测试规模：14 套脚本、344 条断言；源码与压缩版各跑一遍，共 **28 个套件 / 688 条断言**。
+当前测试规模：14 套脚本、352 条断言；源码与压缩版各跑一遍，共 **28 个套件 / 704 条断言**。
 
 ---
 

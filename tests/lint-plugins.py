@@ -10,7 +10,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
     ("plugins/soda/soda.plugin", 5, 0, 1, 32, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 0, 6, "douyin"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 0, 7, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -55,14 +55,16 @@ FAMILY_CHECKS = {
     "douyin": {
         "switches": [
             ("treasureMinimal", "true"),
-            ("cleanAds", "false"),
+            ("cleanFeedAds", "false"),
+            ("killRewardAds", "false"),
             ("cleanUpsell", "false"),
             ("blockAdDomains", "false"),
             ("debugLog", "false"),
         ],
         "enable": {
             "treasureMinimal": 1,
-            "cleanAds": 1,
+            "cleanFeedAds": 1,
+            "killRewardAds": 1,
             "cleanUpsell": 2,
             "blockAdDomains": 1,
             "debugLog": 1,

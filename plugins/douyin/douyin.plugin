@@ -1,7 +1,7 @@
 #!name=抖音 · douyin
-#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、激励广告配置清理、商业化弹窗/商城/演出清理、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。
+#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。
 #!author=edy
-#!version=0.1.0
+#!version=0.2.0
 #!homepage=https://github.com/AshNail/plugins
 #!system=ios
 #!loon_version=3.2.1(734)
@@ -14,7 +14,8 @@
 #
 # 开关：
 #   treasureMinimal  福利页精简（默认开）：只留【攒时长 听歌不中断】
-#   cleanAds         激励广告配置清理（默认关）：会破坏攒时长模块，慎开
+#   cleanFeedAds     信息流/广告位广告清理（默认关）：不影响激励奖励
+#   killRewardAds    激励广告素材与预拉取（默认关）：开=广告完全不发，奖励也没了
 #   cleanUpsell      商业化弹窗/商城/演出清理（默认关）
 #   blockAdDomains   广告域名拦截（默认关）：MITM + http-request 脚本
 #   debugLog         只读日志（默认关）：日志前缀 [douyin-reward]
@@ -45,9 +46,10 @@
 
 [Argument]
 treasureMinimal = switch,true,tag=福利页精简,desc=福利页只保留【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱等入口全部移除。
-cleanAds = switch,false,tag=激励广告配置清理,desc=清空 incentive/config、incentive/retrieve、ads/config、ads/dsp/retrieve 的广告源与素材。注意：会让【攒时长 听歌不中断】失效。
+cleanFeedAds = switch,false,tag=信息流广告清理,desc=清掉 ads/config、ads/dsp/retrieve 的信息流广告容器；不影响激励广告与奖励。
+killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。
 cleanUpsell = switch,false,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）。
+blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）。会同时断掉激励广告。
 debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
 
 
@@ -89,8 +91,11 @@ debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广
 # ---- 福利页精简：只留【攒时长 听歌不中断】 ----
 http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v2 script-path=scripts/treasure.min.js, requires-body=true, timeout=10, argument=[{treasureMinimal}], enable={treasureMinimal}
 
-# ---- 激励广告配置/素材清理 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:advert\/incentive\/(?:config|retrieve)|ads\/(?:config|dsp\/retrieve)) script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{cleanAds}], enable={cleanAds}
+# ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
+http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|dsp\/retrieve) script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{cleanFeedAds}], enable={cleanFeedAds}
+
+# ---- 断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了 ----
+http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/incentive\/(?:config|retrieve) script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{killRewardAds}], enable={killRewardAds}
 
 # ---- 商业化弹窗 / 商城清理 ----
 http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/upsell script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{cleanUpsell}], enable={cleanUpsell}
@@ -101,8 +106,8 @@ http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/
 # ---- 广告域名拦截：blockAdDomains 开关 ----
 http-request ^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\/ script-path=scripts/block-domains.min.js, timeout=10, argument=[{blockAdDomains}], enable={blockAdDomains}
 
-# ---- 只读日志：福利页 / 激励广告 / upsell / 发奖 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v2|advert\/incentive\/(?:config|retrieve|done)|commerce\/v2\/upsell) script-path=scripts/observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+# ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
+http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v2|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|dsp\/retrieve)|commerce\/v2\/upsell) script-path=scripts/observe.min.js, requires-body=true, timeout=10, enable={debugLog}
 
 
 # ============================================================================

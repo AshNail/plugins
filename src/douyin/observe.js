@@ -144,6 +144,36 @@ function observeIncentiveDone(obj) {
   console.log("[douyin-reward] incentive/done\n  " + (lines.join("\n  ") || "-"));
 }
 
+/* 兜底凭证：只打印字段名，不打印 time_token / nonce 的值 */
+function observeFallback(obj) {
+  const raw = obj.post_done_extra;
+  let keys = "-";
+  if (typeof raw === "string") {
+    try {
+      keys = Object.keys(JSON.parse(raw)).join(",");
+    } catch (e) {
+      keys = "(not json)";
+    }
+  } else if (isPlainObject(raw)) {
+    keys = Object.keys(raw).join(",");
+  }
+  console.log("[douyin-reward] fallback/done/info : post_done_extra keys = " + keys);
+}
+
+/* 信息流/广告位广告容器计数 */
+function observeFeedAds(obj) {
+  const lines = [];
+  const containers = ["ads", "ads_info", "adsInfo", "ad_infos", "ad_infos_map",
+                      "ad_info", "ad_data", "adConfig", "ad_unit_configs"];
+  for (const key of containers) {
+    const v = obj[key];
+    if (v === undefined || v === null) continue;
+    lines.push(key + " = " + (Array.isArray(v) ? "[" + v.length + "]" :
+      isPlainObject(v) ? "{" + Object.keys(v).length + "}" : typeof v));
+  }
+  console.log("[douyin-reward] feed ads config\n  " + (lines.join("\n  ") || "-"));
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -163,6 +193,8 @@ function observeIncentiveDone(obj) {
     else if (/\/luna\/advert\/incentive\/config/.test(url)) observeIncentiveConfig(obj);
     else if (/\/luna\/advert\/incentive\/retrieve/.test(url)) observeIncentiveRetrieve(obj);
     else if (/\/luna\/advert\/incentive\/done/.test(url)) observeIncentiveDone(obj);
+    else if (/\/luna\/advert\/fallback\/done\/info/.test(url)) observeFallback(obj);
+    else if (/\/luna\/ads\/(?:config|dsp\/retrieve)/.test(url)) observeFeedAds(obj);
     else if (/\/luna\/commerce\/v2\/upsell/.test(url)) observeUpsell(obj);
     else return $done({});
 
