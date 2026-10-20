@@ -3,7 +3,7 @@
 > 所属：Loon 插件仓库 · 插件族 `soda`（[仓库总览](../../README.md)）
 > 部署目录：`plugins/soda/`；源码目录：`src/soda/`
 > 目标：汽水音乐 iOS 20.5.0（`com.luna.music`）
-> 类型：Loon 插件（域名拦截 + 字段级响应改写 + 诊断脚本）
+> 类型：Loon 插件（域名拦截 / 字段级响应改写 / 统一开关 / 诊断脚本）
 > 取证：Ghidra 全量分析 + ARM64 `ADRP+ADD` 字符串引用扫描（详见配套逆向报告）
 
 **v1.5.2 本次变更**：部署脚本改为 terser 实际压缩版 `plugins/soda/scripts/*.min.js`（去空白/注释、混淆局部与顶层变量名），可读源码保留在 `src/soda/`，由 `tools/build.js` 生成。插件行为与 v1.5.1 一致。
@@ -13,6 +13,8 @@
 **保奖励模式（独立插件 v0.2.3）**：`SodaClean-Reward.plugin` 只清开屏品牌广告，**保留**激励广告、奖励任务、发奖链路，并**刻意不碰 upsell**（可能承载 `UpsellStyleRewardAdsDefault` / `reward_btn_text` 等激励入口）。适合“完整看完广告后正常领奖”；**不拦任何域名**（包括 App Store 评分弹窗 `praisewindow.ugsdk.cn`），信息流/DSP/商业弹窗可能仍会出现。与主插件、设置插件二选一，不能同时启用。
 
 **激励链路观测（只读 v0.2.2）**：`SodaClean-Reward-Debug.plugin` 只写 `[soda-reward]` 日志，不修改响应；观察 20 个激励/任务/入口端点，用来判断广告源、`reward_ads` 任务、发奖接口、`fallback/flip_card/guide/browse_mall` 动作，以及 `upsell` 的奖励入口变量到底卡在哪一层。可与保奖励插件同时启用，排障后停用。
+
+**统一开关版（实验 v0.1.0）**：`SodaClean-Unified.plugin` 把保奖励、去广告脚本、设置层、只读日志整合到一个插件，用 Loon `[Argument]` 开关控制。默认 `rewardSafe=true`、`cleanAds=false`、`settingsClean=false`、`debugLog=false`、`splashClean=true`。由于 Loon 的 `[Rule]` 不能按开关启停，统一版**不包含域名拦截**；需要完整域名拦截时仍用 `SodaClean.plugin`。`rewardSafe=true` 时脚本会优先保护非开屏端点，但仍建议不要把 `rewardSafe` 与 `cleanAds` / `settingsClean` 同时打开。
 
 **v1.5 已包含**：信息流 `is_advertisement` / `is_ad_item` / `ad_flag` / `adItem` 与 `card.is_ad` 嵌套判定；信息流端点扩展 `playlist/search` / `discover/mix`；福利任务/ banner 增加 `ad_reward` 变体；福利页 `banner_list` 广告项裁剪；新增**设置层实验插件** `SodaClean-Settings.plugin`，通过 `conf.qishui.com/service/settings/v3/` 清空 `commerce_ad_config` / `feed_reward_ad_config` / `reward_ad_fallback_config` / `splash_ad_early_load_config` 等 TTKitchen 配置。
 
@@ -274,6 +276,25 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 
 > ⚠️ 这是**实验插件**，单独安装 `SodaClean-Settings.plugin`。`conf.qishui.com` 若证书固定，MITM 会失败；停用插件即可回滚，主插件不受影响。
 
+### 3.8 统一开关版与 Loon 限制
+
+`SodaClean-Unified.plugin` 使用 Loon `[Argument]` 的 `switch` 控件，把脚本启停做成开关：
+
+| 开关 | 默认 | 控制的脚本 |
+|---|---|---|
+| `rewardSafe` | 开 | 保奖励优先；`sanitize` 对非开屏端点直接放行，`settings` 直接放行 |
+| `cleanAds` | 关 | 激励配置、广告位、信息流、福利页广告任务等 9 条清理脚本 |
+| `settingsClean` | 关 | `conf.qishui.com` 设置层脚本 |
+| `debugLog` | 关 | 20 条只读观测脚本 |
+| `splashClean` | 开 | 开屏品牌广告清理 |
+
+关键限制：
+
+- **`[Rule]` 不能按开关启停**。Loon 的插件参数只能传给 Script / Rewrite；域名规则仍是静态配置。因此统一版故意不写 `[Rule]`，避免保奖励模式被广告域名拦截误伤。
+- **完整去广告仍需主插件**。`SodaClean.plugin` 的 `[Rule]` 会阻断 `ad.zijieapi.com` / `lianmengapi.snssdk.com` 等激励广告域名；这和保奖励目标冲突，不能合并成一个可切换的规则段。
+- **`[MITM]` 也不能按开关启停**。统一版为了支持 `settingsClean`，默认声明了 `api.qishui.com, conf.qishui.com`；如果 `conf.qishui.com` 证书固定导致异常，关闭 `settingsClean` 或停用插件。
+- **开关冲突保护**：`rewardSafe=true` 时脚本优先保护非开屏端点；但仍建议不要同时打开 `rewardSafe` 与 `cleanAds` / `settingsClean`。
+
 ---
 
 ## 4. 分层设计
@@ -445,37 +466,55 @@ http-request ^https?:\/\/api\.qishui\.com\/luna\/(?:advert\/incentive\/config|ad
 
 ## 6. 安装
 
-部署目录是 `plugins/soda/`：四个 `.plugin` + `scripts/*.min.js`。推送前先运行 `npm run build` 生成压缩脚本；`src/`、`tests/` 可以保留在仓库里，不需要单独上传。
+部署目录是 `plugins/soda/`：五个 `.plugin` + `scripts/*.min.js`。推送前先运行 `npm run build` 生成压缩脚本；`src/`、`tests/` 可以保留在仓库里，不需要单独上传。
 
 1. 把 `plugins/soda/` 和仓库根目录的 `.nojekyll` 推到 GitHub；
 2. GitHub → Settings → Pages → Source 选 `Deploy from a branch`，Branch 选 `main`，Folder 选 `/ (root)`；
 3. 站点根为 `https://ashnail.github.io/plugins`，插件位于 `.../plugins/soda/`；
-4. 主插件：
+4. 统一开关版（推荐先试，默认保奖励）：
+
+```
+loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Unified.plugin
+```
+
+5. 主插件（完整域名拦截，不能与保奖励同开）：
 
 ```
 loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean.plugin
 ```
 
-5. 实验插件（可选，需单独 MITM `conf.qishui.com`）：
+6. 实验设置插件（可选，需单独 MITM `conf.qishui.com`）：
 
 ```
 loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Settings.plugin
 ```
 
-6. 保奖励插件（想正常拿激励奖励时用，**不要同时启用主插件/设置插件**）：
+7. 保奖励稳定版（想正常拿激励奖励时用，**不要同时启用主插件/设置插件**）：
 
 ```
 loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Reward.plugin
 ```
 
-7. 激励链路观测插件（只读，排障时与保奖励插件一起装）：
+8. 激励链路观测插件（只读，排障时与保奖励/统一版一起装）：
 
 ```
 loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Reward-Debug.plugin
 ```
 
-8. Loon → 设置 → MITM → 生成证书 → 安装并信任；
-9. 主插件/保奖励插件 `[MITM]` 已声明 `api.qishui.com`；实验插件声明 `conf.qishui.com`。要试广告 SDK 设置层，再取消实验插件里 `is.snssdk.com` / `i.snssdk.com` 两行注释，并同步 `[MITM]`。
+9. Loon → 设置 → MITM → 生成证书 → 安装并信任；
+10. 主插件/保奖励/统一版 `[MITM]` 已声明 `api.qishui.com`；设置插件和统一版（设置层开关）还需要 `conf.qishui.com`。要试广告 SDK 设置层，再取消设置插件里 `is.snssdk.com` / `i.snssdk.com` 两行注释，并同步 `[MITM]`。
+
+统一版的开关：
+
+| 开关 | 默认 | 作用 |
+|---|---|---|
+| `rewardSafe` | 开 | 保奖励优先；非开屏端点直接放行 |
+| `cleanAds` | 关 | 去广告脚本：广告配置、信息流、福利页广告任务 |
+| `settingsClean` | 关 | 设置层净化；不要与 `rewardSafe` 同开 |
+| `debugLog` | 关 | 只读日志，可与保奖励同开 |
+| `splashClean` | 开 | 清理开屏品牌广告 |
+
+> 统一版没有 `[Rule]` 域名拦截：Loon 的规则不能按开关关闭。需要完整域名拦截时用主插件，但主插件会阻断激励广告，不能和保奖励同开。
 
 > 插件里的 `script-path=scripts/...` 是相对路径，所以 `.plugin` 和 `scripts/` 必须保持同级；不要只发单个 `.plugin` 文件。GitHub Pages 根地址没有 `index.html`，会 404，直接访问插件文件即可。
 
@@ -494,10 +533,11 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%
 | 包络是否保留 | 日志里 `status_code` 不应缺失 |
 | App 是否异常 | 福利页、播放页、会员页各走一遍 |
 | 保奖励模式是否生效 | 只装 `SodaClean-Reward.plugin`；奖励任务应保留，开屏品牌广告应消失，信息流/DSP/商业弹窗可能仍在 |
+| 统一开关版是否生效 | 只装 `SodaClean-Unified.plugin`；默认 `rewardSafe=true`，福利页奖励任务应保留，开屏品牌广告应消失；关闭 `splashClean` 可对比 |
 | 奖励是否正常到账 | 完整看完激励视频，确认金币/畅听/翻牌等奖励到账；不要跳过广告或伪造回调 |
-| 激励链路是否下发 | 装 `SodaClean-Reward-Debug.plugin`，日志搜 `[soda-reward]`；看 `counts.sources` / `counts.adInfosMap` / `tasks` / `reward` 是否为空 |
+| 激励链路是否下发 | 装 `SodaClean-Reward-Debug.plugin` 或打开统一版 `debugLog`，日志搜 `[soda-reward]`；看 `counts.sources` / `counts.adInfosMap` / `tasks` / `reward` 是否为空 |
 
-本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（10 套 / 276 条断言，源码与压缩版各一遍，共 552 条）；`python3 tests/lint-plugins.py` 检查 4 个插件。
+本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（11 套 / 290 条断言，源码与压缩版各一遍，共 580 条）；`python3 tests/lint-plugins.py` 检查 5 个插件。
 
 建议顺序（主插件）：**L1 → incentive/config → splash → retrieve → upsell → treasure → 设置层实验**，每加一条观察一天。
 
@@ -559,6 +599,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
+│       ├── SodaClean-Unified.plugin # 统一开关版（保奖励默认，功能开关）
 │       ├── SodaClean.plugin        # 主插件（API 字段级，去广告优先）
 │       ├── SodaClean-Reward.plugin # 保奖励插件（激励链路优先）
 │       ├── SodaClean-Reward-Debug.plugin # 只读观测（[soda-reward] 日志）
@@ -578,7 +619,7 @@ loon-plugins/
 │       └── diag.js
 ├── tools/
 │   └── build.js                    # src -> plugins 压缩构建
-├── tests/                          # 脚本层回归测试（10 套 / 276 条断言 × 2）
+├── tests/                          # 脚本层回归测试（11 套 / 290 条断言 × 2）
 ├── package.json
 ├── package-lock.json
 ├── .github/workflows/check.yml     # CI：build + lint + 测试

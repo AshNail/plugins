@@ -336,6 +336,17 @@ function walk(node, path, changes, depth) {
       return $done({});
     }
 
+    /*
+     * 统一插件开关：保奖励模式优先。
+     * 独立设置插件没有 $argument，行为保持不变。
+     */
+    const pluginArgs =
+      (typeof $argument === "object" && $argument) ? $argument : null;
+    if (pluginArgs && pluginArgs.rewardSafe === true) {
+      console.log("[soda-settings] rewardSafe=on, passthrough");
+      return $done({});
+    }
+
     const url = ($request && $request.url) || "";
     const raw = ($response && $response.body) || "";
 

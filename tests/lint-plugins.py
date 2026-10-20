@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Structural lint for the four Loon plugins."""
+"""Structural lint for the Loon plugins."""
 import pathlib
 import re
 import subprocess
@@ -11,6 +11,7 @@ PLUGINS = [
     ("plugins/soda/SodaClean-Settings.plugin", 3, 5, 0, 1),
     ("plugins/soda/SodaClean-Reward.plugin", 4, 0, 1, 1),
     ("plugins/soda/SodaClean-Reward-Debug.plugin", 4, 0, 0, 20),
+    ("plugins/soda/SodaClean-Unified.plugin", 5, 0, 1, 31),
 ]
 SAMPLES = {
     "search-block": "https://api.qishui.com/luna/search-block",
@@ -203,6 +204,47 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts in PLUGINS:
             print(f"  reward- {label:18} {'BLOCKED' if hit else 'left intact'}")
             if hit:
                 errors.append(f"{fp}: reward endpoint {label} would be modified")
+
+    if fp.endswith("SodaClean-Unified.plugin"):
+        arg_text = "\n".join(data.get("Argument", []))
+        for name, default in [
+            ("rewardSafe", "true"),
+            ("cleanAds", "false"),
+            ("settingsClean", "false"),
+            ("debugLog", "false"),
+            ("splashClean", "true"),
+        ]:
+            if f"{name} = switch,{default}" not in arg_text:
+                errors.append(
+                    f"{fp}: missing or wrong Argument switch {name} (expected default {default})"
+                )
+
+        if rules:
+            errors.append(f"{fp}: unified plugin must not contain static domain rules")
+
+        expected_enable = {
+            "splashClean": 1,
+            "cleanAds": 9,
+            "settingsClean": 1,
+            "debugLog": 20,
+        }
+        for name, want in expected_enable.items():
+            got = sum(1 for line in scripts if f"enable={{{name}}}" in line)
+            if got != want:
+                errors.append(
+                    f"{fp}: enable={{{name}}} used {got} times, expected {want}"
+                )
+
+        for line in scripts:
+            if "enable={" not in line:
+                errors.append(f"{fp}: unified script missing enable switch: {line[:100]}")
+            if "reward-observe" not in line and "argument=[" not in line:
+                errors.append(f"{fp}: unified rewrite script missing argument: {line[:100]}")
+
+        mitm = "\n".join(data.get("MITM", []))
+        for host in ["api.qishui.com", "conf.qishui.com"]:
+            if host not in mitm:
+                errors.append(f"{fp}: MITM missing {host}")
 
 print(f"lint errors: {len(errors)}")
 for err in errors:

@@ -1,0 +1,147 @@
+#!name=汽水音乐 · 统一开关版（实验）
+#!desc=单插件多开关：默认保奖励；可开启去广告脚本、设置层净化和只读日志。Loon 的 [Rule] 不能按开关关闭，因此本插件不含域名拦截；完整去广告仍用 SodaClean.plugin。
+#!author=edy
+#!version=0.1.0
+#!homepage=https://github.com/AshNail/plugins
+#!system=ios
+#!loon_version=3.2.1(734)
+#!tag=汽水音乐,统一,开关,Loon
+
+# ============================================================================
+# 统一开关版说明
+# ----------------------------------------------------------------------------
+# 目标：一个插件里放多个功能，用 Loon 的 [Argument] 开关控制。
+#
+# 开关：
+#   rewardSafe    保奖励模式（默认开）
+#   cleanAds      去广告脚本（默认关）
+#   settingsClean 设置层净化（默认关，实验）
+#   debugLog      只读日志（默认关）
+#   splashClean   清开屏品牌广告（默认开）
+#
+# 推荐组合：
+#   正常领奖励：rewardSafe=true, cleanAds=false, settingsClean=false,
+#              debugLog=false, splashClean=true
+#   排障：      在保奖励基础上把 debugLog=true
+#   去广告：    rewardSafe=false, cleanAds=true, splashClean=true
+#   去广告+设置：rewardSafe=false, cleanAds=true, settingsClean=true
+#
+# 不要这样开：
+#   rewardSafe=true + cleanAds=true
+#   rewardSafe=true + settingsClean=true
+#   虽然脚本里有保护（rewardSafe 优先），但最稳妥的是只开一种模式。
+#
+# 重要限制：
+#   Loon 的 [Rule] 是静态配置，不能按 [Argument] 开关启停。
+#   为了让保奖励模式不被误伤，本插件故意不写任何域名拦截规则。
+#   如果你要完整域名拦截（ad.zijieapi.com / lianmengapi.snssdk.com 等），
+#   仍然使用独立的 SodaClean.plugin；它会阻断激励广告，不能和保奖励同时开。
+#
+# 风险：
+#   - settingsClean 需要 MITM conf.qishui.com；证书固定时可能影响设置加载。
+#   - cleanAds 会清广告配置/福利页广告任务，开启后通常无法再领激励奖励。
+#   - rewardSafe=true 时，sanitize 会跳过除开屏品牌广告外的清理；
+#     settings 脚本也会直接放行，避免设置层破坏奖励链路。
+# ============================================================================
+
+[Argument]
+rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
+cleanAds = switch,false,tag=去广告脚本,desc=清理激励广告配置、广告位、信息流和福利页广告任务；开启后通常无法再领激励奖励。
+settingsClean = switch,false,tag=设置层净化（实验）,desc=清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。
+debugLog = switch,false,tag=只读日志,desc=记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。
+splashClean = switch,true,tag=清开屏品牌广告,desc=清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
+
+
+# ============================================================================
+# 1. [Rule]
+# ----------------------------------------------------------------------------
+# 故意留空：本插件不拦任何域名。
+# 需要完整域名拦截请使用 SodaClean.plugin；它不能与保奖励模式同时启用。
+# ============================================================================
+
+[Rule]
+
+
+# ============================================================================
+# 2. [Rewrite]
+# ----------------------------------------------------------------------------
+# 开屏上报是 fire-and-forget，返回 200 空包，减少 SDK 重试。
+# 这个改写对保奖励和去广告模式都安全，因此不单独做开关。
+# ============================================================================
+
+[Rewrite]
+
+^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report reject-200
+
+
+# ============================================================================
+# 3. [Script]
+# ----------------------------------------------------------------------------
+# 所有脚本都通过 enable={开关名} 控制。
+# 保奖励模式优先：rewardSafe=true 且 cleanAds=true 时，sanitize 只处理开屏；
+# settings 脚本在 rewardSafe=true 时直接放行。
+# ============================================================================
+
+[Script]
+
+# ---- 开屏品牌广告：保奖励/去广告共用 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/retrieve script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={splashClean}
+
+# ---- 去广告脚本：激励广告配置 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+
+# ---- 去广告脚本：激励素材预拉取 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+
+# ---- 去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info) script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+
+# ---- 去广告脚本：信息流广告 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card) script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+
+# ---- 去广告脚本：商业化弹窗 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/upsells script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:_sort_decision)? script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+
+# ---- 去广告脚本：福利页只摘 reward_ads ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view script-path=scripts/sanitize.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{cleanAds}], enable={cleanAds}
+
+# ---- 设置层净化（实验）：默认关闭 ----
+http-response ^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\/ script-path=scripts/settings.min.js, requires-body=true, timeout=10, argument=[{rewardSafe},{settingsClean}], enable={settingsClean}
+
+# ---- 只读日志：20 个激励/任务/入口端点，不修改响应 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/done script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/dsp\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/receive script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/settle script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/validate_reward script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/reward_ads\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/fallback\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/flip_card\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/guide\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/browse_mall\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity\/finish script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/done\/info script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:\?|$) script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+
+
+# ============================================================================
+# 4. [MITM]
+# ----------------------------------------------------------------------------
+# api.qishui.com：保奖励、去广告、日志都需要。
+# conf.qishui.com：只有 settingsClean=true 时才实际处理；若证书固定导致
+# 设置加载失败，关闭 settingsClean 或停用本插件。
+# ============================================================================
+
+[MITM]
+
+hostname = %APPEND% api.qishui.com, conf.qishui.com

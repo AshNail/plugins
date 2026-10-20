@@ -417,6 +417,20 @@ function rewrite(node, rule, path, log, depth) {
     const url = ($request && $request.url) || "";
     const raw = ($response && $response.body) || "";
 
+    /*
+     * 统一插件开关：保奖励模式优先。
+     * rewardSafe=true 时只允许开屏品牌广告继续处理，其他端点直接放行；
+     * 独立主插件没有 $argument，行为保持不变。
+     */
+    const pluginArgs =
+      (typeof $argument === "object" && $argument) ? $argument : null;
+    if (pluginArgs &&
+        pluginArgs.rewardSafe === true &&
+        !/\/luna\/advert\/splash\/brand\/retrieve/.test(url)) {
+      console.log("[soda] rewardSafe=on, non-splash passthrough: " + url);
+      return $done({});
+    }
+
     if (typeof raw !== "string" || raw.length === 0) {
       return $done({});
     }
