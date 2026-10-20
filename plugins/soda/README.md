@@ -6,7 +6,12 @@
 > 类型：Loon 插件（聚合开关 / 字段级响应改写 / 诊断脚本）
 > 取证：Ghidra 全量分析 + ARM64 `ADRP+ADD` 字符串引用扫描（详见配套逆向报告）
 
-**v2.1.1 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】全部通过 Loon `[Argument]` 开关控制：`rewardSafe`、`cleanAds`、`blockAdDomains`、`settingsClean`、`debugLog`、`splashClean`、`hideDouyinTab`。默认 `rewardSafe=true`，只清开屏品牌广告。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进本插件，不再单独安装。
+**版本要求**：本插件使用 **Loon 3.5.1(983) 起的新版 Script 语法**
+（`script("...", {${开关名}})` + `with enable=${开关名}`）。
+旧版语法的 `argument=[{开关名}]` 在 Loon 3.5.x 上不会把开关值送进脚本——
+真机日志显示脚本被触发但拿不到开关，表现为“插件装了却没效果”（2026-10-20 实测）。
+
+**v2.2.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】全部通过 Loon `[Argument]` 开关控制：`rewardSafe`、`cleanAds`、`blockAdDomains`、`settingsClean`、`debugLog`、`splashClean`、`hideDouyinTab`。默认 `rewardSafe=true`，只清开屏品牌广告。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进本插件，不再单独安装。
 
 > 以下 v1.x / 0.x 段落保留为历史设计记录；当前安装和使用只看 `soda.plugin`。
 

@@ -108,6 +108,17 @@ def parse_plugin(path):
     return data, sections
 
 
+def regex_literal(line):
+    """从新版语法里取出 /.../ 正则字面量（到 " then " 为止，避免被转义斜杠截断）。"""
+    m = re.search(r"\$\{url\} ~\= (/.+?)(?: then |$)", line)
+    if not m:
+        return None
+    body = m.group(1)
+    if not body.startswith("/") or not body.endswith("/"):
+        return None
+    return body[1:-1]
+
+
 def parse_meta(path):
     meta = {}
     for line in path.read_text().splitlines():
@@ -126,26 +137,34 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
     data, sections = parse_plugin(path)
 
     rules = [l for l in data.get("Rule", []) if l.startswith("DOMAIN,")]
-    rewrites = [l for l in data.get("Rewrite", []) if "reject-" in l]
+    rewrites = [
+        l for l in data.get("Rewrite", [])
+        if "reject(" in l or "reject-" in l
+    ]
     scripts = [
         l for l in data.get("Script", [])
-        if l.startswith(("http-response", "http-request"))
+        if l.startswith(("response if", "request if"))
     ]
 
     for line in rewrites:
+        rx = regex_literal(line)
+        if not rx:
+            errors.append(f"{fp}: rewrite without a url regex: {line[:100]}")
+            continue
         try:
-            re.compile(line.split()[0])
+            re.compile(rx)
         except re.error as exc:
             errors.append(f"{fp}: rewrite regex: {exc}")
 
     compiled = []
     for line in scripts:
-        m = re.match(r"^(http-(?:response|request))\s+(\S+)\s+script-path=([^,]+)", line)
-        if not m:
+        m = re.match(r'^(response|request) if \$\{url\} ~\= (/.+?/) then script\("([^"]+)"', line)
+        rx = regex_literal(line)
+        if not m or not rx:
             errors.append(f"{fp}: malformed script line: {line[:100]}")
             continue
         try:
-            compiled.append(re.compile(m.group(2)))
+            compiled.append(re.compile(rx))
         except re.error as exc:
             errors.append(f"{fp}: script regex: {exc}")
         if not m.group(3).endswith(".min.js"):
@@ -220,15 +239,16 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
         errors.append(f"{fp}: plugin must not contain active static domain rules")
 
     for name, want in spec["enable"].items():
-        got = sum(1 for line in scripts if f"enable={{{name}}}" in line)
+        got = sum(1 for line in scripts if f"enable=${{{name}}}" in line)
         if got != want:
-            errors.append(f"{fp}: enable={{{name}}} used {got} times, expected {want}")
+            errors.append(f"{fp}: enable=${{{name}}} used {got} times, expected {want}")
 
     for line in scripts:
-        if "enable={" not in line:
+        if "enable=${" not in line:
             errors.append(f"{fp}: script missing enable switch: {line[:100]}")
-        if "argument=[" not in line and not any(o in line for o in OBSERVER_SCRIPTS):
-            errors.append(f"{fp}: script missing argument: {line[:100]}")
+        if "${" not in line.split("script(", 1)[-1] and not any(
+                o in line for o in OBSERVER_SCRIPTS):
+            errors.append(f"{fp}: script missing parameter binding: {line[:100]}")
 
     mitm = "\n".join(data.get("MITM", []))
     for host in spec["mitm"]:

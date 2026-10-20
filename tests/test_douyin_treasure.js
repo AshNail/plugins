@@ -168,10 +168,21 @@ console.log("\n== 4. treasureMinimal=false：原样放行 ==");
     r.logs.join(" ").includes("treasureMinimal=off"), r.logs.join(" "));
 }
 
-console.log("\n== 5. 没有 $argument：原样放行 ==");
+console.log("\n== 5. 没有 $argument：按插件默认（treasureMinimal=true）执行 ==");
 {
   const r = run(makePage());
-  check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
+  const o = parse(r.out);
+  check("仍然精简（默认开）", o && o.data.sections.length === 1, JSON.stringify(o));
+}
+
+console.log("\n== 5b. 参数以数组/字符串形式传入也能识别 ==");
+{
+  const r1 = run(makePage(), [true]);
+  const o1 = parse(r1.out);
+  check("数组形式 -> 精简生效", o1 && o1.data.sections.length === 1, JSON.stringify(o1));
+  const r2 = run(makePage(), "treasureMinimal=true");
+  const o2 = parse(r2.out);
+  check("字符串形式 -> 精简生效", o2 && o2.data.sections.length === 1, JSON.stringify(o2));
 }
 
 console.log("\n== 6. 非福利页接口：原样放行 ==");
@@ -185,6 +196,27 @@ console.log("\n== 7. 非 JSON：原样放行 ==");
 {
   const r = run("{oops", { treasureMinimal: true });
   check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
+}
+
+console.log("\n== 8. 真实抓包样本（tests/fixtures/douyin_treasure_page.json）==");
+{
+  const real = require("./fixtures/douyin_treasure_page.json");
+  const before = real.data.sections.length;
+  const r = run(real, { treasureMinimal: true });
+  const o = parse(r.out);
+  check("真实响应有 " + before + " 个分区", before === 4, String(before));
+  check("真实响应精简为 1 个分区", o && o.data.sections.length === 1,
+    o ? JSON.stringify(o.data.sections.map((s) => s.key)) : JSON.stringify(r.out));
+  check("保留的是攒时长分区",
+    o && o.data.sections[0].key === "duration_task_section");
+  check("保留的任务是 luna_rewards_ads",
+    o && o.data.sections[0].task_group.tasks.length === 1 &&
+    o.data.sections[0].task_group.tasks[0].key === "luna_rewards_ads",
+    o ? JSON.stringify(o.data.sections[0].task_group.tasks.map((t) => t.key)) : "");
+  check("广告预拉取 id 清空",
+    o && Array.isArray(o.data.config.ad_api_preload.task_ids) &&
+    o.data.config.ad_api_preload.task_ids.length === 0,
+    o ? JSON.stringify(o.data.config.ad_api_preload) : "");
 }
 
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +

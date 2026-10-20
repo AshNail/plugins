@@ -20,7 +20,9 @@ npm test            # 源码 + 压缩版都跑
 npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 ```
 
-`run-all.py` 默认对源码和压缩版各跑一遍；`SODA_SCRIPT_SET=src|dist`（或 `SCRIPT_SET`）由 `tests/load-script.js` 读取，`loadScript(name, family)` 可以加载不同插件族。`lint-plugins.py` 检查每个 App 唯一部署插件（`soda.plugin`、`douyin.plugin`）的 section、域名、Rewrite/Script 行数、正则编译、`script-path` 是否指向存在的 `.min.js`、源码是否存在、压缩脚本能否通过 `node --check`，并确认压缩脚本确实比源码小且行数不超过 5 行。它还会验证：插件没有启用的静态 `[Rule]` 域名、每条脚本都带 `enable={开关}`、开关默认值正确、`[MITM]` 覆盖 API/设置/广告域名、关键端点能被脚本正则命中，以及 `#!name/#!desc/#!author/#!version/#!homepage/#!icon` 元数据齐全且 `#!icon` 是 https 链接。
+`run-all.py` 默认对源码和压缩版各跑一遍；`SODA_SCRIPT_SET=src|dist`（或 `SCRIPT_SET`）由 `tests/load-script.js` 读取，`loadScript(name, family)` 可以加载不同插件族。`lint-plugins.py` 检查每个 App 唯一部署插件（`soda.plugin`、`douyin.plugin`）的 section、域名、Rewrite/Script 行数、正则编译、`script-path` 是否指向存在的 `.min.js`、源码是否存在、压缩脚本能否通过 `node --check`，并确认压缩脚本确实比源码小且行数不超过 5 行。它还会验证：插件没有启用的静态 `[Rule]` 域名、每条脚本都带 `enable=${开关}`、开关默认值正确、`[MITM]` 覆盖 API/设置/广告域名、关键端点能被脚本正则命中，以及 `#!name/#!desc/#!author/#!version/#!homepage/#!icon` 元数据齐全且 `#!icon` 是 https 链接。
+
+`tests/fixtures/` 里放的是**真实抓包样本**（2026-10-20 HAR）：`douyin_treasure_page.json`（抖音福利页原始响应）、`soda_incentive_done.json`（汽水发奖请求/响应），用于防止“按想象改字段”。
 
 ## 断言分布
 
@@ -37,7 +39,7 @@ npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 | `test_feed_expand.js` | 16 | 扩展 feed 端点、`search-block` 仅 `banner_list` 场景 |
 | `test_reward_observe.js` | 91 | 激励链路只读观测：计数、任务摘要、进度字段、发奖字段、upsell 入口变量、隐私过滤、大响应放行 |
 | `test_block_domains.js` | 7 | 广告域名拦截脚本：开关关闭不拦、`rewardSafe` 放行、非广告域名不拦、返回 200 空响应 |
-| `test_douyin_treasure.js` | 22 | 抖音福利页精简：只留攒时长模块、我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱全部移除、广告预拉取 id 清空、开关关闭原样放行 |
+| `test_douyin_treasure.js` | 29 | 抖音福利页精简：只留攒时长模块、其余分区全部移除、广告预拉取 id 清空、开关关闭原样放行、参数对象/数组/字符串三种形态都识别、**真实抓包样本**回归 |
 | `test_douyin_clean.js` | 20 | 抖音广告配置/商业化弹窗/演出清理：广告源与素材清空、商城与广告弹窗删除、排序与冷启动引用同步清理、音乐节列表清空 |
 | `test_unified_args.js` | 19 | 聚合插件开关：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目 |
 

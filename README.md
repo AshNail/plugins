@@ -13,10 +13,26 @@
 
 | 插件 | 版本 | 用途 | 兼容性 |
 |---|---:|---|---|
-| `soda.plugin` | 2.1.1 | 汽水音乐唯一插件：保奖励 / 去广告脚本 / 广告域名拦截 / 设置层 / 只读日志 / 隐藏【听抖音】，全部用 `[Argument]` 开关控制 | 一个 App 只装这一个；域名拦截走 MITM+脚本，HTTP/3 可能漏过 |
-| `douyin.plugin` | 0.2.1 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、激励广告开关、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
+| `soda.plugin` | 2.2.0 | 汽水音乐唯一插件：保奖励 / 去广告脚本 / 广告域名拦截 / 设置层 / 只读日志 / 隐藏【听抖音】，全部用 `[Argument]` 开关控制 | 一个 App 只装这一个；域名拦截走 MITM+脚本，HTTP/3 可能漏过 |
+| `douyin.plugin` | 0.3.0 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、激励广告开关、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
 
 > 一个 App 只保留一个 `.plugin`。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进 `soda.plugin`，不再单独部署；历史版本可在 git 历史中找回。
+
+### 版本要求（重要）
+
+两个插件都用 **Loon 3.5.1(983) 起支持的新版 Script 语法**：
+
+```ini
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view/
+  then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}})
+  with enable=${cleanAds}, requires_body=true, timeout=10, tag="..."
+```
+
+原因（2026-10-20 真机日志实证）：旧版语法里的 `argument=[{开关名}]` + `enable={开关名}`
+**不会把开关值送进脚本**——脚本被正常触发，但拿到的 `$argument` 里没有开关，
+于是所有按开关分支的逻辑都走了“放行”，表现为“插件装了但没效果”。
+换新版语法后，开关以布尔值透传（`$argument.<参数名>`），脚本里也做了
+对象/数组/字符串三种形态的兼容解析，取不到时按插件声明的默认值兜底。
 
 ### 插件图标（`#!icon`）
 
@@ -90,18 +106,18 @@
 
 | 源码 | 源码大小 | 压缩版 | 压缩后 |
 |---|---:|---|---:|
-| `src/soda/sanitize.js` | 21,574 B | `plugins/soda/scripts/sanitize.min.js` | 9,708 B |
-| `src/soda/settings.js` | 15,367 B | `plugins/soda/scripts/settings.min.js` | 5,606 B |
+| `src/soda/sanitize.js` | 23,061 B | `plugins/soda/scripts/sanitize.min.js` | 10,344 B |
+| `src/soda/settings.js` | 16,856 B | `plugins/soda/scripts/settings.min.js` | 6,220 B |
 | `src/soda/reward-observe.js` | 16,472 B | `plugins/soda/scripts/reward-observe.min.js` | 9,632 B |
-| `src/soda/block-domains.js` | 2,652 B | `plugins/soda/scripts/block-domains.min.js` | 820 B |
+| `src/soda/block-domains.js` | 4,162 B | `plugins/soda/scripts/block-domains.min.js` | 1,451 B |
 | `src/soda/request.js` | 3,401 B | `plugins/soda/scripts/request.min.js` | 1,195 B |
 | `src/soda/diag.js` | 2,996 B | `plugins/soda/scripts/diag.min.js` | 1,320 B |
-| `src/douyin/treasure.js` | 4,733 B | `plugins/douyin/scripts/treasure.min.js` | 1,864 B |
-| `src/douyin/clean.js` | 8,196 B | `plugins/douyin/scripts/clean.min.js` | 3,073 B |
+| `src/douyin/treasure.js` | 6,222 B | `plugins/douyin/scripts/treasure.min.js` | 2,467 B |
+| `src/douyin/clean.js` | 9,714 B | `plugins/douyin/scripts/clean.min.js` | 3,711 B |
 | `src/douyin/observe.js` | 8,274 B | `plugins/douyin/scripts/observe.min.js` | 4,849 B |
-| `src/douyin/block-domains.js` | 2,655 B | `plugins/douyin/scripts/block-domains.min.js` | 830 B |
+| `src/douyin/block-domains.js` | 4,166 B | `plugins/douyin/scripts/block-domains.min.js` | 1,461 B |
 
-合计 **86,320 B → 38,897 B（约 -54.9%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–575 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
+合计 **95,324 B → 42,650 B（约 -55.3%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–614 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
 
 ---
 
@@ -209,7 +225,7 @@ npm run test:dist   # 只测压缩版
 npm test            # 源码 + 压缩版都跑
 ```
 
-当前测试规模：14 套脚本、352 条断言；源码与压缩版各跑一遍，共 **28 个套件 / 704 条断言**。
+当前测试规模：14 套脚本、358 条断言；源码与压缩版各跑一遍，共 **28 个套件 / 716 条断言**。
 
 ---
 

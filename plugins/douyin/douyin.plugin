@@ -1,11 +1,11 @@
 #!name=抖音 · douyin
-#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。
+#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+。
 #!author=edy
-#!version=0.2.1
+#!version=0.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=ios
-#!loon_version=3.2.1(734)
+#!loon_version=3.5.1(983)
 #!tag=抖音,去广告,福利页,Loon
 
 # ============================================================================
@@ -84,31 +84,33 @@ debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广
 # ============================================================================
 # 3. [Script]
 # ----------------------------------------------------------------------------
-# 所有脚本都通过 enable={开关名} 控制。
+# 使用 Loon 3.5.1(983) 新版 Script 语法：
+#   response if ${url} ~= /.../ then script("scripts/x.min.js", {${开关名}}) with enable=${开关名}
+# 开关以布尔值透传给脚本（$argument.<参数名>）。
 # ============================================================================
 
 [Script]
 
 # ---- 福利页精简：只留【攒时长 听歌不中断】 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v2 script-path=scripts/treasure.min.js, requires-body=true, timeout=10, argument=[{treasureMinimal}], enable={treasureMinimal}
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v2/ then script("scripts/treasure.min.js", {${treasureMinimal}}) with enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
 
 # ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|dsp\/retrieve) script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{cleanFeedAds}], enable={cleanFeedAds}
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}}) with enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
 
 # ---- 断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/incentive\/(?:config|retrieve) script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{killRewardAds}], enable={killRewardAds}
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/incentive\/(?:config|retrieve)/ then script("scripts/clean.min.js", {${killRewardAds}}) with enable=${killRewardAds}, requires_body=true, timeout=10, tag="断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了"
 
 # ---- 商业化弹窗 / 商城清理 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/upsell script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{cleanUpsell}], enable={cleanUpsell}
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/upsell/ then script("scripts/clean.min.js", {${cleanUpsell}}) with enable=${cleanUpsell}, requires_body=true, timeout=10, tag="商业化弹窗 / 商城清理"
 
 # ---- 演出（汽水音乐节）清理 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/performance_details script-path=scripts/clean.min.js, requires-body=true, timeout=10, argument=[{cleanUpsell}], enable={cleanUpsell}
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/performance_details/ then script("scripts/clean.min.js", {${cleanUpsell}}) with enable=${cleanUpsell}, requires_body=true, timeout=10, tag="演出（汽水音乐节）清理"
 
 # ---- 广告域名拦截：blockAdDomains 开关 ----
-http-request ^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\/ script-path=scripts/block-domains.min.js, timeout=10, argument=[{blockAdDomains}], enable={blockAdDomains}
+request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${blockAdDomains}}) with enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
 
 # ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
-http-response ^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v2|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|dsp\/retrieve)|commerce\/v2\/upsell) script-path=scripts/observe.min.js, requires-body=true, timeout=10, enable={debugLog}
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v2|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
 
 
 # ============================================================================

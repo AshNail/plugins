@@ -121,7 +121,37 @@ settings.treasure.sign_in.listen_duration_seconds = 30
    `incentive/config` 里的 `preload=true` + `vids[]` 就是给这件事用的 —— **别清它**（v0.2.0 已把开关拆开）。
 3. **只有看广告这一段是硬成本**，其余等待（翻卡、开宝箱、红包雨、签到、商城、演出）都已从福利页移除。
 
-### 3.2 改短时长的技术结论
+### 3.2 有效时长是**广告平台签发**的，客户端改不了（2026-10-20 20:25:47 实证）
+
+抖音侧的激励广告走的是**穿山甲（CSJ）广告 SDK**：
+
+```text
+GET  ad.zijieapi.com/api/ad/v1/inspire/            32 KB   广告平台下发的广告配置
+GET  ad.zijieapi.com/api/ad/v1/inspire_preload/    74 KB   预拉取
+GET  *.qrstuvwxyzab.com/.../video/...             206     广告视频本体（range 请求）
+POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 time_token）
+```
+
+领奖时提交的 `post_done_extra` 里带一个 **JWT 形态的 time_token**，解开是：
+
+```json
+{"iat":1792499149,"nbf":1792499178,
+ "payload_b64":"eyJlZmZlY3RpdmVfaW5zcGlyZV90aW1lIjozMH0"}
+                └─ base64 → {"effective_inspire_time":30}
+```
+
+也就是说：**“有效观看 30 秒”这个事实是广告平台自己在服务端记录并签进 token 的**
+（iat/nbf 是签发与生效时间），客户端的 `launch_duration` 只是播放器的展示时长。
+改它既骗不过平台，也换不来奖励。
+
+> 顺带一个重要发现：同一份抓包里，抖音这边的领奖被广告平台**直接拒了**：
+> `POST /api/incentive/marketing/done → {"code":403,"msg":"设备异常，领取失败"}`
+> 和【签到得金币】的 `err_no 210021 设备异常` 是同一套设备风控。
+> 而**汽水**那边同一时刻是成功的：
+> `api.qishui.com/luna/advert/incentive/done → {"reward_details":{"0":{"amount":1800,"claim_status":1}},"status_code":0}`
+> 也就是说抖音侧的奖励这次根本没发出去，和广告时长无关。
+
+### 3.3 改短时长的技术结论
 
 实测到的时长字段（都在客户端下发，**不等于发奖条件**）：
 
@@ -206,6 +236,28 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
 | 广告是否还在 | `killRewardAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空；`cleanFeedAds` 只影响信息流广告 |
 | 弹窗/演出是否消失 | `cleanUpsell` 打开后，`upsell_map` 里不应再有 `*ads*` 与 `browse_mall_popup_acc_amount`；音乐节列表为空 |
 | 链路取证 | `debugLog` 打开后，日志搜 `[douyin-reward]` |
+
+## 6.1 版本要求（必读）
+
+本插件用 **Loon 3.5.1(983) 起的新版 Script 语法**：
+
+```ini
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v2/
+  then script("scripts/treasure.min.js", {${treasureMinimal}})
+  with enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简"
+```
+
+**为什么不用旧语法**：旧版的 `argument=[{开关名}]` + `enable={开关名}` 在 Loon 3.5.x 上
+**不会把开关值送进脚本**——真机日志里 `scripts/treasure.min.js` 被正常触发了，
+但 `$argument` 里没有开关值，于是脚本走了“放行”分支，表现为**插件装了却完全没效果**
+（2026-10-20 的实测：福利页响应仍是 4 个分区，一条没删）。
+换成新版语法后开关以布尔值透传，脚本里另外做了对象/数组/字符串三种形态的兼容解析，
+取不到时按插件声明的默认值兜底（`treasureMinimal` 默认开）。
+
+## 6.2 真实样本回归
+
+`tests/fixtures/douyin_treasure_page.json` 是 2026-10-20 真机抓到的**福利页原始响应**，
+`test_douyin_treasure.js` 直接拿它跑精简，确保裁剪规则是按真实字段写的，而不是按想象。
 
 本地回归：`npm run check`（build + lint + 源码/压缩版测试）。
 

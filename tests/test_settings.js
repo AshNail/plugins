@@ -3,12 +3,13 @@ const src = require("./load-script")("settings.js");
 function run(body, url) {
   let out = null;
   const logs = [];
-  const fn = new Function("$request", "$response", "$done", "console", src);
+  const fn = new Function("$request", "$response", "$done", "console", "$argument", src);
   fn(
     { url: url || "https://conf.qishui.com/service/settings/v3/?device_id=x" },
     { body: body },
     (v) => { out = v; },
-    { log: (...a) => logs.push(a.join(" ")) }
+    { log: (...a) => logs.push(a.join(" ")) },
+    { rewardSafe: false, settingsClean: true }
   );
   return { out, logs };
 }
@@ -179,11 +180,12 @@ console.log("\n[9] aggressive on: ad_reward_position_exp -> 0");
 {
   const aggressive = toggle(src, "AGGRESSIVE");
   let out = null;
-  new Function("$request", "$response", "$done", "console", aggressive)(
+  new Function("$request", "$response", "$done", "console", "$argument", aggressive)(
     { url: "https://conf.qishui.com/service/settings/v3/" },
     { body: JSON.stringify({ ad_reward_position_exp: 1, timor_should_enable_ad: "true", switch_show_all_ad: true }) },
     (v) => { out = v; },
-    { log: () => {} }
+    { log: () => {} },
+    { rewardSafe: false, settingsClean: true }
   );
   const j = JSON.parse(out.body);
   check("position exp -> 0", j.ad_reward_position_exp === 0, JSON.stringify(j.ad_reward_position_exp));
@@ -196,11 +198,12 @@ console.log("\n[10] dry run: body untouched");
   const dry = toggle(src, "DRY_RUN");
   let out = null;
   const logs = [];
-  new Function("$request", "$response", "$done", "console", dry)(
+  new Function("$request", "$response", "$done", "console", "$argument", dry)(
     { url: "https://conf.qishui.com/service/settings/v3/" },
     { body: JSON.stringify({ commerce_ad_config: { x: 1 } }) },
     (v) => { out = v; },
-    { log: (...a) => logs.push(a.join(" ")) }
+    { log: (...a) => logs.push(a.join(" ")) },
+    { rewardSafe: false, settingsClean: true }
   );
   check("no body rewrite", out.body === undefined, JSON.stringify(out));
   check("logs change", logs.join(" ").includes("DRY_RUN"), logs.join(" | "));
@@ -210,11 +213,12 @@ console.log("\n[11] inject missing (opt-in)");
 {
   const inject = toggle(src, "INJECT_MISSING");
   let out = null;
-  new Function("$request", "$response", "$done", "console", inject)(
+  new Function("$request", "$response", "$done", "console", "$argument", inject)(
     { url: "https://conf.qishui.com/service/settings/v3/" },
     { body: JSON.stringify({ normal: 1 }) },
     (v) => { out = v; },
-    { log: () => {} }
+    { log: () => {} },
+    { rewardSafe: false, settingsClean: true }
   );
   const j = JSON.parse(out.body);
   check("commerce_ad_config injected", j.commerce_ad_config === "{}", JSON.stringify(j));
@@ -222,11 +226,12 @@ console.log("\n[11] inject missing (opt-in)");
   check("normal kept", j.normal === 1);
 
   let out2 = null;
-  new Function("$request", "$response", "$done", "console", inject)(
+  new Function("$request", "$response", "$done", "console", "$argument", inject)(
     { url: "https://conf.qishui.com/service/settings/v3/" },
     { body: JSON.stringify({ data: { settings: { normal: 2 } } }) },
     (v) => { out2 = v; },
-    { log: () => {} }
+    { log: () => {} },
+    { rewardSafe: false, settingsClean: true }
   );
   const j2 = JSON.parse(out2.body);
   check("nested inject into settings", j2.data.settings.commerce_ad_config === "{}", JSON.stringify(j2));

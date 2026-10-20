@@ -109,7 +109,7 @@ console.log("\n== 3. rewardSafe=false + cleanAds=true：去广告脚本生效 ==
   check("preload -> false", o && o.preload === false, o && o.preload);
 }
 
-console.log("\n== 4. 没有 $argument：独立主插件行为不变 ==");
+console.log("\n== 4. 没有 $argument：按保守默认（rewardSafe=true）放行 ==");
 {
   const body = {
     status_code: 10001,
@@ -122,10 +122,7 @@ console.log("\n== 4. 没有 $argument：独立主插件行为不变 ==");
     "https://api.qishui.com/luna/advert/incentive/config",
     body
   );
-  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
-  check("独立调用仍然清理", !!o, JSON.stringify(r.out));
-  check("advert_sources -> []", o && Array.isArray(o.advert_sources) && o.advert_sources.length === 0,
-    JSON.stringify(o));
+  check("无参数时不改写（不误伤奖励链路）", !(r.out && r.out.body), JSON.stringify(r.out));
 }
 
 console.log("\n== 5. settings：rewardSafe=true 时放行 ==");

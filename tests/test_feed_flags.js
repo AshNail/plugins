@@ -2,10 +2,11 @@ const src = require("./load-script")("sanitize.js");
 
 function run(url, obj) {
   let out = null, logs = [];
-  new Function("$request", "$response", "$done", "console", src)(
+  new Function("$request", "$response", "$done", "console", "$argument", src)(
     { url }, { body: JSON.stringify(obj) },
     (v) => { out = v; },
-    { log: (...a) => logs.push(a.join(" ")) }
+    { log: (...a) => logs.push(a.join(" ")) },
+    { rewardSafe: false, cleanAds: true }
   );
   return { out, logs, body: out && out.body ? JSON.parse(out.body) : null };
 }

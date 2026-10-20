@@ -1,0 +1,26 @@
+{
+ "request": {
+  "quests_type": 0,
+  "task_from": 1,
+  "post_done_extra": "{\"coin_info\":{},\"is_ack\":false,\"req_id\":\"20261020202658286DF899B53AE8A277F9\",\"marketing_coin_info\":null,\"marketing_coin_data\":{\"1879386829404656\":\"time_token\"},\"use_event_center\":false,\"is_back_up\":false,\"use_url_code\":false,\"time_token\":\"v1.eyJpYXQiOjE3OTI0OTkyMjAsIm5iZiI6MTc5MjQ5OTI1OSwicGF5bG9hZF9iNjQiOiJleUpsWm1abFkzUnBkbVZmYVc1emNHbHlaVjkwYVcxbElqbzBNSDAifQ.MCoEDKt_gaKPyEzC1BAOpgQIbXzM3vjp4N8EEAg8S8-khoWAsTKHvgGfF5M\"}",
+  "transaction_id": "DECED581-9430-4ADE-A032-AEF22A0B9043",
+  "play_type": 0,
+  "compensate": false,
+  "launch_duration": 40
+ },
+ "response": {
+  "reward_details": {
+   "0": {
+    "reward_type": 0,
+    "amount": 1800,
+    "claim_status": 1
+   }
+  },
+  "status_code": 0,
+  "status_info": {
+   "now": 1792499261,
+   "status_msg": "success",
+   "log_id": "202610202027406B00726A3759225ABD6E"
+  }
+ }
+}

@@ -22,6 +22,44 @@
 /* 开关                                                               */
 /* ------------------------------------------------------------------ */
 const VERBOSE = true;          // 打印每条改写记录
+/* ------------------------------------------------------------------ */
+/* Loon 插件参数（每个脚本独立内置）                                  */
+/* ------------------------------------------------------------------ */
+/* 新版 Script 语法（3.5.1(983)+）下 $argument 是对象，键为参数名； */
+/* 旧版语法实测不会把开关值传进来，所以这里同时兼容对象 / 位置数组 / */
+/* "k=v" 字符串三种形态，开关值也兼容 true / "true" / 1 / "1"。       */
+function pargs(keys) {
+  var o = {}, r;
+  try { r = (typeof $argument === "undefined") ? null : $argument; } catch (e) { r = null; }
+  if (r === null || r === undefined) return null;
+  var t = Object.prototype.toString.call(r);
+  if (t === "[object Object]") {
+    for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k];
+    return o;
+  }
+  if (t === "[object Array]") {
+    for (var i = 0; i < r.length && keys && i < keys.length; i++) o[keys[i]] = r[i];
+    return o;
+  }
+  if (typeof r === "string") {
+    var p = r.split(/[&;,]/);
+    for (var j = 0; j < p.length; j++) {
+      var kv = p[j].split("=");
+      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    }
+    return o;
+  }
+  return null;
+}
+
+function pflag(args, name, fallback) {
+  if (!args || !(name in args)) return fallback;
+  var v = args[name];
+  if (v === true || v === "true" || v === 1 || v === "1") return true;
+  if (v === false || v === "false" || v === 0 || v === "0") return false;
+  return fallback;
+}
+
 const DRY_RUN = false;         // true = 只记录不修改（首次上线建议先开）
 
 const FORCE_OK = true;         // 激励类端点：status_code → 0，避免错误提示/重试
@@ -496,10 +534,9 @@ function rewrite(node, rule, path, log, depth) {
      * 不做任何广告裁剪，避免影响奖励任务。
      * 独立主插件没有 $argument，行为保持不变。
      */
-    const pluginArgs =
-      (typeof $argument === "object" && $argument) ? $argument : null;
-    const rewardSafe = !!(pluginArgs && pluginArgs.rewardSafe === true);
-    const hideDouyin = !!(pluginArgs && pluginArgs.hideDouyinTab === true);
+    const pluginArgs = pargs(["rewardSafe", "cleanAds", "hideDouyinTab"]);
+    const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
+    const hideDouyin = pflag(pluginArgs, "hideDouyinTab", false);
     const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
     const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
 

@@ -21,6 +21,44 @@
  */
 
 /* 被拦截的广告 / 归因域名（与 soda.plugin 的 [Rule] 严格模式保持一致） */
+/* ------------------------------------------------------------------ */
+/* Loon 插件参数（每个脚本独立内置）                                  */
+/* ------------------------------------------------------------------ */
+/* 新版 Script 语法（3.5.1(983)+）下 $argument 是对象，键为参数名； */
+/* 旧版语法实测不会把开关值传进来，所以这里同时兼容对象 / 位置数组 / */
+/* "k=v" 字符串三种形态，开关值也兼容 true / "true" / 1 / "1"。       */
+function pargs(keys) {
+  var o = {}, r;
+  try { r = (typeof $argument === "undefined") ? null : $argument; } catch (e) { r = null; }
+  if (r === null || r === undefined) return null;
+  var t = Object.prototype.toString.call(r);
+  if (t === "[object Object]") {
+    for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k];
+    return o;
+  }
+  if (t === "[object Array]") {
+    for (var i = 0; i < r.length && keys && i < keys.length; i++) o[keys[i]] = r[i];
+    return o;
+  }
+  if (typeof r === "string") {
+    var p = r.split(/[&;,]/);
+    for (var j = 0; j < p.length; j++) {
+      var kv = p[j].split("=");
+      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    }
+    return o;
+  }
+  return null;
+}
+
+function pflag(args, name, fallback) {
+  if (!args || !(name in args)) return fallback;
+  var v = args[name];
+  if (v === true || v === "true" || v === 1 || v === "1") return true;
+  if (v === false || v === "false" || v === 0 || v === "0") return false;
+  return fallback;
+}
+
 const BLOCKED_HOSTS = [
   "ad.zijieapi.com",
   "lianmengapi.snssdk.com",
@@ -38,15 +76,15 @@ function hostOf(url) {
   try {
     const url = ($request && $request.url) || "";
 
-    const args = (typeof $argument === "object" && $argument) ? $argument : null;
+    const args = pargs(["blockAdDomains", "rewardSafe"]);
 
     /* 只有明确打开 blockAdDomains 才拦截，避免被误挂到别的规则上 */
-    if (!args || args.blockAdDomains !== true) {
+    if (!pflag(args, "blockAdDomains", false)) {
       return $done({});
     }
 
     /* 保奖励模式：激励广告必须能正常加载，直接放行 */
-    if (args.rewardSafe === true) {
+    if (pflag(args, "rewardSafe", true)) {
       console.log("[soda-domains] rewardSafe=on, passthrough: " + url);
       return $done({});
     }
