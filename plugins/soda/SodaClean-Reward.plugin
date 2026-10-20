@@ -2,7 +2,7 @@
 #!desc=保留激励视频、奖励任务与发奖链路，只清开屏品牌广告；不拦任何业务/广告域名，也不清 upsell（可能承载激励广告入口），确保激励广告能加载。适合“完整看完广告后正常领奖”，不提供跳过广告或伪造完成。
 #!author=edy
 #!version=0.2.3
-#!homepage=https://github.com/3kaiu/loon-plugins
+#!homepage=https://github.com/AshNail/plugins
 #!system=ios
 #!tag=汽水音乐,激励奖励,保奖励,Loon
 

@@ -1,7 +1,7 @@
 # Loon 插件仓库
 
 > 仓库名：`loon-plugins`  
-> GitHub：`https://github.com/3kaiu/loon-plugins`
+> GitHub：`https://github.com/AshNail/plugins`
 
 个人 Loon 插件集合，按 **插件族（family）** 组织。每个插件族自包含：`.plugin` 文件与压缩后的 `scripts/` 放在同一目录，方便 Loon 通过相对路径加载脚本。
 
@@ -79,18 +79,18 @@
 
 ## 安装
 
-把仓库推到 `https://github.com/3kaiu/loon-plugins` 后，`Settings → Pages → Deploy from a branch`，Branch 选 `main`，Folder 选 `/ (root)`。不需要 `index.html`，根地址 404 是正常的，直接访问插件文件即可。
+把仓库推到 `https://github.com/AshNail/plugins` 后，`Settings → Pages → Deploy from a branch`，Branch 选 `main`，Folder 选 `/ (root)`。不需要 `index.html`，根地址 404 是正常的，直接访问插件文件即可。
 
 保奖励模式（推荐先装这个）：
 
 ```text
-https://3kaiu.github.io/loon-plugins/plugins/soda/SodaClean-Reward.plugin
+https://ashnail.github.io/plugins/plugins/soda/SodaClean-Reward.plugin
 ```
 
 Loon 导入链接：
 
 ```text
-loon://import?plugin=https%3A%2F%2F3kaiu.github.io%2Floon-plugins%2Fplugins%2Fsoda%2FSodaClean-Reward.plugin
+loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Reward.plugin
 ```
 
 其他插件把文件名替换即可：
@@ -116,7 +116,7 @@ git init
 git add .
 git commit -m "Loon plugins: SodaClean"
 git branch -M main
-git remote add origin https://github.com/3kaiu/loon-plugins.git
+git remote add origin https://github.com/AshNail/plugins.git
 git push -u origin main
 ```
 

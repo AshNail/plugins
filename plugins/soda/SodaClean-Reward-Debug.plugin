@@ -2,7 +2,7 @@
 #!desc=只读日志插件：观察 incentive/config、incentive/retrieve、task/view、reward/receive、upsell 等 20 个激励/任务/入口响应，确认广告源、任务、发奖字段和奖励入口资格是否正常。永不修改响应，不跳过广告、不伪造回调。
 #!author=edy
 #!version=0.2.2
-#!homepage=https://github.com/3kaiu/loon-plugins
+#!homepage=https://github.com/AshNail/plugins
 #!system=ios
 #!tag=汽水音乐,激励奖励,调试,Loon
 

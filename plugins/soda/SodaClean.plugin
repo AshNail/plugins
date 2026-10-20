@@ -2,7 +2,7 @@
 #!desc=拦截激励视频/开屏/信息流/DSP 广告与归因；URL 重写 + 字段级响应改写。只摘广告任务，保留签到/听歌/分享/金币等合法福利。基于 20.5.0 二进制取证。
 #!author=edy
 #!version=1.5.2
-#!homepage=https://github.com/3kaiu/loon-plugins
+#!homepage=https://github.com/AshNail/plugins
 #!system=ios
 #!tag=汽水音乐,去广告,净化,Loon
 

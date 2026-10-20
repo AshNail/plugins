@@ -2,7 +2,7 @@
 #!desc=通过 TTKitchen 设置端点 conf.qishui.com/service/settings/v3/ 清空广告配置并关闭广告位开关。实验性：需 MITM conf.qishui.com；默认不关全局广告开关，不改发奖、时长与风控字段。
 #!author=edy
 #!version=0.1.2
-#!homepage=https://github.com/3kaiu/loon-plugins
+#!homepage=https://github.com/AshNail/plugins
 #!system=ios
 #!tag=汽水音乐,去广告,TTKitchen,Loon
 

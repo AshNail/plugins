@@ -449,29 +449,29 @@ http-request ^https?:\/\/api\.qishui\.com\/luna\/(?:advert\/incentive\/config|ad
 
 1. 把 `plugins/soda/` 和仓库根目录的 `.nojekyll` 推到 GitHub；
 2. GitHub → Settings → Pages → Source 选 `Deploy from a branch`，Branch 选 `main`，Folder 选 `/ (root)`；
-3. 站点根为 `https://3kaiu.github.io/loon-plugins`，插件位于 `.../plugins/soda/`；
+3. 站点根为 `https://ashnail.github.io/plugins`，插件位于 `.../plugins/soda/`；
 4. 主插件：
 
 ```
-loon://import?plugin=https%3A%2F%2F3kaiu.github.io%2Floon-plugins%2Fplugins%2Fsoda%2FSodaClean.plugin
+loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean.plugin
 ```
 
 5. 实验插件（可选，需单独 MITM `conf.qishui.com`）：
 
 ```
-loon://import?plugin=https%3A%2F%2F3kaiu.github.io%2Floon-plugins%2Fplugins%2Fsoda%2FSodaClean-Settings.plugin
+loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Settings.plugin
 ```
 
 6. 保奖励插件（想正常拿激励奖励时用，**不要同时启用主插件/设置插件**）：
 
 ```
-loon://import?plugin=https%3A%2F%2F3kaiu.github.io%2Floon-plugins%2Fplugins%2Fsoda%2FSodaClean-Reward.plugin
+loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Reward.plugin
 ```
 
 7. 激励链路观测插件（只读，排障时与保奖励插件一起装）：
 
 ```
-loon://import?plugin=https%3A%2F%2F3kaiu.github.io%2Floon-plugins%2Fplugins%2Fsoda%2FSodaClean-Reward-Debug.plugin
+loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2FSodaClean-Reward-Debug.plugin
 ```
 
 8. Loon → 设置 → MITM → 生成证书 → 安装并信任；
