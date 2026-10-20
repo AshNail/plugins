@@ -1,0 +1,113 @@
+#!name=汽水音乐 · 激励链路观测（只读）
+#!desc=只读日志插件：观察 incentive/config、incentive/retrieve、task/view、reward/receive、upsell 等 20 个激励/任务/入口响应，确认广告源、任务、发奖字段和奖励入口资格是否正常。永不修改响应，不跳过广告、不伪造回调。
+#!author=edy
+#!version=0.2.2
+#!homepage=https://github.com/3kaiu/loon-plugins
+#!system=ios
+#!tag=汽水音乐,激励奖励,调试,Loon
+
+# ============================================================================
+# 用途
+# ----------------------------------------------------------------------------
+# 当“激励视频不出现 / 看完不到账”时，用本插件看 Loon 日志里的
+# [soda-reward] 行，判断卡在哪一层：
+#
+#   1. incentive/config 没有 advert_sources → 服务端没下发广告源
+#   2. incentive/config 的 preload=false      → 不预加载，广告可能更慢
+#   3. incentive/retrieve 的 ad_infos_map 为空 → 没拿到激励广告素材
+#   4. task/view 里没有 reward_ads 任务       → 福利页任务被隐藏/下发为空
+#   5. reward/receive 或 incentive/done 返回非 0 → 发奖链路失败
+#   6. fallback/flip_card/guide/browse_mall 的 do_action 返回非 0
+#      → 对应非广告任务或兜底广告的领奖动作失败
+#   7. commerce/v2/upsell 的 enable_ads=false 或 ads_today_task_full=true
+#      → 奖励入口被资格/进度变量关闭，不是脚本能“造”出来的
+#
+# 本插件只读：
+#   - 不修改 body；
+#   - 不拦域名；
+#   - 不缩短广告；
+#   - 不伪造 SDK 回调；
+#   - 大响应（>256KB）只记录长度，不解析。
+#
+# 安装关系：
+#   - 可与 SodaClean-Reward.plugin 同时启用（它只清开屏品牌广告，不碰这些端点）；
+#   - 不要与 SodaClean.plugin 同时启用：主插件会先清掉激励字段，日志看到的
+#     就是“已被清空”的结果，容易误判；
+#   - 不要与 SodaClean-Settings.plugin 同时启用：设置层会清奖励配置。
+#
+# 隐私：日志只输出结构、计数和白名单字段，不输出 token / cookie / device_id /
+# 用户 ID / 广告素材 URL / 完整任务文案。仍然建议只在自己设备上使用，排障后停用。
+# ============================================================================
+
+
+# ============================================================================
+# 1. [Rule] 不做任何域名拦截
+# ----------------------------------------------------------------------------
+# 观测插件必须保持原流量，否则看到的不是真实激励链路。
+# ============================================================================
+
+[Rule]
+
+# 故意留空：不拦任何域名。
+
+
+# ============================================================================
+# 2. [Rewrite] 不做任何 URL 重写
+# ============================================================================
+
+[Rewrite]
+
+# 故意留空：不改写任何请求/响应。
+
+
+# ============================================================================
+# 3. [Script] 只读观测
+# ----------------------------------------------------------------------------
+# 所有行都是 http-response，脚本只 console.log，不返回 body。
+# ============================================================================
+
+[Script]
+
+# ---- 激励配置与素材 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/done script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+
+# ---- 广告位配置与通用广告检索 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/dsp\/retrieve script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+
+# ---- 发奖与校验 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/receive script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/settle script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/validate_reward script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+
+# ---- 福利任务与入口 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/reward_ads\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/fallback\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/flip_card\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/guide\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/browse_mall\/do_action script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+http-response ^https?:\/\/api\.qishui\.com\/luna\/growth\/activity\/finish script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+
+# ---- 激励兜底完成信息 ----
+http-response ^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/done\/info script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+
+# ---- 奖励入口资格（只读） ----
+# 只匹配 /v2/upsell，不匹配 /v2/upsell_sort_decision；只打印变量，不改弹窗。
+http-response ^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:\?|$) script-path=scripts/reward-observe.min.js, requires-body=true, timeout=10
+
+
+# ============================================================================
+# 4. [MITM]
+# ----------------------------------------------------------------------------
+# 只解密 api.qishui.com；不碰广告 SDK 域名，避免影响激励回调。
+# ============================================================================
+
+[MITM]
+
+hostname = %APPEND% api.qishui.com
