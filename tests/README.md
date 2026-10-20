@@ -20,7 +20,7 @@ npm test            # 源码 + 压缩版都跑
 npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 ```
 
-`run-all.py` 默认对源码和压缩版各跑一遍；`SODA_SCRIPT_SET=src|dist` 由 `tests/load-script.js` 读取。`lint-plugins.py` 检查五个插件的 section、域名、Rewrite/Script 行数、正则编译、`script-path` 是否指向存在的 `.min.js`、源码是否存在、压缩脚本能否通过 `node --check`，并确认压缩脚本确实比源码小且行数不超过 5 行。它还会验证保奖励插件不会匹配 `incentive` / `ads` / `task` / `feed` 等奖励链路端点，只读观测插件只匹配激励链路端点，以及统一开关版没有静态域名规则、每个脚本都带 `enable={开关}`。
+`run-all.py` 默认对源码和压缩版各跑一遍；`SODA_SCRIPT_SET=src|dist` 由 `tests/load-script.js` 读取。`lint-plugins.py` 检查唯一部署插件 `soda.plugin` 的 section、域名、Rewrite/Script 行数、正则编译、`script-path` 是否指向存在的 `.min.js`、源码是否存在、压缩脚本能否通过 `node --check`，并确认压缩脚本确实比源码小且行数不超过 5 行。它还会验证：聚合插件没有静态 `[Rule]` 域名、32 条脚本都带 `enable={开关}`、7 个开关的默认值正确、`[MITM]` 覆盖 API/设置/广告域名。
 
 ## 断言分布
 
@@ -36,27 +36,22 @@ npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 | `test_feed_flags.js` | 10 | `is_advertisement` / `ad_flag` / `adItem` / `card.is_ad` |
 | `test_feed_expand.js` | 16 | 扩展 feed 端点、`search-block` 仅 `banner_list` 场景 |
 | `test_reward_observe.js` | 91 | 激励链路只读观测：计数、任务摘要、进度字段、发奖字段、upsell 入口变量、隐私过滤、大响应放行 |
-| `test_unified_args.js` | 14 | 统一开关版：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时独立插件行为不变、设置层保护 |
+| `test_block_domains.js` | 7 | 广告域名拦截脚本：开关关闭不拦、`rewardSafe` 放行、非广告域名不拦、返回 200 空响应 |
+| `test_unified_args.js` | 19 | 聚合插件开关：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目 |
 
-合计 **290** 条断言；源码与压缩版各一遍，共 **580** 条。
+合计 **302** 条断言；源码与压缩版各一遍，共 **604** 条。
 
-## 保奖励插件
+## 聚合插件（soda.plugin）
 
-`SodaClean-Reward.plugin` 不新增脚本断言，它的正确性由 `lint-plugins.py` 的接线检查覆盖：
-
-- 正样本：`splash/brand/retrieve` 必须命中 Script。
-- 负样本：`incentive/config`、`incentive/retrieve`、`ads/config`、`ads/retrieve`、`treasure/task/view`、`treasure/entrance/config`、`growth/activity_entrance`、`feed/*`、`advert/fallback/done/info`、`treasure/task/fallback|flip_card|guide|browse_mall/do_action`、`commerce/upsells`、`commerce/v2/upsell` 必须不被任何 Script 匹配。
-- `[Rule]` 为空：不拦任何域名（包括 App Store 评分弹窗 `praisewindow.ugsdk.cn`），更不拦激励广告 SDK 域名。
-
-## 统一开关版
-
-`SodaClean-Unified.plugin` 用 Loon `[Argument]` 开关控制脚本，测试集中在 `test_unified_args.js` 与 lint：
+`plugins/soda/soda.plugin` 是汽水音乐唯一部署插件，用 Loon `[Argument]` 开关控制脚本，测试集中在 `test_unified_args.js`、`test_block_domains.js` 与 lint：
 
 - `rewardSafe=true` 时，`sanitize` 对非开屏端点直接放行；开屏品牌广告仍清理；
 - `rewardSafe=false` + `cleanAds=true` 时，去广告脚本正常清理；
 - `settings` 在 `rewardSafe=true` 时直接放行；
-- 没有 `$argument` 时，独立主插件/设置插件的行为保持不变；
-- lint 验证五个开关的默认值、31 条脚本都带 `enable={...}`、统一版没有静态 `[Rule]` 域名。
+- `hideDouyinTab=true` 时只删除带“抖音”的列表项，其它任务（签到/听歌/看广告任务）保留；
+- 没有 `$argument` 时行为保持不变（脚本可独立运行）；
+- 域名拦截脚本：`blockAdDomains=false` 或 `rewardSafe=true` 时一律放行，其它域名不受影响；
+- lint 验证 7 个开关的默认值、32 条脚本都带 `enable={...}`、插件没有静态 `[Rule]` 域名。
 
 ## 只读观测插件
 

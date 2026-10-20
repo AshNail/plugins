@@ -155,6 +155,75 @@ console.log("\n== 6. settings：rewardSafe=false 时正常清理 ==");
   check("正常字段保留", o && o.normal === "keep", JSON.stringify(o));
 }
 
+console.log("\n== 7. hideDouyinTab：删除带“抖音”的条目 ==");
+{
+  const body = {
+    status_code: 0,
+    rewardAdBanner: { id: 1 },
+    task_infos: [
+      { task_key: "douyin_listen", title: "听抖音", reward_amount: 50 },
+      { task_key: "sign_in", title: "签到", reward_amount: 10 },
+      { task_key: "listen_duration", title: "听歌", reward_amount: 20 }
+    ]
+  };
+  const r = runSanitize(
+    "https://api.qishui.com/luna/treasure/task/view",
+    body,
+    { rewardSafe: false, cleanAds: true, hideDouyinTab: true }
+  );
+  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("抖音条目被删除",
+    o && Array.isArray(o.task_infos) && o.task_infos.length === 2,
+    JSON.stringify(o));
+  check("签到/听歌保留",
+    o && o.task_infos.every((t) => t.task_key !== "douyin_listen"),
+    JSON.stringify(o));
+}
+
+console.log("\n== 8. hideDouyinTab 关闭时保留抖音条目 ==");
+{
+  const body = {
+    status_code: 0,
+    rewardAdBanner: { id: 1 },
+    task_infos: [
+      { task_key: "douyin_listen", title: "听抖音" },
+      { task_key: "sign_in", title: "签到" }
+    ]
+  };
+  const r = runSanitize(
+    "https://api.qishui.com/luna/treasure/task/view",
+    body,
+    { rewardSafe: false, cleanAds: true, hideDouyinTab: false }
+  );
+  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("抖音条目保留",
+    o && Array.isArray(o.task_infos) && o.task_infos.length === 2,
+    JSON.stringify(o));
+}
+
+console.log("\n== 9. rewardSafe + hideDouyinTab：只删抖音，不动其它任务 ==");
+{
+  const body = {
+    status_code: 0,
+    task_infos: [
+      { task_key: "douyin_listen", title: "听抖音" },
+      { task_key: "reward_ads", title: "看广告得金币" }
+    ]
+  };
+  const r = runSanitize(
+    "https://api.qishui.com/luna/treasure/task/view",
+    body,
+    { rewardSafe: true, cleanAds: true, hideDouyinTab: true }
+  );
+  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("抖音条目被删除",
+    o && Array.isArray(o.task_infos) && o.task_infos.length === 1,
+    JSON.stringify(o));
+  check("看广告任务保留（保奖励不受影响）",
+    o && o.task_infos[0] && o.task_infos[0].task_key === "reward_ads",
+    JSON.stringify(o));
+}
+
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +
   "  pass=" + pass + " fail=" + fail);
 process.exit(fail === 0 ? 0 : 1);

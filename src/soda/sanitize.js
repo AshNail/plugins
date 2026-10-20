@@ -197,6 +197,78 @@ function safeString(v) {
 }
 
 /*
+ * 【听抖音】条目过滤（可选开关 hideDouyinTab）
+ * ------------------------------------------------------------
+ * 福利页的“听抖音”是一个 tab/任务条目，默认保留（属于正常福利任务）。
+ * 打开开关后，只删除“数组里带‘抖音’字样的条目”，
+ * 不动签到 / 听歌 / 分享 / 金币 / 逛商城 / 翻牌 / 引导等其它任务。
+ * 说明：具体字段（tab 列表 / task_infos / entrance 列表）要等真实 HAR
+ * 确认后收紧范围；这里先按“内容含抖音的数组元素”处理，最坏情况是
+ * 多删一两个跨端推广条目，不会动到发奖字段。
+ */
+const DOUYIN_KEYWORD = "抖音";
+
+function dropDouyinItems(node, log, path, depth) {
+  if (depth > 14 || node === null || node === undefined) return;
+
+  if (Array.isArray(node)) {
+    const kept = [];
+    let dropped = 0;
+    for (const item of node) {
+      if (safeString(item).indexOf(DOUYIN_KEYWORD) !== -1) {
+        dropped++;
+        continue;
+      }
+      kept.push(item);
+    }
+    if (dropped > 0) {
+      node.length = 0;
+      for (const item of kept) node.push(item);
+      log.push(path + " : dropped " + dropped + " 抖音 item(s)");
+    }
+    for (let i = 0; i < node.length; i++) {
+      dropDouyinItems(node[i], log, path + "[" + i + "]", depth + 1);
+    }
+    return;
+  }
+
+  if (typeof node !== "object") return;
+  for (const k of Object.keys(node)) {
+    dropDouyinItems(node[k], log, path + "." + k, depth + 1);
+  }
+}
+
+/*
+ * 保奖励模式下的“只删听抖音”通道：
+ * 不做任何广告裁剪，只移除带“抖音”的数组条目。
+ */
+function douyinOnly(raw, url) {
+  if (typeof raw !== "string" || raw.length === 0) return $done({});
+  const head = raw.trimStart().slice(0, 1);
+  if (head !== "{" && head !== "[") return $done({});
+
+  let obj;
+  try {
+    obj = JSON.parse(raw);
+  } catch (e) {
+    console.log("[soda] JSON parse failed (douyin-only), passthrough: " + url);
+    return $done({});
+  }
+
+  const log = [];
+  dropDouyinItems(obj, log, "$", 0);
+  if (log.length === 0) {
+    console.log("[soda] hideDouyinTab=on, no 抖音 item found: " + url);
+    return $done({});
+  }
+
+  console.log(
+    "[soda] hideDouyinTab=on | " + log.length + " change(s)\n  " + log.join("\n  ")
+  );
+  $done({ body: JSON.stringify(obj) });
+}
+
+/*
  * 纯广告条目判定：
  *   1. 显式 is_ad / is_advert / is_advertisement / is_ad_item / ad_flag = true
  *   2. 只有 ad_info / ads_info / ad_data / ads_blocks，且没有任何媒体载荷
@@ -420,15 +492,24 @@ function rewrite(node, rule, path, log, depth) {
     /*
      * 统一插件开关：保奖励模式优先。
      * rewardSafe=true 时只允许开屏品牌广告继续处理，其他端点直接放行；
+     * 唯一例外：hideDouyinTab=true 且是福利页端点时，只做“听抖音”过滤，
+     * 不做任何广告裁剪，避免影响奖励任务。
      * 独立主插件没有 $argument，行为保持不变。
      */
     const pluginArgs =
       (typeof $argument === "object" && $argument) ? $argument : null;
-    if (pluginArgs &&
-        pluginArgs.rewardSafe === true &&
-        !/\/luna\/advert\/splash\/brand\/retrieve/.test(url)) {
-      console.log("[soda] rewardSafe=on, non-splash passthrough: " + url);
-      return $done({});
+    const rewardSafe = !!(pluginArgs && pluginArgs.rewardSafe === true);
+    const hideDouyin = !!(pluginArgs && pluginArgs.hideDouyinTab === true);
+    const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
+    const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
+
+    if (rewardSafe && !isSplash) {
+      if (!(hideDouyin && isTreasure)) {
+        console.log("[soda] rewardSafe=on, non-splash passthrough: " + url);
+        return $done({});
+      }
+      /* 保奖励 + 隐藏听抖音：只删抖音条目，其余原样返回 */
+      return douyinOnly(raw, url);
     }
 
     if (typeof raw !== "string" || raw.length === 0) {
@@ -468,6 +549,7 @@ function rewrite(node, rule, path, log, depth) {
     const before = JSON.stringify(obj);
     rewrite(obj, rule, "$", log, 0);
     if (rule.dropAdItems) dropAdItems(obj, log, "$", 0);
+    if (hideDouyin && isTreasure) dropDouyinItems(obj, log, "$", 0);
 
     if (log.length === 0) {
       console.log("[soda] " + rule.id + " hit, already clean");

@@ -20,6 +20,7 @@ SUITES = [
     "test_feed_expand.js",
     "test_reward_observe.js",
     "test_unified_args.js",
+    "test_block_domains.js",
 ]
 
 parser = argparse.ArgumentParser()

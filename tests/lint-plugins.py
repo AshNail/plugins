@@ -7,11 +7,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PLUGINS = [
-    ("plugins/soda/SodaClean.plugin", 4, 5, 2, 10),
-    ("plugins/soda/SodaClean-Settings.plugin", 3, 5, 0, 1),
-    ("plugins/soda/SodaClean-Reward.plugin", 4, 0, 1, 1),
-    ("plugins/soda/SodaClean-Reward-Debug.plugin", 4, 0, 0, 20),
-    ("plugins/soda/SodaClean-Unified.plugin", 5, 0, 1, 31),
+    # 一个 App 一个插件：Soda 只部署聚合开关版 soda.plugin。
+    ("plugins/soda/soda.plugin", 5, 0, 1, 32),
 ]
 SAMPLES = {
     "search-block": "https://api.qishui.com/luna/search-block",
@@ -168,7 +165,7 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts in PLUGINS:
         f"rewrites={len(rewrites)} scripts={len(scripts)}"
     )
 
-    if fp.endswith("SodaClean.plugin"):
+    if fp.endswith("soda.plugin"):
         for label, url in SAMPLES.items():
             hit = any(rx.match(url) for rx in compiled)
             print(f"  sample {label:18} {'HIT' if hit else 'MISS'}")
@@ -205,14 +202,16 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts in PLUGINS:
             if hit:
                 errors.append(f"{fp}: reward endpoint {label} would be modified")
 
-    if fp.endswith("SodaClean-Unified.plugin"):
+    if fp.endswith("soda.plugin"):
         arg_text = "\n".join(data.get("Argument", []))
         for name, default in [
             ("rewardSafe", "true"),
             ("cleanAds", "false"),
+            ("blockAdDomains", "false"),
             ("settingsClean", "false"),
             ("debugLog", "false"),
             ("splashClean", "true"),
+            ("hideDouyinTab", "false"),
         ]:
             if f"{name} = switch,{default}" not in arg_text:
                 errors.append(
@@ -225,6 +224,7 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts in PLUGINS:
         expected_enable = {
             "splashClean": 1,
             "cleanAds": 9,
+            "blockAdDomains": 1,
             "settingsClean": 1,
             "debugLog": 20,
         }
@@ -242,7 +242,15 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts in PLUGINS:
                 errors.append(f"{fp}: unified rewrite script missing argument: {line[:100]}")
 
         mitm = "\n".join(data.get("MITM", []))
-        for host in ["api.qishui.com", "conf.qishui.com"]:
+        for host in [
+            "api.qishui.com",
+            "conf.qishui.com",
+            "ad.zijieapi.com",
+            "lianmengapi.snssdk.com",
+            "ads5-normal-hl.zijieapi.com",
+            "zlink.ugsdk.cn",
+            "praisewindow.ugsdk.cn",
+        ]:
             if host not in mitm:
                 errors.append(f"{fp}: MITM missing {host}")
 
