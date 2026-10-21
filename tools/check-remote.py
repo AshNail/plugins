@@ -15,6 +15,7 @@
 """
 import argparse
 import hashlib
+import json
 import pathlib
 import re
 import sys
@@ -61,12 +62,80 @@ def collect_files():
     return sorted(out, key=lambda p: str(p.relative_to(ROOT)))
 
 
+def remote_tree(repo, branch):
+    """列出远端所有文件（GitHub API）。"""
+    url = f"https://api.github.com/repos/{repo}/git/trees/{branch}?recursive=1"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "loon-plugins-check"})
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            data = json.loads(resp.read().decode("utf-8", "replace"))
+    except Exception:
+        return None
+    return sorted(t["path"] for t in data.get("tree", []) if t.get("type") == "blob")
+
+
+def print_lists(repo, branch, base):
+    """按“该更新 / 该删除 / 可选补充”打印清单。"""
+    tree = remote_tree(repo, branch)
+    if tree is None:
+        print("! 取不到远端文件树（离线或仓库名不对）")
+        return
+    local_files = set()
+    for p in ROOT.rglob("*"):
+        if not p.is_file():
+            continue
+        rel = str(p.relative_to(ROOT))
+        if rel.startswith(".git/") or "node_modules" in rel or rel == ".DS_Store":
+            continue
+        if p.name == ".DS_Store":
+            continue
+        local_files.add(rel)
+
+    must = [str(f.relative_to(ROOT)) for f in collect_files()]  # 插件引用的脚本 + 插件
+    update, missing, same = [], [], []
+    for rel in must:
+        status, remote = fetch(base + rel)
+        local = (ROOT / rel).read_bytes()
+        if status != 200:
+            missing.append(rel)
+        elif remote == local:
+            same.append(rel)
+        else:
+            update.append(rel)
+
+    delete = [p for p in tree if p not in local_files]
+    optional = sorted(p for p in local_files
+                      if p not in must and p not in tree and not p.startswith("tests/"))
+
+    print("【A】必须覆盖/新增（Loon 生效所需）")
+    for r in update + missing:
+        print("   ", r, "（远端缺失）" if r in missing else "")
+    if not update and not missing:
+        print("    （无）")
+    print("\n【B】已一致，不用动")
+    for r in same:
+        print("   ", r)
+    print("\n【C】建议从远端删除（本地已移除/无用）")
+    for r in delete:
+        print("   ", r)
+    if not delete:
+        print("    （无）")
+    print("\n【D】可选：同步源码与文档（不影响 Loon 生效）")
+    for r in optional:
+        print("   ", r)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", default="AshNail/plugins")
     ap.add_argument("--branch", default="main")
+    ap.add_argument("--list", action="store_true", help="只打印该更新/该删除的清单")
     args = ap.parse_args()
     base = BASE.format(repo=args.repo, branch=args.branch)
+
+    if args.list:
+        print_lists(args.repo, args.branch, base)
+        return 0
 
     print(f"远端: {base}\n")
     bad = 0
