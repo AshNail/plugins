@@ -55,7 +55,18 @@ v2.4.0 / v0.5.0 起脚本会自己处理：
   `X-Soda-Plugin: douyin-treasure;pruned=3` / `;skip=json-parse`，
   下次抓包一眼就能看出脚本跑到哪一步、为什么没生效。
 
-### 广告耗时实测（debugLog 打开即可）
+### 广告耗时统计（debugLog 打开即可）
+
+```
+[soda-reward] 发奖结果 amount=1800 claim=1 | 广告请求->发奖 30 秒 | 今日广告 3 次 / 共 90 秒
+[douyin-reward] 广告平台领奖回调
+  marketing/done -> code=0 msg=
+  广告请求->发奖 实际耗时: 31 秒
+  今日广告: 2 次 / 共 62 秒
+```
+
+统计存在 Loon 本地（`$persistentStore`），按天累计，方便对照“今天为了拿时长/金币
+一共看了几个广告、花了几分钟”。
 
 ```
 [douyin-reward] 广告平台领奖回调

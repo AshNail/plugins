@@ -514,6 +514,39 @@ function markHeaders(reason) {
 }
 
 /* 广告耗时实测：记下广告下发时刻，到发奖时算差值 */
+/* 今日广告耗时统计：$persistentStore 累计“今天看了几个广告、共多少秒” */
+const AD_STATS_KEY = "ad-stats";
+
+function todayKey() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1);
+  const day = String(d.getDate());
+  return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" + (day.length < 2 ? "0" + day : day);
+}
+
+function recordAdSeconds(seconds) {
+  if (seconds < 0) return null;
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.read !== "function") return null;
+    const day = todayKey();
+    let stats = null;
+    const raw = $persistentStore.read(AD_STATS_KEY);
+    if (raw) {
+      try { stats = JSON.parse(raw); } catch (e) { stats = null; }
+    }
+    if (!stats || stats.day !== day) stats = { day: day, n: 0, s: 0 };
+    stats.n += 1;
+    stats.s += seconds;
+    if (typeof $persistentStore.write === "function") {
+      $persistentStore.write(JSON.stringify(stats), AD_STATS_KEY);
+    }
+    return stats;
+  } catch (e) {
+    return null;
+  }
+}
+
 const AD_START_KEY = "soda-ad-start";
 
 function rememberAdStart() {
@@ -616,8 +649,10 @@ let LOG_TASK_TITLES = false;
         }
       }
       const elapsed = adElapsedSeconds();
+      const stats = elapsed >= 0 ? recordAdSeconds(elapsed) : null;
       console.log(PREFIX + " 发奖结果 " + (parts.join(" | ") || "-") +
-        (elapsed >= 0 ? " | 广告请求->发奖 " + elapsed + " 秒" : ""));
+        (elapsed >= 0 ? " | 广告请求->发奖 " + elapsed + " 秒" : "") +
+        (stats ? " | 今日广告 " + stats.n + " 次 / 共 " + stats.s + " 秒" : ""));
     }
 
     const summary = {

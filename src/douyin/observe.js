@@ -174,6 +174,39 @@ function observeFeedAds(obj) {
   console.log("[douyin-reward] feed ads config\n  " + (lines.join("\n  ") || "-"));
 }
 
+/* 今日广告耗时统计：$persistentStore 累计“今天看了几个广告、共多少秒” */
+const AD_STATS_KEY = "ad-stats";
+
+function todayKey() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1);
+  const day = String(d.getDate());
+  return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" + (day.length < 2 ? "0" + day : day);
+}
+
+function recordAdSeconds(seconds) {
+  if (seconds < 0) return null;
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.read !== "function") return null;
+    const day = todayKey();
+    let stats = null;
+    const raw = $persistentStore.read(AD_STATS_KEY);
+    if (raw) {
+      try { stats = JSON.parse(raw); } catch (e) { stats = null; }
+    }
+    if (!stats || stats.day !== day) stats = { day: day, n: 0, s: 0 };
+    stats.n += 1;
+    stats.s += seconds;
+    if (typeof $persistentStore.write === "function") {
+      $persistentStore.write(JSON.stringify(stats), AD_STATS_KEY);
+    }
+    return stats;
+  } catch (e) {
+    return null;
+  }
+}
+
 /*
  * 广告耗时实测：用 $persistentStore 记下“广告请求下发”的时间，
  * 到领奖回调时算差值 → 一次广告真实占用多少秒（播放 vs 加载）。
@@ -224,6 +257,8 @@ function observeAdPlatform(obj, url) {
     if (elapsed >= 0) {
       lines.push("  广告请求->发奖 实际耗时: " + elapsed + " 秒" +
         (elapsed > 35 ? "（>30 说明多出来的是加载/等待）" : ""));
+      const stats = recordAdSeconds(elapsed);
+      if (stats) lines.push("  今日广告: " + stats.n + " 次 / 共 " + stats.s + " 秒");
     }
     console.log("[douyin-reward] 广告平台领奖回调\n  " + lines.join("\n  "));
     return;
