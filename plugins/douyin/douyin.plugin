@@ -1,7 +1,7 @@
 #!name=抖音 · douyin
 #!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+。
 #!author=edy
-#!version=0.3.0
+#!version=0.4.0
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=ios
@@ -111,6 +111,9 @@ request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|
 
 # ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v2|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
+
+# ---- 只读日志：穿山甲广告平台（广告配置 / 领奖回调 / 开屏广告） ----
+response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
 
 
 # ============================================================================

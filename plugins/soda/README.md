@@ -297,7 +297,9 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | `settingsClean` | 关 | `conf.qishui.com` 设置层脚本 |
 | `debugLog` | 关 | 20 条只读观测脚本 |
 | `splashClean` | 开 | 开屏品牌广告清理 |
-| `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（`sanitize` 内置） |
+| `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文，避免误删） |
+| `hideDouyinEntry` | 关 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开） |
+| `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求 `ads5-*.zijieapi.com/api/ad/splash/`，**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
 
 关键限制：
 

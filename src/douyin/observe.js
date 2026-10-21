@@ -174,6 +174,45 @@ function observeFeedAds(obj) {
   console.log("[douyin-reward] feed ads config\n  " + (lines.join("\n  ") || "-"));
 }
 
+/*
+ * 穿山甲（CSJ）广告平台：广告配置 + 领奖回调
+ * 取证 2026-10-20 HAR 384：
+ *   ad.zijieapi.com/api/ad/v1/inspire/            广告配置（effective_play_time 等）
+ *   ad.zijieapi.com/api/incentive/marketing/done   领奖回调（2026-10-20 实测返回 403 设备异常）
+ *   ads5-normal-hl.zijieapi.com/api/ad/splash/luna/v15/  开屏广告配置
+ */
+function observeAdPlatform(obj, url) {
+  const lines = [];
+  if (/\/api\/incentive\/marketing\/done/.test(url)) {
+    const code = obj.code === undefined ? obj.status_code : obj.code;
+    const msg = obj.msg || obj.message || obj.err_tips || obj.status_msg || "";
+    lines.push("marketing/done -> code=" + code + " msg=" + msg);
+    const toast = obj.data && obj.data.toast ? obj.data.toast : "";
+    if (toast) lines.push("  toast: " + toast);
+    console.log("[douyin-reward] 广告平台领奖回调\n  " + lines.join("\n  "));
+    return;
+  }
+  if (/\/api\/ad\/splash\//.test(url)) {
+    lines.push("开屏广告配置(CSJ) keys: " + Object.keys(obj).slice(0, 12).join(","));
+    console.log("[douyin-reward] 开屏广告请求\n  " + lines.join("\n  "));
+    return;
+  }
+  const items = Array.isArray(obj.ad_item) ? obj.ad_item : [];
+  lines.push("ad_item: " + items.length);
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const ad = isPlainObject(item.ad_data) ? item.ad_data : {};
+    lines.push("  ad_id=" + ad.ad_id + " source_type=" + ad.ad_source_type +
+      " effective_play_time=" + ad.effective_play_time +
+      " is_hide_time_stamp=" + ad.is_hide_time_stamp +
+      " display_after=" + ad.display_after +
+      " ad_coin_cool_sec=" + ad.ad_coin_cool_sec +
+      " button_text=" + ad.button_text +
+      " expire_timestamp=" + ad.expire_timestamp);
+  }
+  console.log("[douyin-reward] 广告平台广告配置\n  " + lines.join("\n  "));
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -196,7 +235,9 @@ function observeFeedAds(obj) {
     else if (/\/luna\/advert\/fallback\/done\/info/.test(url)) observeFallback(obj);
     else if (/\/luna\/ads\/(?:config|dsp\/retrieve)/.test(url)) observeFeedAds(obj);
     else if (/\/luna\/commerce\/v2\/upsell/.test(url)) observeUpsell(obj);
-    else return $done({});
+    else if (/zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/.test(url)) {
+      observeAdPlatform(obj, url);
+    } else return $done({});
 
     $done({});
   } catch (e) {

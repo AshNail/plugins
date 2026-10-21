@@ -18,7 +18,7 @@
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
-| `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]` |
+| `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置与领奖回调） |
 
 > v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：
 > 原实现会连 `incentive/config`（`preload=true` + `vids[]` 预拉取列表）和 `incentive/retrieve`（素材表）一起清掉，
@@ -236,6 +236,20 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
 | 广告是否还在 | `killRewardAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空；`cleanFeedAds` 只影响信息流广告 |
 | 弹窗/演出是否消失 | `cleanUpsell` 打开后，`upsell_map` 里不应再有 `*ads*` 与 `browse_mall_popup_acc_amount`；音乐节列表为空 |
 | 链路取证 | `debugLog` 打开后，日志搜 `[douyin-reward]` |
+
+### 5.1 清理规则用**真实 93 弹窗**校验过
+
+`tests/fixtures/douyin_upsell.json` 是 2026-10-20 真机抓到的原始 `commerce/v2/upsell`（182,993 B / 93 个弹窗）。
+`test_douyin_upsell.js` 直接拿它跑清理，断言：
+
+- 广告类 + 商城弹窗 **18 个**被删（含 `browse_mall_popup_acc_amount` 逛商城、`ad_incentive_backup_card` 激励兜底卡）；
+- 奖励相关弹窗**全部保留**：`reward_video_load_fail_compensate` / `_retry`（广告加载失败的官方补偿）、
+  `reward_task_dialog_active` / `_passive`、`feed_listen_music_reward_popup`、
+  `feed_treasure_box_reward_popup`、`treasure_guide_reward_acc_popup`、`task_page_svip_popup`、`coin_widget`（金币挂件入口）；
+- `variables`（45 条入口资格变量）与 `libra_params_map` **一个字节都不动**；
+- `sort_control_unique_names` / `cold_launch_timing.upsell_item_unique_names` 同步清理，
+  包括**只出现在列表、upsell_map 里没有实体**的广告弹窗（如 `cold_launch_popup_ads_text`）——
+  不清它，冷启动照样弹广告。
 
 ## 6.1 版本要求（必读）
 

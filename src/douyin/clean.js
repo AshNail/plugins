@@ -161,17 +161,33 @@ function handleUpsell(obj, log) {
   log.push("upsell_map : removed " + removed.length + " popup(s) -> " +
     removed.slice(0, 8).join(", ") + (removed.length > 8 ? " ..." : ""));
 
-  /* 排序列表 / 冷启动列表里的引用也要同步清理 */
+  /*
+   * 排序列表 / 冷启动列表里的引用也要同步清理。
+   * 注意：真实数据里存在“只出现在列表、upsell_map 里没有实体”的广告弹窗
+   * （例如 cold_launch_popup_ads_text），所以除了删除已删的实体，
+   * 还要把列表里所有广告/商城命名的条目一并去掉，否则冷启动仍会弹广告。
+   */
+  const dropFromList = function (n) {
+    if (removed.indexOf(n) !== -1) return true;
+    if (AD_UPSELL_RE.test(n)) return true;
+    if (MALL_UPSELLS.indexOf(n) !== -1) return true;
+    return false;
+  };
   if (Array.isArray(obj.sort_control_unique_names)) {
     obj.sort_control_unique_names = obj.sort_control_unique_names.filter(function (n) {
-      return removed.indexOf(n) === -1;
+      return !dropFromList(n);
     });
   }
   const clt = obj.cold_launch_timing;
   if (isPlainObject(clt) && Array.isArray(clt.upsell_item_unique_names)) {
+    const before = clt.upsell_item_unique_names.length;
     clt.upsell_item_unique_names = clt.upsell_item_unique_names.filter(function (n) {
-      return removed.indexOf(n) === -1;
+      return !dropFromList(n);
     });
+    if (clt.upsell_item_unique_names.length !== before) {
+      log.push("cold_launch_timing : " + before + " -> " +
+        clt.upsell_item_unique_names.length + " item(s)");
+    }
   }
   return true;
 }

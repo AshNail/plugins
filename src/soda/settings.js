@@ -149,6 +149,22 @@ const SCALAR_KEYS = new Map([
   ["kbasicmodedisablerewardadenabled", "true"]
 ]);
 
+/*
+ * 【听抖音】入口开关（hideDouyinEntry）
+ * 取证：conf.qishui.com/service/settings/v3/ 真实响应
+ *   anchor_luna_to_douyin     = 1   汽水 → 抖音 的“听抖音”入口（锚点）
+ *   anchor_luna_to_douyin_mv  = 1   同一入口的 MV 变体
+ * 关掉这两个开关 = 汽水里不再出现【听抖音】入口（服务端配置驱动，不是客户端硬编码）
+ */
+const DOUYIN_ENTRY_KEYS = new Map([
+  ["anchorlunatodouyin", "0"],
+  ["anchorlunatodouyinmv", "0"]
+]);
+
+/* 运行期开关（由 main 设置，walk 读取） */
+let hideDouyin = false;
+let cleanAdsConfig = false;
+
 /* 仅在 AGGRESSIVE=true 时处理（全局广告开关 / 播放器激励入口） */
 const AGGRESSIVE_SCALARS = new Map([
   ["timorshouldenablead", "false"],
@@ -291,7 +307,7 @@ function walk(node, path, changes, depth) {
     const nk = normalizeKey(node[keyField]);
     const val = node[valField];
 
-    if (CONFIG_KEYS.has(nk)) {
+    if (cleanAdsConfig && CONFIG_KEYS.has(nk)) {
       const next = emptyConfigValue(val);
       if (!same(next, val)) {
         changes.push({ path: path + "." + valField, from: short(val), to: short(next) });
@@ -300,9 +316,18 @@ function walk(node, path, changes, depth) {
       return;
     }
 
-    if (SCALAR_KEYS.has(nk) || (AGGRESSIVE && AGGRESSIVE_SCALARS.has(nk))) {
+    if (cleanAdsConfig && (SCALAR_KEYS.has(nk) || (AGGRESSIVE && AGGRESSIVE_SCALARS.has(nk)))) {
       const desired = AGGRESSIVE_SCALARS.has(nk) ? AGGRESSIVE_SCALARS.get(nk) : SCALAR_KEYS.get(nk);
       const next = coerceScalar(val, desired);
+      if (!same(next, val)) {
+        changes.push({ path: path + "." + valField, from: short(val), to: short(next) });
+        node[valField] = next;
+      }
+      return;
+    }
+
+    if (hideDouyin && DOUYIN_ENTRY_KEYS.has(nk)) {
+      const next = coerceScalar(val, DOUYIN_ENTRY_KEYS.get(nk));
       if (!same(next, val)) {
         changes.push({ path: path + "." + valField, from: short(val), to: short(next) });
         node[valField] = next;
@@ -316,7 +341,7 @@ function walk(node, path, changes, depth) {
     const val = node[k];
 
     /* 1. 广告配置容器 */
-    if (CONFIG_KEYS.has(nk)) {
+    if (cleanAdsConfig && CONFIG_KEYS.has(nk)) {
       const next = emptyConfigValue(val);
       if (!same(next, val)) {
         changes.push({ path: path + "." + k, from: short(val), to: short(next) });
@@ -326,9 +351,19 @@ function walk(node, path, changes, depth) {
     }
 
     /* 2. 广告开关 */
-    if (SCALAR_KEYS.has(nk) || (AGGRESSIVE && AGGRESSIVE_SCALARS.has(nk))) {
+    if (cleanAdsConfig && (SCALAR_KEYS.has(nk) || (AGGRESSIVE && AGGRESSIVE_SCALARS.has(nk)))) {
       const desired = AGGRESSIVE_SCALARS.has(nk) ? AGGRESSIVE_SCALARS.get(nk) : SCALAR_KEYS.get(nk);
       const next = coerceScalar(val, desired);
+      if (!same(next, val)) {
+        changes.push({ path: path + "." + k, from: short(val), to: short(next) });
+        node[k] = next;
+      }
+      continue;
+    }
+
+    /* 2.1 【听抖音】入口开关 */
+    if (hideDouyin && DOUYIN_ENTRY_KEYS.has(nk)) {
+      const next = coerceScalar(val, DOUYIN_ENTRY_KEYS.get(nk));
       if (!same(next, val)) {
         changes.push({ path: path + "." + k, from: short(val), to: short(next) });
         node[k] = next;
@@ -375,14 +410,24 @@ function walk(node, path, changes, depth) {
     }
 
     /*
-     * 统一插件开关：保奖励模式优先。
-     * 独立设置插件没有 $argument，行为保持不变。
+     * 统一插件开关（两个独立开关，可单独开）：
+     *   settingsClean  清空广告配置键（会关掉激励广告入口 → 保奖励模式下不做）
+     *   hideDouyinEntry 关掉【听抖音】入口（anchor_luna_to_douyin*，不动广告配置）
+     * 保奖励模式只挡“清广告配置”这一步；隐藏【听抖音】不影响发奖链路，可以照常做。
      */
-    const pluginArgs = pargs(["rewardSafe", "settingsClean"]);
-    if (pflag(pluginArgs, "rewardSafe", true)) {
-      console.log("[soda-settings] rewardSafe=on, passthrough");
+    const pluginArgs = pargs(["settingsClean", "hideDouyinEntry", "rewardSafe"]);
+    const wantClean = pflag(pluginArgs, "settingsClean", false);
+    const wantDouyin = pflag(pluginArgs, "hideDouyinEntry", false);
+    const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
+    if (!wantClean && !wantDouyin) {
+      console.log("[soda-settings] no switch on, passthrough");
       return $done({});
     }
+    if (wantClean && rewardSafe) {
+      console.log("[soda-settings] rewardSafe=on, skip ad-config cleanup");
+    }
+    cleanAdsConfig = wantClean && !rewardSafe;
+    hideDouyin = wantDouyin;
 
     const url = ($request && $request.url) || "";
     const raw = ($response && $response.body) || "";

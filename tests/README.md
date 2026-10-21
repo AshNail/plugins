@@ -39,6 +39,9 @@ npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 | `test_feed_expand.js` | 16 | 扩展 feed 端点、`search-block` 仅 `banner_list` 场景 |
 | `test_reward_observe.js` | 91 | 激励链路只读观测：计数、任务摘要、进度字段、发奖字段、upsell 入口变量、隐私过滤、大响应放行 |
 | `test_block_domains.js` | 7 | 广告域名拦截脚本：开关关闭不拦、`rewardSafe` 放行、非广告域名不拦、返回 200 空响应 |
+| `test_douyin_upsell.js` | 39 | 真实 93 弹窗样本：广告/商城弹窗被删、奖励与兜底弹窗保留、variables 不动、排序与冷启动引用同步清理 |
+| `test_soda_splash_ad.js` | 8 | 开屏广告请求拦截：开屏路径被拦、激励广告与发奖回调绝不拦、开关关闭放行 |
+| `test_soda_douyin_entry.js` | 13 | 【听抖音】入口：设置层 anchor_luna_to_douyin* 置 0、不动其它设置、保奖励模式下也能生效、与清广告配置互不干扰 |
 | `test_douyin_treasure.js` | 29 | 抖音福利页精简：只留攒时长模块、其余分区全部移除、广告预拉取 id 清空、开关关闭原样放行、参数对象/数组/字符串三种形态都识别、**真实抓包样本**回归 |
 | `test_douyin_clean.js` | 20 | 抖音广告配置/商业化弹窗/演出清理：广告源与素材清空、商城与广告弹窗删除、排序与冷启动引用同步清理、音乐节列表清空 |
 | `test_unified_args.js` | 19 | 聚合插件开关：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目 |

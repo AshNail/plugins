@@ -246,6 +246,30 @@ function safeString(v) {
  */
 const DOUYIN_KEYWORD = "抖音";
 
+/*
+ * 只在“标题类字段”里找“抖音”，避免把正文里提到抖音的正常条目误删。
+ * 真实福利页任务的标题在 view.title.plain_text（抖音/汽水同一套 luna 结构）。
+ */
+function isDouyinEntry(item) {
+  if (typeof item === "string") return item.indexOf(DOUYIN_KEYWORD) !== -1;
+  if (!item || typeof item !== "object") return false;
+
+  const titleLike = ["title", "sub_title", "subtitle", "name", "text", "plain_text",
+                     "desc", "display_name", "button_text", "tab_name"];
+  for (const f of titleLike) {
+    const v = item[f];
+    if (typeof v === "string" && v.indexOf(DOUYIN_KEYWORD) !== -1) return true;
+    if (v && typeof v === "object" && typeof v.plain_text === "string" &&
+        v.plain_text.indexOf(DOUYIN_KEYWORD) !== -1) return true;
+  }
+  if (item.view && typeof item.view === "object") {
+    const vt = item.view.title;
+    if (vt && typeof vt === "object" && typeof vt.plain_text === "string" &&
+        vt.plain_text.indexOf(DOUYIN_KEYWORD) !== -1) return true;
+  }
+  return false;
+}
+
 function dropDouyinItems(node, log, path, depth) {
   if (depth > 14 || node === null || node === undefined) return;
 
@@ -253,7 +277,7 @@ function dropDouyinItems(node, log, path, depth) {
     const kept = [];
     let dropped = 0;
     for (const item of node) {
-      if (safeString(item).indexOf(DOUYIN_KEYWORD) !== -1) {
+      if (isDouyinEntry(item)) {
         dropped++;
         continue;
       }
