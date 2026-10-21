@@ -175,6 +175,37 @@ function observeFeedAds(obj) {
 }
 
 /*
+ * 广告耗时实测：用 $persistentStore 记下“广告请求下发”的时间，
+ * 到领奖回调时算差值 → 一次广告真实占用多少秒（播放 vs 加载）。
+ * 只做测量，不改任何请求/响应。
+ */
+const AD_START_KEY = "douyin-ad-start";
+
+function rememberAdStart() {
+  try {
+    if (typeof $persistentStore !== "undefined" && $persistentStore &&
+        typeof $persistentStore.write === "function") {
+      $persistentStore.write(String(Date.now()), AD_START_KEY);
+    }
+  } catch (e) { /* 存储不可用就跳过测量 */ }
+}
+
+function adElapsedSeconds() {
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.read !== "function") return -1;
+    const raw = $persistentStore.read(AD_START_KEY);
+    if (!raw) return -1;
+    const start = parseInt(raw, 10);
+    if (!start) return -1;
+    if (typeof $persistentStore.remove === "function") $persistentStore.remove(AD_START_KEY);
+    return Math.round((Date.now() - start) / 1000);
+  } catch (e) {
+    return -1;
+  }
+}
+
+/*
  * 穿山甲（CSJ）广告平台：广告配置 + 领奖回调
  * 取证 2026-10-20 HAR 384：
  *   ad.zijieapi.com/api/ad/v1/inspire/            广告配置（effective_play_time 等）
@@ -189,6 +220,11 @@ function observeAdPlatform(obj, url) {
     lines.push("marketing/done -> code=" + code + " msg=" + msg);
     const toast = obj.data && obj.data.toast ? obj.data.toast : "";
     if (toast) lines.push("  toast: " + toast);
+    const elapsed = adElapsedSeconds();
+    if (elapsed >= 0) {
+      lines.push("  广告请求->发奖 实际耗时: " + elapsed + " 秒" +
+        (elapsed > 35 ? "（>30 说明多出来的是加载/等待）" : ""));
+    }
     console.log("[douyin-reward] 广告平台领奖回调\n  " + lines.join("\n  "));
     return;
   }
@@ -197,6 +233,7 @@ function observeAdPlatform(obj, url) {
     console.log("[douyin-reward] 开屏广告请求\n  " + lines.join("\n  "));
     return;
   }
+  rememberAdStart();
   const items = Array.isArray(obj.ad_item) ? obj.ad_item : [];
   lines.push("ad_item: " + items.length);
   for (const item of items) {

@@ -55,6 +55,19 @@ v2.4.0 / v0.5.0 起脚本会自己处理：
   `X-Soda-Plugin: douyin-treasure;pruned=3` / `;skip=json-parse`，
   下次抓包一眼就能看出脚本跑到哪一步、为什么没生效。
 
+### 广告耗时实测（debugLog 打开即可）
+
+```
+[douyin-reward] 广告平台领奖回调
+  marketing/done -> code=0 msg=
+  广告请求->发奖 实际耗时: 31 秒        ← 30 秒是广告本体；>35 说明多出来的是加载/等待
+[soda-reward] 发奖结果 amount=1800 claim=1 | 广告请求->发奖 30 秒
+```
+
+`amount=-1` 表示这笔奖励**没发出来**（广告没播或被风控）——这通常是
+`killRewardAds` / `cleanAds` 开着导致的（广告素材被清空 → 广告没播 → 领不到）。
+**要领奖就别开这两个开关。**
+
 ### 插件图标（`#!icon`）
 
 | 插件 | 图标来源 | URL |

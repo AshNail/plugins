@@ -471,6 +471,33 @@ function markHeaders(reason) {
   }
 }
 
+/* 广告耗时实测：记下广告下发时刻，到发奖时算差值 */
+const AD_START_KEY = "soda-ad-start";
+
+function rememberAdStart() {
+  try {
+    if (typeof $persistentStore !== "undefined" && $persistentStore &&
+        typeof $persistentStore.write === "function") {
+      $persistentStore.write(String(Date.now()), AD_START_KEY);
+    }
+  } catch (e) { /* 存储不可用就跳过测量 */ }
+}
+
+function adElapsedSeconds() {
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.read !== "function") return -1;
+    const raw = $persistentStore.read(AD_START_KEY);
+    if (!raw) return -1;
+    const start = parseInt(raw, 10);
+    if (!start) return -1;
+    if (typeof $persistentStore.remove === "function") $persistentStore.remove(AD_START_KEY);
+    return Math.round((Date.now() - start) / 1000);
+  } catch (e) {
+    return -1;
+  }
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -478,11 +505,9 @@ function markHeaders(reason) {
     if (!rule) return $done({});
 
     const path = url.replace(/^https?:\/\/[^/]+/, "").split("?")[0];
-    let raw = ($response && $response.body) || "";
+    let raw = readBody($response);
 
-    if (typeof raw !== "string") {
-      try { raw = JSON.stringify(raw); } catch (e) { raw = ""; }
-    }
+    if (/\/advert\/incentive\/retrieve/.test(url)) rememberAdStart();
 
     if (typeof raw !== "string" || raw.length === 0) {
       console.log(PREFIX + " " + rule.id + " empty body");
@@ -529,6 +554,22 @@ function markHeaders(reason) {
     for (let i = 0; i < countNames.length; i++) {
       const n = countOf(acc, countNames[i]);
       if (n !== undefined) counts[countNames[i]] = n;
+    }
+
+    /* 发奖结果：amount=-1 表示这笔没发出来（广告没播/被风控） */
+    if (/\/advert\/incentive\/done/.test(url)) {
+      const details = obj && obj.reward_details ? obj.reward_details : null;
+      const parts = [];
+      if (details && typeof details === "object") {
+        for (const k of Object.keys(details)) {
+          const d = details[k] || {};
+          parts.push("amount=" + d.amount + " claim=" + d.claim_status +
+            (d.expire_time ? " expire=" + d.expire_time : ""));
+        }
+      }
+      const elapsed = adElapsedSeconds();
+      console.log(PREFIX + " 发奖结果 " + (parts.join(" | ") || "-") +
+        (elapsed >= 0 ? " | 广告请求->发奖 " + elapsed + " 秒" : ""));
     }
 
     const summary = {
