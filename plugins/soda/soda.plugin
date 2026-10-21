@@ -54,7 +54,8 @@
 
 [Argument]
 rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
-cleanAds = switch,false,tag=去广告脚本,desc=清理激励广告配置、广告位、信息流和福利页广告任务；开启后通常无法再领激励奖励。
+cleanAds = switch,false,tag=去广告脚本,desc=清理广告位、信息流和福利页广告任务；**不动激励广告素材**，所以不影响看广告领奖励。
+killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于“广告完全不发”，领奖会变成 amount=-1，请谨慎。
 blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）；保奖励模式下自动放行。
 settingsClean = switch,false,tag=设置层净化（实验）,desc=清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。
 hideDouyinEntry = switch,false,tag=隐藏【听抖音】入口,desc=把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）。
@@ -119,13 +120,16 @@ request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${splashClean}, requires_body=true, timeout=10, tag="开屏品牌广告：保奖励/去广告共用"
 
 # ---- 去广告脚本：激励广告配置 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：激励广告配置"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}}) with enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：激励广告配置"
 
 # ---- 去广告脚本：激励素材预拉取 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：激励素材预拉取"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}}) with enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：激励素材预拉取"
 
 # ---- 去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}
+
+# ---- 兜底发奖凭证：属于奖励链路，只有断激励广告时才清 ----
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/done\/info/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}}) with enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告"
 
 # ---- 去广告脚本：信息流广告 ----
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：信息流广告"

@@ -292,7 +292,8 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | 开关 | 默认 | 控制的脚本 |
 |---|---|---|
 | `rewardSafe` | 开 | 保奖励优先；`sanitize` 对非开屏端点直接放行，`settings` 直接放行，域名拦截脚本也放行 |
-| `cleanAds` | 关 | 激励配置、广告位、信息流、福利页广告任务等 9 条清理脚本 |
+| `cleanAds` | 关 | 广告位、信息流、福利页广告任务等 7 条清理脚本（**不含激励素材**） |
+| `killRewardAds` | 关 | 清空激励广告素材与预拉取 + 兜底发奖凭证（3 条）；开了领奖会变 `amount=-1` |
 | `blockAdDomains` | 关 | `block-domains.js`：`http-request` 拦截 `ad.zijieapi.com` 等 5 个广告/归因域名 |
 | `settingsClean` | 关 | `conf.qishui.com` 设置层脚本 |
 | `debugLog` | 关 | 20 条只读观测脚本 |
@@ -507,7 +508,8 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%
 | 开关 | 默认 | 作用 |
 |---|---|---|
 | `rewardSafe` | 开 | 保奖励优先；非开屏端点直接放行，域名拦截也放行 |
-| `cleanAds` | 关 | 去广告脚本：广告配置、信息流、福利页广告任务 |
+| `cleanAds` | 关 | 去广告脚本：广告位、信息流、福利页广告任务（**不动激励素材**） |
+| `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，领奖会变 `amount=-1`） |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本，HTTP/3 可能漏过） |
 | `settingsClean` | 关 | 设置层净化；不要与 `rewardSafe` 同开 |
 | `debugLog` | 关 | 只读日志，可与保奖励同开 |

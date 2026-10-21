@@ -9,7 +9,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 1, 34, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 1, 35, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 0, 9, "douyin"),
 ]
 
@@ -21,6 +21,7 @@ FAMILY_CHECKS = {
         "switches": [
             ("rewardSafe", "true"),
             ("cleanAds", "false"),
+            ("killRewardAds", "false"),
             ("blockAdDomains", "false"),
             ("settingsClean", "false"),
             ("hideDouyinEntry", "false"),
@@ -32,7 +33,8 @@ FAMILY_CHECKS = {
         ],
         "enable": {
             "splashClean": 1,
-            "cleanAds": 9,
+            "cleanAds": 7,
+            "killRewardAds": 3,
             "blockAdDomains": 1,
             "settingsClean": 1,
             "hideDouyinEntry": 1,

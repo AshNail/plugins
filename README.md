@@ -190,7 +190,8 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyi
 | 开关 | 默认 | 作用 |
 |---|---|---|
 | `rewardSafe` | 开 | 保奖励优先；非开屏端点直接放行，域名拦截也自动放行 |
-| `cleanAds` | 关 | 去广告脚本：广告配置、信息流、福利页广告任务 |
+| `cleanAds` | 关 | 去广告脚本：广告位、信息流、福利页广告任务（**不动激励素材**，不影响领奖） |
+| `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，领奖会变 `amount=-1`） |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本，HTTP/3 可能漏过） |
 | `settingsClean` | 关 | 设置层净化；不要与 `rewardSafe` 同开 |
 | `debugLog` | 关 | 只读日志，可与保奖励同开 |
