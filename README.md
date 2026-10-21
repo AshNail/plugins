@@ -284,6 +284,23 @@ python3 tools/check-remote.py --list
 输出分四段：**A 必须覆盖/新增**（Loon 生效所需）、**B 已一致不用动**、
 **C 建议从远端删除**（本地已移除的无用文件）、**D 可选同步源码与文档**。
 
+### 一键发布（不想手动拖拽就用这个）
+
+```bash
+# 1) 用有写权限的账号登录
+gh auth login --hostname github.com --git-protocol https
+
+# 2) 先看计划
+python3 tools/publish.py --dry-run
+
+# 3) 确认后执行（覆盖变更文件 + 删除废弃文件 + 结束自动核对）
+python3 tools/publish.py --yes
+```
+
+`publish.py` 以本地为准对齐远端：只动 `plugins/` 里插件真正引用的脚本 + 插件本身，
+远端多余的自动删掉；`--with-source` 可连 `src/` 与文档一起同步。
+需要 PAT 时用 `export GH_TOKEN=ghp_xxx`。
+
 > 特别注意：v2.4.0 / v0.5.0 起脚本会**自己解 gzip 响应体**。抖音/汽水的接口回包全是
 > `content-encoding: gzip`，旧版脚本拿到压缩串会 `JSON.parse` 失败 → 表现为“清理模块全都没生效”。
 > 所以**必须整体覆盖 scripts/ 目录**，只换 `.plugin` 没用。
