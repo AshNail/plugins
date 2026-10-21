@@ -12,7 +12,6 @@ SUITES = [
     "test_sanitize2.js",
     "test_prune.js",
     "test_taskinfos.js",
-    "test_request.js",
     "test_ads_surfaces.js",
     "test_treasure_prune2.js",
     "test_settings.js",

@@ -31,7 +31,6 @@ npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 | `test_sanitize2.js` | 19 | 通用字段清洗、包络保留、非目标端点不误伤 |
 | `test_prune.js` | 13 | `incentive/config` 的 `advert_sources` / `feed_advert_config` / `preload` |
 | `test_taskinfos.js` | 1 | `task_infos` 广告任务裁剪（保留签到/听歌/逛商城） |
-| `test_request.js` | 12 | 请求侧 `preload=false`，不动 `ad_unit_configs` / `advert_duration` |
 | `test_ads_surfaces.js` | 33 | 开屏、广告位、DSP、兜底、卡片、增长入口、upsell |
 | `test_treasure_prune2.js` | 15 | 福利任务、banner、弹窗、金币挂件、`commerce_ad_task` / `ad_snap` |
 | `test_settings.js` | 66 | TTKitchen 设置层、BDADSDK 形态、可选 `i`/`is` 主机、AGGRESSIVE/DRY_RUN/INJECT_MISSING |

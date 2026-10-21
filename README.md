@@ -145,14 +145,12 @@ v2.4.0 / v0.5.0 起脚本会自己处理：
 | `src/soda/reward-observe.js` | 23,243 B | `plugins/soda/scripts/reward-observe.min.js` | 12,599 B |
 | `src/soda/block-domains.js` | 4,162 B | `plugins/soda/scripts/block-domains.min.js` | 1,451 B |
 | `src/soda/splash-ad.js` | 3,148 B | `plugins/soda/scripts/splash-ad.min.js` | 1,188 B |
-| `src/soda/request.js` | 3,401 B | `plugins/soda/scripts/request.min.js` | 1,195 B |
-| `src/soda/diag.js` | 2,996 B | `plugins/soda/scripts/diag.min.js` | 1,320 B |
 | `src/douyin/treasure.js` | 10,059 B | `plugins/douyin/scripts/treasure.min.js` | 3,690 B |
 | `src/douyin/clean.js` | 15,864 B | `plugins/douyin/scripts/clean.min.js` | 5,822 B |
 | `src/douyin/observe.js` | 15,024 B | `plugins/douyin/scripts/observe.min.js` | 6,690 B |
 | `src/douyin/block-domains.js` | 4,166 B | `plugins/douyin/scripts/block-domains.min.js` | 1,461 B |
 
-合计 **133,357 B → 55,925 B（约 -58.1%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–700 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
+合计 **126,960 B → 53,410 B（约 -57.9%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–610 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
 
 ---
 
@@ -248,6 +246,39 @@ git push -u origin main
 
 ---
 
+## 部署到 GitHub（必看：脚本漏传 = 插件完全无效）
+
+插件里的 `script-path=scripts/xxx.min.js` 是**相对路径**，Loon 会在插件同目录找脚本。
+少传一个 `.min.js`，对应功能就**静默失效**（插件照常加载、界面照常显示，就是没效果）。
+
+要上传的文件一共 **11 个**（其余文件不用传）：
+
+```text
+plugins/soda/soda.plugin
+plugins/soda/scripts/sanitize.min.js
+plugins/soda/scripts/settings.min.js
+plugins/soda/scripts/reward-observe.min.js
+plugins/soda/scripts/splash-ad.min.js
+plugins/soda/scripts/block-domains.min.js
+plugins/douyin/douyin.plugin
+plugins/douyin/scripts/treasure.min.js
+plugins/douyin/scripts/clean.min.js
+plugins/douyin/scripts/observe.min.js
+plugins/douyin/scripts/block-domains.min.js
+```
+
+上传完跑一次核对（会逐个文件比字节数和 SHA，并打印远端/本地版本号）：
+
+```bash
+python3 tools/check-remote.py
+```
+
+输出 `✓ 远端与本地完全一致` 才算传完；不一致的项会逐行列出来，照着传即可。
+
+> 特别注意：v2.4.0 / v0.5.0 起脚本会**自己解 gzip 响应体**。抖音/汽水的接口回包全是
+> `content-encoding: gzip`，旧版脚本拿到压缩串会 `JSON.parse` 失败 → 表现为“清理模块全都没生效”。
+> 所以**必须整体覆盖 scripts/ 目录**，只换 `.plugin` 没用。
+
 ## 构建与检查
 
 ```bash
@@ -265,7 +296,7 @@ npm run test:dist   # 只测压缩版
 npm test            # 源码 + 压缩版都跑
 ```
 
-当前测试规模：20 套脚本、464 条断言；源码与压缩版各跑一遍，共 **40 个套件 / 928 条断言**。
+当前测试规模：19 套脚本、452 条断言；源码与压缩版各跑一遍，共 **38 个套件 / 904 条断言**。
 
 ---
 
