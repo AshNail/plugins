@@ -298,6 +298,7 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | `debugLog` | 关 | 20 条只读观测脚本 |
 | `splashClean` | 开 | 开屏品牌广告清理 |
 | `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文，避免误删） |
+| `logTaskTitles` | 关 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志 |
 | `hideDouyinEntry` | 关 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开） |
 | `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求 `ads5-*.zijieapi.com/api/ad/splash/`，**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
 
@@ -664,6 +665,13 @@ v2.4.0 起 `readBody()` 会识别 gzip 魔数并用 `$utils.ungzip`（Build ≥ 
 `amount = -1` + `expire_time` = 这笔奖励**没发**（广告素材被清空 → 广告没播 → 领不到）。
 **要领奖就别开 `killRewardAds`**（它会把 `incentive/config` 的 `preload`/`vids` 和
 `incentive/retrieve` 的素材表一起清掉）。`cleanAds` 也会影响发放路径，同样要慎开。
+
+### 2.1 观测器现在认识“新版福利页”的任务对象
+
+抖音/汽水新版福利页的任务对象是 `{"id":"600585","key":"soda_music_sign_in","view":{...},"stats":{...}}`
+（没有 `task_key`），旧版观测器认不出来。v2.5.0 起 `key + id` 且带 `view/stats/rewards` 的对象
+也会被当作任务摘要，`logTaskTitles=开` 时连标题一起打出来 —— 这样一次抓包就能定位
+【听抖音】到底是哪个字段下发的。
 
 ### 3. 抖音侧仍是设备风控（与插件无关）
 

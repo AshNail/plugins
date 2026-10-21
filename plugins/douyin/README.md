@@ -18,7 +18,8 @@
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
-| `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置与领奖回调） |
+| `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
+| `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
 
 > v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：
 > 原实现会连 `incentive/config`（`preload=true` + `vids[]` 预拉取列表）和 `incentive/retrieve`（素材表）一起清掉，
@@ -274,6 +275,23 @@ X-Soda-Plugin: douyin-clean;changed=2          upsell 清理生效
 ```
 
 抓包里直接看这个头，就能判断“脚本跑了没有、跑到哪一步”。
+
+## 5.3 【演出】的真正开关在 polaris 活动配置里
+
+2026-10-21 抓包发现，`polaris.zijieapi.com/luckycat/activity/settings/get_dynamic_settings/`
+（28 KB，`data.activity_info` 181 个活动）里有：
+
+```text
+activity_info.music_festival        = 汽水音乐节（= 福利页【演出】）
+activity_info.music_festival_v2     = 同上 v2
+activity_info.douyin_select_*       = 抖音运营活动（选游戏 / 选作者 / 开学季 / 创作者抽奖）
+```
+
+每个条目的形状是 `{"activity_common": {"canshow": false, "forbid_reason": 2, ...}}`。
+所以【演出】和这些运营活动**不用删数据，把 `canshow` 置 false 就够了**：
+新开关 `cleanActivity` 就是干这个的（默认关；只动 `music_festival*` 与 `douyin_select_*`，
+签到/翻卡/红包雨等用户自己的活动一个都不碰）。
+`growth/music_festival/performance_details` 的演出列表仍由 `cleanUpsell` 清空。
 
 ## 6.1 版本要求（必读）
 

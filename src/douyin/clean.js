@@ -192,6 +192,38 @@ function handleUpsell(obj, log) {
   return true;
 }
 
+/*
+ * 活动入口清理（cleanActivity）
+ * 取证：polaris.zijieapi.com/luckycat/activity/settings/get_dynamic_settings/
+ *   data.activity_info.music_festival      = 汽水音乐节（= 福利页【演出】）
+ *   data.activity_info.music_festival_v2   = 同上的 v2
+ *   data.activity_info.douyin_select_*     = 抖音运营活动（选游戏/选作者/开学季/创作者抽奖）
+ * 这些是“活动能不能展示”的开关（canshow），置 false 就能让入口不出现，
+ * 不动其它活动（用户自己的签到/翻卡/红包雨等不在这个字典里）。
+ */
+const ACTIVITY_HIDE_RE = /^(?:music_festival(?:_v2)?|douyin_select_)/;
+
+function handleActivity(obj, log) {
+  const info = obj && obj.data ? obj.data.activity_info : null;
+  if (!isPlainObject(info)) return false;
+  const touched = [];
+  for (const key of Object.keys(info)) {
+    if (!ACTIVITY_HIDE_RE.test(key)) continue;
+    const entry = info[key];
+    if (!isPlainObject(entry)) continue;
+    const common = isPlainObject(entry.activity_common) ? entry.activity_common : null;
+    if (!common) continue;
+    if (common.canshow === false) continue;
+    common.canshow = false;
+    if (common.forbid_reason === undefined) common.forbid_reason = 2;
+    touched.push(key);
+  }
+  if (touched.length === 0) return false;
+  log.push("activity_info : canshow=false x" + touched.length +
+    " (" + touched.slice(0, 6).join(",") + ")");
+  return true;
+}
+
 function handleMusicFestival(obj, log) {
   if (!Array.isArray(obj.detail_list)) return false;
   if (obj.detail_list.length === 0) return false;
@@ -299,7 +331,7 @@ function markHeaders(reason) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell"]);
+    const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity"]);
 
     /* 决定这次请求归哪个开关管：没开的开关一律放行 */
     let mode = null;
@@ -311,6 +343,8 @@ function markHeaders(reason) {
       if (pflag(args, "cleanUpsell", false)) mode = "upsell";
     } else if (/\/luna\/growth\/music_festival\/performance_details/.test(url)) {
       if (pflag(args, "cleanUpsell", false)) mode = "music-festival";
+    } else if (/\/luckycat\/activity\/settings\//.test(url)) {
+      if (pflag(args, "cleanActivity", false)) mode = "activity";
     } else {
       return $done({});
     }
@@ -350,6 +384,8 @@ function markHeaders(reason) {
       handleUpsell(obj, log);
     } else if (mode === "music-festival") {
       handleMusicFestival(obj, log);
+    } else if (mode === "activity") {
+      handleActivity(obj, log);
     }
 
     if (log.length === 0) {

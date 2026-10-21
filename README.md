@@ -13,8 +13,8 @@
 
 | 插件 | 版本 | 用途 | 兼容性 |
 |---|---:|---|---|
-| `soda.plugin` | 2.4.0 | 汽水音乐唯一插件：保奖励 / 去广告脚本 / 广告域名拦截 / 设置层 / 只读日志 / 隐藏【听抖音】，全部用 `[Argument]` 开关控制 | 一个 App 只装这一个；域名拦截走 MITM+脚本，HTTP/3 可能漏过 |
-| `douyin.plugin` | 0.5.0 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、激励广告开关、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
+| `soda.plugin` | 2.5.0 | 汽水音乐唯一插件：保奖励 / 去广告脚本 / 广告域名拦截 / 设置层 / 只读日志 / 隐藏【听抖音】，全部用 `[Argument]` 开关控制 | 一个 App 只装这一个；域名拦截走 MITM+脚本，HTTP/3 可能漏过 |
+| `douyin.plugin` | 0.6.0 | 抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、激励广告开关、商业化弹窗/商城/演出清理、域名拦截、只读日志 | 依据 2026-10 真实 HAR 取证；MITM 抖音 API 域名有证书固定风险 |
 
 > 一个 App 只保留一个 `.plugin`。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进 `soda.plugin`，不再单独部署；历史版本可在 git 历史中找回。
 
@@ -142,17 +142,17 @@ v2.4.0 / v0.5.0 起脚本会自己处理：
 |---|---:|---|---:|
 | `src/soda/sanitize.js` | 27,996 B | `plugins/soda/scripts/sanitize.min.js` | 12,297 B |
 | `src/soda/settings.js` | 22,590 B | `plugins/soda/scripts/settings.min.js` | 8,028 B |
-| `src/soda/reward-observe.js` | 19,898 B | `plugins/soda/scripts/reward-observe.min.js` | 9,632 B |
+| `src/soda/reward-observe.js` | 23,243 B | `plugins/soda/scripts/reward-observe.min.js` | 12,599 B |
 | `src/soda/block-domains.js` | 4,162 B | `plugins/soda/scripts/block-domains.min.js` | 1,451 B |
 | `src/soda/splash-ad.js` | 3,148 B | `plugins/soda/scripts/splash-ad.min.js` | 1,188 B |
 | `src/soda/request.js` | 3,401 B | `plugins/soda/scripts/request.min.js` | 1,195 B |
 | `src/soda/diag.js` | 2,996 B | `plugins/soda/scripts/diag.min.js` | 1,320 B |
 | `src/douyin/treasure.js` | 10,059 B | `plugins/douyin/scripts/treasure.min.js` | 3,690 B |
-| `src/douyin/clean.js` | 14,206 B | `plugins/douyin/scripts/clean.min.js` | 5,230 B |
-| `src/douyin/observe.js` | 13,707 B | `plugins/douyin/scripts/observe.min.js` | 6,028 B |
+| `src/douyin/clean.js` | 15,864 B | `plugins/douyin/scripts/clean.min.js` | 5,822 B |
+| `src/douyin/observe.js` | 15,024 B | `plugins/douyin/scripts/observe.min.js` | 6,690 B |
 | `src/douyin/block-domains.js` | 4,166 B | `plugins/douyin/scripts/block-domains.min.js` | 1,461 B |
 
-合计 **126,329 B → 51,520 B（约 -59.2%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–640 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
+合计 **132,649 B → 55,741 B（约 -58.0%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–700 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
 
 ---
 
@@ -194,6 +194,7 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyi
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本，HTTP/3 可能漏过） |
 | `settingsClean` | 关 | 设置层净化；不要与 `rewardSafe` 同开 |
 | `debugLog` | 关 | 只读日志，可与保奖励同开 |
+| `logTaskTitles` | 关 | 只读日志里额外打印任务标题（定位【听抖音】等入口用） |
 | `splashClean` | 开 | 清理开屏品牌广告 |
 | `hideDouyinTab` | 关 | 隐藏福利页【听抖音】tab/任务条目（按标题匹配，保守） |
 | `hideDouyinEntry` | 关 | 关掉设置层的 `anchor_luna_to_douyin*` → 汽水里的【听抖音】入口不再出现（可与保奖励同开） |
@@ -217,7 +218,8 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyi
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `blockAdDomains` | 关 | 广告域名拦截（MITM + `http-request` 脚本） |
-| `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置与领奖回调） |
+| `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动置为不展示 |
+| `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
 
 > 激励广告 30 秒是硬成本（服务端按 `valid_duration` 校验真实观看时长），本仓库不做“改短时长照常领奖”；
 > 能省的是**等待里的空转**：v0.2.0 起 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`，
@@ -262,7 +264,7 @@ npm run test:dist   # 只测压缩版
 npm test            # 源码 + 压缩版都跑
 ```
 
-当前测试规模：17 套脚本、422 条断言；源码与压缩版各跑一遍，共 **34 个套件 / 844 条断言**。
+当前测试规模：19 套脚本、448 条断言；源码与压缩版各跑一遍，共 **38 个套件 / 896 条断言**。
 
 ---
 

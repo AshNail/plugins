@@ -10,7 +10,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
     ("plugins/soda/soda.plugin", 5, 0, 1, 34, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 0, 8, "douyin"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 0, 9, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -26,6 +26,7 @@ FAMILY_CHECKS = {
             ("hideDouyinEntry", "false"),
             ("blockSplashAd", "false"),
             ("debugLog", "false"),
+            ("logTaskTitles", "false"),
             ("splashClean", "true"),
             ("hideDouyinTab", "false"),
         ],
@@ -62,6 +63,7 @@ FAMILY_CHECKS = {
             ("cleanFeedAds", "false"),
             ("killRewardAds", "false"),
             ("cleanUpsell", "false"),
+            ("cleanActivity", "false"),
             ("blockAdDomains", "false"),
             ("debugLog", "false"),
         ],
@@ -70,6 +72,7 @@ FAMILY_CHECKS = {
             "cleanFeedAds": 1,
             "killRewardAds": 1,
             "cleanUpsell": 2,
+            "cleanActivity": 1,
             "blockAdDomains": 1,
             "debugLog": 2,
         },

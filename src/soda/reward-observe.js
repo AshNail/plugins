@@ -175,6 +175,8 @@ function addField(out, obj, names, label) {
 function taskSummary(obj) {
   const out = {};
   addField(out, obj, ["task_key", "taskKey"], "key");
+  if (out.key === undefined) addField(out, obj, ["key"], "key");
+  if (out.key === undefined) addField(out, obj, ["id"], "id");
   addField(out, obj, ["task_type", "taskType"], "type");
   addField(out, obj, ["reward_type", "rewardType"], "reward");
   addField(out, obj, ["reward_amount", "rewardAmount"], "amount");
@@ -196,15 +198,55 @@ function taskSummary(obj) {
     addField(out, view.button, ["action"], "action");
   }
 
+  /*
+   * 任务标题：默认不打（避免把文案写进日志），
+   * 打开 logTaskTitles 才带出来 —— 用来定位福利页里的【听抖音】等入口。
+   */
+  if (LOG_TASK_TITLES) {
+    const title = taskTitle(obj);
+    if (title) out.title = title;
+  }
+
   if (obj.ad_snap || obj.adSnap) out.adSnap = true;
   return Object.keys(out).length ? out : null;
 }
 
+/* 任务标题：从 title / view.title / name 里取纯文本，截断 24 字 */
+function taskTitle(obj) {
+  const cands = [obj.title, obj.name, obj.text, obj.desc];
+  if (isObject(obj.view)) {
+    cands.push(obj.view.title, obj.view.subtitle, obj.view.sub_title);
+  }
+  for (let i = 0; i < cands.length; i++) {
+    const v = cands[i];
+    let s = null;
+    if (typeof v === "string") s = v;
+    else if (isObject(v)) {
+      if (typeof v.plain_text === "string") s = v.plain_text;
+      else if (typeof v.text === "string") s = v.text;
+    }
+    if (s) return s.length > 24 ? s.slice(0, 24) + "…" : s;
+  }
+  return null;
+}
+
 function hasTaskKey(obj) {
-  return Object.prototype.hasOwnProperty.call(obj, "task_key") ||
-    Object.prototype.hasOwnProperty.call(obj, "taskKey") ||
-    Object.prototype.hasOwnProperty.call(obj, "task_id") ||
-    Object.prototype.hasOwnProperty.call(obj, "taskId");
+  if (Object.prototype.hasOwnProperty.call(obj, "task_key") ||
+      Object.prototype.hasOwnProperty.call(obj, "taskKey") ||
+      Object.prototype.hasOwnProperty.call(obj, "task_id") ||
+      Object.prototype.hasOwnProperty.call(obj, "taskId")) {
+    return true;
+  }
+  /*
+   * 抖音/汽水新版福利页的任务对象用 key + id（没有 task_key），
+   * 例如 {"id":"600585","key":"soda_music_sign_in","view":{...},"stats":{...}}。
+   * 只有同时出现 id 与 view/stats/rewards 时才算任务，避免把普通字典误判。
+   */
+  if (Object.prototype.hasOwnProperty.call(obj, "key") &&
+      Object.prototype.hasOwnProperty.call(obj, "id")) {
+    return isObject(obj.view) || isObject(obj.stats) || Array.isArray(obj.rewards);
+  }
+  return false;
 }
 
 /*
@@ -498,9 +540,15 @@ function adElapsedSeconds() {
   }
 }
 
+/* 开关：logTaskTitles 由 [Argument] 传入，默认关 */
+let LOG_TASK_TITLES = false;
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    const args = pargs(["logTaskTitles"]);
+    LOG_TASK_TITLES = pflag(args, "logTaskTitles", false);
+
     const rule = RULES.find(function (r) { return r.match.test(url); });
     if (!rule) return $done({});
 
