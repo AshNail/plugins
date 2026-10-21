@@ -251,6 +251,30 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
   包括**只出现在列表、upsell_map 里没有实体**的广告弹窗（如 `cold_launch_popup_ads_text`）——
   不清它，冷启动照样弹广告。
 
+## 5.2 2026-10-21 抓包的两个新结论
+
+**① 响应体是 gzip 的（关键）**
+
+```text
+/luna/treasure/task/page/v2      content-encoding: gzip   16–21 KB
+/luna/commerce/v2/upsell          content-encoding: gzip   183–191 KB
+```
+
+真机日志同时出现 `zip decompress error:-3`（同一连接上的 beta-luna.douyin.com）。
+说明 **Loon 偶尔把未解压的压缩串交给脚本** → `JSON.parse` 失败 → 脚本静默放行 → 看起来“插件没效果”。
+v0.5.0 起 `readBody()` 会自己识别 gzip 魔数并用 `$utils.ungzip` 解压（Build ≥ 988）。
+
+**② 每个被处理的响应都带诊断头**
+
+```text
+X-Soda-Plugin: douyin-treasure;pruned=3        成功精简
+X-Soda-Plugin: douyin-treasure;skip=json-parse 拿到压缩体/非 JSON
+X-Soda-Plugin: douyin-treasure;skip=switch-off 开关是关的
+X-Soda-Plugin: douyin-clean;changed=2          upsell 清理生效
+```
+
+抓包里直接看这个头，就能判断“脚本跑了没有、跑到哪一步”。
+
 ## 6.1 版本要求（必读）
 
 本插件用 **Loon 3.5.1(983) 起的新版 Script 语法**：

@@ -91,7 +91,8 @@ function run(body, argument, url) {
   const fn = new Function("$request", "$response", "$done", "console", "$argument", code);
   fn(
     { url: url || TREASURE_URL },
-    { body: typeof body === "string" ? body : JSON.stringify(body) },
+    { body: (typeof body === "string" || (typeof Uint8Array !== "undefined" && body instanceof Uint8Array))
+        ? body : JSON.stringify(body) },
     (v) => { out = v; },
     { log: (...a) => logs.push(a.join(" ")) },
     argument
@@ -217,6 +218,42 @@ console.log("\n== 8. 真实抓包样本（tests/fixtures/douyin_treasure_page.js
     o && Array.isArray(o.data.config.ad_api_preload.task_ids) &&
     o.data.config.ad_api_preload.task_ids.length === 0,
     o ? JSON.stringify(o.data.config.ad_api_preload) : "");
+}
+
+console.log("\n== 9. 压缩体 / 二进制体：脚本要能自己解压 ==");
+{
+  const zlib = require("zlib");
+  const real = require("./fixtures/douyin_treasure_page.json");
+  const text = JSON.stringify(real);
+  const gz = zlib.gzipSync(Buffer.from(text, "utf8"));
+
+  /* 模拟 Loon：$utils.ungzip（Build ≥ 988） */
+  global.$utils = {
+    ungzip: (bytes) => new Uint8Array(zlib.gunzipSync(Buffer.from(bytes)))
+  };
+
+  /* 9a. gzip 压缩串（Loon 交到脚本的原始压缩体） */
+  const bin = gz.toString("latin1");
+  const r1 = run(bin, { treasureMinimal: true });
+  const o1 = parse(r1.out);
+  check("gzip 体解压后仍能精简",
+    o1 && o1.data.sections.length === 1,
+    o1 ? JSON.stringify(o1.data.sections.map((s) => s.key)) : JSON.stringify(r1.out));
+
+  /* 9b. Uint8Array 体（binary_body_mode=true） */
+  const bytes = new Uint8Array(Buffer.from(text, "utf8"));
+  const r2 = run(bytes, { treasureMinimal: true });
+  const o2 = parse(r2.out);
+  check("Uint8Array 体也能精简",
+    o2 && o2.data.sections.length === 1,
+    o2 ? JSON.stringify(o2.data.sections.map((s) => s.key)) : JSON.stringify(r2.out));
+
+  /* 9c. 诊断标记会写进响应头 */
+  check("响应头带 X-Soda-Plugin 标记",
+    !!(r1.out && r1.out.headers && r1.out.headers["X-Soda-Plugin"]),
+    JSON.stringify(r1.out && r1.out.headers));
+
+  delete global.$utils;
 }
 
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +

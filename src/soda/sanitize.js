@@ -546,10 +546,106 @@ function rewrite(node, rule, path, log, depth) {
 /* ------------------------------------------------------------------ */
 /* 主流程                                                             */
 /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/* 通用工具：插件参数 / 响应体解码 / 诊断标记                          */
+/* ------------------------------------------------------------------ */
+/* Loon 插件参数：兼容对象 / 位置数组 / "k=v" 字符串三种形态 */
+function pargs(keys) {
+  var o = {}, r;
+  try { r = (typeof $argument === "undefined") ? null : $argument; } catch (e) { r = null; }
+  if (r === null || r === undefined) return null;
+  var t = Object.prototype.toString.call(r);
+  if (t === "[object Object]") {
+    for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k];
+    return o;
+  }
+  if (t === "[object Array]") {
+    for (var i = 0; i < r.length && keys && i < keys.length; i++) o[keys[i]] = r[i];
+    return o;
+  }
+  if (typeof r === "string") {
+    var p = r.split(/[&;,]/);
+    for (var j = 0; j < p.length; j++) {
+      var kv = p[j].split("=");
+      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    }
+    return o;
+  }
+  return null;
+}
+
+function pflag(args, name, fallback) {
+  if (!args || !(name in args)) return fallback;
+  var v = args[name];
+  if (v === true || v === "true" || v === 1 || v === "1") return true;
+  if (v === false || v === "false" || v === 0 || v === "0") return false;
+  return fallback;
+}
+
+/* Uint8Array -> UTF-8 字符串（不依赖 TextDecoder） */
+function utf8(bytes) {
+  var out = "", i = 0, n = bytes.length;
+  while (i < n) {
+    var b = bytes[i++] & 0xff;
+    if (b < 0x80) {
+      out += String.fromCharCode(b);
+    } else if (b >= 0xc0 && b < 0xe0) {
+      out += String.fromCharCode(((b & 0x1f) << 6) | (bytes[i++] & 0x3f));
+    } else if (b >= 0xe0 && b < 0xf0) {
+      out += String.fromCharCode(((b & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f));
+    } else {
+      var cp = ((b & 0x07) << 18) | ((bytes[i++] & 0x3f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+      out += String.fromCodePoint(cp);
+    }
+  }
+  return out;
+}
+
+/*
+ * 取响应体：兼容三种情况
+ *   1. 普通 JSON 字符串
+ *   2. Uint8Array（binary_body_mode=true）
+ *   3. gzip 压缩体（实测抖音/汽水这些接口都是 content-encoding: gzip，
+ *      Loon 有时把“未解压的压缩串”交给脚本，此时直接 JSON.parse 会失败）
+ * Build ≥ 988 有 $utils.ungzip；没有就原样返回，交给上层判断。
+ */
+function readBody(resp) {
+  var raw = (resp && resp.body) || "";
+  var bytes = null;
+  if (typeof Uint8Array !== "undefined" && raw instanceof Uint8Array) {
+    bytes = raw;
+  } else if (typeof raw === "string" && raw.length > 1 &&
+             raw.charCodeAt(0) === 0x1f && raw.charCodeAt(1) === 0x8b) {
+    bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i) & 0xff;
+  } else {
+    return typeof raw === "string" ? raw : "";
+  }
+  try {
+    if (typeof $utils !== "undefined" && $utils && typeof $utils.ungzip === "function") {
+      return utf8($utils.ungzip(bytes));
+    }
+  } catch (e) {
+    console.log("[soda] ungzip failed: " + e);
+  }
+  return utf8(bytes);
+}
+
+/* 诊断标记：写进响应头，下一次抓包一眼看出脚本跑到哪一步 */
+function markHeaders(reason) {
+  try {
+    var h = Object.assign({}, ($response && $response.headers) || {});
+    h["X-Soda-Plugin"] = reason;
+    return h;
+  } catch (e) {
+    return null;
+  }
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const raw = ($response && $response.body) || "";
+    const raw = readBody($response);
 
     /*
      * 统一插件开关：保奖励模式优先。
@@ -567,29 +663,29 @@ function rewrite(node, rule, path, log, depth) {
     if (rewardSafe && !isSplash) {
       if (!(hideDouyin && isTreasure)) {
         console.log("[soda] rewardSafe=on, non-splash passthrough: " + url);
-        return $done({});
+        return $done({ headers: markHeaders("soda-sanitize;skip=reward-safe") });
       }
       /* 保奖励 + 隐藏听抖音：只删抖音条目，其余原样返回 */
       return douyinOnly(raw, url);
     }
 
     if (typeof raw !== "string" || raw.length === 0) {
-      return $done({});
+      return $done({ headers: markHeaders("soda-sanitize;skip=no-body") });
     }
 
     const head = raw.trimStart().slice(0, 1);
     if (head !== "{" && head !== "[") {
       // 非 JSON（protobuf / 压缩体 / 空体），不动
-      return $done({});
+      return $done({ headers: markHeaders("soda-sanitize;skip=not-json") });
     }
 
     const rule = RULES.find(function (r) { return r.match.test(url); });
-    if (!rule) return $done({});
+    if (!rule) return $done({ headers: markHeaders("soda-sanitize;skip=no-rule") });
 
     /* 大响应预检：没有广告标记就直接放行，避免无谓 JSON.parse */
     if (rule.fastReject && !rule.fastReject.test(raw)) {
       console.log("[soda] " + rule.id + " hit, no ad marker");
-      return $done({});
+      return $done({ headers: markHeaders("soda-sanitize;noop=no-marker") });
     }
 
     let obj;
@@ -597,7 +693,7 @@ function rewrite(node, rule, path, log, depth) {
       obj = JSON.parse(raw);
     } catch (e) {
       console.log("[soda] JSON parse failed, passthrough: " + url);
-      return $done({});
+      return $done({ headers: markHeaders("soda-sanitize;skip=json-parse") });
     }
 
     rule._kill = new Set((rule.kill || []).map(normalizeKey));
@@ -614,7 +710,7 @@ function rewrite(node, rule, path, log, depth) {
 
     if (log.length === 0) {
       console.log("[soda] " + rule.id + " hit, already clean");
-      return $done({});
+      return $done({ headers: markHeaders("soda-sanitize;noop=already-clean") });
     }
 
     const out = JSON.stringify(obj);
@@ -625,10 +721,10 @@ function rewrite(node, rule, path, log, depth) {
     );
 
     if (DRY_RUN) {
-      return $done({});
+      return $done({ headers: markHeaders("soda-sanitize;dry-run") });
     }
 
-    $done({ body: out });
+    $done({ body: out, headers: markHeaders("soda-sanitize;changed=" + log.length) });
   } catch (e) {
     console.log("[soda] error, passthrough: " + e);
     $done({});

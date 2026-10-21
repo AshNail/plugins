@@ -641,6 +641,41 @@ loon-plugins/
 
 ---
 
+## 10.5 2026-10-21 抓包新增取证（soda.plugin v2.4.0）
+
+### 1. 响应体是 gzip 的 → 脚本要自己解压
+
+`/luna/advert/incentive/done`、`conf.qishui.com/service/settings/v3/` 的回包都是
+`content-encoding: gzip`（真机日志里有 `zip decompress error:-3`）。
+Loon 偶尔把**未解压的压缩串**交给脚本，`JSON.parse` 直接失败 → 脚本静默放行 → 看起来“插件没效果”。
+v2.4.0 起 `readBody()` 会识别 gzip 魔数并用 `$utils.ungzip`（Build ≥ 988）解压，
+也能直接吃 `Uint8Array`；每个被处理的响应都带 `X-Soda-Plugin` 诊断头。
+
+### 2. `killRewardAds` 开着会让领奖变成 amount = -1
+
+2026-10-21 10:38–10:41 汽水侧三次 `advert/incentive/done`：
+
+```text
+10:40:03  → {"reward_details":{"0":{"reward_type":0,"amount":1800,"claim_status":1}}}       ✅
+10:38:46  → {"reward_details":{"0":{"reward_type":0,"amount":-1,"expire_time":1792684812}}}  ⚠️
+10:41:21  → {"reward_details":{"0":{"reward_type":0,"amount":-1,"expire_time":1792771215}}}  ⚠️
+```
+
+`amount = -1` + `expire_time` = 这笔奖励**没发**（广告素材被清空 → 广告没播 → 领不到）。
+**要领奖就别开 `killRewardAds`**（它会把 `incentive/config` 的 `preload`/`vids` 和
+`incentive/retrieve` 的素材表一起清掉）。`cleanAds` 也会影响发放路径，同样要慎开。
+
+### 3. 抖音侧仍是设备风控（与插件无关）
+
+```text
+treasure/task/flip_card/do_action → {"status_code":1000043,"status_info":{"status_msg":"设备异常，领取失败"}}
+sign_in_done                      → {"err_no":210021,"err_tips":"设备异常，领取失败"}
+```
+
+同一场里 4 次翻卡有 3 次成功、1 次被风控拦；设备分 13.9 + 新加坡环境，插件改不了。
+
+---
+
 ## 11. 免责声明
 
 仅供个人设备上的网络流量管理与广告过滤研究。请遵守当地法律与 App 用户协议；不要用于批量刷取奖励、绕过付费或商业分发。使用风险自负。

@@ -1,7 +1,7 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音，全部用 [Argument] 开关控制。默认保奖励，不拦任何域名。需要 Loon 3.5.1(983)+。
+#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音，全部用 [Argument] 开关控制。默认保奖励，不拦任何域名。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=2.3.0
+#!version=2.4.0
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
 #!system=ios
