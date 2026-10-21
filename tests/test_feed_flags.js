@@ -6,7 +6,7 @@ function run(url, obj) {
     { url }, { body: JSON.stringify(obj) },
     (v) => { out = v; },
     { log: (...a) => logs.push(a.join(" ")) },
-    { rewardSafe: false, cleanAds: true }
+    { rewardSafe: false, cleanAds: true, killRewardAds: true }
   );
   return { out, logs, body: out && out.body ? JSON.parse(out.body) : null };
 }

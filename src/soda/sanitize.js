@@ -73,7 +73,7 @@ const RULES = [
   {
     id: "incentive-config",
     match: /\/luna\/advert\/incentive\/config/,
-    kill: ["advertSources", "feedAdvertConfig"],
+    kill: ["advertSources", "feedAdvertConfig", "vids"],
     falsy: ["preload"],
     forceOk: true,
     extendExpiry: true
@@ -654,13 +654,15 @@ function markHeaders(reason) {
      * 不做任何广告裁剪，避免影响奖励任务。
      * 独立主插件没有 $argument，行为保持不变。
      */
-    const pluginArgs = pargs(["rewardSafe", "cleanAds", "hideDouyinTab"]);
+    const pluginArgs = pargs(["rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab"]);
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
+    /* 显式打开“断激励广告”时不再受保奖励模式保护（用户主动选择：广告完全不发） */
+    const killReward = pflag(pluginArgs, "killRewardAds", false);
     const hideDouyin = pflag(pluginArgs, "hideDouyinTab", false);
     const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
     const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
 
-    if (rewardSafe && !isSplash) {
+    if (rewardSafe && !killReward && !isSplash) {
       if (!(hideDouyin && isTreasure)) {
         console.log("[soda] rewardSafe=on, non-splash passthrough: " + url);
         return $done({ headers: markHeaders("soda-sanitize;skip=reward-safe") });
@@ -681,6 +683,16 @@ function markHeaders(reason) {
 
     const rule = RULES.find(function (r) { return r.match.test(url); });
     if (!rule) return $done({ headers: markHeaders("soda-sanitize;skip=no-rule") });
+
+    /*
+     * 激励素材（advert/incentive/config|retrieve）只有显式打开 killRewardAds 才清：
+     * 清掉它 = 广告完全不发 = 领奖变 amount=-1（2026-10-21 实测）。
+     * 没有参数时（独立调用）保持旧行为照常清理。
+     */
+    if ((rule.id === "incentive-config" || rule.id === "incentive-retrieve") &&
+        pluginArgs && !killReward) {
+      return $done({ headers: markHeaders("soda-sanitize;skip=reward-ads-kept") });
+    }
 
     /* 大响应预检：没有广告标记就直接放行，避免无谓 JSON.parse */
     if (rule.fastReject && !rule.fastReject.test(raw)) {

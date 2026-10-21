@@ -140,7 +140,7 @@ v2.4.0 / v0.5.0 起脚本会自己处理：
 
 | 源码 | 源码大小 | 压缩版 | 压缩后 |
 |---|---:|---|---:|
-| `src/soda/sanitize.js` | 27,996 B | `plugins/soda/scripts/sanitize.min.js` | 12,297 B |
+| `src/soda/sanitize.js` | 28,704 B | `plugins/soda/scripts/sanitize.min.js` | 12,481 B |
 | `src/soda/settings.js` | 22,590 B | `plugins/soda/scripts/settings.min.js` | 8,028 B |
 | `src/soda/reward-observe.js` | 23,243 B | `plugins/soda/scripts/reward-observe.min.js` | 12,599 B |
 | `src/soda/block-domains.js` | 4,162 B | `plugins/soda/scripts/block-domains.min.js` | 1,451 B |
@@ -152,7 +152,7 @@ v2.4.0 / v0.5.0 起脚本会自己处理：
 | `src/douyin/observe.js` | 15,024 B | `plugins/douyin/scripts/observe.min.js` | 6,690 B |
 | `src/douyin/block-domains.js` | 4,166 B | `plugins/douyin/scripts/block-domains.min.js` | 1,461 B |
 
-合计 **132,649 B → 55,741 B（约 -58.0%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–700 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
+合计 **133,357 B → 55,925 B（约 -58.1%）**。每个 `.min.js` 只有 2 行：一行来源标记 + 一行压缩代码（源码为 72–700 行）；构建和 lint 都会检查“压缩后必须比源码小、行数不超过 5 行”。Loon 只加载 `plugins/<family>/scripts/*.min.js`；原始代码仍在 `src/`。
 
 ---
 
@@ -265,7 +265,7 @@ npm run test:dist   # 只测压缩版
 npm test            # 源码 + 压缩版都跑
 ```
 
-当前测试规模：19 套脚本、448 条断言；源码与压缩版各跑一遍，共 **38 个套件 / 896 条断言**。
+当前测试规模：20 套脚本、464 条断言；源码与压缩版各跑一遍，共 **40 个套件 / 928 条断言**。
 
 ---
 

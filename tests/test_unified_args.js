@@ -87,11 +87,30 @@ console.log("\n== 2. rewardSafe=true：开屏品牌广告仍然清理 ==");
     JSON.stringify(o));
 }
 
-console.log("\n== 3. rewardSafe=false + cleanAds=true：去广告脚本生效 ==");
+console.log("\n== 3. rewardSafe=false + cleanAds=true：广告位/信息流清理生效 ==");
+{
+  const body = {
+    status_code: 0,
+    ad_unit_configs: { slot: [{ id: 1 }] },
+    splash_config: { a: 1 },
+    preload: true
+  };
+  const r = runSanitize(
+    "https://api.qishui.com/luna/ads/config",
+    body,
+    { rewardSafe: false, cleanAds: true }
+  );
+  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("ads/config 被清理", !!o, JSON.stringify(r.out));
+  check("ad_unit_configs -> {}", o && Object.keys(o.ad_unit_configs).length === 0,
+    JSON.stringify(o));
+  check("preload -> false", o && o.preload === false, o && o.preload);
+}
+
+console.log("\n== 3b. 只开 cleanAds：激励素材不动（保领奖）==");
 {
   const body = {
     status_code: 10001,
-    status_info: "freq limit",
     advert_sources: [{ id: 1 }],
     feed_advert_config: { enable: true },
     expire_time: nowS + 60,
@@ -100,7 +119,24 @@ console.log("\n== 3. rewardSafe=false + cleanAds=true：去广告脚本生效 ==
   const r = runSanitize(
     "https://api.qishui.com/luna/advert/incentive/config",
     body,
-    { rewardSafe: false, cleanAds: true }
+    { rewardSafe: false, cleanAds: true, killRewardAds: false }
+  );
+  check("激励素材保持原样（不因 cleanAds 被清）", !(r.out && r.out.body), JSON.stringify(r.out));
+}
+
+console.log("\n== 3c. 显式 killRewardAds：激励素材被清（= 广告完全不发）==");
+{
+  const body = {
+    status_code: 10001,
+    advert_sources: [{ id: 1 }],
+    feed_advert_config: { enable: true },
+    expire_time: nowS + 60,
+    preload: true
+  };
+  const r = runSanitize(
+    "https://api.qishui.com/luna/advert/incentive/config",
+    body,
+    { rewardSafe: false, cleanAds: true, killRewardAds: true }
   );
   const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
   check("incentive/config 被清理", !!o, JSON.stringify(r.out));

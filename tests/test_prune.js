@@ -4,7 +4,7 @@ const code = require('./load-script')('sanitize.js');
 function run(url, body) {
   let doneArg = null; const logs = [];
   const ctx = {
-    $argument: {rewardSafe: false, cleanAds: true},
+    $argument: {rewardSafe: false, cleanAds: true, killRewardAds: true},
     $request: { url },
     $response: { body: typeof body === 'string' ? body : JSON.stringify(body) },
     $done: (x) => { doneArg = x; },

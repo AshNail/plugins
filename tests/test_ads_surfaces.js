@@ -3,7 +3,7 @@ const code=require('./load-script')('sanitize.js');
 function run(url, body){
   let done=null; const logs=[];
   const ctx={$request:{url},$response:{body:JSON.stringify(body)},$done:x=>{done=x},
-    $argument:{rewardSafe:false,cleanAds:true,hideDouyinTab:false},
+    $argument:{rewardSafe:false,cleanAds:true,killRewardAds:true,hideDouyinTab:false},
     console:{log:(...a)=>logs.push(a.join(' '))},JSON,Set,Array,Object,String,Number,Boolean,Math,Error,Date,isFinite};
   vm.runInNewContext(code,ctx,{timeout:3000});
   return {done,logs,out:done&&done.body?JSON.parse(done.body):null};
