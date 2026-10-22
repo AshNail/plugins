@@ -329,6 +329,7 @@ python3 tools/publish.py --with-source --yes
 
 重装/更新后的自检照单走：`docs/device-checklist.md`
 （发布 → Loon 导入 → 冒烟 → 【听抖音】字段抓取 → 领奖复测 → 提醒验证 → QUIC 判读 → 回传清单）。
+字段定位与 v2.6.1 升级预案：`docs/listen-douyin-field-kit.md`（含日志粘贴解析器 `tools/parse-task-titles.py`）。
 
 ## 构建与检查
 
