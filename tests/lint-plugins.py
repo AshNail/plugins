@@ -9,8 +9,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 1, 34, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 0, 9, "douyin"),
+    ("plugins/soda/soda.plugin", 5, 0, 1, 35, "soda"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 0, 10, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -30,6 +30,7 @@ FAMILY_CHECKS = {
             ("logTaskTitles", "false"),
             ("splashClean", "true"),
             ("hideDouyinTab", "false"),
+            ("dailyReminder", "false"),
         ],
         "enable": {
             "splashClean": 1,
@@ -49,6 +50,7 @@ FAMILY_CHECKS = {
             "ads5-normal-hl.zijieapi.com",
             "zlink.ugsdk.cn",
             "praisewindow.ugsdk.cn",
+            "beta-luna.douyin.com",
         ],
         "samples": {
             "search-block": "https://api.qishui.com/luna/search-block",
@@ -68,6 +70,7 @@ FAMILY_CHECKS = {
             ("cleanActivity", "false"),
             ("blockAdDomains", "false"),
             ("debugLog", "false"),
+            ("dailyReminder", "false"),
         ],
         "enable": {
             "treasureMinimal": 1,

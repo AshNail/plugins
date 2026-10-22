@@ -515,7 +515,7 @@ function markHeaders(reason) {
 
 /* 广告耗时实测：记下广告下发时刻，到发奖时算差值 */
 /* 今日广告耗时统计：$persistentStore 累计“今天看了几个广告、共多少秒” */
-const AD_STATS_KEY = "ad-stats";
+const AD_STATS_KEY = "soda-ad-stats";
 
 function todayKey() {
   const d = new Date();

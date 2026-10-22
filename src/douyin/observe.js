@@ -175,7 +175,7 @@ function observeFeedAds(obj) {
 }
 
 /* 今日广告耗时统计：$persistentStore 累计“今天看了几个广告、共多少秒” */
-const AD_STATS_KEY = "ad-stats";
+const AD_STATS_KEY = "douyin-ad-stats";
 
 function todayKey() {
   const d = new Date();
