@@ -185,7 +185,7 @@ def main():
             return True
         if rel in plugin_deploy_files():
             return True
-        if args.with_source and (rel.startswith("src/") or rel in (
+        if args.with_source and (rel.startswith("src/") or rel.startswith("docs/") or rel in (
                 "README.md", ".nojekyll", "tools/check-remote.py", "tools/build.js")):
             return True
         return False

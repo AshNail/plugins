@@ -313,19 +313,22 @@ python3 tools/check-remote.py --list
 gh auth login --hostname github.com --git-protocol https
 
 # 2) 先看计划
-python3 tools/publish.py --dry-run
+python3 tools/publish.py --with-source --dry-run
 
 # 3) 确认后执行（覆盖变更文件 + 删除废弃文件 + 结束自动核对）
-python3 tools/publish.py --yes
+python3 tools/publish.py --with-source --yes
 ```
 
 `publish.py` 以本地为准对齐远端：只动 `plugins/` 里插件真正引用的脚本 + 插件本身，
-远端多余的自动删掉；`--with-source` 可连 `src/` 与文档一起同步。
+远端多余的自动删掉；`--with-source`（推荐）可连 `src/`、`docs/` 与 README 一起同步。
 需要 PAT 时用 `export GH_TOKEN=ghp_xxx`。
 
 > 特别注意：v2.4.0 / v0.5.0 起脚本会**自己解 gzip 响应体**。抖音/汽水的接口回包全是
 > `content-encoding: gzip`，旧版脚本拿到压缩串会 `JSON.parse` 失败 → 表现为“清理模块全都没生效”。
 > 所以**必须整体覆盖 scripts/ 目录**，只换 `.plugin` 没用。
+
+重装/更新后的自检照单走：`docs/device-checklist.md`
+（发布 → Loon 导入 → 冒烟 → 【听抖音】字段抓取 → 领奖复测 → 提醒验证 → QUIC 判读 → 回传清单）。
 
 ## 构建与检查
 
