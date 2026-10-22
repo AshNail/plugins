@@ -28,6 +28,21 @@ pbpaste | python3 tools/parse-task-titles.py --json # 机读版
 自动输出：任务清单、带 ★ 的「抖音」条目、key/type 词根频次、
 **两种判定的自动建议**（key 驱动 or 标题校正）。
 
+**实测样本（本仓 fixture 重放，2026-10-22）**——`node /tmp/title-log-replay.js`
+用真实 `reward-observe.js` 跑测试 fixture 生成日志后喂解析器：
+
+```text
+共提取任务条目 4 条（丢弃不可解析行 0、截断行抢救 0）
+  1. key=douyin_listen       title='听抖音'     ★
+  2. key=sign_in             title='签到得金币'
+  3. key=listen_duration     title='听歌'
+  4. key=soda_music_sign_in  title='听抖音'     ★   ← view.title.plain_text 形态
+含「抖音」标题条目 2 条；非插件行/异常行零误报；
+判定：key 有稳定词根 → 轨道 A（标题匹配退居兜底）
+```
+
+链路（插件 → 日志 → 解析器）在设备回传前已闭环验证。
+
 ## 3. v2.6.1 预案（两条升级轨道，二选一或并用）
 
 现状（`src/soda/sanitize.js` §236–301）：`hideDouyinTab` 深度遍历（depth 14），
