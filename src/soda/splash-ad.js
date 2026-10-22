@@ -10,7 +10,11 @@
  *
  * 也就是说：开屏广告和激励广告虽然都走穿山甲（CSJ），
  * 但路径/域名是分开的：
- *   开屏 → ads5-normal-hl.zijieapi.com/api/ad/splash/**
+ *   开屏端点家族（IPA 内全量核对，2026-10-22）：
+ *     /api/ad/splash/{luna,aweme}/v14|v15/   配置（v14/v15、luna/aweme 双族）
+ *     /api/ad/splash/stock/realtime/v15/     实时库存
+ *     /api/ad/v[0-9]/(ack/)?splash/         v1 库存 + v2 ack（未来路径漂移兜底）
+ *     以上全部属于"开屏素材获取与登记"，拦截动作只对该家族返回 {}；
  *   激励 → ad.zijieapi.com/api/ad/v1/inspire/**（奖励要用，绝不能拦）
  *
  * 本脚本只拦开屏那一段，返回空 JSON 让 SDK 拿不到广告；
@@ -64,7 +68,7 @@ function pflag(args, name, fallback) {
 
     const isSplash =
       /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/splash\//i.test(url) ||
-      /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/v1\/splash\//i.test(url);
+      /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/v[0-9]\/(?:ack\/)?splash\//i.test(url);
     if (!isSplash) {
       return $done({});
     }
