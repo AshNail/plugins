@@ -126,6 +126,7 @@ def check_switches():
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         text = "\n".join(plugin_lines(plugin))
         used = set(re.findall(r"\$\{(\w+)\}", text))
+        used -= {"url"}   # Loon 内建变量（规则行的请求 URL 代入），不是插件开关
         args = section(plugin, "[Argument]")
         declared = set()
         for l in args:
