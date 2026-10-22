@@ -83,7 +83,22 @@ const DOUYIN_CONTAINER = /tabs|tab_items|task_infos|entrances?/; // ← 按真�
 - 不引入服务端未知字段的前瞻依赖：解析器判不出来时保持现状（宁可多删也可能漏删，
   文档里注明「等 C 步真实样本」，不猜字段）。
 
-## 4. 完成定义（DoD）
+## 5. 循环八补充：代码侧证据（2026-10-22）
+
+主二进制（SchubertAppStore，361MB）全字符串节复核 + `luna://` 深链解码 + 类表交叉（REA MCP 通道中断，由本地静态引擎同等完成）：
+
+1. **任务对象零字面键**：`task_type`×28 / `task_key`×4 全域盘点无一属于 treasure 任务对象
+   （前者=直播创作/商业挑战/luckydog/byteSync 域；后者=BDARV 兜底/Hybrid 资源/WordCheck 域）。
+   task/page 渲染走 **Lynx 服务端模板**（`hybrid://lynxview?surl=…bytegecko.com/…` +
+   `loader_name=forest`；听抖音气泡卡资源 `bubble_cards_douyin/center/template.js` 已解码到）。
+2. **对双轨的裁决**：客户端**没有**可抄的"任务类型"内部键契约——UI 是服务端模板数据。因此
+   Track A 的 key 驱动与 Track B 的路径递归**唯一权威都是观测样本**（`logTaskTitles` 日志），
+   代码侧不提供捷径；与两条轨道「只删数组条目、判不出来就保持现状」的边界互洽。
+3. **附带发现**（模块存在性证据，非可复用任务键）：`listen_douyin` = BNPlay Widget 播放路由
+   枚举值；`listenDouyin` = Swift 播放源 case；`task_douyin_request_result` = tab 埋点事件
+   （客户端存在显式的听抖音任务识别点）。
+
+## 6. 完成定义（DoD）
 
 - [ ] 日志回贴 `parse-task-titles.py` 输出含 ≥1 条 ★ 条目
 - [ ] 判定行给出轨道建议（.key 驱动 / 标题校正）
