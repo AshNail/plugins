@@ -319,6 +319,18 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 
 ---
 
-## 7. 免责声明
+## 7. 版本更新记录
+
+### v0.7.0（2026-10-22）每日提醒打卡
+
+- 新增 `dailyReminder` / `reminderCron` 与 `scripts/welfare-stamp.min.js`：
+  打卡 `beta-luna.douyin.com/luna/treasure/task/page`（`[MITM]` 新增该域），
+  当天未打卡到点通知；统计键 `douyin-ad-stats`。
+- 边界不变：`marketing/done` 等领奖请求仍为**观测只读**；抖音侧奖励受服务端设备风控
+  （1000043/210021），插件不可绕过也不尝试绕过。
+
+---
+
+## 8. 免责声明
 
 仅供个人设备上的网络流量管理与广告过滤研究。请遵守当地法律与 App 用户协议；不要用于批量刷取奖励、绕过付费或商业分发。使用风险自负。

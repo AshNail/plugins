@@ -614,7 +614,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.1.0）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.0）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -686,6 +686,26 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 
 ---
 
-## 11. 免责声明
+## 11. 版本更新记录
+
+### v2.6.0（2026-10-22）每日提醒打卡 + 开屏家族兜底
+
+- 新增 `dailyReminder`（默认关）与 `reminderCron`（默认 `30 20 * * *`）：当天没打开福利页
+  → 到点发 Loon 通知；已打卡 → 免打扰。新版 Script 语法：
+  `cron <表达式> then script(...) with enable=${dailyReminder}`（Loon 3.5.1(983)+）。
+- 新增 `scripts/welfare-stamp.min.js`：命中 `/luna/treasure/task/page` 即落当天福利卡，
+  **不读不改响应体**；打卡域 `beta-luna.douyin.com`（`[MITM]` 新增）。
+- 广告统计键改为插件隔离名 `soda-ad-stats`（Loon 的 `$persistentStore` 全局共享，避免与他米互踩）。
+- 开屏端点家族升级（IPA 全量端点核对后）：`api/ad/splash/**` 与
+  `api/ad/v[0-9]/(ack/)?splash/**`（v2+ 路径漂移兜底）；激励 `api/ad/v1/inspire`、
+  `api/incentive/marketing/done` 保持**不可拦**。
+
+### v2.5.0（2026-10-21）
+
+- `key + id` 且带 `view/stats/rewards` 的新版任务对象识别（旧版观测器认不出无 `task_key` 的）。
+
+---
+
+## 12. 免责声明
 
 仅供个人设备上的网络流量管理与广告过滤研究。请遵守当地法律与 App 用户协议；不要用于批量刷取奖励、绕过付费或商业分发。使用风险自负。
