@@ -210,6 +210,8 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyi
 | `hideDouyinTab` | 关 | 隐藏福利页【听抖音】tab/任务条目（按标题匹配，保守） |
 | `hideDouyinEntry` | 关 | 关掉设置层的 `anchor_luna_to_douyin*` → 汽水里的【听抖音】入口不再出现（可与保奖励同开） |
 | `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`ads5-*.zijieapi.com/api/ad/splash/`），不影响激励广告 |
+| `dailyReminder` | 关 | 每日领取提醒：`reminderCron`（默认每天 20:30）定时检查，当天没打开福利页就发 Loon 通知；打开过则免打扰 |
+| `reminderCron` | `30 20 * * *` | 提醒时间（五段 cron，分 时 日 月 周） |
 
 推荐用法：
 
@@ -218,6 +220,7 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyi
 - **去广告**：`rewardSafe=关`、`cleanAds=开`、`splashClean=开`。
 - **强力去广告**：再加 `blockAdDomains=开`（需要 `[MITM]` 里的 5 个广告域名；若激励广告因此播不了，注释掉那 5 个域名即可）。
 - **隐藏听抖音**：`hideDouyinTab=开`（可与 `rewardSafe` 同开，只删带“抖音”的条目）。
+- **每日提醒**：`dailyReminder=开`，`reminderCron` 自定义时间。ON 状态下打开福利页会打当天卡（`/luna/treasure/task/page` 命中即写存储，`.welfare-stamp` 脚本不读不改响应体）；到点未打卡才发通知。
 - **100% 域名拦截**（不依赖 MITM、能挡 HTTP/3）：关闭 `rewardSafe`，手动取消 `soda.plugin` 里 `[Rule]` 段的 5 行 `DOMAIN` 注释；严格模式会阻断激励广告，不能领奖励。
 
 `douyin.plugin` 的 `[Argument]` 开关：
@@ -231,8 +234,15 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyi
 | `blockAdDomains` | 关 | 广告域名拦截（MITM + `http-request` 脚本） |
 | `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动置为不展示 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
+| `dailyReminder` | 关 | 每日领取提醒：`reminderCron`（默认每天 20:30）定时检查，当天没打开福利页就发 Loon 通知；打开过则免打扰 |
+| `reminderCron` | `30 20 * * *` | 提醒时间（五段 cron，分 时 日 月 周） |
 
 > 激励广告 30 秒是硬成本（服务端按 `valid_duration` 校验真实观看时长），本仓库不做“改短时长照常领奖”；
+> 也**不做“自动领取 / 自动看广告”**——原因在请求结构和证据层（2026-10-22 复核）：
+> `luna/advert/incentive/done` 请求带 59 个头，其中 `x-argus` / `x-gorgon` / `x-ladon` / `x-medusa`
+> 是 App 内安全 SDK 逐请求生成的设备级签名，`bd-ticket-guard-*` 是证书绑定凭证，脚本无法生成；
+> `time_token` 只有真实完播才由穿山甲签发；`x-luna-is-background-req` 头会如实标注“App 是否在前台”，
+> 后台代领天然可识别。cron 只能发通知/HTTP，驱动不了 App 内的播放与点击——自动化领取在 MITM 层没有实现面。
 > 能省的是**等待里的空转**：v0.2.0 起 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`，
 > 默认两者都关，`incentive/config` 的 `preload=true` + `vids[]` 预拉取列表会完整保留，
 > 第一次广告也能秒开。
