@@ -1,0 +1,137 @@
+#!name=抖音 · douyin
+#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
+#!author=edy
+#!version=0.7.0
+#!homepage=https://github.com/AshNail/plugins
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
+#!system=ios
+#!loon_version=3.5.1(983)
+#!tag=抖音,去广告,福利页,Loon
+
+# ============================================================================
+# douyin.plugin 说明（一个 App 一个插件）
+# ----------------------------------------------------------------------------
+# 目标接口：beta-luna.douyin.com/luna/*（抖音内嵌的音乐/福利模块）
+#
+# 开关：
+#   treasureMinimal  福利页精简（默认开）：只留【攒时长 听歌不中断】
+#   cleanFeedAds     信息流/广告位广告清理（默认关）：不影响激励奖励
+#   killRewardAds    激励广告素材与预拉取（默认关）：开=广告完全不发，奖励也没了
+#   cleanUpsell      商业化弹窗/商城/演出清理（默认关）
+#   blockAdDomains   广告域名拦截（默认关）：MITM + http-request 脚本
+#   debugLog         只读日志（默认关）：日志前缀 [douyin-reward]
+#
+# 重要事实（HAR 取证，别踩坑）：
+#   1. 【攒时长 听歌不中断】= duration_task_section / luna_rewards_ads，
+#      按钮 schema 里 ad_type=ads_get_duration、luckydog_task_type=luna_watch_ads_settle_vip
+#      —— 它本身就是“看广告结算 VIP 时长”。
+#      所以：清激励广告配置（cleanAds）或拦广告域名（blockAdDomains）都会让这个模块拿不到时长。
+#   2. 【签到得金币】= gold_task_section / soda_music_sign_in，点不动是**服务端风控**：
+#      aweme.snssdk.com/aweme/ug/common/luckyapi/v1/common/sign_in/sign_in_done
+#      返回 {"err_no":210021,"err_tips":"设备异常，领取失败"}（luckydog 设备分只有 13.9，
+#      且地区为新加坡）。插件没有拦这个接口，与本插件无关；换大陆环境/正常账号才可能过。
+#      另外 sign_in_detail 里写明“先听 30 秒”才发奖（treasure.sign_in.listen_duration_seconds=30）。
+#   3. 【商城】= gold_task_section / luna_treasure_shop（逛街赚金币）
+#      + commerce/v2/upsell 的 browse_mall_popup_acc_amount（逛商城赚金币弹窗）。
+#   4. 【演出】= growth/music_festival/performance_details 的 detail_list（汽水音乐节）。
+#      它不在福利页 sections 里，福利页精简不会自动去掉，需要 cleanUpsell。
+#   5. 广告时长是**客户端**字段（advert_duration=30 / launch_duration=30），
+#      但发奖靠服务端凭证（advert/fallback/done/info 的 time_token/nonce →
+#      advert/incentive/done）。少看广告再领奖属于广告欺诈，本插件不做。
+#
+# 风险：
+#   - MITM beta-luna.douyin.com 后若抖音报网络异常，说明该域名有证书固定，
+#     停用 [Script]/[Rewrite]/[MITM] 即可回滚。
+#   - 福利页精简后只剩攒时长模块，看广告/签到/翻卡/红包雨等入口都会消失。
+# ============================================================================
+
+[Argument]
+treasureMinimal = switch,true,tag=福利页精简,desc=福利页只保留【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱等入口全部移除。
+cleanFeedAds = switch,false,tag=信息流广告清理,desc=清掉 ads/config、ads/dsp/retrieve 的信息流广告容器；不影响激励广告与奖励。
+killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。
+cleanUpsell = switch,false,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
+cleanActivity = switch,false,tag=活动入口清理,desc=把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。
+blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）。会同时断掉激励广告。
+debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
+dailyReminder = switch,false,tag=每日领取提醒,desc=每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。
+reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。
+
+
+# ============================================================================
+# 1. [Rule]
+# ----------------------------------------------------------------------------
+# 默认不拦任何域名，保证攒时长（看广告结算）能正常跑。
+# 需要 100% 拦截（不依赖 MITM、能挡 HTTP/3）时取消下面 5 行注释；
+# 注意那会阻断激励广告，攒时长模块随之失效。
+# ============================================================================
+
+[Rule]
+
+# ---- 严格模式：取消注释后生效 ----
+# DOMAIN,ad.zijieapi.com,REJECT
+# DOMAIN,lianmengapi.snssdk.com,REJECT
+# DOMAIN,ads5-normal-hl.zijieapi.com,REJECT
+# DOMAIN,zlink.ugsdk.cn,REJECT
+# DOMAIN,praisewindow.ugsdk.cn,REJECT
+
+
+# ============================================================================
+# 2. [Rewrite]
+# ----------------------------------------------------------------------------
+# 暂不放纯上报端点：抖音侧上报域名未取证，避免误伤。
+# ============================================================================
+
+[Rewrite]
+
+
+# ============================================================================
+# 3. [Script]
+# ----------------------------------------------------------------------------
+# 使用 Loon 3.5.1(983) 新版 Script 语法：
+#   response if ${url} ~= /.../ then script("scripts/x.min.js", {${开关名}}) with enable=${开关名}
+# 开关以布尔值透传给脚本（$argument.<参数名>）。
+# ============================================================================
+
+[Script]
+
+# ---- 福利页精简：只留【攒时长 听歌不中断】 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}}) with enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
+
+# ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}}) with enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
+
+# ---- 断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/incentive\/(?:config|retrieve)/ then script("scripts/clean.min.js", {${killRewardAds}}) with enable=${killRewardAds}, requires_body=true, timeout=10, tag="断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了"
+
+# ---- 商业化弹窗 / 商城清理 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/upsell/ then script("scripts/clean.min.js", {${cleanUpsell}}) with enable=${cleanUpsell}, requires_body=true, timeout=10, tag="商业化弹窗 / 商城清理"
+
+# ---- 演出（汽水音乐节）清理 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/performance_details/ then script("scripts/clean.min.js", {${cleanUpsell}}) with enable=${cleanUpsell}, requires_body=true, timeout=10, tag="演出（汽水音乐节）清理"
+
+# ---- 活动入口清理：音乐节（演出）+ 抖音运营活动 ----
+response if ${url} ~= /^https?:\/\/polaris\.zijieapi\.com\/luckycat\/activity\/settings\// then script("scripts/clean.min.js", {${cleanActivity}}) with enable=${cleanActivity}, requires_body=true, timeout=10, tag="活动入口清理（音乐节/抖音运营活动）"
+
+# ---- 广告域名拦截：blockAdDomains 开关 ----
+request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${blockAdDomains}}) with enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
+
+# ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
+
+# ---- 只读日志：穿山甲广告平台（广告配置 / 领奖回调 / 开屏广告） ----
+response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=10, tag="福利页打卡"
+cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
+
+
+# ============================================================================
+# 4. [MITM]
+# ----------------------------------------------------------------------------
+# beta-luna.douyin.com：福利页/激励广告/商业化弹窗接口。
+# 5 个广告域名：blockAdDomains 开关需要（HTTPS 必须先解密）。
+#                如果开开关后激励广告播不了，把这 5 个域名注释掉。
+# ============================================================================
+
+[MITM]
+
+hostname = %APPEND% beta-luna.douyin.com, polaris.zijieapi.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads5-normal-hl.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn
