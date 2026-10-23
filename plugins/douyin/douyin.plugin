@@ -95,7 +95,7 @@ reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分
 [Script]
 
 # ---- 福利页精简：只留【攒时长 听歌不中断】 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v2/ then script("scripts/treasure.min.js", {${treasureMinimal}}) with enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}}) with enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
 
 # ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}}) with enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
@@ -116,7 +116,7 @@ response if ${url} ~= /^https?:\/\/polaris\.zijieapi\.com\/luckycat\/activity\/s
 request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${blockAdDomains}}) with enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
 
 # ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v2|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
 
 # ---- 只读日志：穿山甲广告平台（广告配置 / 领奖回调 / 开屏广告） ----
 response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"

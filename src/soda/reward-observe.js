@@ -51,6 +51,7 @@ const RULES = [
   { id: "reward-settle", match: /\/luna\/ads\/reward\/settle/ },
   { id: "validate-reward", match: /\/luna\/commerce\/validate_reward/ },
   { id: "task-view", match: /\/luna\/treasure\/task\/view/ },
+  { id: "task-page", match: /\/luna\/treasure\/task\/page\/v[0-9]+/ },
   { id: "treasure-entrance", match: /\/luna\/treasure\/entrance\/config/ },
   { id: "reward-ads-action", match: /\/luna\/treasure\/task\/reward_ads\/do_action/ },
   { id: "fallback-action", match: /\/luna\/treasure\/task\/fallback\/do_action/ },

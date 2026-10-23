@@ -9,7 +9,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 1, 37, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 1, 39, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 0, 10, "douyin"),
 ]
 
@@ -40,7 +40,7 @@ FAMILY_CHECKS = {
             "settingsClean": 1,
             "hideDouyinEntry": 1,
             "blockSplashAd": 1,
-            "debugLog": 20,
+            "debugLog": 22,
         },
         "mitm": [
             "api.qishui.com",

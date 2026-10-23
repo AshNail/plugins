@@ -1,13 +1,14 @@
 const src = require("./load-script")("reward-observe.js");
 
-function run(url, body) {
+function run(url, body, argument) {
   let out = null;
   const logs = [];
-  new Function("$request", "$response", "$done", "console", src)(
+  new Function("$request", "$response", "$done", "console", "$argument", src)(
     { url },
     { body: typeof body === "string" ? body : JSON.stringify(body) },
     (v) => { out = v; },
-    { log: (...a) => logs.push(a.join(" ")) }
+    { log: (...a) => logs.push(a.join(" ")) },
+    argument
   );
   return { out, logs };
 }
@@ -325,6 +326,44 @@ console.log("\n[14b] upsell_sort_decision stays unobserved");
   });
   check("no body rewrite", unchanged(r));
   check("no logs", r.logs.length === 0, logText(r));
+}
+
+console.log("\n[15] task/page v2（HAR 393 真样本，v2.6.1 补绑）");
+{
+  const fs = require("fs");
+  const page = fs.readFileSync(
+    require("path").join(__dirname, "fixtures", "soda_task_page_v2.json"), "utf8"
+  );
+  const PREFIX = "[soda-reward] task-page ";
+  const r = run("https://beta-luna.douyin.com/luna/treasure/task/page/v2", page);
+  check("observed (rule fires)", r.logs.length > 0, "no logs");
+  const line = r.logs.find((l) => l.indexOf(PREFIX) === 0);
+  check("summary line found", !!line, r.logs.join("|").slice(0, 120));
+  const s = JSON.parse((line || "").slice(PREFIX.length));
+  check("task count >= 10", Array.isArray(s.tasks) && s.tasks.length >= 10,
+        s.tasks && s.tasks.length);
+  check("status preserved", s.status === 0, s.status);
+  check("no body rewrite", unchanged(r));
+}
+
+console.log("\n[16] logTaskTitles=开：v2 任务标题随样本带出");
+{
+  const fs = require("fs");
+  const page = fs.readFileSync(
+    require("path").join(__dirname, "fixtures", "soda_task_page_v2.json"), "utf8"
+  );
+  const PREFIX = "[soda-reward] task-page ";
+  const r = run("https://api.qishui.com/luna/treasure/task/page/v2", page,
+                { logTaskTitles: true });
+  const line = r.logs.find((l) => l.indexOf(PREFIX) === 0);
+  check("observed via api.qishui host", !!line, r.logs.join("|").slice(0, 120));
+  const s = JSON.parse(line.slice(PREFIX.length));
+  const titles = (s.tasks || []).map((t) => t.title || "").join("|");
+  check("标题含 签到 得金币", /签到/.test(titles), titles);
+  check("标题含 看广告 赚金币", /看广告/.test(titles), titles);
+  check("标题含 攒时长", /攒时长/.test(titles), titles);
+  check("max 24 字截断不失控",
+        (s.tasks || []).every((t) => !t.title || t.title.length <= 25), titles);
 }
 
 console.log("\n----------------------------------------");

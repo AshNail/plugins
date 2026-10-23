@@ -365,7 +365,7 @@ function readBody(resp) {
       return utf8($utils.ungzip(bytes));
     }
   } catch (e) {
-    console.log("[soda] ungzip failed: " + e);
+    console.log("[douyin-reward] ungzip failed: " + e);
   }
   return utf8(bytes);
 }
@@ -384,7 +384,7 @@ function markHeaders(reason) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const raw = ($response && $response.body) || "";
+    const raw = readBody($response);
     if (typeof raw !== "string" || raw.length === 0) return $done({});
     const head = raw.trimStart().slice(0, 1);
     if (head !== "{" && head !== "[") return $done({});
@@ -396,7 +396,7 @@ function markHeaders(reason) {
       return $done({});
     }
 
-    if (/\/luna\/treasure\/task\/page\/v2/.test(url)) observeTreasure(obj);
+    if (/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) observeTreasure(obj);
     else if (/\/luna\/advert\/incentive\/config/.test(url)) observeIncentiveConfig(obj);
     else if (/\/luna\/advert\/incentive\/retrieve/.test(url)) observeIncentiveRetrieve(obj);
     else if (/\/luna\/advert\/incentive\/done/.test(url)) observeIncentiveDone(obj);

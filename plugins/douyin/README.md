@@ -326,6 +326,13 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 - 新增 `dailyReminder` / `reminderCron` 与 `scripts/welfare-stamp.min.js`：
   打卡 `beta-luna.douyin.com/luna/treasure/task/page`（`[MITM]` 新增该域），
   当天未打卡到点通知；统计键 `douyin-ad-stats`。
+- **内部整理（2026-10-23 同批）**：
+  1. `observe.js` 主流程改走 `readBody`——原先直读 `$response.body`，Loon 交接
+     gzip 原串时观察者会静默失效（readBody 明写了兼容三种形态但没被调用）；
+  2. 页面兼容范围 `task/page/v2` → `task/page/v[0-9]+`（treasure.js / observe.js /
+     两处插件绑定同步），为下一版页号漂移兜底；
+  3. clean.js / treasure.js 各删除一份重复的工具块声明（pargs/pflag 复制两次），
+     `[soda]` 误用 tag 修正为家族各自前缀。
 - 边界不变：`marketing/done` 等领奖请求仍为**观测只读**；抖音侧奖励受服务端设备风控
   （1000043/210021），插件不可绕过也不尝试绕过。
 

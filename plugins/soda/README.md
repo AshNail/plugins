@@ -21,7 +21,7 @@
 
 **历史：保奖励模式（独立插件 v0.2.3，已合并）**：`SodaClean-Reward.plugin` 只清开屏品牌广告，**保留**激励广告、奖励任务、发奖链路，并**刻意不碰 upsell**（可能承载 `UpsellStyleRewardAdsDefault` / `reward_btn_text` 等激励入口）。适合“完整看完广告后正常领奖”；**不拦任何域名**（包括 App Store 评分弹窗 `praisewindow.ugsdk.cn`），信息流/DSP/商业弹窗可能仍会出现。与主插件、设置插件二选一，不能同时启用。
 
-**历史：激励链路观测（只读 v0.2.2，已合并为 `debugLog`）**：`SodaClean-Reward-Debug.plugin` 只写 `[soda-reward]` 日志，不修改响应；观察 20 个激励/任务/入口端点，用来判断广告源、`reward_ads` 任务、发奖接口、`fallback/flip_card/guide/browse_mall` 动作，以及 `upsell` 的奖励入口变量到底卡在哪一层。可与保奖励插件同时启用，排障后停用。
+**历史：激励链路观测（只读 v0.2.2，已合并为 `debugLog`）**：`SodaClean-Reward-Debug.plugin` 只写 `[soda-reward]` 日志，不修改响应；观察 22 个激励/任务/入口端点绑定（v2.6.1 起含 `task/page`），用来判断广告源、`reward_ads` 任务、发奖接口、`fallback/flip_card/guide/browse_mall` 动作，以及 `upsell` 的奖励入口变量到底卡在哪一层。可与保奖励插件同时启用，排障后停用。
 
 **历史：统一开关版（实验 v0.1.0 → v2.1.0）**：`SodaClean-Unified.plugin` 是当前 `soda.plugin` 的前身。v2.1.0 起域名拦截也做成了开关（`blockAdDomains`，MITM + `http-request` 脚本），`[Rule]` 只作为不依赖 MITM 的手动严格模式保留。
 
@@ -704,7 +704,18 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
   8 个金币任务中只摘 `music_incentive_ad`，资产金额 256/55/3 与签到 7 档奖励原样保留；
   新套件 `test_soda_task_page_v2.js` 27 断言（含反误删哨兵、push_permission 存活
   哨兵与三通道分发验证）。
-- 版本联动：lint 期望 scripts 35→37、`cleanAds` enable 计数 7→9。
+- **观察面补绑**：`reward-observe` 此前只绑 api.qishui.com 的 20 个端点，真机页面来自
+  beta-luna.douyin.com 的 task/page 从未被观测——补 RULES `task-page` 条目 +
+  beta-luna / api.qishui 双绑定（`enable=${debugLog}`），并新增 [15]/[16] 断言：
+  393 样本出 ≥10 任务摘要；`logTaskTitles=开` 时签到/看广告/攒时长标题随日志带出
+  （C 步采集链路就此就绪）。
+- **内部整理（行为不变）**：`settings.js` / `sanitize.js` 各删除一份重复的
+  pargs/pflag 工具块声明（复制两份，Terser 也会白编译）；`reward-observe` 观测 tag
+  端点计数 20→22。
+- **观察脚本健壮性**：`douyin/observe.js` 主流程原直读 `$response.body`（Loon 交接
+  gzip 原串时静默失效），改走 `readBody`；treasure/observe 页面正则放宽
+  `page/v2` → `page/v[0-9]+`。
+- 版本联动：lint 期望 scripts 35→39、`cleanAds` enable 计数 7→9、`debugLog` 20→22。
 
 ### v2.6.0（2026-10-22）每日提醒打卡 + 开屏家族兜底
 

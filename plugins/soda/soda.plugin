@@ -154,7 +154,7 @@ response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// t
 request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:v1\/)?splash\// then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
 
 # ---- 只读日志：20 个激励/任务/入口端点，不修改响应 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：20 个激励/任务/入口端点，不修改响应"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：22 个激励/任务/入口端点绑定，不修改响应"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/done/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
@@ -163,6 +163,8 @@ response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/dsp\/retrieve/ t
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/receive/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/settle/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/validate_reward/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读观测：task/page 任务标题（v2.6.1 补）"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/page/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读观测：task/page 任务标题（v2.6.1 补）"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/reward_ads\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
