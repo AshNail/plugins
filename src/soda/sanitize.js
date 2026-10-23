@@ -195,6 +195,25 @@ const RULES = [
       { key: "data", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看视频|看广告|广告/i },
       { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ]
+  },
+  {
+    id: "task-page",
+    match: /\/luna\/treasure\/task\/page\/v[0-9]+/,
+    /*
+     * v2.6.1 · sections 形态（task/page/v2，HAR 393 真样本实证）：
+     * data.sections[].task_group.tasks —— 结构化摘广告任务
+     * （music_incentive_ad / polaris_incentive_ad_v3 家族 / 标题广告词），
+     * 签到、翻卡、攒时长、逛街等正常任务保留（它们的 ad_token/ad_snap
+     * 只是观测归因，不作为判别依据）。banner 广告位照旧清。
+     */
+    kill: ["adsBanner", "rewardAdBanner", "rewardAdBannerExtra",
+           "popupShowAd", "actionPopupShowAd"],
+    prune: [
+      { key: "tasks", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看广告|看视频|广告/i },
+      { key: "taskInfos", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看广告|看视频|广告/i },
+      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
+    ],
+    fastReject: /"sections"\s*:|"tasks"\s*:/
   }
 ];
 
@@ -390,6 +409,45 @@ function isAdItem(o) {
   return hasAd && !hasMedia;
 }
 
+/*
+ * 【循环八/C 步 · 任务对象结构化判别（true样本 = HAR 393 task/page/v2）】
+ * ------------------------------------------------------------
+ * v1 时代的整条 stringify 匹配（extra.ad_task_id / ad_snap 一并命中）
+ * 在 v2 sections 形态下会误删带广告归因的**正常任务**（签到/翻卡都带
+ * ad_token/ad_snap）。v2.6.1 起对 tasks / taskInfos 容器改判别依据：
+ *   1) item.key 在显式广告任务键名单（music_incentive_ad，样本实证）；
+ *   2) item.type 命中 incentive_ad 家族（样本实证 polaris_incentive_ad_v3）；
+ *   3) task 标题（view.title.plain_text / title）命中广告关键词。
+ * 领奖/发奖字段零接触；luna_rewards_ads（攒时长）壹在保留名单。
+ */
+const AD_TASK_KEYS = new Set(["music_incentive_ad"]);
+const AD_TASK_TYPE = /incentive[_-]?ad/i;
+const AD_TASK_TITLE = /看广告|看视频|广告/i;
+/* 仅判别 key/task_key 标识串（绝不 stringify 任务体——防 extra.ad_token 误杀）。
+ * 家族刻意收窄：裸 /incentive/ 会误杀 luna_incentive_push_permission（打卡提醒，
+ * 393 样本实证是正常福利）；/reward[_-]?ads?/ 对 luna_rewards_ads（攒时长）无命中。 */
+const AD_TASK_KEY_RE = /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)/i;
+
+function taskTitleOf(item) {
+  if (item && item.view && item.view.title) {
+    const t = item.view.title;
+    if (typeof t === "string") return t;
+    if (t && typeof t.plain_text === "string") return t.plain_text;
+  }
+  if (item && typeof item.title === "string") return item.title;
+  return "";
+}
+
+function isAdTaskEntry(item) {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+  var key = (typeof item.key === "string" && item.key) ||
+    (typeof item.task_key === "string" && item.task_key) || "";
+  if (key && AD_TASK_KEYS.has(key)) return true;
+  if (key && AD_TASK_KEY_RE.test(key)) return true;
+  if (typeof item.type === "string" && AD_TASK_TYPE.test(item.type)) return true;
+  return AD_TASK_TITLE.test(taskTitleOf(item));
+}
+
 function dropAdItems(node, log, path, depth) {
   if (depth > 14) return;
 
@@ -469,7 +527,9 @@ function rewrite(node, rule, path, log, depth) {
       for (const p of pruneList) {
         if (nk !== p.key) continue;
         hit = true;
+        const structured = (nk === "tasks" || nk === "taskinfos");
         const kept = val.filter(function (item) {
+          if (structured) return !isAdTaskEntry(item);
           return !p.match.test(safeString(item));
         });
         if (kept.length !== val.length) {

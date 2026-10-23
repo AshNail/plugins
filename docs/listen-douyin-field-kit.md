@@ -98,9 +98,26 @@ const DOUYIN_CONTAINER = /tabs|tab_items|task_infos|entrances?/; // ← 按真�
    枚举值；`listenDouyin` = Swift 播放源 case；`task_douyin_request_result` = tab 埋点事件
    （客户端存在显式的听抖音任务识别点）。
 
+### 5.1 C 步样本第一报：HAR 393（2026-10-23 判读）
+
+真机 task/page/v2 全量样本到手（`tests/fixtures/soda_task_page_v2.json`，tokens 已脱敏）：
+
+- **合同正判**：`task.key` 仍是稳定判别字段；`task.type` 不可靠（`''` / `luna_base_task` /
+  `polaris_incentive_ad_v3` 混用）。10 任务键位全量落档：`luna_rewards_ads` / `soda_music_sign_in` /
+  `luna_treasure_shop` / `music_incentive_ad` / `luna_treasure_draw_duration` /
+  `luna_treasure_red_packet_rain` / `luna_incentive_push_permission` / `luna_treasure_flip_card` /
+  `luna_treasure_caijing_daily_cash` / `music_ug_treasure`。
+- **负样本定论**：本场 **0 个抖音任务**（仅 douyinpic.com 图标 CDN 命中）——
+  v2.6.1 的结构化判别（键 + type 家族 + 标题）先修广告任务与误删回归；
+  抖音专属键仍待一场有抖音任务的 `logTaskTitles=开` 日志（见 §6 未勾项）。
+- **v2.6.1 已落地**：合并入体 ad-task 判别，basis 见 soda README §11 v2.6.1 条目。
+
 ## 6. 完成定义（DoD）
 
-- [ ] 日志回贴 `parse-task-titles.py` 输出含 ≥1 条 ★ 条目
+- [ ] 日志回贴 `parse-task-titles.py` 输出**含抖音任务**（签名 ★ 条目）——393 样本为负
+  （0 个抖音任务），仍需一场真实出现听抖音任务的 `logTaskTitles=开` 日志
 - [ ] 判定行给出轨道建议（.key 驱动 / 标题校正）
-- [ ] `src/soda/sanitize.js` 落地对应 diff（含新 fixture + 断言）
-- [ ] `npm run check`（38 套件全绿）→ 版本 `soda 2.6.1` → 发布
+- [x] 代码侧 diff 落地（**先行半量**，2026-10-23）：结构化判别（键/类型/标题三分量）
+  已进 `src/soda/sanitize.js` 并对合并入体广告任务生效；fixture = 393 真样本；
+  抖音专属 key 增量勾在抖音样本到位后（只改 `AD_TASK` 常量 + 1 个断言）
+- [x] `npm run check` 全绿 → 版本 `soda 2.6.1`（本机）；发布仍待 `gh auth login`

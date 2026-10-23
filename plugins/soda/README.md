@@ -614,7 +614,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.0）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.1）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -687,6 +687,24 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 ---
 
 ## 11. 版本更新记录
+
+### v2.6.1（2026-10-23）task/page 结构化判别 + 真样本回归
+
+- **新通道**：`luna/treasure/task/page/v[0-9]`（beta-luna.douyin.com 与 api.qishui.com 双绑定，
+  `enable=${cleanAds}` 默认惰性）接入 sanitize——cleanAds 此前对该端点 `skip=no-rule`，
+  v2 sections 形态的广告任务完全无人处理。
+- **结构化判别**（修复整条 stringify 匹配的误删）：v1 时代 `p.match.test(safeString(item))`
+  会把带 `extra.ad_task_id` / `ad_snap` 的**正常任务**（签到 / 翻卡）误判成广告条目删掉。
+  对 `tasks` / `taskInfos` 容器改用三分量判别：
+  1) `item.key` ∈ 显式广告任务键名单（`music_incentive_ad`）；
+  2) `item.type` 命中 incentive_ad 家族（`polaris_incentive_ad_v3` 等）；
+  3) 任务标题（`view.title.plain_text`）命中广告词。
+  领奖/发奖字段零接触；`luna_rewards_ads`（攒时长）在保留名单。
+- **证据**：HAR 393 真机样本（`tests/fixtures/soda_task_page_v2.json`，tokens 已脱敏）——
+  8 个金币任务中只摘 `music_incentive_ad`，资产金额 256/55/3 与签到 7 档奖励原样保留；
+  新套件 `test_soda_task_page_v2.js` 27 断言（含反误删哨兵、push_permission 存活
+  哨兵与三通道分发验证）。
+- 版本联动：lint 期望 scripts 35→37、`cleanAds` enable 计数 7→9。
 
 ### v2.6.0（2026-10-22）每日提醒打卡 + 开屏家族兜底
 

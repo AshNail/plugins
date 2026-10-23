@@ -1,0 +1,1082 @@
+{
+ "data": {
+  "sections": [
+   {
+    "key": "asset_section",
+    "type": 1,
+    "view": {
+     "title": {
+      "type": 1,
+      "plain_text": "我的资产"
+     },
+     "button": {
+      "text": {
+       "type": 1,
+       "plain_text": "提现"
+      },
+      "schema": "sslocal://polaris/proxy?scene_key=withdraw&ug_activity_id=common_wallet&wallet_id=luna_wallet&service_type=user&account_type=CNY"
+     }
+    },
+    "strategy": {
+     "style": {
+      "assets_card_type": "custom",
+      "operation_area_style": "v2"
+     }
+    },
+    "asset_group": {
+     "assets": [
+      {
+       "title": {
+        "type": 1,
+        "plain_text": "金币收益"
+       },
+       "amount": 256,
+       "amount_type": "gold",
+       "schema": "sslocal://polaris/proxy?scene_key=profit&ug_activity_id=common_wallet&wallet_id=luna_wallet&service_type=user&account_type=gold",
+       "tips": {
+        "type": 1,
+        "plain_text": "每日凌晨自动兑换成现金，到账可能存在延迟"
+       }
+      },
+      {
+       "title": {
+        "type": 1,
+        "plain_text": "现金收益"
+       },
+       "amount": 55,
+       "amount_type": "CNY",
+       "schema": "sslocal://polaris/proxy?scene_key=profit&ug_activity_id=common_wallet&wallet_id=luna_wallet&service_type=user&account_type=CNY"
+      },
+      {
+       "title": {
+        "type": 1,
+        "plain_text": "免费听时长"
+       },
+       "amount": 3,
+       "amount_type": "day",
+       "schema": "luna://luna.com/coin?task_id=600590"
+      }
+     ],
+     "operation_area": {
+      "buttons": [
+       {
+        "text": {
+         "type": 1,
+         "plain_text": "去提现"
+        },
+        "schema": "sslocal://polaris/proxy?scene_key=withdraw&ug_activity_id=common_wallet&wallet_id=luna_wallet&service_type=user&account_type=CNY"
+       },
+       {
+        "text": {
+         "type": 1,
+         "plain_text": "兑换"
+        },
+        "schema": "luna://luna.com/upsell?unique_name=coin_redeem_vip_popup",
+        "icon": {
+         "url": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/normal_resource/image/coin_asset_vip.webp"
+        },
+        "tips": {
+         "type": 1,
+         "plain_text": "现金金额可兑换汽水会员"
+        }
+       }
+      ]
+     },
+     "multiplier_bar": {
+      "title": {
+       "type": 1,
+       "plain_text": "享金币获取1.2倍加速"
+      },
+      "button": {
+       "text": {
+        "type": 5,
+        "price": {
+         "scene": "popup_svip_only",
+         "default": "低价开通"
+        },
+        "suffix": {
+         "type": 1,
+         "plain_text": "元开通"
+        }
+       },
+       "action": "schema",
+       "schema": "luna://luna.com/upsell?unique_name=task_page_svip_popup"
+      },
+      "icon": "http://p6-luna.douyinpic.com/tos-cn-i-b829550vbb/6a115221b783a2a4bac9081abd33ad67.png~tplv-b829550vbb-ori.image"
+     }
+    }
+   },
+   {
+    "key": "duration_task_section",
+    "type": 2,
+    "strategy": {
+     "style": {
+      "follow_me_tab_banner": "false"
+     }
+    },
+    "task_group": {
+     "tasks": [
+      {
+       "id": "600590",
+       "key": "luna_rewards_ads",
+       "type": "",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "攒时长 听歌不中断"
+        },
+        "subtitle": {
+         "type": 2,
+         "prefix": {
+          "type": 1,
+          "plain_text": "已解锁"
+         },
+         "countdown_text": {
+          "countdown": {
+           "duration": 3,
+           "unit": 2,
+           "format": "d",
+           "suffix": "天"
+          }
+         },
+         "suffix": {
+          "type": 1,
+          "plain_text": " 再看1次提前解锁下一天"
+         }
+        },
+        "icon": "http://p6-luna.douyinpic.com/tos-cn-i-b829550vbb/1d766de90ece01c29c41488f160b67e8.png~tplv-b829550vbb-image.image",
+        "tag": {
+         "icon": "http://p3-luna.byteimg.com/tos-cn-i-b829550vbb/cc71cfa2aa48f5e66404add8830b9553.png~tplv-b829550vbb-image.image"
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "领时长"
+         },
+         "action": "redirect",
+         "schema": "sslocal://luckydog/activity_task?luckydog_task_type=luna_watch_ads_settle_vip&luckydog_global_task_id=20261022:656865033715820:1:30:3&luckydog_task_token=CnL5aCdAkXEHHQwXiUAvo_jLuypMxYTGs7VvWN8Zg_U2XNMPp5K2I3DFnIeiegYMh36DrqFL9bYTszFmfJSaOAXaCJf9P1B1H6ARFLUpwXuAMrsntCivAlOOiTrv2l8FvREwvinHTqZwviM1adMGX-Wvo6AaSwo8AAAAAAAAAAAAAFEMHu3QsGnUFLO9GwS6xHxar1EwHOJ7cv9Qzyd5apxR3jfblERwfmJLeXY4l3JQJqQlEMLLnw4Y76SBqwIgASIBA2d0ZvI&extra={\"creator_id\":\"210036\",\"ad_type\":\"ads_get_duration\",\"from_page\":\"coin_task_list\"}",
+         "style": "primary"
+        }
+       },
+       "assets": [
+        {
+         "title": {
+          "type": 1,
+          "plain_text": "免费听时长"
+         },
+         "amount": 3,
+         "amount_type": "day",
+         "schema": "luna://luna.com/coin?task_id=600590"
+        }
+       ],
+       "params": {
+        "is_issue_additional_coin": "0"
+       },
+       "strategy": {
+        "style": {
+         "follow_me_tab_banner": "false"
+        }
+       },
+       "discrepancy_data": {
+        "reward_ads": {
+         "progress": [
+          {
+           "text": {
+            "type": 1,
+            "plain_text": "第3天"
+           },
+           "is_completed": true,
+           "seq": 300,
+           "children": [
+            {
+             "text": {
+              "type": 0
+             },
+             "is_completed": true,
+             "seq": 301
+            },
+            {
+             "text": {
+              "type": 0
+             },
+             "is_completed": true,
+             "seq": 302
+            }
+           ]
+          },
+          {
+           "text": {
+            "type": 1,
+            "plain_text": "第4天"
+           },
+           "is_completed": false,
+           "seq": 400,
+           "children": [
+            {
+             "text": {
+              "type": 0
+             },
+             "is_completed": true,
+             "seq": 401
+            },
+            {
+             "text": {
+              "type": 0
+             },
+             "is_completed": false,
+             "seq": 402
+            }
+           ]
+          },
+          {
+           "text": {
+            "type": 1,
+            "plain_text": "第5天"
+           },
+           "is_completed": false,
+           "seq": 500,
+           "children": [
+            {
+             "text": {
+              "type": 0
+             },
+             "is_completed": false,
+             "seq": 501
+            },
+            {
+             "text": {
+              "type": 0
+             },
+             "is_completed": false,
+             "seq": 502
+            }
+           ]
+          }
+         ]
+        }
+       }
+      }
+     ],
+     "style": "single_default",
+     "assets": [
+      {
+       "title": {
+        "type": 1,
+        "plain_text": "免费听时长"
+       },
+       "amount": 3,
+       "amount_type": "day",
+       "schema": "luna://luna.com/coin?task_id=600590"
+      }
+     ]
+    }
+   },
+   {
+    "key": "gold_task_section",
+    "type": 2,
+    "view": {
+     "title": {
+      "type": 1,
+      "plain_text": "做任务 赚金币"
+     }
+    },
+    "task_group": {
+     "tasks": [
+      {
+       "id": "600585",
+       "key": "soda_music_sign_in",
+       "type": "",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "签到得金币"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "坚持每日签到得更多金币"
+        },
+        "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_task_icon_sign.png",
+        "tag": {
+         "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_tag_default.png",
+         "text": {
+          "type": 1,
+          "plain_text": "288"
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "288",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去签到"
+         },
+         "action": "do_action",
+         "style": "primary"
+        }
+       },
+       "stats": {
+        "completed_times": 0,
+        "last_completed_time": 0
+       },
+       "rewards": [
+        {
+         "reward_type": 2,
+         "reward_amount": 288
+        },
+        {
+         "reward_type": 2,
+         "reward_amount": 388
+        },
+        {
+         "reward_type": 2,
+         "reward_amount": 288
+        },
+        {
+         "reward_type": 2,
+         "reward_amount": 288
+        },
+        {
+         "reward_type": 2,
+         "reward_amount": 288
+        },
+        {
+         "reward_type": 2,
+         "reward_amount": 288
+        },
+        {
+         "reward_type": 2,
+         "reward_amount": 688
+        }
+       ],
+       "countdown_config": {
+        "end_time": 0
+       },
+       "ad_snap": {
+        "rit": 73031,
+        "cid": 100100,
+        "token": "REDACTED",
+        "task_id": "600577"
+       },
+       "extra": "{\"ad_task_id\":600577,\"ad_token\":\"CkFi_eLEilJf_f8VAbpmoVo6t58bmc_AdeiWHyPzDBGLvhHP3IjqKQflptgsWqG-7ZrVp5k6GWCJPd9Ux32Hs0YtfxpLCjwAAAAAAAAAAAAAT8oY9ctLps3FYwl6P0VNxufma0CQ2S4dyTTikjwrvePIdyCLZWOM9f4RycCOecawedwQzaaDDhjvpIGrAiABIgEDFo5hxw\",\"ad_type\":\"\",\"cid\":100100,\"cur_completed_times\":0,\"extra\":\"\",\"listen_duration\":0,\"popup_show_times\":0,\"rit\":73031,\"server_ts\":1792671884}",
+       "discrepancy_data": {
+        "sign_in": {
+         "cur_completed_times": 0,
+         "can_execute": true,
+         "all_task_completed": false
+        }
+       }
+      },
+      {
+       "id": "601013",
+       "key": "luna_treasure_shop",
+       "type": "luna_base_task",
+       "token": "REDACTED",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "逛街赚金币"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "浏览低价商品30秒即得1359金币，每日可完成0/15次"
+        },
+        "icon": "http://p6-luna.douyinpic.com/tos-cn-i-b829550vbb/coin_task_icon_shop_v2_green.png~tplv-b829550vbb-image.image",
+        "tag": {
+         "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_tag_default.png",
+         "text": {
+          "type": 1,
+          "plain_text": "最高5000"
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "最高5000",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去逛街"
+         },
+         "action": "jsb",
+         "style": "primary",
+         "jsb": {
+          "name": "openAggregationPage",
+          "param": {
+           "scene": "LUNA_AGGREGATION"
+          }
+         }
+        }
+       },
+       "stats": {
+        "total_times": 15,
+        "completed_times": 0,
+        "last_pickup_time": 0,
+        "last_completed_time": 0,
+        "last_rewarded_time": 0
+       },
+       "rewards": [
+        {
+         "reward_type": 2,
+         "reward_amount": 1359
+        }
+       ],
+       "countdown_config": {
+        "end_time": 0
+       },
+       "extra": "{\"rit\":0,\"cid\":0,\"ad_task_id\":0,\"last_completed_time\":0}",
+       "discrepancy_data": {
+        "shop": {
+         "shop_seconds": 30
+        }
+       }
+      },
+      {
+       "id": "600572",
+       "key": "music_incentive_ad",
+       "type": "polaris_incentive_ad_v3",
+       "token": "REDACTED",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "看广告赚金币"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "本次得3090金币，已完成0次"
+        },
+        "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_task_icon_ad.png",
+        "tag": {
+         "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_tag_default.png",
+         "text": {
+          "type": 1,
+          "plain_text": "3090"
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "3090",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去完成"
+         },
+         "action": "incentive_ad",
+         "style": "primary"
+        }
+       },
+       "stats": {
+        "total_times": 20,
+        "completed_times": 0,
+        "last_pickup_time": 0,
+        "last_completed_time": 0,
+        "last_rewarded_time": 0
+       },
+       "rewards": [
+        {
+         "reward_type": 2,
+         "reward_amount": 3090,
+         "reward_max_amount": 5000,
+         "reward_name": "金币",
+         "extra": "{\"max_amount\":5000,\"strategy\":{\"amount_show_strategy\":{\"activity_popup\":\"expand\"}}}"
+        }
+       ],
+       "countdown_config": {
+        "end_time": 0
+       },
+       "ad_snap": {
+        "rit": 73031,
+        "cid": 100300,
+        "task_id": "0",
+        "noneed_one_stage_amount": true
+       },
+       "strategy": {
+        "amount_show_strategy": {
+         "activity_popup": "expand"
+        }
+       },
+       "extra": "{\"incentive_ad_info\":{\n        \"ad_rit\": \"73031\",\n        \"ad_alias_position\": \"100300\",\n        \"new_ad_version_map\": { \"android\": 0, \"ios\": -1 }\n    },\"rit\":73031,\"cid\":100300,\"ad_task_id\":0,\"noneed_one_stage_amount\":true}",
+       "discrepancy_data": {
+        "base_ad": {
+         "incentive_ad_info": {
+          "rit": "73031",
+          "cid": "100300"
+         }
+        }
+       }
+      },
+      {
+       "id": "601232",
+       "key": "luna_treasure_draw_duration",
+       "type": "luna_base_task",
+       "token": "REDACTED",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "连续刷视频赚金币"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "体验加倍奖励机制，一次赚到爽"
+        },
+        "icon": "http://p3-luna.byteimg.com/tos-cn-i-b829550vbb/360e1c6cce1ee75ac58d29c61f76c472.png~tplv-b829550vbb-image.image",
+        "tag": {
+         "icon": "",
+         "text": {
+          "type": 1,
+          "plain_text": ""
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "海量",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去完成"
+         },
+         "action": "jsb",
+         "style": "primary",
+         "jsb": {
+          "name": "openDrawRewardAd",
+          "param": {
+           "creator_id": "73032001",
+           "rit": "73032",
+           "scene": "LUNA_DRAW_REWARD"
+          }
+         }
+        }
+       },
+       "stats": {
+        "total_times": 20,
+        "completed_times": 0,
+        "last_pickup_time": 0,
+        "last_completed_time": 0,
+        "last_rewarded_time": 0
+       },
+       "countdown_config": {
+        "end_time": 0
+       },
+       "extra": "{\"incentive_ad_info\":{\n        \"ad_rit\": \"73032\",\n        \"ad_alias_position\": \"73032001\",\n        \"new_ad_version_map\": {\n            \"android\": 0,\n            \"ios\": -1\n        }\n    },\"rit\":0,\"cid\":0,\"ad_task_id\":0,\"last_completed_time\":0}",
+       "discrepancy_data": {
+        "draw_task": {
+         "incentive_ad_info": {
+          "rit": "73032",
+          "cid": "73032001"
+         }
+        }
+       }
+      },
+      {
+       "id": "600625",
+       "key": "luna_treasure_red_packet_rain",
+       "type": "luna_base_task",
+       "token": "REDACTED",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "红包雨"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "一大波红包来袭，先到先得"
+        },
+        "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_task_icon_red_coin.png",
+        "tag": {
+         "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_tag_default.png",
+         "text": {
+          "type": 1,
+          "plain_text": "最高1200"
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "最高1200",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去领取"
+         },
+         "action": "do_action",
+         "style": "primary"
+        }
+       },
+       "stats": {
+        "total_times": 50,
+        "completed_times": 0,
+        "last_pickup_time": 0,
+        "last_completed_time": 1792499161,
+        "last_rewarded_time": 0
+       },
+       "rewards": [
+        {
+         "reward_type": 2,
+         "reward_amount": 0
+        }
+       ],
+       "countdown_config": {
+        "end_time": 0
+       },
+       "ad_snap": {
+        "rit": 73031,
+        "cid": 100400,
+        "token": "REDACTED",
+        "task_id": "600626"
+       },
+       "extra": "{\"rit\":73031,\"cid\":100400,\"ad_task_id\":600626,\"ad_token\":\"CkFk_3YH34GUvnmhxJHyY4yvhCFgmjvunPCpi8kitvJAEdMAFzcn5tZh_dskHLrAs_46dFPUeSD3mfxFGzkvA_c5gRpLCjwAAAAAAAAAAAAAT8oY9ctLps3FYwl6P0VNxufma0CQ2S4dyTTikjwrvePIdyCLZWOM9f4RycCOecawedwQ-qSDDhjvpIGrAiABIgEDdfL67A\",\"last_completed_time\":1792499161}"
+      },
+      {
+       "id": "601839",
+       "key": "luna_incentive_push_permission",
+       "type": "luna_base_task",
+       "token": "REDACTED",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "每天提醒我来赚金币"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "打开通知开关，立得3333金币"
+        },
+        "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_tag_default.png",
+        "tag": {
+         "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_tag_default.png",
+         "text": {
+          "type": 1,
+          "plain_text": "3333"
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "3333",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去开启"
+         },
+         "style": "primary"
+        }
+       },
+       "stats": {
+        "total_times": 1,
+        "completed_times": 0,
+        "last_pickup_time": 0,
+        "last_completed_time": 0,
+        "last_rewarded_time": 0
+       },
+       "rewards": [
+        {
+         "reward_type": 2,
+         "reward_amount": 3333
+        }
+       ],
+       "countdown_config": {
+        "end_time": 0
+       },
+       "extra": "{\"rit\":0,\"cid\":0,\"ad_task_id\":0,\"last_completed_time\":0}"
+      },
+      {
+       "id": "600662",
+       "key": "luna_treasure_flip_card",
+       "type": "luna_base_task",
+       "token": "REDACTED",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "翻卡赢金币"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "看广告赢翻卡机会，24小时有效"
+        },
+        "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_task_icon_flip_card.png",
+        "tag": {
+         "icon": "https://lf-sourcecdn-tos.bytegecko.com/obj/byte-gurd-source/10899/gecko/resource/high_priority_resource/image/coin_tag_default.png",
+         "text": {
+          "type": 1,
+          "plain_text": "最高9999"
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "最高9999",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去翻卡"
+         },
+         "action": "flip_card",
+         "schema": "luna://luna.com/coin?action=flip_card",
+         "style": "primary"
+        }
+       },
+       "stats": {
+        "total_times": 24,
+        "completed_times": 1,
+        "last_pickup_time": 0,
+        "last_completed_time": 1789194671,
+        "last_rewarded_time": 0
+       },
+       "rewards": [
+        {
+         "reward_type": 2,
+         "reward_amount": 1234
+        }
+       ],
+       "countdown_config": {
+        "end_time": 0
+       },
+       "ad_snap": {
+        "rit": 73031,
+        "cid": 100500,
+        "task_id": "600691",
+        "noneed_one_stage_amount": true
+       },
+       "extra": "{\"rit\":73031,\"cid\":100500,\"ad_task_id\":600691,\"noneed_one_stage_amount\":true,\"last_completed_time\":1789194671,\"today_finish_cnt\":0}",
+       "discrepancy_data": {
+        "flip_card": {
+         "cards": [
+          {
+           "name": "个位卡",
+           "amount": "4",
+           "status": 1,
+           "want": 1,
+           "got": 0,
+           "action": "flip_card",
+           "icon": ""
+          },
+          {
+           "name": "十位卡",
+           "amount": "3",
+           "status": 0,
+           "want": 1,
+           "got": 0,
+           "action": "flip_card",
+           "icon": ""
+          },
+          {
+           "name": "百位卡",
+           "amount": "2",
+           "status": 0,
+           "want": 1,
+           "got": 0,
+           "action": "flip_card",
+           "icon": ""
+          },
+          {
+           "name": "千位卡",
+           "amount": "1",
+           "status": 0,
+           "want": 1,
+           "got": 0,
+           "action": "flip_card",
+           "icon": ""
+          }
+         ],
+         "inside_container_ad_configs": [],
+         "initial_stage": 0,
+         "pending_stage_count": 1,
+         "base_ad_diversion": {
+          "id": "600691",
+          "key": "luna_treasure_flip_card_incentive_ad",
+          "type": "",
+          "token": "REDACTED",
+          "status": 1,
+          "can_show": true,
+          "view": {
+           "title": {
+            "type": 1,
+            "plain_text": ""
+           },
+           "subtitle": {
+            "type": 1,
+            "plain_text": ""
+           },
+           "icon": "",
+           "tag": {
+            "icon": "",
+            "text": {
+             "type": 1,
+             "plain_text": ""
+            },
+            "standard_text": {
+             "type": 1,
+             "plain_text": "海量"
+            }
+           },
+           "button": {
+            "text": {
+             "type": 1,
+             "plain_text": ""
+            },
+            "action": "incentive_ad",
+            "style": "primary"
+           }
+          },
+          "stats": {
+           "total_times": 9999,
+           "completed_times": 0,
+           "last_pickup_time": 0,
+           "last_completed_time": 0,
+           "last_rewarded_time": 0
+          },
+          "countdown_config": {
+           "end_time": 0
+          },
+          "extra": "{\n    \"incentive_ad_info\": {\n        \"ad_rit\": \"73031\",\n        \"ad_alias_position\": \"100500\",\n        \"new_ad_version_map\": {\n            \"android\": 0,\n            \"ios\": -1\n        }\n    }\n}",
+          "discrepancy_data": {
+           "base_ad": {
+            "incentive_ad_info": {
+             "rit": "73031",
+             "cid": "100500"
+            }
+           }
+          }
+         },
+         "round_mode": "legacy"
+        }
+       }
+      },
+      {
+       "id": "601921",
+       "key": "luna_treasure_caijing_daily_cash",
+       "type": "luna_base_task",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": "每日领现金"
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": "今日可得3元，可领7次(每日1次)"
+        },
+        "icon": "https://p9-infras.byteimg.com/static-assets/db8e8ae2b113849e092989d2a310ce7d.png~tplv-49obo7mizy-75compress.image",
+        "tag": {
+         "icon": "https://p9-infras.byteimg.com/static-assets/db8e8ae2b113849e092989d2a310ce7d.png~tplv-49obo7mizy-75compress.image",
+         "text": {
+          "type": 1,
+          "plain_text": "免费领5元"
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "去领取"
+         },
+         "action": "caijing_withdraw",
+         "style": "primary"
+        }
+       },
+       "extra": "{\"SortWeight\":\"0\",\"cj_marketing_info\":\"{\\\"hook_info\\\":{\\\"source\\\":\\\"pay_mkt_ug_qt_qs_mrlxj_bg\\\",\\\"params_for_special\\\":\\\"tppp\\\",\\\"merchant_app_id\\\":\\\"800087223319\\\",\\\"benefit_type\\\":\\\"LUNA_CASH\\\",\\\"log_id\\\":\\\"20261022202444A0C0A67371EE65DA3AAA\\\",\\\"resource_no\\\":\\\"PS202606151132399980494640\\\",\\\"material_no\\\":\\\"PM202607311540233084587529\\\",\\\"plan_no\\\":\\\"PA20260731_154035_423468\\\",\\\"host_uid_bind_douyin_uid_status\\\":\\\"\\\",\\\"cross_client_association_flag\\\":\\\"\\\"}}\",\"trace_id\":\"20261022202444_GW_U15820_dlXSvfNy\"}"
+      }
+     ],
+     "style": "default"
+    }
+   },
+   {
+    "key": "widget_task_section",
+    "type": 3,
+    "widget_task_group": {
+     "tasks": [
+      {
+       "id": "600607",
+       "key": "music_ug_treasure",
+       "type": "luna_base_task",
+       "token": "REDACTED",
+       "status": 1,
+       "can_show": true,
+       "view": {
+        "title": {
+         "type": 1,
+         "plain_text": ""
+        },
+        "subtitle": {
+         "type": 1,
+         "plain_text": ""
+        },
+        "icon": "",
+        "tag": {
+         "text": {
+          "type": 1,
+          "prefix": {
+           "type": 1,
+           "plain_text": "马上点击"
+          },
+          "plain_text": "最高 20180 金币"
+         },
+         "standard_text": {
+          "type": 1,
+          "plain_text": "最高 20180",
+          "suffix": {
+           "type": 1,
+           "plain_text": "金币"
+          }
+         }
+        },
+        "button": {
+         "text": {
+          "type": 1,
+          "plain_text": "开宝箱得金币"
+         }
+        }
+       },
+       "stats": {
+        "total_times": 50,
+        "completed_times": 0,
+        "last_pickup_time": 0,
+        "last_completed_time": 0,
+        "last_rewarded_time": 0
+       },
+       "rewards": [
+        {
+         "reward_type": 2,
+         "reward_amount": 180
+        }
+       ],
+       "countdown_config": {
+        "end_time": 0
+       },
+       "ad_snap": {
+        "rit": 73031,
+        "cid": 100200,
+        "token": "REDACTED",
+        "task_id": "600586"
+       },
+       "strategy": {
+        "extend_bar": {
+         "animation_optimize": "true",
+         "box_animation_times": "3"
+        },
+        "reward": {
+         "enable_best_config": "true",
+         "show_animation": "true"
+        }
+       },
+       "extra": "{\"get_data_style\":0,\"exit_info\":null,\"cur_time\":1792671885,\"scene_extra\":null}",
+       "discrepancy_data": {
+        "box": {
+         "entry_style": "extend",
+         "data_flow": "legacy",
+         "cooldown_mode": "default",
+         "all_task_completed": false
+        }
+       }
+      }
+     ],
+     "style": "default"
+    }
+   }
+  ],
+  "feedback_schema": {
+   "feedback_type": 0,
+   "reward_feedback_popup": {
+    "type": "reward_feedback_with_svip_entrance",
+    "title": {
+     "type": 1,
+     "plain_text": "恭喜累计获得奖励"
+    },
+    "confirm_button": {
+     "text": {
+      "type": 5,
+      "price": {
+       "scene": "popup_svip_only",
+       "default": "低价开SVIP 金币翻1.2倍"
+      },
+      "suffix": {
+       "type": 1,
+       "plain_text": "元开SVIP 金币翻1.2倍"
+      }
+     },
+     "action": "schema",
+     "schema": "luna://luna.com/upsell?unique_name=task_page_svip_popup"
+    }
+   },
+   "show_amount_radio": "1.2"
+  },
+  "strategy": {
+   "style": {
+    "ui_theme": "green"
+   }
+  },
+  "namespace": "luna_incentive",
+  "config": {
+   "migrate_first_ad": true,
+   "ad_api_preload": {
+    "preload": true,
+    "task_ids": [
+     "600607",
+     "600585",
+     "600625",
+     "601039",
+     "601572",
+     "601612",
+     "601832",
+     "600662",
+     "600572"
+    ]
+   },
+   "svip_show_amount_radio": "1.2",
+   "need_app_list": false,
+   "need_load_installed_app_info": false
+  }
+ },
+ "status_code": 0,
+ "status_info": {
+  "now": 1792671885,
+  "status_msg": "success",
+  "log_id": "20261022202444A0C0A67371EE65DA3AAA"
+ }
+}
