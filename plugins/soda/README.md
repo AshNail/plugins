@@ -497,13 +497,12 @@ http-request ^https?:\/\/api\.qishui\.com\/luna\/(?:advert\/incentive\/config|ad
 
 部署目录是 `plugins/soda/`：**一个** `soda.plugin` + `scripts/*.min.js`。推送前先运行 `npm run build` 生成压缩脚本；`src/`、`tests/` 可以保留在仓库里，不需要单独上传。
 
-1. 把 `plugins/soda/` 和仓库根目录的 `.nojekyll` 推到 GitHub；
-2. GitHub → Settings → Pages → Source 选 `Deploy from a branch`，Branch 选 `main`，Folder 选 `/ (root)`；
-3. 站点根为 `https://ashnail.github.io/plugins`，插件位于 `.../plugins/soda/`；
-4. 只导入这一个插件：
+1. 把仓库推到 `AshNail/plugins`（`main` 分支，**无需开启 GitHub Pages**）；
+2. 插件位于 `plugins/soda/`，Loon 以插件 URL 为基准解析同目录 `scripts/*.min.js`；
+3. 只导入这一个插件：
 
-```
-loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2Fsoda.plugin
+```text
+loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin
 ```
 
 5. Loon → 设置 → MITM → 生成证书 → 安装并信任；
@@ -535,7 +534,7 @@ loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%
 
 > 【听抖音】默认保留。它属于福利页的正常任务条目，`hideDouyinTab` 打开后只删除带“抖音”字样的列表项，不动签到 / 听歌 / 分享 / 金币 / 逛商城 / 翻牌 / 引导。字段定位以你提供的珠宝页 HAR 为准。
 
-> 插件里的 `script-path=scripts/...` 是相对路径，所以 `.plugin` 和 `scripts/` 必须保持同级；不要只发单个 `.plugin` 文件。GitHub Pages 根地址没有 `index.html`，会 404，直接访问插件文件即可。
+> 插件里的 `script-path=scripts/...` 是相对路径，所以 `.plugin` 和 `scripts/` 必须保持同级；不要只发单个 `.plugin` 文件。导入用 raw 直链即可，无需 Pages。
 
 > ⚠️ 若 MITM 后 App 断网，说明 TTNet 启用了证书固定。此时把 `[Rewrite]`、`[Script]` 与 `[MITM]` 整段注释，退回 C（纯域名拦截仍然有效）。实验插件同理，停用即可回滚。
 
@@ -645,7 +644,7 @@ loon-plugins/
 ├── package.json
 ├── package-lock.json
 ├── .github/workflows/check.yml     # CI：build + lint + 测试
-├── .nojekyll                       # GitHub Pages 原样提供 .plugin / scripts
+├── .nojekyll                       # 防御性保留：若日后启用 Pages，避免 Jekyll 处理 .plugin / scripts
 └── .gitignore
 ```
 

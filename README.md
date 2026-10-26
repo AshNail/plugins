@@ -202,43 +202,37 @@ v2.4.0 / v0.5.0 起脚本会自己处理：
 
 ## 安装
 
-把仓库推到 `https://github.com/AshNail/plugins` 后，`Settings → Pages → Deploy from a branch`，Branch 选 `main`，Folder 选 `/ (root)`。不需要 `index.html`，根地址 404 是正常的，直接访问插件文件即可。
+把仓库推到 `https://github.com/AshNail/plugins`（`main` 分支，**无需开启 GitHub Pages**）；Loon 以插件 URL 为基准解析同目录相对路径脚本，导入时保持 `plugins/` 与 `scripts/` 同级结构即可。
 
 汽水音乐唯一插件（一个 App 只装这一个）：
-
-```text
-https://ashnail.github.io/plugins/plugins/soda/soda.plugin
-```
-
-Loon 导入链接：
-
-```text
-loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fsoda%2Fsoda.plugin
-```
-
-如果 GitHub Pages 还没开启，先用 raw 地址：
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/soda/soda.plugin
 ```
 
+Loon 导入链接：
+
+```text
+loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin
+```
+
 抖音插件（另一个 App，同样只装一个）：
 
 ```text
-https://ashnail.github.io/plugins/plugins/douyin/douyin.plugin
-loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyin%2Fdouyin.plugin
+https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plugin
+loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin
 ```
 
 广告平台拦截器（单插件，不需要其他 ads 文件）：
 
 ```text
-https://ashnail.github.io/plugins/plugins/ads/ads.plugin
+https://raw.githubusercontent.com/AshNail/plugins/main/plugins/ads/ads.plugin
 ```
 
 Loon 导入：
 
 ```text
-loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fads%2Fads.plugin
+loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin
 ```
 
 > **冲突提醒**：`ads.plugin` 会在 DNS 阶段拦掉穿山甲/优量汇/快手联盟，soda/douyin 的激励广告和奖励任务会失败。刷奖励时禁用 `ads.plugin`，或不要把两者同时启用。完整风险表、HTTPDNS 与 DNS 防泄漏主配置片段见 [`plugins/ads/README.md`](plugins/ads/README.md)。
@@ -443,7 +437,7 @@ plugins/example/scripts/clean.min.js
 
 - 改行为或脚本后，同步修改 `.plugin` 的 `#!version=`；
 - 运行 `npm run build` 重新生成压缩脚本；
-- 提交时同时提交 `src/` 和 `plugins/`（压缩脚本需要入库，GitHub Pages 才能直接提供）；
+- 提交时同时提交 `src/` 和 `plugins/`（Loon 以插件 URL 为基准拉取同目录相对路径脚本，压缩脚本必须入库）；
 - Loon 重新导入插件或刷新远程插件即可获取新版本。
 
 ---

@@ -210,10 +210,10 @@ POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 tim
 ## 5. 安装
 
 ```text
-loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fdouyin%2Fdouyin.plugin
+loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin
 ```
 
-Pages 未开启时：
+直链地址（无需开启 Pages）：
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plugin

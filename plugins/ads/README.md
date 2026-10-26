@@ -20,16 +20,16 @@
 
 ## 安装
 
-仓库 Pages 地址（单文件）：
+直链地址（单文件；`[Script]` 相对路径脚本以插件 URL 为基准同目录解析）：
 
 ```text
-https://ashnail.github.io/plugins/plugins/ads/ads.plugin
+https://raw.githubusercontent.com/AshNail/plugins/main/plugins/ads/ads.plugin
 ```
 
 Loon 导入链接：
 
 ```text
-loon://import?plugin=https%3A%2F%2Fashnail.github.io%2Fplugins%2Fplugins%2Fads%2Fads.plugin
+loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin
 ```
 
 要求 **Loon 3.5.1(983)+**（插件头与 `[General]`/`[Rule]` 语法）。安装后建议重连一次 Loon，让 DNS/DoH 配置生效。
