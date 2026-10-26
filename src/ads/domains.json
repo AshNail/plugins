@@ -9,7 +9,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.1.3",
+      "version": "2.1.4",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -28,14 +28,17 @@
         "# hijack-dns / domain-reject-mode / dns-reject-mode 不受插件支持，",
         "# 完整 DNS 防泄漏请按 plugins/ads/README.md 的“主配置加固”段手动加入主配置。",
         "dns-server = 223.5.5.5,119.29.29.29,180.184.1.1",
-        "doh-server = https://223.5.5.5/dns-query,https://223.6.6.6/dns-query,https://1.12.12.12/dns-query"
+        "doh-server = https://223.5.5.5/dns-query,https://223.6.6.6/dns-query,https://1.12.12.12/dns-query",
+        "doh3-server = h3://223.5.5.5/dns-query,h3://223.6.6.6/dns-query"
       ],
       "rules": [
         "# HTTPDNS / 私有 DoH 关键词兜底：已知域名在 [Host] 中，未知域名在这里拦。",
         "# extended-matching 让 HTTPS 按 SNI 匹配；pre-matching 在 DNS 阶段优先拒绝",
         "# （需要主配置 domain-reject-mode = DNS，见 README）。",
-        "DOMAIN-KEYWORD,httpdns,REJECT,extended-matching,pre-matching",
-        "DOMAIN-KEYWORD,httpsdns,REJECT,extended-matching,pre-matching",
+        "# HTTPDNS 关键词采用 REJECT-DROP（丢包无回复）：这些 SDK 在收到 REJECT 的 200 空包后会秒级重试，",
+        "# REJECT-DROP 让连接静默超时，避免重试风暴；代价是首次超时略慢。",
+        "DOMAIN-KEYWORD,httpdns,REJECT-DROP,extended-matching,pre-matching",
+        "DOMAIN-KEYWORD,httpsdns,REJECT-DROP,extended-matching,pre-matching",
         "USER-AGENT,httpdns*,REJECT",
         "USER-AGENT,Httpdns*,REJECT",
         "USER-AGENT,httpsdns*,REJECT",
@@ -44,6 +47,9 @@
         "URL-REGEX,^http:\\/\\/\\[[0-9a-fA-F:]+\\](:[0-9]+)?(?:\\/v?[0-9]+)?\\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery)(?:\\/|\\?|$),REJECT,extended-matching",
         "URL-REGEX,^http:\\/\\/api\\.weibo\\.cn\\/[0-9]+\\/httpdns\\/config,REJECT,extended-matching",
         "URL-REGEX,^http:\\/\\/amdc\\.alipay\\.com\\/s\\?query,REJECT,extended-matching",
+        "# 埋点与上报防护：采用 REJECT-DICT 返回 200 + 空字典 {}，诱导统计 SDK（如神策）清空本地重试队列，避免存储膨胀与 CPU 频繁唤醒。",
+        "URL-REGEX,^http:\\/\\/.+\\/sa(\\.gif)?\\?project=,REJECT-DICT",
+        "URL-REGEX,^http:\\/\\/.+\\/v[0-9]*\\/(?:event|log|track)\\/(?:report|upload|batch),REJECT-DICT",
         "# 阻断标准 DoT/DoQ 853 端口，防止 App 自带加密 DNS 绕过 Loon。",
         "DEST-PORT,853,REJECT"
       ],
@@ -94,6 +100,28 @@
         "# 防 WebRTC 真实 IP 泄露的协议级一拦；代价是部分 App 的语音/视频通话会失败。",
         "# 更稳妥的主配置解法见 docs/loon-feature-checklist.md 的 disable-stun 段。",
         "PROTOCOL,STUN,REJECT"
+      ],
+      "ip_rewrite_disabled": [
+        "# —— 阿里云 HTTPDNS 启动接入点（内地单 IPv4）——",
+        "203.119.238.240 = drop",
+        "106.11.25.239 = drop",
+        "59.82.99.47 = drop",
+        "# —— 阿里云 HTTPDNS 启动接入点（海外单 IPv4：香港/新加坡/美洲/欧洲）——",
+        "47.56.234.194 = drop",
+        "47.56.119.115 = drop",
+        "161.117.200.122 = drop",
+        "47.74.222.190 = drop",
+        "47.246.131.175 = drop",
+        "47.246.131.141 = drop",
+        "47.89.80.182 = drop",
+        "47.246.146.77 = drop",
+        "# —— 腾讯云 HTTPDNS 接入单 IP（标准版 98/99 + 企业版 43.132.x；119.29.29.29 不拦）——",
+        "119.29.29.98 = drop",
+        "119.29.29.99 = drop",
+        "43.132.43.43 = drop",
+        "43.132.55.55 = drop",
+        "# —— 百度 HTTPDNS 唯一 BGP anycast VIP ——",
+        "180.76.76.200 = drop"
       ],
       "groups": [
         {
@@ -292,7 +320,17 @@
             "=mobilead.kuwo.cn",
             "=titan.mgtv.com",
             "=tmead.y.qq.com",
-            "=tmeadcomm.y.qq.com"
+            "=tmeadcomm.y.qq.com",
+            "cupid.iqiyi.com",
+            "paopao.iqiyi.com",
+            "sugar.zhihu.com",
+            "appcloud2.zhihu.com",
+            "adx.weibo.com",
+            "wax.weibo.com",
+            "sax.sina.com.cn",
+            "saxn.sina.com.cn",
+            "cpu.baidu.com",
+            "ads.xiaohongshu.com"
           ]
         },
         {
@@ -689,7 +727,13 @@
             "=ads.travelaudience.com",
             "=a-ads.com",
             "=msads.net",
-            "=msadsscale.azureedge.net"
+            "=msadsscale.azureedge.net",
+            "=coremetrics.com",
+            "=sumome.com",
+            "=insightexpressai.com",
+            "=blueconic.net",
+            "=pixel.watch",
+            "=bttrack.com"
           ]
         },
         {
@@ -784,7 +828,8 @@
             "=propellerclick.com",
             "=adxpansion.com",
             "=doublepimp.com",
-            "=hyperbanner.net"
+            "=hyperbanner.net",
+            "=nappyattack.com"
           ]
         },
         {
@@ -948,11 +993,9 @@
             "analytics.google.com",
             "hm.baidu.com",
             "mc.yandex.ru",
-            "=pixel.watch",
             "beacon.sina.com.cn",
             "tracking.miui.com",
             "log.pinterest.com",
-            "=blueconic.net",
             "=tealiumiq.com",
             "beacon-api.aliyuncs.com",
             "direct-events-collector.spot.im",
@@ -960,8 +1003,6 @@
             "notes-analytics-events.apple.com",
             "analytics.query.yahoo.com",
             "=matheranalytics.com",
-            "=coremetrics.com",
-            "=sumome.com",
             "in.treasuredata.com",
             "pix.spot.im",
             "applog.uc.cn",
@@ -972,7 +1013,6 @@
             "analytics.pointdrive.linkedin.com",
             "iot-logser.realme.com",
             "metrics.mzstatic.com",
-            "=insightexpressai.com",
             "=hs-analytics.net",
             "=hexagon-analytics.com",
             "metrics-logger.spot.im",

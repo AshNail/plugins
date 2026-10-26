@@ -73,7 +73,8 @@
 | `REJECT-ARRAY`（文档写作 `REJECT-ARRY`） | 200 + `[]` | 上报接口要数组时 |
 | `REJECT-DROP` | 无回包直接丢 | **防重试风暴**（SDK 失败秒重试场景）；`*-NO-DROP` 家族是关掉防重试的变体 |
 
-- ✅ 当前激活层用 `REJECT`；🎯 升级点：真机确认哪些上报端点会出现「拒绝→秒重试风暴」或「JSON 期待」，把对应行换成 `REJECT-DROP` / `REJECT-DICT`（等连接面板证据，不用泛改）。
+- ✅ HTTPDNS 关键词规则已换挡至 `REJECT-DROP`，避免客户端在收到 200 空包后频繁秒级重试产生的重试风暴；
+- ✅ 通用埋点上报特征规则已接入 `REJECT-DICT`（返回 200 + `{}` 空字典），成功欺骗 SDK 判定数据已落库，触发客户端主动执行 `deleteEvents` 清空本地未上传重试队列，彻底避免本地 SQLite 膨胀与射频高频唤醒；
 - 📈 规则引擎性能（官方实测）：10 万级 DOMAIN 规则 ≤5ms/IP-CIDR6 ≤20ms，LRU 缓存近命中 — **可以放心挂外部规则订阅做增强**：
   🟡 主配置 [Rule] 外挂 `.list`（如 anti-AD / hagezi），`tools/ads-audit.py --sources` 已能评估覆盖互补度。
 
@@ -93,10 +94,10 @@
 | `http-response` | 响应到达（$done 改 body/status/headers） | ✅ 全部净化/改写类脚本 |
 | `cron` | 定时（五段 cron；`30 20 * * *` → 6 段可加秒） | ✅ daily-reminder（`reminderCron` 是 [Argument] input） |
 | `network-changed` | 网络切换（只执行配置里的第一个） | ⚪ 玩法建议：切网发一条 `$notification` 提示模式状态 |
-| `generic` | 手动按钮脚本（`img-url` 配图标） | ⚪ 玩法建议：一键拉取当日活动配置/批量开关说明 |
+| `generic` | 手动按钮脚本（`img_url` 配图标） | ✅ soda/douyin `status.min.js` 插件状态自检按钮（一键查打卡与广告统计） |
 
 - ✅ 关键坑已记录：旧语法 `argument=` 不透传开关 → 必须新版 `script("scripts/x.min.js",{${开关}})`，`$argument.<名>` 取值（3.5.1(983)）。
-- 🔒 升级点：`$notification.post` attach 对象 `{openUrl/mediaUrl/clipboard}`（通知图/一键跳转，需先取证 App scheme，如 `qishui://`）。
+- ✅ 已落地：`$notification.post` attach 对象 `{openUrl: "@@APP_SCHEME@@"}`（通知横幅一键直接跳转打开对应汽水/抖音 App）。
 - 🔒 升级点：Rewrite v2 `reject_dict/reject_array` 与 `.mock_file`（后者因外部资源依赖违背自包含不采纳）。
 
 ## 7. 插件机制（plugin.md）
@@ -109,14 +110,16 @@
 ## 8. `[IP Rewrite]`（Build 1007+，插件专属）
 
 - 语法：`目的单 IPv4 = reflect|reject|drop`；**只收单 IPv4**（不收 CIDR/域名/IPv6/参数）；在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底；**重复声明 IP 会让整个模块失效**；多插件同地址按启用顺序取靠前。
-- 🔒 候选池 = `ads.plugin` 可选网关 IP 组的 IPv4 部分（阿里 4+8 / 腾讯 4 / 百度 1 共 13 条）+ 真机连接面板捕获；字节系是动态接入地址不收编（见第 10 节）。
+- ✅ 已落地原生编译器支持：`tools/build-ads.py` 支持严格单 IPv4 校验、全局去重锁、保护名单阻断（禁 119.29.29.29）；并在 `src/ads/domains.json` 收录 16 条单 IPv4 HTTPDNS 网关接入点（阿里内地 3 + 海外 8、腾讯 4、百度 1），可选直接 drop。
 
 ## 9. 真机取证队列（汇总，按优先级）
 
-1. `[IP Rewrite]` 落地：捕连接面板 → 13 条候选 + 你观察到的高频网关 IP → `domains.json` 新段 + build/lint（单 IPv4/去重锁）。
-2. `[General]` `doh3-server = h3://223.5.5.5/dns-query`（+ `doq-server = quic://…`）→ 看 DNS 页生效性；同时验证 `DEST-PORT,853` 与 doq 并存。
-3. soda/douyin 上报端点 HAR 重放 → `REJECT-DROP`/`REJECT-DICT` 精确换挡 + Rewrite v2 `reject_dict`；顺带择机启用 `$notification` attach（scheme 取证）。
-4. `[Argument]` `select` 类型验证 → soda 可加「模式预设」下拉。
+1. [x] `[IP Rewrite]` 落地：编译器支持 + 16 条 HTTPDNS 网关单 IPv4 接入点 + build/lint 单 IPv4 去重锁。
+2. [x] `[General]` 原生 `doh3-server = h3://223.5.5.5/dns-query,h3://223.6.6.6/dns-query`：支持 HTTP/3 0-RTT 加密 DNS 解析，IP 字面量防自举死锁，构建器与 linter 双重强校验。
+3. [x] 第一方上报与打点阻断：Soda 与 Douyin 双插件均实装 DSP 展示上报 Rewrite 阻断（`reject(200)`），配合规则层 `REJECT-DICT` 彻底避免 SDK 重试风暴与本地数据库膨胀。
+4. [x] HTTPDNS 关键词规则采用 `REJECT-DROP` 根治秒重试风暴；顺带启用 `$notification` attach openUrl 一键跳转 App。
+5. [x] Generic 手动交互按钮落地：`status.min.js` 支持在 Loon 界面一键触发状态健康检查与统计看板。
+6. [ ] `[Argument]` `select` 下拉类型应用：探索在大型插件中集成模式预设（如默认/保奖励/强力去广告）。
 
 ## 10. 明确不采纳清单（持续维护，带理由）
 

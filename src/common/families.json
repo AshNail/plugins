@@ -8,12 +8,14 @@
   "sharedScripts": [
     "block-domains.js",
     "daily-reminder.js",
-    "welfare-stamp.js"
+    "welfare-stamp.js",
+    "status.js"
   ],
   "tokens": [
     ["@@LOG_TAG@@", "logTag"],
     ["@@APP_NAME@@", "appName"],
     ["@@NOTIFY_BODY@@", "notifyBody"],
+    ["@@APP_SCHEME@@", "appScheme"],
     ["@@REWARD_SAFE_DEFAULT@@", "rewardSafeDefault"]
   ],
   "families": {
@@ -21,12 +23,14 @@
       "logTag": "soda",
       "appName": "汽水音乐",
       "notifyBody": "打开汽水 → 福利页完成任务即可领取（攒时长 / 花卡 / 签到）。",
+      "appScheme": "qishui://",
       "rewardSafeDefault": true
     },
     "douyin": {
       "logTag": "douyin",
       "appName": "抖音",
       "notifyBody": "打开抖音福利页完成今天的领取任务（攒时长 / 翻卡 / 签到）。",
+      "appScheme": "snssdk1128://",
       "rewardSafeDefault": false
     }
   }

@@ -62,7 +62,7 @@ try {
       "打开抖音福利页完成今天的领取任务（攒时长 / 翻卡 / 签到）。" +
         (stats ? " " + stats : "") +
         "。插件只做提醒，不代看广告、不代领取。",
-      ""
+      { "openUrl": "snssdk1128://" }
     );
     console.log("[douyin-reminder] 已发送提醒（未打卡）");
     try {

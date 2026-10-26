@@ -59,16 +59,17 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1024 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` 核心广告组 | 14 组、1048 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
 | `[Host]` HTTPDNS 组 | 72 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 39 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb 等 | 是（见风险表） |
-| `[Rule]` | 11 条：`httpdns`/`httpsdns` 关键词、UA、IP 字面量 URL-REGEX、853 端口 | 是 |
-| `[General]` | 2 条：公共 DNS + IP 形式 DoH | 是 |
-| `[Host]` 归因/统计组 | 2 组、82 条展开规则，默认整组注释 | **否** |
+| `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
+| `[General]` | 3 条：公共 DNS + IP 形式 DoH + IP 形式 DoH3 (HTTP/3) | 是 |
+| `[Host]` 归因/统计组 | 2 组、72 条展开规则，默认整组注释 | **否** |
 | `[Rule]` 可选组 | 28 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
+| `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**18 组、1135 条生效 Host、82 条默认注释 Host、11 条生效 Rule、28 条默认注释 Rule**。
+合计：**18 组、1159 条生效 Host、72 条默认注释 Host、13 条生效 Rule、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
 
 ### 归因/统计组（默认关闭）
 
@@ -355,6 +356,7 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.1.4**（2026-10-26）：深化 Loon 现代能力与埋点/遥测拦截。①HTTPDNS 关键词规则采用 `REJECT-DROP`（丢包无回复），防止客户端 SDK 在收到空 200 包后频繁秒级重试造成网络风暴；②新增针对第三方统计与埋点 SDK（如神策）的 `REJECT-DICT` 规则（返回 200 + `{}` 空字典），诱导客户端主动清空本地重试队列（`deleteEvents`），彻底避免本地存储膨胀与无线电唤醒；③提拔纯广告效果监测专域（`coremetrics.com`、`sumome.com`、`insightexpressai.com`、`blueconic.net`、`pixel.watch`）至核心生效层，生效 Host 升至 1155 条、生效 Rule 升至 13 条；④构建工具原生支持 Loon Build 1007+ 插件专属的 `[IP Rewrite]` 语法（单 IPv4 / 严格查重 / 保护名单安全防护），并在可选层收录 16 条单 IPv4 HTTPDNS 网关接入点，可在 TUN 阶段最快阻断。
 - **2.1.3**（2026-10-26）：可选 `[Rule]` 组接入 Loon 3.1.7+ 的 `PROTOCOL` 协议规则，新增 `PROTOCOL,STUN,REJECT`（协议级阻断 STUN，防 WebRTC 真实 IP 泄露；会断部分 App 的语音/视频通话，默认注释；主配置更优解 `disable-stun = true`）。默认注释 Rule 合计 27→28 条。功能盘点见 [`docs/loon-feature-checklist.md`](../../docs/loon-feature-checklist.md)。
 - **2.1.2**（2026-10-26）：全网取证强化 DNS 层。①公共 DoH 组 16→39 条：补 AdGuard 新域 `dns.adguard-dns.com`（`=adguard-dns.com` 展开覆盖 dns/family/unfiltered 变体——官方文档 DoQ 示例即用此域；旧域 `dns.adguard.com` 保留）、`*.cloudflare-dns.com` 通配 + `one.one.one.one`/`dns.cloudflare.com`、Quad9 全变体、NextDNS DoT 节点 `dns1-3.nextdns.io`、DNSPod `dns.pub`/`dot.pub`/`sm2.doh.pub`、`dot.360.cn`、`dns64.dns.google`/`8888.google`、dns.sb（`doh.dns.sb`/`dot.sb`）、Mullvad DoT 族、ControlD `freedns.controld.com`；来源 curl wiki 公共 DoH 清单、AdGuard DNS KB、DNSPod 官方文档。②HTTPDNS 组补 `*.httpdns.aliyuncs.com`（覆盖阿里《启动接入点》`resolvers-cn/hk/sg/us/de` 域名兜底）。③可选 HTTPDNS 网关 IP 组 5→27 条：新增阿里内地接入点 `203.119.238.240`/`106.11.25.239`/`59.82.99.47` 与 4 个 IPv6 接入点、海外接入点（香港/新加坡/美洲/欧洲 IPv4 ×8 + IPv6 ×6，与阿里云海外 CDN 网段相邻已加风险注释）、腾讯企业版 `43.132.43.43`/`43.132.55.55`；删除笔误 IP `186.76.76.200`（百度官方文档任何版本都只有 `180.76.76.200`），lint 永久锁掉并新增 `119.29.29.29`（本插件 dns-server）禁拦保护；依据阿里云 doc 2868011、腾讯云 doc 379/59133、百度智能云《访问入口》。生效 Host 合计 1135 条（exact 694 / wildcard 441）。
 - **2.1.1**（2026-10-26）：继续扩展主流覆盖，三轮合计新增 138 个广告专用域（+250 条展开规则）。①移动 SDK/交易生态 79 个（applvn、inmobicdn、tapjoyads、mobfox/mobclix、adtrue、adspredictiv、adbutler、adsupply、IAS adsafeprotected、AOL adtechus、adsinteractive、adsniper.ru、doubleclick.com、adsense.com 等）；②**开屏专项 32 个**（小红书 `*.ads-splash-*.xhscdn.com` + `splash-online-decision.xiaohongshu.com`、Unity 中国 `splash-ads.unitychina.cn`/`splash-ads.cdn.unity.cn`、vivo `open-ad.vivo.com.cn`、酷狗 `splashimgbssdl.yun.kugou.com`、HKTVmall `ad-splash(.tracking)`、Voodoo `splash-screen(.voodoo-ads.io)`、fancydsp、OpenADX/OpenADS 系、splash 垃圾 DSP）；③**厂商系统开屏与 MSN/Youku 专项 27 个**（小米国际 `ad.intl.xiaomi.com` 一条覆盖 api/zeus/diagnosis/sdkconfig 全系、小米印度 `sdkconfig.ad.india`、vivo `ad.vivo.com.cn`、荣耀 `ads.honor.com`/`ads-adnet-drcn.cloud`、华为中国 `adx-drcn.op.dbankcloud.cn`/`ad-drcn.media.dbankcloud(.ru|.cn)`、三星 `ads.samsung.com`、Realme/欧加 `sales-frontier.com`、当贝开屏 `zndsssp.dangbei.net`、优酷 SSP `yk-ssp.ad.youku.com`/`ad.youku.com`/`adx-open-service.youku.com`/`ad.api.3g.youku.com`、MSN `ads(.eu|1|2).msn.com`、`ads1|ads2.msads.net`、Google `ogads-pa.googleapis.com`/`mail-ads.google.com`、Yahoo `advertising.yahoo.com`、Betfair `ads.betfair.com`、travelaudience、a-ads.com）。④开屏聚合 SDK 与媒体素材专项 16 个（Sigmob `sigmob.cn/sigmob.com`、TopOn/AnyThink `anythinktech.com/toponad.com/toponad.net/selecttopon.com/toponadss.com/toponclick.com`、小米系统推广 `union.mi.com`、网易云开屏素材 `ads.music.126.net`/`admusicpic/iadmusicmat/iadmusicmatvideo.music.126.net`、网易广告 `pg-ad-b1/b2.ws.126.net`/`yt-adp.ws.126.net`、微软 `msads.net`/`msadsscale(.microsoft.com/.azureedge.net)`、`ad.sina.com.cn` 升级为通配覆盖 `img.amp.ad.sina.com.cn`）。⑤聚合/自有 DSP/生态广告专项 17 个（BidMachine `bidmachine.io`、Ogury `cloud.ogury.io`+`dsp-1.ogury.io`、Bidease、Appier RTB `appier.net`/`cr.adsappier.com`、优酷 `adx-core`/`cad`/`ipm.atm`/`apiv4-iyes`/`ad-feedback.youku.com`、美团自有 DSP `impdsp.meituan.com`/`mads.meituan.com`、360 生态 `ad.iot/jia/life/dev.360.cn`）。⑥媒体开屏运营位专项 15 个（神马/UC/夸克 `hc-ssp`/`huichuan(.mc)`/`image-ad`/`video-ad`/`c.sm.cn`/`adtrack` 系、铁路 12306 开屏 `ad.12306.cn`+网宿 CNAME 兜底、酷我 `mobilead.kuwo.cn`、芒果 TV `titan.mgtv.com`、腾讯音乐 TME `tmead(.comm).y.qq.com`）。核心广告组展开规则 679→1024 条，生效 Host 766→1111 条。

@@ -59,8 +59,12 @@ const KILL_CONTAINERS = {
   },
   "ads-config": {
     kill: ["adconfig", "adinfos", "adinfo", "ads", "adsinfo", "adsblocks",
-           "addata", "adextra", "adunitconfigs", "adsources"],
-    falsy: []
+           "addata", "adextra", "adunitconfigs", "adsources",
+           "shakeinfo", "twistinfo", "motioninfo", "interactioninfo", "splashcache",
+           "splashdspconfig", "preloaddspconfig", "splashmannorconfig", "adignoreplayerstatusconfig",
+           "adngroupconfig", "commercelibraadconfig", "commercecommonadconfig",
+           "feedrewardadentrance", "searchbanner", "feedwidget"],
+    falsy: ["preload", "enableads", "enablead"]
   }
 };
 

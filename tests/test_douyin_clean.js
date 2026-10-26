@@ -114,7 +114,9 @@ console.log("\n== 4. cleanFeedAds：清信息流广告容器 ==");
     ads: [{ id: 1 }],
     ads_info: { a: 1 },
     ad_infos: [{ id: 2 }],
-    ad_unit_configs: { x: 1 }
+    ad_unit_configs: { x: 1 },
+    splash_dsp_config: { rit: "123" },
+    enable_ads: true
   };
   const r = run(FEED_ADS, body, { cleanFeedAds: true });
   const o = parse(r.out);
@@ -122,6 +124,8 @@ console.log("\n== 4. cleanFeedAds：清信息流广告容器 ==");
   check("ads_info -> {}", o && Object.keys(o.ads_info).length === 0, JSON.stringify(o));
   check("ad_infos -> []", o && Array.isArray(o.ad_infos) && o.ad_infos.length === 0);
   check("ad_unit_configs -> {}", o && Object.keys(o.ad_unit_configs).length === 0);
+  check("splash_dsp_config -> {}", o && Object.keys(o.splash_dsp_config).length === 0);
+  check("enable_ads -> false", o && o.enable_ads === false);
 }
 
 console.log("\n== 5. cleanUpsell：删广告弹窗与商城弹窗，保留其它 ==");

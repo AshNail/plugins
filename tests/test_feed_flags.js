@@ -20,7 +20,7 @@ function ck(name, cond, extra) {
 const url = "https://api.qishui.com/luna/feed/v2/list";
 
 console.log("== explicit flags ==");
-for (const key of ["is_advertisement", "isAdItem", "ad_flag", "adItem"]) {
+for (const key of ["is_advertisement", "isAdItem", "ad_flag", "adItem", "is_promoted", "is_sponsored", "is_commercial"]) {
   const r = run(url, { data: [{ id: 1, [key]: true, title: "ad" }, { id: 2, title: "ok" }] });
   ck(key + " 条目被删", r.body.data.length === 1 && r.body.data[0].id === 2, JSON.stringify(r.body));
 }

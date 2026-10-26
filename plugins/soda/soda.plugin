@@ -1,7 +1,7 @@
 #!name=汽水音乐 · soda
 #!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音，全部用 [Argument] 开关控制。默认保奖励，不拦任何域名。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=2.6.2
+#!version=2.6.3
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
 #!system=ios
@@ -107,6 +107,9 @@ reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分
 # 开屏广告上报是 fire-and-forget，断开成 200 空包减少 SDK 重试；由 splashClean 开关控制。
 request if ${splashClean} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject(200)
 
+# DSP 广告展示上报：去广告模式下阻断无用出网并返回 200 空包；由 cleanAds 开关控制。
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/report\/dsp\/show/ then reject(200)
+
 
 # ============================================================================
 # 3. [Script]
@@ -184,6 +187,7 @@ response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/don
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=10, tag="福利页打卡"
 cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
+generic then script("scripts/status.min.js") with tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================

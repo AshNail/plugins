@@ -56,7 +56,8 @@ const RULES = [
      *（字段描述符 0x1147cbcd8）。
      */
     kill: ["adLaunchList", "adLaunch", "adLaunches", "adInfo", "adInfos",
-           "splash", "brand", "ads", "splashActiveData", "jumpBtnInfo"],
+           "splash", "brand", "ads", "splashActiveData", "jumpBtnInfo",
+           "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache"],
     killArrayData: true,
     forceOk: true
   },
@@ -88,7 +89,8 @@ const RULES = [
            "feedAdsConfig", "rewardConfig",
            "commerceLibraAdConfig", "commerceCommonAdConfig",
            "adnGroupConfig", "splashDspConfig", "preloadDspConfig",
-           "splashMannorConfig", "adIgnorePlayerStatusConfig"],
+           "splashMannorConfig", "adIgnorePlayerStatusConfig",
+           "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache"],
     killArrayData: true,
     forceOk: true
   },
@@ -117,7 +119,7 @@ const RULES = [
       { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ],
     dropAdItems: true,
-    fastReject: /ads_blocks|ads_info|ad_info|ad_data|ad_extra|video_end_ad|feed_ads|feed_reward_ad_entrance|banner_list|"bannerList"\s*:|"is_ad"\s*:|"isAd"\s*:|"is_advert"\s*:|"isAdvert"\s*:|"is_advertisement"\s*:|"isAdvertisement"\s*:|"is_ad_item"\s*:|"isAdItem"\s*:|"ad_item"\s*:|"adItem"\s*:|"ad_flag"\s*:|"adFlag"\s*:/
+    fastReject: /ads_blocks|ads_info|ad_info|ad_data|ad_extra|video_end_ad|feed_ads|feed_reward_ad_entrance|banner_list|"bannerList"\s*:|"is_ad"\s*:|"isAd"\s*:|"is_advert"\s*:|"isAdvert"\s*:|"is_advertisement"\s*:|"isAdvertisement"\s*:|"is_ad_item"\s*:|"isAdItem"\s*:|"ad_item"\s*:|"adItem"\s*:|"ad_flag"\s*:|"adFlag"\s*:|"is_promoted"\s*:|"isPromoted"\s*:|"is_sponsored"\s*:|"isSponsored"\s*:|"is_commercial"\s*:|"isCommercial"\s*:/
   },
   {
     id: "treasure-entrance",
@@ -335,7 +337,10 @@ function hasNestedAdFlag(o) {
     for (const kk of Object.keys(v)) {
       const nn = normalizeKey(kk);
       if ((nn === "isad" || nn === "isadvert" || nn === "isadvertisement" ||
-           nn === "isaditem" || nn === "aditem" || nn === "adflag") &&
+           nn === "isaditem" || nn === "aditem" || nn === "adflag" ||
+           nn === "ispromoted" || nn === "promoted" ||
+           nn === "issponsored" || nn === "sponsored" ||
+           nn === "iscommercial" || nn === "commercialad") &&
           isAdFlag(v[kk])) {
         return true;
       }
@@ -353,7 +358,10 @@ function isAdItem(o) {
     const v = o[k];
 
     if ((nk === "isad" || nk === "isadvert" || nk === "isadvertisement" ||
-         nk === "isaditem" || nk === "aditem" || nk === "adflag") &&
+         nk === "isaditem" || nk === "aditem" || nk === "adflag" ||
+         nk === "ispromoted" || nk === "promoted" ||
+         nk === "issponsored" || nk === "sponsored" ||
+         nk === "iscommercial" || nk === "commercialad") &&
         isAdFlag(v)) {
       return true;
     }

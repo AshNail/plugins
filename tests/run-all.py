@@ -29,6 +29,7 @@ SUITES = [
     "test_soda_task_titles.js",
     "test_soda_task_page_v2.js",
     "test_soda_kill_reward.js",
+    "test_status.js",
 ]
 
 parser = argparse.ArgumentParser()

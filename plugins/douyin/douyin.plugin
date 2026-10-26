@@ -1,7 +1,7 @@
 #!name=抖音 · douyin
 #!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=0.7.1
+#!version=0.7.2
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=ios
@@ -84,10 +84,13 @@ reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分
 # ============================================================================
 # 2. [Rewrite]
 # ----------------------------------------------------------------------------
-# 暂不放纯上报端点：抖音侧上报域名未取证，避免误伤。
+# DSP 广告展示上报：信息流去广告模式下阻断无用出网并返回 200 空包；由 cleanFeedAds 开关控制。
 # ============================================================================
 
 [Rewrite]
+
+# DSP 广告展示上报：信息流去广告模式下阻断无用出网并返回 200 空包；由 cleanFeedAds 开关控制。
+request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/report\/dsp\/show/ then reject(200)
 
 
 # ============================================================================
@@ -128,6 +131,7 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/ta
 response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=10, tag="福利页打卡"
 cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
+generic then script("scripts/status.min.js") with tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================

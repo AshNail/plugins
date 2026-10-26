@@ -184,12 +184,6 @@ async function main() {
   let totalFiles = 0;
 
   for (const family of families) {
-    const sourceFiles = listJs(path.join(SRC_DIR, family));
-    if (sourceFiles.length === 0) {
-      console.log(`skip ${family}: no source scripts`);
-      continue;
-    }
-
     if (fs.existsSync(COMMON_DIR)) {
       const common = loadCommonConfig();
       if (common.families[family]) {
@@ -197,6 +191,12 @@ async function main() {
       } else if (family === "soda" || family === "douyin") {
         throw new Error(`${family}: needs src/common/families.json config for shared scripts`);
       }
+    }
+
+    const sourceFiles = listJs(path.join(SRC_DIR, family));
+    if (sourceFiles.length === 0) {
+      console.log(`skip ${family}: no source scripts`);
+      continue;
     }
 
     const scriptsDir = path.join(PLUGINS_DIR, family, "scripts");

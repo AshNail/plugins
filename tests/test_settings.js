@@ -305,5 +305,36 @@ console.log("\n[16] BDADSDK settings shape (is.snssdk.com)");
     JSON.stringify({ ctx_infos: j.ctx_infos, settings_time: j.settings_time }));
 }
 
+console.log("\n[17] shake / motion / cache ad configs suppression");
+{
+  const body = JSON.stringify({
+    splash_shake_ad_config: { sensitivity: 10, enable: true },
+    shake_ad_config: { motion: "shake" },
+    splash_twist_ad_config: { degree: 45 },
+    splash_ad_cache_config: { max_age: 3600 },
+    enable_splash_shake: true,
+    enable_shake_ad: true,
+    enable_twist_ad: true,
+    shake_ad_switch: true,
+    splash_shake_sensitivity: 5,
+    splash_cache_enable: true,
+    enable_ad_preload: true,
+    normal_feature: "active"
+  });
+  const j = parse(run(body).out);
+  check("splash shake ad config emptied", JSON.stringify(j.splash_shake_ad_config) === "{}");
+  check("shake ad config emptied", JSON.stringify(j.shake_ad_config) === "{}");
+  check("splash twist ad config emptied", JSON.stringify(j.splash_twist_ad_config) === "{}");
+  check("splash cache config emptied", JSON.stringify(j.splash_ad_cache_config) === "{}");
+  check("enable_splash_shake false", j.enable_splash_shake === false);
+  check("enable_shake_ad false", j.enable_shake_ad === false);
+  check("enable_twist_ad false", j.enable_twist_ad === false);
+  check("shake_ad_switch false", j.shake_ad_switch === false);
+  check("splash_shake_sensitivity cleared", j.splash_shake_sensitivity === 0 || j.splash_shake_sensitivity === "");
+  check("splash_cache_enable false", j.splash_cache_enable === false);
+  check("enable_ad_preload false", j.enable_ad_preload === false);
+  check("normal feature preserved", j.normal_feature === "active");
+}
+
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") + "  pass=" + pass + " fail=" + fail);
 process.exit(fail === 0 ? 0 : 1);

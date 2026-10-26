@@ -64,6 +64,7 @@ REJECT_POLICIES = {
     "REJECT-DICT-NO-DROP",
     "REJECT-ARRAY-NO-DROP",
 }
+IP_REWRITE_ACTIONS = {"reflect", "reject", "drop"}
 RULE_PARAMS = {"extended-matching", "pre-matching", "no-resolve"}
 RULE_TYPES = {
     "DOMAIN",
@@ -190,6 +191,12 @@ def validate_general_line(raw: str, where: str) -> None:
         for item in values:
             if not item.startswith("h3://"):
                 raise BuildError(f"{where}: doh3-server must use h3://: {item!r}")
+            host = item[len("h3://") :].split("/", 1)[0].split(":", 1)[0]
+            if not is_ipv4(host):
+                raise BuildError(
+                    f"{where}: doh3-server must use an IP literal, not a hostname "
+                    f"(avoids blocking its own bootstrap): {item!r}"
+                )
     elif key == "doq-server":
         # Loon accepts both quic:// and a bare host:port. The ads plugin does
         # not currently use DoQ, so keep this permissive but explicit.
@@ -227,6 +234,32 @@ def validate_rule_line(raw: str, where: str) -> None:
     for param in parts[3:]:
         if param and param not in RULE_PARAMS:
             raise BuildError(f"{where}: unsupported [Rule] parameter: {param!r}")
+
+
+def validate_ip_rewrite_line(raw: str, where: str, ip_seen: set[str]) -> tuple[str, str]:
+    line = raw.strip()
+    if not line or line.startswith("#"):
+        return "", ""
+    if "=" not in line:
+        raise BuildError(f"{where}: [IP Rewrite] line must be IP = action: {raw!r}")
+    ip, action = (part.strip() for part in line.split("=", 1))
+    if not is_ipv4(ip) or "/" in ip:
+        raise BuildError(
+            f"{where}: [IP Rewrite] only supports single IPv4 address (no CIDR/IPv6): {ip!r}"
+        )
+    if ip == "119.29.29.29":
+        raise BuildError(f"{where}: refusing to rewrite 119.29.29.29 (own dns-server)")
+    if action not in IP_REWRITE_ACTIONS:
+        raise BuildError(
+            f"{where}: unsupported [IP Rewrite] action {action!r}; "
+            "expected reflect/reject/drop"
+        )
+    if ip in ip_seen:
+        raise BuildError(
+            f"{where}: duplicate IPv4 in [IP Rewrite] (breaks Loon module): {ip!r}"
+        )
+    ip_seen.add(ip)
+    return ip, action
 
 
 def wrap_comment(text: str) -> list[str]:
@@ -287,6 +320,8 @@ def render_plugin(
         "general": 0,
         "rules": 0,
         "rules_disabled": 0,
+        "ip_rewrite": 0,
+        "ip_rewrite_disabled": 0,
         "groups": 0,
         "active": 0,
         "disabled": 0,
@@ -341,6 +376,41 @@ def render_plugin(
                 validate_rule_line(raw, f"plugin {plugin['file']}, [Rule] optional")
                 lines.append("# " + raw)
                 counts["rules_disabled"] += 1
+
+    ip_rewrite = plugin.get("ip_rewrite") or []
+    ip_rewrite_disabled = plugin.get("ip_rewrite_disabled") or []
+    ip_seen: set[str] = set()
+
+    if ip_rewrite:
+        lines.append("")
+        lines.append("")
+        lines.append("[IP Rewrite]")
+        for raw in ip_rewrite:
+            if not isinstance(raw, str) or not raw.strip():
+                raise BuildError(f"plugin {plugin['file']}: empty ip_rewrite line")
+            validate_ip_rewrite_line(raw, f"plugin {plugin['file']}, [IP Rewrite]", ip_seen)
+            lines.append(raw.strip())
+            counts["ip_rewrite"] += 1
+
+    if ip_rewrite_disabled:
+        lines.append("")
+        lines.append("# " + "=" * 76)
+        lines.append("# 可选：[IP Rewrite]（Loon Build 1007+ 插件专属，TUN 阶段最快拦截）")
+        lines.append("# " + "-" * 76)
+        lines.append("# 语法：单 IPv4 = reflect|reject|drop。只收单 IPv4（不收 CIDR/域名/IPv6/参数）。")
+        lines.append("# 在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底。")
+        lines.append("# 重复声明 IP 会导致整个模块失效。逐行取消行首的 '# ' 后生效。")
+        lines.append("# ============================================================================ ")
+        for raw in ip_rewrite_disabled:
+            if not isinstance(raw, str) or not raw.strip():
+                raise BuildError(f"plugin {plugin['file']}: empty ip_rewrite_disabled line")
+            raw = raw.strip()
+            if raw.startswith("#"):
+                lines.append(raw)
+            else:
+                validate_ip_rewrite_line(raw, f"plugin {plugin['file']}, [IP Rewrite] optional", ip_seen)
+                lines.append("# " + raw)
+                counts["ip_rewrite_disabled"] += 1
 
     lines.append("")
     lines.append("")
@@ -495,6 +565,8 @@ def main() -> int:
             print(
                 f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
                 f"optional_rules={counts['rules_disabled']:2} "
+                f"ip_rewrite={counts['ip_rewrite']:2} "
+                f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "
                 f"groups={counts['groups']:2} active={counts['active']:3} "
                 f"disabled={counts['disabled']:3} expanded={counts['expanded']:3}"
             )
@@ -505,6 +577,8 @@ def main() -> int:
         print(
             f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
             f"optional_rules={counts['rules_disabled']:2} "
+            f"ip_rewrite={counts['ip_rewrite']:2} "
+            f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "
             f"groups={counts['groups']:2} active={counts['active']:3} "
             f"disabled={counts['disabled']:3} expanded={counts['expanded']:3}"
         )

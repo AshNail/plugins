@@ -62,7 +62,7 @@ try {
       "打开汽水 → 福利页完成任务即可领取（攒时长 / 花卡 / 签到）。" +
         (stats ? " " + stats : "") +
         "。插件只做提醒，不代看广告、不代领取。",
-      ""
+      { "openUrl": "qishui://" }
     );
     console.log("[soda-reminder] 已发送提醒（未打卡）");
     try {

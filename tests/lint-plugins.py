@@ -10,8 +10,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 1, 39, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 0, 10, "douyin"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 39, "soda"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 1, 10, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -84,6 +84,7 @@ FAMILY_CHECKS = {
         },
         "mitm": [
             "beta-luna.douyin.com",
+            "polaris.zijieapi.com",
             "ad.zijieapi.com",
             "lianmengapi.snssdk.com",
             "ads5-normal-hl.zijieapi.com",
@@ -516,10 +517,10 @@ def check_ads_family():
         )
     if "icon" in meta and not meta["icon"].startswith("https://"):
         errors.append(f"{ADS_PLUGIN}: #!icon must be an https URL")
-    if sections != ["General", "Rule", "Host"]:
+    if sections not in (["General", "Rule", "Host"], ["General", "Rule", "IP Rewrite", "Host"]):
         errors.append(
             f"{ADS_PLUGIN}: sections {sections}, expected "
-            "['General', 'Rule', 'Host']"
+            "['General', 'Rule', 'Host'] or ['General', 'Rule', 'IP Rewrite', 'Host']"
         )
 
     if not (ROOT / "plugins/ads/README.md").exists():
@@ -561,13 +562,17 @@ def check_ads_family():
         for url in [v.strip() for v in general_map["doh-server"].split(",")]:
             if not re.match(r"^https://\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?/", url):
                 errors.append(f"{ADS_PLUGIN}: doh-server must use an IP literal: {url}")
+    if "doh3-server" in general_map:
+        for url in [v.strip() for v in general_map["doh3-server"].split(",")]:
+            if not re.match(r"^h3://\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?/", url):
+                errors.append(f"{ADS_PLUGIN}: doh3-server must use an IP literal: {url}")
 
     # [Rule] is the HTTPDNS fallback. It must only block and must not smuggle
     # in an unsupported policy/parameter.
     rules = data.get("Rule", [])
     required_rules = (
-        "DOMAIN-KEYWORD,httpdns,REJECT,extended-matching,pre-matching",
-        "DOMAIN-KEYWORD,httpsdns,REJECT,extended-matching,pre-matching",
+        "DOMAIN-KEYWORD,httpdns,REJECT-DROP,extended-matching,pre-matching",
+        "DOMAIN-KEYWORD,httpsdns,REJECT-DROP,extended-matching,pre-matching",
         "USER-AGENT,httpdns*,REJECT",
         "DEST-PORT,853,REJECT",
     )
@@ -646,6 +651,17 @@ def check_ads_family():
         errors.append(
             f"{ADS_PLUGIN}: optional PROTOCOL STUN block must exist exactly once and stay commented"
         )
+
+    # Build 1007+ [IP Rewrite] 可选块守卫：单 IPv4、drop 动作、不包含自身 119.29.29.29
+    if "# 可选：[IP Rewrite]（Loon Build 1007+ 插件专属，TUN 阶段最快拦截）" not in raw:
+        errors.append(f"{ADS_PLUGIN}: optional [IP Rewrite] block missing header")
+    for ip_marker in (
+        "# 203.119.238.240 = drop",
+        "# 43.132.43.43 = drop",
+        "# 180.76.76.200 = drop",
+    ):
+        if ip_marker not in raw:
+            errors.append(f"{ADS_PLUGIN}: optional [IP Rewrite] marker missing: {ip_marker}")
 
     # [Host] is the core DNS layer.
     host_lines = data.get("Host", [])

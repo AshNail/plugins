@@ -89,7 +89,15 @@ const CONFIG_KEYS = new Set([
   "splashdspconfig",
   "preloaddspconfig",
   "splashmannorconfig",
-  "adignoreplayerstatusconfig"
+  "adignoreplayerstatusconfig",
+  /* 开屏摇一摇/扭一扭/传感器广告与本地素材缓存配置（全方位去广告） */
+  "splashshakeadconfig",
+  "shakeadconfig",
+  "splashtwistadconfig",
+  "twistadconfig",
+  "motionadconfig",
+  "splashadcacheconfig",
+  "splashadpreloadconfig"
 ]);
 
 /* 默认只关“广告功能开关”，不动全局广告 SDK 与时长/发奖 */
@@ -108,7 +116,25 @@ const SCALAR_KEYS = new Map([
   ["enableclientadsstrategy", "false"],
   ["preloadfeedads", "false"],
   ["basicmodedisablerewardadenabled", "true"],
-  ["kbasicmodedisablerewardadenabled", "true"]
+  ["kbasicmodedisablerewardadenabled", "true"],
+  /* 摇一摇与手势误触开关拦截 */
+  ["enablesplashshake", "false"],
+  ["enableshakead", "false"],
+  ["enableshake", "false"],
+  ["enabletwistad", "false"],
+  ["enabletwist", "false"],
+  ["enablemotionad", "false"],
+  ["shakeadswitch", "false"],
+  ["twistadswitch", "false"],
+  ["splashshakesensitivity", "zero"],
+  ["shakesensitivity", "zero"],
+  ["splashaccelerationthreshold", "zero"],
+  ["splashrotationthreshold", "zero"],
+  ["splashcacheenable", "false"],
+  ["splashcacheenabled", "false"],
+  ["enableadpreload", "false"],
+  ["enablesplashadpreload", "false"],
+  ["adpreloadenable", "false"]
 ]);
 
 /*
