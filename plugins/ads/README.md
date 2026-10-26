@@ -59,7 +59,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1050 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` 核心广告组 | 14 组、1056 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
 | `[Host]` HTTPDNS 组 | 72 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 39 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb 等 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
@@ -69,7 +69,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**18 组、1161 条生效 Host、72 条默认注释 Host、13 条生效 Rule、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
+合计：**18 组、1167 条生效 Host、72 条默认注释 Host、13 条生效 Rule、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
 
 ### 归因/统计组（默认关闭）
 
@@ -228,6 +228,10 @@ dns-reject-mode = LOOPBACKIP
 - **YouTube / Twitch / Spotify / Netflix 等内容级广告**：广告和内容走同一批共享域/CDN，DNS 层无法区分。
 - **第一方广告**：广告由 App 自己的业务 API 返回（例如 `api.example.com/feed` 里夹广告），DNS 层看不到；只能在 App 专用插件里改响应体。
 - **`qq.com` / `baidu.com` / `google.com` / `facebook.com` / `snssdk.com` / `zijieapi.com` / `pstatp.com` / `kuaishou.com` / `yximgs.com` / `unity3d.com` / `amazon.com` 等共享主域**：整域封禁会打断登录、内容、支付、更新等核心功能；只允许精确广告子域。
+- **中国六大银行核心与认证域名**（工行 `icbc.com.cn`、建行 `ccb.com`、农行 `abchina.com`、中行 `boc.cn`、交行 `bankcomm.com`、邮储 `psbc.com`）：
+  - **金融交易与资金安全第一**：严禁对银行主域使用通配符阻断，严禁对银行域名开启 MITM（六大行具备严格的 SSL Pinning 证书绑定与国密 SM2/SM3/SM4 校验，解密会导致客户端网络报错或触发风控）；
+  - **`ad.abchina.com` 明确不拦**：经 EasyList China 与 AdRules 实证取证，该子域承载农行安全认证与核心脚本，误封会导致页面与登录损坏；
+  - **精准定向**：银行广告仅阻断已验证的独立广告/营销资产子域（`adv.ccb.com`、`ad.icbc.com.cn`、`ad.boc.cn`、`jf365.boc.cn`、`ad.bankcomm.com`、`ad.psbc.com`），六大行主域已纳入 `protected-roots.json` 强锁保护。
 
 ### 为什么没有 MITM / Rewrite / 脚本
 

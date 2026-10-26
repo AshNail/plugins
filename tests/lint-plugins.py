@@ -744,9 +744,22 @@ def check_ads_family():
             errors.append(f"{ADS_PLUGIN}: optional measurement block missing: {marker}")
 
     # Explicitly excluded shared hosts must never become active by accident.
-    for domain in ("is.snssdk.com", "graph.facebook.com", "branch.io"):
+    # ad.abchina.com 经 EasyList China / AdRules 实证承载农行认证/核心脚本，绝不能拦截。
+    for domain in ("is.snssdk.com", "graph.facebook.com", "branch.io", "ad.abchina.com"):
         if domain in exact or domain in wildcard:
             errors.append(f"{ADS_PLUGIN}: excluded shared host is active: {domain}")
+
+    # 中国六大行精准广告专域守卫（工行、建行、中行、交行、邮储）
+    for domain in (
+        "adv.ccb.com",
+        "ad.icbc.com.cn",
+        "ad.boc.cn",
+        "jf365.boc.cn",
+        "ad.bankcomm.com",
+        "ad.psbc.com",
+    ):
+        if domain not in exact:
+            errors.append(f"{ADS_PLUGIN}: bank ad domain missing: {domain}")
 
     print(
         f"{ADS_PLUGIN}: host_rules={len(host_lines)} "

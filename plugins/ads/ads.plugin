@@ -420,6 +420,12 @@ sax.sina.com.cn = 127.0.0.1
 saxn.sina.com.cn = 127.0.0.1
 cpu.baidu.com = 127.0.0.1
 ads.xiaohongshu.com = 127.0.0.1
+adv.ccb.com = 127.0.0.1
+ad.icbc.com.cn = 127.0.0.1
+ad.boc.cn = 127.0.0.1
+jf365.boc.cn = 127.0.0.1
+ad.bankcomm.com = 127.0.0.1
+ad.psbc.com = 127.0.0.1
 
 # ============================================================================
 # Google Ads / AdMob / Ad Manager
