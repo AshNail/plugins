@@ -114,12 +114,15 @@ const RULES = [
      * fastReject 先做字符串预检，避免对体积大的 feed 响应做无谓 JSON.parse。
      */
     kill: ["adsBlocks", "adsInfo", "adInfo", "adData", "adExtra",
-           "videoEndAd", "feedAds", "feedRewardAdEntrance"],
+           "videoEndAd", "feedAds", "feedRewardAdEntrance",
+           "audioAd", "midRollAd", "midRollAds", "pauseAd",
+           "recommendAd", "searchBanner", "sponsorCard", "commercialNotice",
+           "promotedTrack", "promotedSong"],
     prune: [
       { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ],
     dropAdItems: true,
-    fastReject: /ads_blocks|ads_info|ad_info|ad_data|ad_extra|video_end_ad|feed_ads|feed_reward_ad_entrance|banner_list|"bannerList"\s*:|"is_ad"\s*:|"isAd"\s*:|"is_advert"\s*:|"isAdvert"\s*:|"is_advertisement"\s*:|"isAdvertisement"\s*:|"is_ad_item"\s*:|"isAdItem"\s*:|"ad_item"\s*:|"adItem"\s*:|"ad_flag"\s*:|"adFlag"\s*:|"is_promoted"\s*:|"isPromoted"\s*:|"is_sponsored"\s*:|"isSponsored"\s*:|"is_commercial"\s*:|"isCommercial"\s*:/
+    fastReject: /ads_blocks|ads_info|ad_info|ad_data|ad_extra|video_end_ad|audio_ad|mid_roll_ad|pause_ad|recommend_ad|search_banner|sponsor_card|commercial_notice|feed_ads|feed_reward_ad_entrance|banner_list|"bannerList"\s*:|"is_ad"\s*:|"isAd"\s*:|"is_advert"\s*:|"isAdvert"\s*:|"is_advertisement"\s*:|"isAdvertisement"\s*:|"is_ad_item"\s*:|"isAdItem"\s*:|"ad_item"\s*:|"adItem"\s*:|"ad_flag"\s*:|"adFlag"\s*:|"is_promoted"\s*:|"isPromoted"\s*:|"is_sponsored"\s*:|"isSponsored"\s*:|"is_commercial"\s*:|"isCommercial"\s*:/
   },
   {
     id: "treasure-entrance",
@@ -365,12 +368,14 @@ function isAdItem(o) {
         isAdFlag(v)) {
       return true;
     }
-    if (nk === "adinfo" || nk === "addata") {
+    if (nk === "adinfo" || nk === "addata" || nk === "adextra" ||
+        nk === "commercialdata" || nk === "promoteddata") {
       hasAd = true;
     }
     if (nk === "video" || nk === "liveroom" || nk === "media" ||
         nk === "track" || nk === "song" || nk === "aweme" ||
-        nk === "roomdata") {
+        nk === "roomdata" || nk === "audio" || nk === "music" ||
+        nk === "artist" || nk === "album") {
       hasMedia = true;
     }
   }

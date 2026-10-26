@@ -59,7 +59,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1048 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` 核心广告组 | 14 组、1050 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
 | `[Host]` HTTPDNS 组 | 72 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 39 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb 等 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
@@ -69,7 +69,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**18 组、1159 条生效 Host、72 条默认注释 Host、13 条生效 Rule、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
+合计：**18 组、1161 条生效 Host、72 条默认注释 Host、13 条生效 Rule、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
 
 ### 归因/统计组（默认关闭）
 

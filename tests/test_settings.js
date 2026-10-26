@@ -336,5 +336,26 @@ console.log("\n[17] shake / motion / cache ad configs suppression");
   check("normal feature preserved", j.normal_feature === "active");
 }
 
+console.log("\n== 18. 多形态广告设置拦截：插屏/搜索/H5/弹窗/横幅 ==");
+{
+  const body = JSON.stringify({
+    interstitial_ad_config: { rit: "111" },
+    search_ad_config: { keyword: "ad" },
+    h5_ad_config: { sdk: "pangle" },
+    enable_interstitial_ad: true,
+    search_ad_switch: true,
+    enable_h5_ad: true,
+    content: "normal"
+  });
+  const j = parse(run(body).out);
+  check("interstitial ad config emptied", JSON.stringify(j.interstitial_ad_config) === "{}");
+  check("search ad config emptied", JSON.stringify(j.search_ad_config) === "{}");
+  check("h5 ad config emptied", JSON.stringify(j.h5_ad_config) === "{}");
+  check("enable_interstitial_ad false", j.enable_interstitial_ad === false);
+  check("search_ad_switch false", j.search_ad_switch === false);
+  check("enable_h5_ad false", j.enable_h5_ad === false);
+  check("normal content preserved", j.content === "normal");
+}
+
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") + "  pass=" + pass + " fail=" + fail);
 process.exit(fail === 0 ? 0 : 1);

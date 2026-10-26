@@ -97,7 +97,14 @@ const CONFIG_KEYS = new Set([
   "twistadconfig",
   "motionadconfig",
   "splashadcacheconfig",
-  "splashadpreloadconfig"
+  "splashadpreloadconfig",
+  /* 拓展多种形态广告配置（插屏/搜索/H5/弹窗/横幅） */
+  "h5adconfig",
+  "webadconfig",
+  "popupadconfig",
+  "banneradconfig",
+  "interstitialadconfig",
+  "searchadconfig"
 ]);
 
 /* 默认只关“广告功能开关”，不动全局广告 SDK 与时长/发奖 */
@@ -134,7 +141,18 @@ const SCALAR_KEYS = new Map([
   ["splashcacheenabled", "false"],
   ["enableadpreload", "false"],
   ["enablesplashadpreload", "false"],
-  ["adpreloadenable", "false"]
+  ["adpreloadenable", "false"],
+  /* 插屏/搜索/弹窗/横幅/H5 广告全形态开关 */
+  ["enableinterstitialad", "false"],
+  ["interstitialadswitch", "false"],
+  ["enablesearchad", "false"],
+  ["searchadswitch", "false"],
+  ["enablepopupad", "false"],
+  ["popupadswitch", "false"],
+  ["enablebannerad", "false"],
+  ["banneradswitch", "false"],
+  ["enableh5ad", "false"],
+  ["h5adswitch", "false"]
 ]);
 
 /*

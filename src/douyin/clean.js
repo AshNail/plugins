@@ -63,7 +63,9 @@ const KILL_CONTAINERS = {
            "shakeinfo", "twistinfo", "motioninfo", "interactioninfo", "splashcache",
            "splashdspconfig", "preloaddspconfig", "splashmannorconfig", "adignoreplayerstatusconfig",
            "adngroupconfig", "commercelibraadconfig", "commercecommonadconfig",
-           "feedrewardadentrance", "searchbanner", "feedwidget"],
+           "feedrewardadentrance", "searchbanner", "feedwidget",
+           "audioad", "midrollad", "pausead", "recommendad", "sponsorcard",
+           "commercialnotice", "interstitialad", "popupad", "bannerad"],
     falsy: ["preload", "enableads", "enablead"]
   }
 };

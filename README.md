@@ -61,7 +61,7 @@ npm run build:ads   # src/ads/domains.json → plugins/ads/ads.plugin
 npm run audit:ads   # 上游清单覆盖率/缺口审计（只读）
 npm run lint        # 结构/正则/脚本引用/压缩语法/ads 数据一致性 + 四处名单一致
 npm run check       # build + build:ads + lint + 全部测试（源码+压缩版）
-npm test            # 仅测试；21 套件 ×2 = 42 套件 / 1072 断言
+npm test            # 仅测试；21 套件 ×2 = 42 套件 / 1094 断言
 ```
 
 仓库结构：

@@ -63,5 +63,19 @@ console.log("== ad_info only is dropped ==");
   ck("纯 ad_info 条目被删", r.body.data.length === 1 && r.body.data[0].id === 2, JSON.stringify(r.body));
 }
 
+console.log("== audio_ad & mid_roll_ad containers cleared ==");
+{
+  const r = run(url, {
+    audio_ad: { duration: 15 },
+    mid_roll_ad: [{ ad_id: "x" }],
+    search_banner: { ad_url: "y" },
+    data: [{ id: 1, music: { name: "test" }, title: "song" }]
+  });
+  ck("audio_ad 被清", r.body.audio_ad && Object.keys(r.body.audio_ad).length === 0, JSON.stringify(r.body.audio_ad));
+  ck("mid_roll_ad 被清", Array.isArray(r.body.mid_roll_ad) && r.body.mid_roll_ad.length === 0, JSON.stringify(r.body.mid_roll_ad));
+  ck("search_banner 被清", r.body.search_banner && Object.keys(r.body.search_banner).length === 0, JSON.stringify(r.body.search_banner));
+  ck("音乐条目保留", r.body.data.length === 1 && r.body.data[0].id === 1);
+}
+
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") + "  pass=" + pass + " fail=" + fail);
 process.exit(fail ? 1 : 0);
