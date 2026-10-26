@@ -501,6 +501,8 @@ http-request ^https?:\/\/api\.qishui\.com\/luna\/(?:advert\/incentive\/config|ad
 2. 插件位于 `plugins/soda/`，Loon 以插件 URL 为基准解析同目录 `scripts/*.min.js`；
 3. 只导入这一个插件：
 
+[![一键导入 soda.plugin](https://img.shields.io/badge/Loon-导入汽水音乐-blue?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin)
+
 ```text
 loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin
 ```

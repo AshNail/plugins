@@ -20,6 +20,8 @@
 
 ## 安装
 
+[![一键导入 ads.plugin](https://img.shields.io/badge/Loon-导入广告拦截器-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin)
+
 直链地址（单文件；`[Script]` 相对路径脚本以插件 URL 为基准同目录解析）：
 
 ```text

@@ -209,6 +209,8 @@ POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 tim
 
 ## 5. 安装
 
+[![一键导入 douyin.plugin](https://img.shields.io/badge/Loon-导入抖音-black?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin)
+
 ```text
 loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin
 ```
