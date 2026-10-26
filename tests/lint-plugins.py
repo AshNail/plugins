@@ -338,6 +338,36 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
                 f"{fp}: missing or wrong Argument switch {name} (expected default {default})"
             )
 
+    # [Argument] 声明与 [Script]/[Rewrite] 引用对账。插件行是手工维护的，
+    # ${名字} 出现 typo 时 build.js 不会拦截（它只 minify 脚本），Loon 会把
+    # `${typo}` 原样带入插件，开关静默失灵。合法引用：已声明参数、引擎变
+    # 量（${url}、${request.*}、${response.*}）、同一条 ` as xxx` 声明的捕获
+    # 组（${xxx.1} 形态，Rewrite v2 官方示例 AutoRewrite_Example2.list 第六
+    # 节同款语法）。
+    declared_args = set()
+    for arg_line in data.get("Argument", []):
+        m_arg = re.match(r"^([A-Za-z_]\w*)\s*=", arg_line)
+        if m_arg:
+            declared_args.add(m_arg.group(1))
+    ref_rx = re.compile(r"\$\{([^}]+)\}")
+    for section in ("Script", "Rewrite"):
+        for line in data.get(section, []):
+            if line.lstrip().startswith("#"):
+                continue
+            as_names = set(re.findall(r"(?:^|[\s(])as\s+([A-Za-z_]\w*)", line))
+            for ref in ref_rx.findall(line):
+                m_cap = re.match(r"^([A-Za-z_]\w*)\.\d+$", ref)
+                if (
+                    ref not in declared_args
+                    and ref != "url"
+                    and not re.match(r"^(request|response)(\.|\[)", ref)
+                    and not (m_cap and m_cap.group(1) in as_names)
+                ):
+                    errors.append(
+                        f"{fp}: unresolved ${{{ref}}} in [{section}] "
+                        f"(not a declared [Argument] or engine variable): {line[:80]}"
+                    )
+
     if rules:
         errors.append(f"{fp}: plugin must not contain active static domain rules")
 
