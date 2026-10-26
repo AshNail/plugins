@@ -198,6 +198,10 @@ def validate_general_line(raw: str, where: str) -> None:
                 raise BuildError(f"{where}: doq-server must use quic:// or doq://: {item!r}")
 
 
+# docs/cn/protocol_rule.md：Loon（3.1.7+）PROTOCOL 规则支持的全量取值。
+PROTOCOL_VALUES = {"HTTP", "HTTPS", "TCP", "QUIC", "STUN", "UDP"}
+
+
 def validate_rule_line(raw: str, where: str) -> None:
     line = raw.strip()
     if not line or line.startswith("#"):
@@ -210,6 +214,11 @@ def validate_rule_line(raw: str, where: str) -> None:
         raise BuildError(f"{where}: FINAL is not allowed in the ads plugin")
     if rule_type not in RULE_TYPES:
         raise BuildError(f"{where}: unsupported [Rule] type: {rule_type!r}")
+    if rule_type == "PROTOCOL" and parts[1] not in PROTOCOL_VALUES:
+        raise BuildError(
+            f"{where}: unsupported PROTOCOL value: {parts[1]!r}"
+            " (expected HTTP/HTTPS/TCP/QUIC/STUN/UDP)"
+        )
     policy = parts[2]
     if policy not in REJECT_POLICIES:
         raise BuildError(

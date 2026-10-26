@@ -153,6 +153,9 @@ ADS_RULE_TYPES = {
     "IP-ASN",
 }
 
+# docs/cn/protocol_rule.md：Loon（3.1.7+）PROTOCOL 规则支持的全量取值。
+PROTOCOL_VALUES = {"HTTP", "HTTPS", "TCP", "QUIC", "STUN", "UDP"}
+
 errors = []
 
 COMMON_DIR = ROOT / "src/common"
@@ -553,6 +556,8 @@ def check_ads_family():
             errors.append(f"{ADS_PLUGIN}: unsupported [Rule] type: {parts[0]}")
         if not parts[2].startswith("REJECT"):
             errors.append(f"{ADS_PLUGIN}: [Rule] must reject: {line[:100]}")
+        if parts[0] == "PROTOCOL" and parts[1] not in PROTOCOL_VALUES:
+            errors.append(f"{ADS_PLUGIN}: unsupported PROTOCOL value: {parts[1]}")
         for param in parts[3:]:
             if param not in {"extended-matching", "pre-matching", "no-resolve"}:
                 errors.append(f"{ADS_PLUGIN}: unsupported [Rule] parameter: {param}")
@@ -599,6 +604,17 @@ def check_ads_family():
     if "119.29.29.29/32" in raw or "119.29.29.29 = 127.0.0.1" in raw:
         errors.append(
             f"{ADS_PLUGIN}: must not block 119.29.29.29 (public resolver AND own dns-server)"
+        )
+    # PROTOCOL,STUN,REJECT 是可选层唯一非 IP 规则（Loon 3.1.7+ 协议规则），
+    # README 与全功能清单按 28 条引用它；必须存在、恰好一行注释态、绝不能激活。
+    stun_lines = [
+        line
+        for line in raw.splitlines()
+        if line.strip() in ("PROTOCOL,STUN,REJECT", "# PROTOCOL,STUN,REJECT")
+    ]
+    if stun_lines != ["# PROTOCOL,STUN,REJECT"]:
+        errors.append(
+            f"{ADS_PLUGIN}: optional PROTOCOL STUN block must exist exactly once and stay commented"
         )
 
     # [Host] is the core DNS layer.
