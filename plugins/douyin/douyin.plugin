@@ -1,17 +1,23 @@
 #!name=抖音 · douyin
 #!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=0.7.0
+#!version=0.7.1
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=ios
 #!loon_version=3.5.1(983)
+#!date=2026-10-26
 #!tag=抖音,去广告,福利页,Loon
 
 # ============================================================================
 # douyin.plugin 说明（一个 App 一个插件）
 # ----------------------------------------------------------------------------
 # 目标接口：beta-luna.douyin.com/luna/*（抖音内嵌的音乐/福利模块）
+#
+# 共享脚本层：本插件的 block-domains / daily-reminder / welfare-stamp 与
+# 汽水插件共用同一份源码（src/common/*.js + src/common/families.json），
+# tools/build.js 按家族参数展开到 src/douyin/ 后压缩；名单还由 lint
+# 校验 [Script]/[Rule]/[MITM]/源码四处一致。
 #
 # 开关：
 #   treasureMinimal  福利页精简（默认开）：只留【攒时长 听歌不中断】
@@ -130,6 +136,13 @@ cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}})
 # beta-luna.douyin.com：福利页/激励广告/商业化弹窗接口。
 # 5 个广告域名：blockAdDomains 开关需要（HTTPS 必须先解密）。
 #                如果开开关后激励广告播不了，把这 5 个域名注释掉。
+# 分层关系：其中 ad.zijieapi.com / lianmengapi.snssdk.com /
+#                ads5-normal-hl.zijieapi.com 同时也被 ads.plugin 的 [Host]
+#                DNS 层拦截；本份名单是 App 内 MITM 兜底层。
+#                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
+#                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
+# 脚本来源：block-domains.min.js 由 src/common/block-domains.js +
+#                families.json 生成，与 soda 插件共享单一源码。
 # ============================================================================
 
 [MITM]

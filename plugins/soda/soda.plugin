@@ -1,17 +1,23 @@
 #!name=汽水音乐 · soda
 #!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音，全部用 [Argument] 开关控制。默认保奖励，不拦任何域名。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=2.6.1
+#!version=2.6.2
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
 #!system=ios
 #!loon_version=3.5.1(983)
+#!date=2026-10-26
 #!tag=汽水音乐,统一,开关,Loon
 
 # ============================================================================
 # soda.plugin · 聚合开关版（一个 App 一个插件）
 # ----------------------------------------------------------------------------
 # 目标：Soda 只保留一个 .plugin，所有功能都在本插件里用 [Argument] 开关控制。
+#
+# 共享脚本层：本插件的 block-domains / daily-reminder / welfare-stamp 与
+# douyin 插件共用同一份源码（src/common/*.js + src/common/families.json），
+# tools/build.js 按家族参数展开到 src/soda/ 后压缩；名单还由 lint
+# 校验 [Script]/[Rule]/[MITM]/源码四处一致。
 #
 # 开关：
 #   rewardSafe     保奖励模式（默认开）
@@ -189,6 +195,13 @@ cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}})
 # 下面 5 个广告域名：blockAdDomains 开关需要它们（HTTPS 必须先解密）。
 #                如果开启后激励广告播不了（证书固定），把这 5 个域名注释掉，
 #                改用 [Rule] 手动严格模式。
+# 分层关系：其中 ad.zijieapi.com / lianmengapi.snssdk.com /
+#                ads5-normal-hl.zijieapi.com 同时也被 ads.plugin 的 [Host]
+#                DNS 层拦截；本份名单是 App 内 MITM 兜底层。
+#                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
+#                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
+# 脚本来源：block-domains.min.js 由 src/common/block-domains.js +
+#                families.json 生成，与 douyin 插件共享单一源码。
 # ============================================================================
 
 [MITM]

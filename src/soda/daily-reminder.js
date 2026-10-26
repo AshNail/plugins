@@ -1,12 +1,15 @@
 /*
- * SodaClean · 每日领取提醒（Loon cron 脚本）
+ * loon-plugins 共享脚本 · 每日领取提醒（Loon cron 脚本）
  * ------------------------------------------------------------
+ * soda / douyin 共用同一份源码（本文件），家族差异（日志前缀、
+ * 存储键前缀、通知文案）由 src/common/families.json 注入。
+ *
  * 用途：每天定时提醒领奖励——当天打开过福利页就不打扰。
  *
  * 明确不做的事：
  *   - 不代打开 App、不代播放广告、不代点「领取」；
  *   - 不向 incentive/done 等发奖接口发起任何请求
- *     （Nx 请求需要 x-argus/x-gorgon/x-ladon/x-medusa 与 bd-ticket-guard
+ *     （发奖请求需要 x-argus/x-gorgon/x-ladon/x-medusa 与 bd-ticket-guard
  *      设备级签名，脚本无法生成；自动领取=伪造请求=IVT）；
  *   - 只读 $persistentStore 内本插件自己写的键，不依赖任何接口调用。
  *

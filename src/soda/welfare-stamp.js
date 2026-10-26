@@ -1,6 +1,9 @@
 /*
- * SodaClean · 福利页打卡（Loon http-response 脚本）
+ * loon-plugins 共享脚本 · 福利页打卡（Loon http-response 脚本）
  * ------------------------------------------------------------
+ * soda / douyin 共用同一份源码（本文件），家族差异（日志前缀、
+ * 存储键前缀）由 src/common/families.json 注入。
+ *
  * 用途：给「每日领取提醒」提供依据——当天是否打开过福利页。
  *
  * 行为：

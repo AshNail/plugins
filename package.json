@@ -9,7 +9,9 @@
     "test:src": "python3 tests/run-all.py --src",
     "test:dist": "python3 tests/run-all.py --dist",
     "lint": "python3 tests/lint-plugins.py",
-    "check": "npm run build && npm run lint && npm test"
+    "check": "npm run build && npm run build:ads && npm run lint && npm test",
+    "build:ads": "python3 tools/build-ads.py",
+    "audit:ads": "python3 tools/ads-audit.py"
   },
   "devDependencies": {
     "terser": "^5.51.2"

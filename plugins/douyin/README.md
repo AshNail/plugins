@@ -321,6 +321,23 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 
 ## 7. 版本更新记录
 
+### v0.7.1（2026-10-26）共享脚本单一来源整合（行为不变）
+
+- **同功能不分散**：`block-domains.js` / `daily-reminder.js` / `welfare-stamp.js`
+  三个脚本此前与 `src/soda/` 各存一份逐字复制（只差日志前缀、存储键前缀、
+  通知文案与 `rewardSafe` 默认值）。现统一为单一来源 `src/common/*.js` +
+  家族参数 `src/common/families.json`，`tools/build.js` 按家族展开到
+  `src/douyin/`（生成物，勿手改）再压缩；源码一处改动，两个家族同步生效。
+- **编译产物逐字节等价**：生成后 `plugins/douyin/scripts/` 里 3 个对应
+  `.min.js` 与重构前完全一致（`git diff` 零差异），无行为变化。
+  douyin 无 rewardSafe 概念 → `families.json` `rewardSafeDefault=false`
+  已由测试断言锁定（`blockAdDomains=开` 且未显式传 rewardSafe 时照旧拦截）。
+- **名单四处一致性锁**：lint 新增两项守卫——① 按 families.json 重新展开
+  共享脚本并与 `src/<family>/` 生成物逐字节比对；② 把 `BLOCKED_HOSTS`
+  与插件的 `[Script]` 正则、注释 `[Rule]`、`[MITM]` 四处名单强校验。
+- **分层说明写入插件头注释**：被拦的 5 个域名中 3 个同时被 `ads.plugin`
+  DNS 层拦截；`zlink/praisewindow.ugsdk.cn` 为 App 内运营端点，仅本开关覆盖。
+
 ### v0.7.0（2026-10-22）每日提醒打卡
 
 - 新增 `dailyReminder` / `reminderCron` 与 `scripts/welfare-stamp.min.js`：

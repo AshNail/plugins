@@ -109,7 +109,11 @@ def check_versions():
             first_ver = re.search(r"#!version|\bv(\d+\.\d+\.\d+)\b", "\n".join(
                 [preadme.read_text().split("\n\n")[0]] +
                 re.findall(r"\bv\d+\.\d+\.\d+\b", preadme.read_text())))
-            mention = re.findall(r"\bv(\d+\.\d+\.\d+)\b", preadme.read_text())
+            # ads 的版本记录写作 `**2.0.0**`，soda/douyin 写作 `v2.6.1`；
+            # 只匹配这两种明确格式，避免把 Loon 3.5.1 当成插件版本。
+            readme_text = preadme.read_text()
+            mention = re.findall(r"\bv(\d+\.\d+\.\d+)\b", readme_text)
+            mention += re.findall(r"\*\*(\d+\.\d+\.\d+)\*\*", readme_text)
             newest = max(mention) if mention else "?"
             if newest != v:
                 bad(f"{name}: 插件版本 v{v}，但 plugins/{family}/README.md 最新提到 v{newest}")
@@ -172,6 +176,11 @@ def check_leaks():
 def check_mitm():
     print("\n【5】[MITM] 覆盖与目的对账")
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
+        if plugin.name == "ads.plugin":
+            # 单 ads 插件是零证书设计：lint 明确要求只有
+            # [General] + [Rule] + [Host]，因此这里不应有 [MITM]。
+            ok("ads.plugin: 零证书设计，无 [MITM]（预期）")
+            continue
         text = plugin.read_text()
         m = re.search(r"\[MITM\]\s*\n?\s*hostname\s*=\s*([^\n]+)", text)
         if not m:

@@ -1,0 +1,33 @@
+{
+  "comment": [
+    "soda/douyin 共享脚本的唯一参数源。tools/build.js 会把 src/common/<script> 里的",
+    "@@TOKEN@@ 占位符按 family 替换成下面的值，生成 src/<family>/<script>（可读源码，勿手改），",
+    "再用 terser 压缩成 plugins/<family>/scripts/<script>.min.js。",
+    "改公共逻辑只动 src/common/*.js；改品牌/文案/开关默认值只动本文件。"
+  ],
+  "sharedScripts": [
+    "block-domains.js",
+    "daily-reminder.js",
+    "welfare-stamp.js"
+  ],
+  "tokens": [
+    ["@@LOG_TAG@@", "logTag"],
+    ["@@APP_NAME@@", "appName"],
+    ["@@NOTIFY_BODY@@", "notifyBody"],
+    ["@@REWARD_SAFE_DEFAULT@@", "rewardSafeDefault"]
+  ],
+  "families": {
+    "soda": {
+      "logTag": "soda",
+      "appName": "汽水音乐",
+      "notifyBody": "打开汽水 → 福利页完成任务即可领取（攒时长 / 花卡 / 签到）。",
+      "rewardSafeDefault": true
+    },
+    "douyin": {
+      "logTag": "douyin",
+      "appName": "抖音",
+      "notifyBody": "打开抖音福利页完成今天的领取任务（攒时长 / 翻卡 / 签到）。",
+      "rewardSafeDefault": false
+    }
+  }
+}

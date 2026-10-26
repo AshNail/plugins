@@ -330,6 +330,12 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 L1 默认关闭：广告域名被拦后，激励广告就播不了，保奖励模式必须放行。
 L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
+> 跨插件分层：L1 的 5 个域名里，`ad.zijieapi.com` / `lianmengapi.snssdk.com` /
+> `ads5-normal-hl.zijieapi.com` 三个同时也在 `ads.plugin` 的 `[Host]` DNS 层被拦截；
+> `zlink.ugsdk.cn` / `praisewindow.ugsdk.cn` 是 App 内运营端点（口令/弹窗），只由本插件
+> 的开关覆盖，不进全局 DNS 插件。两者互补：DNS 层先拦，MITM 层兜 HTTP/3 与已解析
+> 流量；刷奖励关掉 `ads.plugin` 时，本层 L1 仍然可用。
+
 ---
 
 ## 5. Loon 规范落地：Rule / Rewrite / Script / MITM
@@ -614,25 +620,28 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.1）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.2）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
-│           ├── request.min.js
 │           ├── reward-observe.min.js
-│           ├── block-domains.min.js
-│           └── diag.min.js
+│           ├── splash-ad.min.js
+│           ├── block-domains.min.js   # ← 与 douyin 同源（src/common 生成）
+│           ├── daily-reminder.min.js  # ← 与 douyin 同源（src/common 生成）
+│           └── welfare-stamp.min.js   # ← 与 douyin 同源（src/common 生成）
 ├── src/
-│   └── soda/                       # 可读源码（构建输入）
+│   ├── common/                     # soda/douyin 共享脚本单一来源 + families.json
+│   └── soda/                       # 可读源码（block-domains 等三个为生成物）
 │       ├── sanitize.js
 │       ├── settings.js
-│       ├── request.js
 │       ├── reward-observe.js
-│       ├── block-domains.js
-│       └── diag.js
+│       ├── splash-ad.js
+│       ├── block-domains.js        # ← src/common 生成，勿手改
+│       ├── daily-reminder.js       # ← src/common 生成，勿手改
+│       └── welfare-stamp.js        # ← src/common 生成，勿手改
 ├── tools/
-│   └── build.js                    # src -> plugins 压缩构建
-├── tests/                          # 脚本层回归测试（12 套 / 302 条断言 × 2）
+│   └── build.js                    # src/common 家族展开 + src -> plugins 压缩构建
+├── tests/                          # 脚本层回归测试（20 套 / 510 条断言 × 2）
 ├── package.json
 ├── package-lock.json
 ├── .github/workflows/check.yml     # CI：build + lint + 测试
@@ -687,6 +696,27 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 ---
 
 ## 11. 版本更新记录
+
+### v2.6.2（2026-10-26）共享脚本单一来源整合（行为不变）
+
+- **同功能不分散**：`block-domains.js` / `daily-reminder.js` / `welfare-stamp.js`
+  这三个脚本此前在 `src/soda/` 与 `src/douyin/` 各存一份逐字复制（只差日志前缀、
+  存储键前缀、通知文案和 `rewardSafe` 默认值）。现在统一为单一来源
+  `src/common/*.js` + 家族参数 `src/common/families.json`，`tools/build.js`
+  按家族展开到 `src/{soda,douyin}/`（生成物，勿手改）再压缩——
+  源码一处改动，两个家族同步生效。
+- **编译产物逐字节等价**：生成后 `plugins/*/scripts/` 里 6 个对应 `.min.js`
+  与重构前完全一致（`git diff` 零差异），没有行为变化；`blockAdDomains` 等
+  开关语义不变（soda 的保奖励兜底默认开，douyin 因没有保奖励概念默认关，
+  该差异已写进 families.json 并由测试断言锁定）。
+- **名单四处一致性锁**：lint 新增两项守卫——① 按 families.json 重新展开
+  共享脚本并与 `src/<family>/` 生成物逐字节比对；② 把 `BLOCKED_HOSTS`
+  与插件的 `[Script]` 正则、注释 `[Rule]`、`[MITM]` 四处名单强校验。
+  手改生成物会报 stale，直接生效。
+- **分层说明写入插件头注释**：5 个被拦域名中 3 个（`ad.zijieapi.com` /
+  `lianmengapi.snssdk.com` / `ads5-normal-hl.zijieapi.com`）同时被
+  `ads.plugin` 的 `[Host]` DNS 层拦截；`zlink/praisewindow.ugsdk.cn` 是
+  App 内运营端点，只由本开关覆盖。
 
 ### v2.6.1（2026-10-23）task/page 结构化判别 + 真样本回归
 

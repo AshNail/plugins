@@ -3,7 +3,9 @@
  * Minify src/<family>/*.js into plugins/<family>/scripts/*.min.js.
  *
  * Layout contract:
- *   src/<family>/<name>.js                 readable source
+ *   src/common/*.js                         shared single-source scripts (soda+douyin)
+ *   src/common/families.json                per-family tokens for expanding them
+ *   src/<family>/<name>.js                  readable source (shared ones are generated)
  *   plugins/<family>/<Name>.plugin         deployable plugin
  *   plugins/<family>/scripts/<name>.min.js deployable script
  *
@@ -19,6 +21,7 @@ const terser = require("terser");
 const ROOT = path.resolve(__dirname, "..");
 const SRC_DIR = path.join(ROOT, "src");
 const PLUGINS_DIR = path.join(ROOT, "plugins");
+const COMMON_DIR = path.join(SRC_DIR, "common");
 
 // Keep the feature switches recognizable in the minified output. Everything
 // else (including top-level helpers) is mangled to make the deployed scripts
@@ -48,6 +51,59 @@ function listJs(dir) {
     .filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
     .map((entry) => entry.name)
     .sort();
+}
+
+// ---------------------------------------------------------------------------
+// Shared-script layer (src/common):
+//   src/common/block-domains.js / daily-reminder.js / welfare-stamp.js are the
+//   single editable sources for scripts used by BOTH soda and douyin. Per-app
+//   differences live in src/common/families.json; this build expands them into
+//   src/<family>/<name>.js (readable, committed, do not hand-edit) which the
+//   regular per-family minify pass then turns into plugins/<family>/scripts/.
+// ---------------------------------------------------------------------------
+function loadCommonConfig() {
+  const file = path.join(COMMON_DIR, "families.json");
+  const data = JSON.parse(fs.readFileSync(file, "utf8"));
+  const scripts = data.sharedScripts || [];
+  const tokens = (data.tokens || []).map(([token, key]) => ({ token, key }));
+  const families = data.families || {};
+  if (scripts.length === 0) throw new Error(`${file}: sharedScripts is empty`);
+  if (tokens.length === 0) throw new Error(`${file}: tokens is empty`);
+  if (Object.keys(families).length === 0) throw new Error(`${file}: families is empty`);
+  for (const script of scripts) {
+    if (!fs.existsSync(path.join(COMMON_DIR, script))) {
+      throw new Error(`${file}: shared script src/common/${script} is missing`);
+    }
+  }
+  return { scripts, tokens, families, file };
+}
+
+function tokenValue(value) {
+  if (value === true) return "true";
+  if (value === false) return "false";
+  return String(value);
+}
+
+function expandSharedScripts(family, common) {
+  const cfg = common.families[family];
+  if (!cfg) {
+    throw new Error(`src/common/families.json: family "${family}" has no config`);
+  }
+  for (const script of common.scripts) {
+    let source = fs.readFileSync(path.join(COMMON_DIR, script), "utf8");
+    for (const { token, key } of common.tokens) {
+      if (!(key in cfg)) {
+        throw new Error(`src/common/families.json: family "${family}" misses key "${key}" (${token})`);
+      }
+      source = source.split(token).join(tokenValue(cfg[key]));
+    }
+    if (source.includes("@@")) {
+      throw new Error(`src/common/${script}: unresolved @@ tokens for family ${family}`);
+    }
+    const outputFile = path.join(SRC_DIR, family, script);
+    fs.writeFileSync(outputFile, source);
+    console.log(`common/${script} -> src/${family}/${script} (${family} config)`);
+  }
 }
 
 function pluginScriptRefs(pluginFile) {
@@ -118,7 +174,7 @@ async function main() {
     throw new Error(`missing source directory: ${SRC_DIR}`);
   }
 
-  const families = listDirs(SRC_DIR);
+  const families = listDirs(SRC_DIR).filter((name) => name !== "common");
   if (families.length === 0) {
     throw new Error(`no plugin families found under ${SRC_DIR}`);
   }
@@ -132,6 +188,15 @@ async function main() {
     if (sourceFiles.length === 0) {
       console.log(`skip ${family}: no source scripts`);
       continue;
+    }
+
+    if (fs.existsSync(COMMON_DIR)) {
+      const common = loadCommonConfig();
+      if (common.families[family]) {
+        expandSharedScripts(family, common);
+      } else if (family === "soda" || family === "douyin") {
+        throw new Error(`${family}: needs src/common/families.json config for shared scripts`);
+      }
     }
 
     const scriptsDir = path.join(PLUGINS_DIR, family, "scripts");
