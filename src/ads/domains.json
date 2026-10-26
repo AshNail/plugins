@@ -9,7 +9,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.1.2",
+      "version": "2.1.3",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -89,7 +89,11 @@
         "IP-CIDR,43.132.55.55/32,REJECT,no-resolve,pre-matching",
         "# —— 百度 HTTPDNS 唯一 BGP anycast VIP（旧组里的 186.76.76.200 是笔误：",
         "# 官方文档任何版本都不存在该 IP，只有 180.76.76.200）——",
-        "IP-CIDR,180.76.76.200/32,REJECT,no-resolve,pre-matching"
+        "IP-CIDR,180.76.76.200/32,REJECT,no-resolve,pre-matching",
+        "# —— 可选：STUN 协议阻断（PROTOCOL 规则为 Loon 3.1.7+ 语法）——",
+        "# 防 WebRTC 真实 IP 泄露的协议级一拦；代价是部分 App 的语音/视频通话会失败。",
+        "# 更稳妥的主配置解法见 docs/loon-feature-checklist.md 的 disable-stun 段。",
+        "PROTOCOL,STUN,REJECT"
       ],
       "groups": [
         {

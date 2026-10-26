@@ -14,7 +14,7 @@
 |---|---:|---|---|
 | 汽水音乐 `soda.plugin` | 2.6.2 | 保奖励 + 去广告 + 广告域名拦截 + 设置层 + 隐藏【听抖音】+ 每日提醒，全部开关控制 | [![导入 soda](https://img.shields.io/badge/Loon-导入汽水音乐-blue?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin) |
 | 抖音 `douyin.plugin` | 0.7.1 | 福利页精简 + 信息流广告清理 + 商业化弹窗清理（2026-10 真实 HAR 取证） | [![导入 douyin](https://img.shields.io/badge/Loon-导入抖音-black?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin) |
-| 广告平台拦截器 `ads.plugin` | 2.1.2 | DNS 层全平台拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏；**零证书、零 MITM/脚本** | [![导入 ads](https://img.shields.io/badge/Loon-导入广告拦截器-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin) |
+| 广告平台拦截器 `ads.plugin` | 2.1.3 | DNS 层全平台拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏；**零证书、零 MITM/脚本** | [![导入 ads](https://img.shields.io/badge/Loon-导入广告拦截器-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin) |
 
 <details>
 <summary>备用链接（网页按钮没反应时手动复制）</summary>
@@ -48,6 +48,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | soda | [`plugins/soda/README.md`](plugins/soda/README.md) | 全开关表、推荐用法、gzip 响应体兼容、耗时统计、部署细节 |
 | douyin | [`plugins/douyin/README.md`](plugins/douyin/README.md) | 全开关表、HAR 取证证据、【听抖音】字段包、证书固定风险 |
 | ads | [`plugins/ads/README.md`](plugins/ads/README.md) | 拦截分层、可选网关 IP 组、主配置加固片段、来源清单、FAQ |
+| 全仓库 | [`docs/loon-feature-checklist.md`](docs/loon-feature-checklist.md) | Loon 全功能清单：官方文档 30 页逐页核对（通用链接/General 全键/规则与 REJECT 变体/策略组/脚本五型/IP Rewrite）、真机取证队列、不采纳清单 |
 
 ---
 
