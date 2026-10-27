@@ -1,11 +1,11 @@
 #!name=广告平台拦截器 · All-in-One
-#!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
+#!desc=单插件 All-in-One：DNS 广告拦截 + DOMAIN-WILDCARD 广告子域通配(1008+) + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.1.5
+#!version=2.2.0
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!loon_version=3.5.1(983)
+#!loon_version=3.5.3(1008)
 #!date=2026-10-27
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
@@ -18,6 +18,7 @@
 # HTTPDNS 防绕过：已知域名走 [Host]；未知的 httpdns/httpsdns 由 [Rule] 关键词、UA、URL-REGEX 兜底；853 端口阻断 DoT/DoQ。
 # DNS 防泄漏：插件 [General] 追加公共 DNS 与 IP 形式 DoH；Loon 插件不支持 hijack-dns/domain-reject-mode/dns-reject-mode，完整加固见 README 主配置段。
 # 共享主域（qq.com、baidu.com、google.com、facebook.com、snssdk.com、kuaishou.com、unity3d.com 等）绝不整域封禁，只列广告专用子域。
+# 广告子域通配层：[Rule] 使用 DOMAIN-WILDCARD（Loon 3.5.3(1008)+）按广告专用前缀拦截任意层级子域（如 ads.* / adserver.* / adx.*），弥补 [Host] 无法表达的动态子域；不匹配共享主域本身。
 # 和 soda/douyin 冲突：本插件会同时拦掉激励广告（穿山甲/优量汇/快手联盟），保奖励模式会失效。刷奖励时请禁用本插件。
 # 归因/统计组默认以注释生成；需要时在 src/ads/domains.json 把对应组 disabled 改为 false 后重新 build。
 # 为保持零证书，单插件不包含 FAN 共享域 MITM/Rewrite 增强；不拦 graph.facebook.com/www.facebook.com，但 b-graph.facebook.com 等广告测量子域仍生效，异常时按 README 风险表删除。
@@ -55,6 +56,45 @@ URL-REGEX,^http:\/\/.+\/sa(\.gif)?\?project=,REJECT-DICT
 URL-REGEX,^http:\/\/.+\/v[0-9]*\/(?:event|log|track)\/(?:report|upload|batch),REJECT-DICT
 # 阻断标准 DoT/DoQ 853 端口，防止 App 自带加密 DNS 绕过 Loon。
 DEST-PORT,853,REJECT
+
+# ============================================================================
+# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+）
+# ----------------------------------------------------------------------------
+# 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，
+# 不命中 a.com、ad.example.com 或 adsl.example.com。
+# pre-matching 让拒绝发生在 DNS 阶段（配合主配置 domain-reject-mode = DNS）。
+# 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。
+# ============================================================================
+DOMAIN-WILDCARD,ads.*,REJECT,pre-matching
+DOMAIN-WILDCARD,ads-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adserver.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adserver-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adserve.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adserv.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adserv-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adserving.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adserving-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adservice.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adservices.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adsystem.*,REJECT,pre-matching
+DOMAIN-WILDCARD,advertising.*,REJECT,pre-matching
+DOMAIN-WILDCARD,advertising-*,REJECT,pre-matching
+DOMAIN-WILDCARD,advert.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adverts.*,REJECT,pre-matching
+DOMAIN-WILDCARD,advertiser.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adtech.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adtech-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adclick.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adnetwork.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adnetwork-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adx.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adx-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adtrack.*,REJECT,pre-matching
+DOMAIN-WILDCARD,adtrack-*,REJECT,pre-matching
+DOMAIN-WILDCARD,adunit.*,REJECT,pre-matching
+DOMAIN-WILDCARD,bannerads.*,REJECT,pre-matching
+DOMAIN-WILDCARD,sponsorads.*,REJECT,pre-matching
+DOMAIN-WILDCARD,ad-exchange.*,REJECT,pre-matching
 
 # ============================================================================
 # 可选规则（默认关闭）
@@ -113,7 +153,8 @@ DEST-PORT,853,REJECT
 # ----------------------------------------------------------------------------
 # 语法：单 IPv4 = reflect|reject|drop。只收单 IPv4（不收 CIDR/域名/IPv6/参数）。
 # 在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底。
-# 重复声明 IP 会导致整个模块失效。逐行取消行首的 '# ' 后生效。
+# 同一 IP 重复声明按插件内首条生效；非法条目或重复的 [IP Rewrite] 段才会让整段失效。
+# 逐行取消行首的 '# ' 后生效。
 # ============================================================================ 
 # —— 阿里云 HTTPDNS 启动接入点（内地单 IPv4）——
 # 203.119.238.240 = drop

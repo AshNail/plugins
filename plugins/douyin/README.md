@@ -7,6 +7,8 @@
 
 **架构**：一个 App 一个插件。抖音只部署 `plugins/douyin/douyin.plugin`，所有功能用 Loon `[Argument]` 开关控制。
 
+**版本要求**：Loon 3.5.1(983)+（新版 `script(...,{args})` 语法）。gzip 响应清理依赖 `$utils.ungzip`（988+）；983–987 可安装，但压缩响应端点只记录状态、不清理。
+
 **图标**：`#!icon` 用抖音官方 App 图标（App Store CDN，512×512）；
 若要换成字节自家 CDN 的网页版 favicon（32×32，清晰度较低）：
 `https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.png`。
@@ -21,7 +23,7 @@
 | `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
 | `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
-| `statusNotify` | notification | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关并提示冲突组合 |
+| `statusNotify` | notification | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式） |
 
 > v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：
 > 原实现会连 `incentive/config`（`preload=true` + `vids[]` 预拉取列表）和 `incentive/retrieve`（素材表）一起清掉，
@@ -255,7 +257,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
 | 广告是否还在 | `killRewardAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空；`cleanFeedAds` 只影响信息流广告 |
 | 弹窗/演出是否消失 | `cleanUpsell` 打开后，`upsell_map` 里不应再有 `*ads*` 与 `browse_mall_popup_acc_amount`；音乐节列表为空 |
 | 开屏广告是否还在 | `blockSplashAd` 打开后冷启，日志应出现 `[douyin-splash] blocked`；激励广告仍能正常加载 |
-| 状态看板 | 点「插件状态自检」：结果页含「开关状态」摘要；`treasureMinimal` 与 `killRewardAds` 同开时出现冲突提醒 |
+| 状态看板 | 点「插件状态自检」：结果页含「开关状态」摘要与「运行环境」行（Loon 版本/脚本/节点/运行模式）；`treasureMinimal` 与 `killRewardAds` 同开时出现冲突提醒 |
 | 链路取证 | `debugLog` 打开后，日志搜 `[douyin-reward]` |
 
 ### 5.1 清理规则用**真实 93 弹窗**校验过
@@ -335,11 +337,40 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 `tests/fixtures/douyin_treasure_page.json` 是 2026-10-20 真机抓到的**福利页原始响应**，
 `test_douyin_treasure.js` 直接拿它跑精简，确保裁剪规则是按真实字段写的，而不是按想象。
 
-本地回归：`npm run check`（build + lint + 源码/压缩版测试）。
+本地回归：`npm run check`（build + lint + 源码/压缩版测试；23 套 / 697 条断言 × 2 = 1398）。
 
 ---
 
 ## 7. 版本更新记录
+
+### v0.8.0（2026-10-27）静态传输层常开：QUIC 回退 + h2
+
+- **`[Rule]` 新增 7 条 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`**：只针对 `[MITM]` 里的精确域，
+  把 HTTP/3 逼回 TCP+TLS。MITM 只处理 TCP，QUIC 流量脚本完全看不见——这是所有脚本的前置条件。
+  不做全局 `PROTOCOL,QUIC,REJECT`（会伤视频/通话）。
+- **`[MITM]` 新增 `h2 = true`**：HTTP/2 与 gRPC 风格端点进入可见范围（抖音主站大量用 gRPC）。
+- **删除注释里的 `[Rule]` 严格模式**：静态全域 REJECT 会直接掐断攒时长（看广告结算），
+  且已被 `blockAdDomains` + QUIC 回退覆盖。
+- **评估后放弃“请求免压缩”**：HAR 里 `commerce/v2/upsell` 在 gzip 下已有 183–191 KB，
+  去压缩会让单次传输膨胀 5~10 倍，换一次 `ungzip` 不划算。lint 反向锁死。
+- 这一层**没有开关**：关掉等于让上面所有脚本失效。回滚方式 = 删对应行。
+- 状态看板新增「静态层：QUIC 回退 7 域 · h2（常开）」。
+- lint 新增静态层完整性、跨层短路矩阵、`SWITCH_LABELS` 双向一致三组守卫。
+- 回归：46 套件 / 1398 断言全绿；lint 0 error。
+
+### v0.7.9（2026-10-27）状态看板加入 Loon 环境诊断
+
+- 与汽水共用 `status.js`：结果页新增「运行环境」行，汇总 `$loon`、`$script.name/startTime`、`$environment.params.nodeInfo`（兼容 `$envirnoment` 拼写）与 `$config.getConfig().running_model`；「Loon 能力」行检测 `$utils.ungzip`（988+）是否可用。
+- 缺失全局对象时整行省略，不弹错、不发请求；通知正文同样带上，方便截图回传。
+- 文档补充 gzip 门槛：`$utils.ungzip` 自 Loon 3.5.1(988) 提供；983–987 可安装，但 gzip 响应只记录状态。
+- 回归：`test_status.js` 31 → 40 条；全量 46 套件 / 1398 断言。
+
+### v0.7.8（2026-10-27）修复福利页打卡被精简脚本遮蔽
+
+- Loon 对同一响应只执行配置顺序里第一条条件为真的 Response Script。`treasureMinimal` 默认开启且排在 `welfare-stamp` 之前，导致打卡脚本永远轮不到、`dailyReminder` 每天误报。
+- 打卡逻辑内置进 `treasure.js` 与 `observe.js`：命中 `treasure/task/page/vN` 且 `dailyReminder=true` 时写入 `douyin-welfare-seen`；独立 `welfare-stamp` 绑定只在两者都关时兜底。
+- 状态看板新增 `treasureMinimal+debugLog` 遮蔽提示；lint 新增绑定矩阵，同 URL 多绑定只允许同脚本同参数或显式白名单组合。
+- 回归：新增 `test_welfare_stamp.js` 10 条；全量 46 套件 / 1376 断言。
 
 ### v0.7.7（2026-10-27）状态自检升级为开关看板
 
@@ -393,7 +424,7 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
   已由测试断言锁定（`blockAdDomains=开` 且未显式传 rewardSafe 时照旧拦截）。
 - **名单四处一致性锁**：lint 新增两项守卫——① 按 families.json 重新展开
   共享脚本并与 `src/<family>/` 生成物逐字节比对；② 把 `BLOCKED_HOSTS`
-  与插件的 `[Script]` 正则、注释 `[Rule]`、`[MITM]` 四处名单强校验。
+  与插件的 `[Script]` 正则、`[MITM]` 两处名单强校验（注释里的静态严格模式已删除）。
 - **分层说明写入插件头注释**：被拦的 5 个域名中 3 个同时被 `ads.plugin`
   DNS 层拦截；`zlink/praisewindow.ugsdk.cn` 为 App 内运营端点，仅本开关覆盖。
 

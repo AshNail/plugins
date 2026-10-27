@@ -10,7 +10,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 39, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 40, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 1, 11, "douyin"),
 ]
 
@@ -40,6 +40,7 @@ FAMILY_CHECKS = {
             "blockAdDomains": 1,
             "settingsClean": 1,
             "hideDouyinEntry": 1,
+            "hideDouyinTab": 1,
             "blockSplashAd": 1,
             "debugLog": 22,
         },
@@ -178,6 +179,101 @@ ADS_RULE_TYPES = {
 # docs/cn/protocol_rule.md：Loon（3.1.7+）PROTOCOL 规则支持的全量取值。
 PROTOCOL_VALUES = {"HTTP", "HTTPS", "TCP", "QUIC", "STUN", "UDP"}
 
+# DOMAIN-WILDCARD（Loon 3.5.3(1008)+）广告子域通配层。
+# 永久锁死模式集合：只允许由广告专用左标签锚定的 glob，避免误写 `*`、
+# `*.com` 或 `ads*` 这类会扫到共享主域/正常域名的宽泛匹配。
+ADS_WILDCARDS = (
+    "ads.*",
+    "ads-*",
+    "adserver.*",
+    "adserver-*",
+    "adserve.*",
+    "adserv.*",
+    "adserv-*",
+    "adserving.*",
+    "adserving-*",
+    "adservice.*",
+    "adservices.*",
+    "adsystem.*",
+    "advertising.*",
+    "advertising-*",
+    "advert.*",
+    "adverts.*",
+    "advertiser.*",
+    "adtech.*",
+    "adtech-*",
+    "adclick.*",
+    "adnetwork.*",
+    "adnetwork-*",
+    "adx.*",
+    "adx-*",
+    "adtrack.*",
+    "adtrack-*",
+    "adunit.*",
+    "bannerads.*",
+    "sponsorads.*",
+    "ad-exchange.*",
+)
+ADS_WILDCARD_HITS = {
+    "ads.*": ("ads.example.com", "ads.a.b.example.com"),
+    "ads-*": ("ads-tracker.example.com", "ads-1.example.net"),
+    "adserver.*": ("adserver.example.com", "adserver.foo.example.net"),
+    "adserver-*": ("adserver-eu.example.com",),
+    "adserve.*": ("adserve.example.com",),
+    "adserv.*": ("adserv.example.com",),
+    "adserv-*": ("adserv-fra1.example.com",),
+    "adserving.*": ("adserving.example.com",),
+    "adserving-*": ("adserving-com.example.com",),
+    "adservice.*": ("adservice.example.com",),
+    "adservices.*": ("adservices.example.com",),
+    "adsystem.*": ("adsystem.example.com",),
+    "advertising.*": ("advertising.example.com",),
+    "advertising-*": ("advertising-api.example.com", "advertising-cdn.example.net"),
+    "advert.*": ("advert.example.com", "advert.a.example.net"),
+    "adverts.*": ("adverts.example.com",),
+    "advertiser.*": ("advertiser.example.com",),
+    "adtech.*": ("adtech.example.com",),
+    "adtech-*": ("adtech-prod.example.com",),
+    "adclick.*": ("adclick.example.com",),
+    "adnetwork.*": ("adnetwork.example.com",),
+    "adnetwork-*": ("adnetwork-core.example.com",),
+    "adx.*": ("adx.example.com",),
+    "adx-*": ("adx-ads.example.com", "adx-api.example.net"),
+    "adtrack.*": ("adtrack.example.com",),
+    "adtrack-*": ("adtrack-php.example.com",),
+    "adunit.*": ("adunit.example.com",),
+    "bannerads.*": ("bannerads.example.com",),
+    "sponsorads.*": ("sponsorads.example.com",),
+    "ad-exchange.*": ("ad-exchange.example.com",),
+}
+ADS_WILDCARD_MUST_MISS = (
+    "example.com",
+    "com",
+    "ads",
+    "ad.example.com",
+    "adsl.example.com",
+    "adsp.example.com",
+    "xads.example.com",
+    "myads-tracker.example.com",
+    "tracker.example.com",
+    "advertisement.example.com",
+    "advertise.example.com",
+    "banner.example.com",
+    "adunit2.example.com",
+)
+ADS_WILDCARD_MIN_BUILD = 1008
+
+
+def ads_glob_regex(pattern):
+    """Loon DOMAIN-WILDCARD glob semantics: '*' crosses dots, '?' one char."""
+    return re.compile(
+        "".join(
+            ".*" if char == "*" else "." if char == "?" else re.escape(char)
+            for char in pattern
+        )
+        + r"\Z"
+    )
+
 # 开屏请求拦截绑定的边界：只拦开屏素材/登记家族，绝不能碰激励广告与发奖。
 SPLASH_MUST_HIT = (
     "https://ads5-normal-hl.zijieapi.com/api/ad/splash/luna/v15/",
@@ -190,10 +286,357 @@ SPLASH_MUST_MISS = (
     "https://ad.zijieapi.com/api/incentive/marketing/done/",
 )
 
-errors = []
+# ---------------------------------------------------------------------------
+# 绑定矩阵（Loon 对同一响应只执行配置顺序里第一条命中的 Response Script）：
+# 用真实 URL 样本把每条 request/response 绑定映射出来。每条绑定都必须至少被
+# 一个样本命中——新增端点不补样本就失败；同一 URL 命中多条绑定时，只允许
+# “同脚本同参数”（谁跑都拿到完整上下文）或下面显式论证过的组合。
+# ---------------------------------------------------------------------------
+BINDING_SAMPLES = {
+    "soda": {
+        "request": (
+            "https://ad.zijieapi.com/api/ad/splash/stock/",
+            "https://ad.zijieapi.com/api/ad/v1/inspire/",
+            "https://foo.zijieapi.com/api/ad/v2/ack/splash/collect",
+        ),
+        "response": (
+            "https://api.qishui.com/luna/advert/splash/brand/retrieve",
+            "https://api.qishui.com/luna/advert/incentive/config",
+            "https://api.qishui.com/luna/advert/incentive/retrieve",
+            "https://api.qishui.com/luna/advert/incentive/done",
+            "https://api.qishui.com/luna/advert/fallback/done/info",
+            "https://api.qishui.com/luna/ads/config",
+            "https://api.qishui.com/luna/ads/retrieve",
+            "https://api.qishui.com/luna/ads/dsp/retrieve",
+            "https://api.qishui.com/luna/ads/reward/receive",
+            "https://api.qishui.com/luna/ads/reward/settle",
+            "https://api.qishui.com/luna/feed/song-tab",
+            "https://api.qishui.com/luna/commerce/upsells",
+            "https://api.qishui.com/luna/commerce/validate_reward",
+            "https://api.qishui.com/luna/commerce/v2/upsell?x=1",
+            "https://api.qishui.com/luna/treasure/entrance/config",
+            "https://api.qishui.com/luna/treasure/task/view",
+            "https://api.qishui.com/luna/treasure/task/page",
+            "https://api.qishui.com/luna/treasure/task/reward_ads/do_action",
+            "https://api.qishui.com/luna/treasure/task/fallback/do_action",
+            "https://api.qishui.com/luna/treasure/task/flip_card/do_action",
+            "https://api.qishui.com/luna/treasure/task/guide/do_action",
+            "https://api.qishui.com/luna/treasure/task/browse_mall/do_action",
+            "https://api.qishui.com/luna/growth/activity_entrance",
+            "https://api.qishui.com/luna/growth/activity/finish",
+            "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
+            "https://conf.qishui.com/service/settings/v3/?device_id=x",
+        ),
+    },
+    "douyin": {
+        "request": (
+            "https://ad.zijieapi.com/api/ad/splash/stock/",
+            "https://ad.zijieapi.com/api/ad/v1/inspire/",
+            "https://foo.zijieapi.com/api/ad/v2/ack/splash/collect",
+        ),
+        "response": (
+            "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
+            "https://beta-luna.douyin.com/luna/ads/config",
+            "https://beta-luna.douyin.com/luna/ads/retrieve",
+            "https://beta-luna.douyin.com/luna/ads/dsp/retrieve",
+            "https://beta-luna.douyin.com/luna/advert/incentive/config",
+            "https://beta-luna.douyin.com/luna/advert/incentive/retrieve",
+            "https://beta-luna.douyin.com/luna/advert/incentive/done",
+            "https://beta-luna.douyin.com/luna/advert/fallback/done/info",
+            "https://beta-luna.douyin.com/luna/commerce/v2/upsell",
+            "https://beta-luna.douyin.com/luna/growth/music_festival/performance_details",
+            "https://polaris.zijieapi.com/luckycat/activity/settings/v1/x",
+            "https://ad.zijieapi.com/api/ad/v1/inspire/",
+            "https://ad.zijieapi.com/api/incentive/marketing/done/",
+        ),
+    },
+}
 
+# 允许的“清理/隐藏 + 只读观测 + 打卡兜底”组合：功能上有意让清理优先，
+# 被抢走的观测是诊断信息；settings 与 hide 绑定同脚本同参数，单独放行。
+SHADOW_ALLOWED_PAIRS = {
+    "soda": {
+        frozenset(("sanitize.min.js", "reward-observe.min.js")),
+        frozenset(("sanitize.min.js", "welfare-stamp.min.js")),
+        frozenset(("reward-observe.min.js", "welfare-stamp.min.js")),
+        frozenset(("block-domains.min.js", "splash-ad.min.js")),
+    },
+    "douyin": {
+        frozenset(("treasure.min.js", "observe.min.js")),
+        frozenset(("treasure.min.js", "welfare-stamp.min.js")),
+        frozenset(("observe.min.js", "welfare-stamp.min.js")),
+        frozenset(("clean.min.js", "observe.min.js")),
+        frozenset(("block-domains.min.js", "splash-ad.min.js")),
+    },
+}
+
+# ---------------------------------------------------------------------------
+# 脚本安全边界（静态）：插件脚本只做净化/观测，不得发起网络请求、不得执行
+# 动态代码，$notification 只允许出现在 status / daily-reminder。所有脚本
+# 必须在结束时调用 $done() 释放 Loon 的 JS 资源。
+# ---------------------------------------------------------------------------
+SAFE_SCRIPT_FORBIDDEN = (
+    ("$httpClient", re.compile(r"\$httpClient")),
+    ("XMLHttpRequest", re.compile(r"\bXMLHttpRequest\b")),
+    ("WebSocket", re.compile(r"\bWebSocket\b")),
+    ("sendBeacon", re.compile(r"\bsendBeacon\b")),
+    ("Function(", re.compile(r"\bFunction\s*\(")),
+    ("eval(", re.compile(r"\beval\s*\(")),
+    ("require(", re.compile(r"\brequire\s*\(")),
+    ("fetch(", re.compile(r"\bfetch\s*\(")),
+)
+SAFE_DONE_RX = re.compile(r"\$done\s*\(")
+SAFE_NOTIFY_RX = re.compile(r"\$notification\s*(?:\.|\[)\s*[\"']?post")
+SAFE_NOTIFY_ALLOWED = {"status.js", "daily-reminder.js"}
+
+errors = []
 COMMON_DIR = ROOT / "src/common"
 FAMILIES_FILE = COMMON_DIR / "families.json"
+
+# ---------------------------------------------------------------------------
+# 静态传输层（常开，无 [Argument] 开关）：
+#   [Rule] 里每个 [MITM] 域都必须有一条 AND+PROTOCOL,QUIC 回退规则；
+#   绝不允许全局 PROTOCOL,QUIC,REJECT（会伤视频/通话）。
+# ---------------------------------------------------------------------------
+QUIC_HOSTS = {
+    "soda": (
+        "api.qishui.com",
+        "conf.qishui.com",
+        "ad.zijieapi.com",
+        "lianmengapi.snssdk.com",
+        "ads5-normal-hl.zijieapi.com",
+        "zlink.ugsdk.cn",
+        "praisewindow.ugsdk.cn",
+        "beta-luna.douyin.com",
+    ),
+    "douyin": (
+        "beta-luna.douyin.com",
+        "polaris.zijieapi.com",
+        "ad.zijieapi.com",
+        "lianmengapi.snssdk.com",
+        "ads5-normal-hl.zijieapi.com",
+        "zlink.ugsdk.cn",
+        "praisewindow.ugsdk.cn",
+    ),
+}
+
+# 跨层短路的显式允许清单：(rewrite 片段, 脚本名)。为空 = 一条都不许。
+CROSS_LAYER_ALLOWED = set()
+
+# 只有“直接终止请求”的复写才会遮蔽后续脚本；改 header / 改 URL 不会。
+REWRITE_TERMINAL_RX = re.compile(r"\breject(?:_\w+)?\s*\(|\bredirect\s*\(|\s302\s|\s307\s")
+DOMAIN_BLOCK_KINDS = ("DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-WILDCARD")
+
+
+def host_of(url):
+    m = re.match(r"^https?://([^/:?#]+)", url)
+    return m.group(1).lower() if m else ""
+
+
+def active_domain_blocks(rule_lines):
+    """只取“无条件整域拒绝”的静态规则；AND+PROTOCOL 这类协议限定不算。"""
+    out = []
+    for line in rule_lines:
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) < 3 or parts[0] not in DOMAIN_BLOCK_KINDS:
+            continue
+        if not parts[2].startswith("REJECT"):
+            continue
+        out.append((parts[0], parts[1]))
+    return out
+
+
+def domain_hit(kind, pattern, host):
+    pattern = pattern.lower()
+    if kind == "DOMAIN":
+        return host == pattern
+    if kind == "DOMAIN-SUFFIX":
+        return host == pattern or host.endswith("." + pattern)
+    if kind == "DOMAIN-WILDCARD":
+        return ads_glob_regex(pattern).fullmatch(host) is not None
+    return False
+
+
+def rewrite_entries(rewrite_lines):
+    """把 [Rewrite] 行拆成 {stage, regex, terminal}，兼容新旧两套语法。"""
+    out = []
+    for line in rewrite_lines:
+        stage = "response" if line.startswith("response if") else "request"
+        rx = regex_literal(line)
+        if not rx:
+            # 旧语法：`^https?://... reject_dict(200)` / `... header-del X`
+            m = re.match(r"^(\S+)\s+\S", line)
+            rx = m.group(1) if m and m.group(1).startswith("^") else None
+        if not rx:
+            continue
+        try:
+            compiled = re.compile(rx)
+        except re.error:
+            continue
+        out.append(
+            {
+                "stage": stage,
+                "rx": compiled,
+                "terminal": bool(REWRITE_TERMINAL_RX.search(line)),
+                "line": line,
+            }
+        )
+    return out
+
+
+def check_cross_layer(fp, family, data, scripts, samples):
+    """[Rule] / [Rewrite] / [Script] 三层用同一批真实 URL 交叉验证。
+
+    只锁“会静默吃掉脚本”的组合：静态整域拒绝、终止型复写。
+    传输层优化（删 Accept-Encoding）是互补的，不算短路。
+    """
+    block = active_domain_blocks(data.get("Rule", []))
+    rewrites = rewrite_entries(data.get("Rewrite", []))
+    entries = [binding_entry(line) for line in scripts]
+    for entry in entries:
+        try:
+            entry["compiled"] = re.compile(entry["rx"]) if entry["rx"] else None
+        except re.error:
+            entry["compiled"] = None
+
+    problems = 0
+    for url in samples:
+        host = host_of(url)
+        for kind, pattern in block:
+            if domain_hit(kind, pattern, host):
+                problems += 1
+                errors.append(
+                    f"{fp}: 跨层短路：静态 {kind},{pattern},REJECT 命中 {url}，"
+                    f"该 URL 的脚本永远不会执行"
+                )
+        for rw in rewrites:
+            if not rw["terminal"] or not rw["rx"].match(url):
+                continue
+            for entry in entries:
+                if not entry["compiled"] or not entry["compiled"].match(url):
+                    continue
+                # request 阶段终止 = 请求不出网，response 脚本同样收不到；
+                # response 阶段终止只遮蔽同阶段脚本。
+                if rw["stage"] == "response" and entry["stage"] != "response":
+                    continue
+                if (rw["line"][:60], entry["script"]) in CROSS_LAYER_ALLOWED:
+                    continue
+                problems += 1
+                errors.append(
+                    f"{fp}: 跨层短路：{rw['stage']} 复写终止 {url}，"
+                    f"遮蔽 {entry['script']}(enable={entry['enable']})"
+                )
+    print(
+        f"  {family} cross-layer: {len(samples)} url / "
+        f"{len(block)} static block / {len(rewrites)} rewrite / {problems} shadow(s)"
+    )
+
+
+def check_static_layer(fp, family, data, mitm_text):
+    """静态传输层：QUIC 回退齐全、无全局 QUIC 拒绝、免压缩规则齐全。"""
+    rules = data.get("Rule", [])
+    quic = {
+        line
+        for line in rules
+        if line.startswith("AND,") and "PROTOCOL,QUIC" in line
+    }
+    expected = {
+        f"AND,((DOMAIN-SUFFIX,{host}),(PROTOCOL,QUIC)),REJECT"
+        for host in QUIC_HOSTS[family]
+    }
+    if quic != expected:
+        errors.append(
+            f"{fp}: QUIC fallback set {sorted(quic)}, expected {sorted(expected)}"
+        )
+    for line in rules:
+        if line.startswith("PROTOCOL,QUIC,"):
+            errors.append(
+                f"{fp}: global PROTOCOL,QUIC,REJECT is forbidden (breaks video/calls)"
+            )
+    for host in QUIC_HOSTS[family]:
+        if host not in mitm_text:
+            errors.append(f"{fp}: QUIC fallback host {host} is not in [MITM]")
+
+    # 免压缩（request.header.del Accept-Encoding）经真机体积核算后放弃：
+    # upsell 类响应 gzip 后 183~191 KB，去压缩会让单次传输膨胀 5~10 倍。
+    # 这里反向锁死：不允许再悄悄加回来，除非先改 docs/loon-native-first.md 的结论。
+    rewrite_text = "\n".join(data.get("Rewrite", []))
+    if "Accept-Encoding" in rewrite_text:
+        errors.append(
+            f"{fp}: no-compress rewrite was rejected on measured payload size; "
+            "see docs/loon-native-first.md (E2)"
+        )
+
+    if "h2 = true" not in mitm_text:
+        errors.append(f"{fp}: [MITM] must enable h2 = true for HTTP/2 visibility")
+
+    hostname_line = next(
+        (line for line in mitm_text.splitlines() if line.startswith("hostname")), "")
+    mitm_hosts = [
+        host.strip()
+        for host in hostname_line.split("=", 1)[-1].replace("%APPEND%", "").split(",")
+        if host.strip()
+    ]
+
+    print(
+        f"  {family} static layer: quic={len(quic)} mitm_hosts={len(mitm_hosts)} h2=on"
+    )
+
+
+def check_switch_labels():
+    """[Argument] 开关名必须与 status.js 的 SWITCH_LABELS 双向一致。
+
+    这类漂移不会报错，只会让状态看板少显示/多显示一行。
+    """
+    status_src = COMMON_DIR / "status.js"
+    text = status_src.read_text(encoding="utf-8") if status_src.exists() else ""
+    m = re.search(r"SWITCH_LABELS\s*=\s*\[(.*?)\];", text, re.S)
+    if not m:
+        errors.append("src/common/status.js: cannot find SWITCH_LABELS")
+        return
+    labels = set(re.findall(r'\[\s*"([A-Za-z_]\w*)"\s*,', m.group(1)))
+
+    declared = set()
+    for fp, _sections, _rules, _rewrites, _scripts, _family in PLUGINS:
+        path = ROOT / fp
+        if not path.exists():
+            continue
+        data, _ = parse_plugin(path)
+        for line in data.get("Argument", []):
+            arg = re.match(r"^([A-Za-z_]\w*)\s*=\s*(switch|select|input)", line)
+            if not arg:
+                continue
+            if arg.group(2) != "switch":
+                continue
+            declared.add(arg.group(1))
+
+    missing = sorted(declared - labels)
+    stale = sorted(labels - declared)
+    if missing:
+        errors.append(f"status.js SWITCH_LABELS missing switches: {missing}")
+    if stale:
+        errors.append(f"status.js SWITCH_LABELS has unknown switches: {stale}")
+    print(
+        f"switch labels: {len(labels)} labels / {len(declared)} declared switches"
+    )
+
+
+def check_quic_count():
+    """families.json 的 quicCount 必须等于插件里真实的 QUIC 回退条数。"""
+    fam = load_families()
+    if not fam:
+        return
+    for family, cfg in (fam.get("families") or {}).items():
+        want = QUIC_HOSTS.get(family)
+        if want is None:
+            errors.append(f"src/common/families.json: family {family} has no QUIC_HOSTS spec")
+            continue
+        got = cfg.get("quicCount")
+        if got != len(want):
+            errors.append(
+                f"src/common/families.json: {family}.quicCount={got}, expected {len(want)}"
+            )
+    print("static layer: families.json quicCount matches plugin rules")
 
 
 def to_config_str(value):
@@ -262,6 +705,73 @@ def parse_meta(path):
         key, value = s[2:].split("=", 1)
         meta[key.strip()] = value.strip()
     return meta
+
+
+def binding_entry(line):
+    stage = "request" if line.startswith("request if") else "response"
+    rx_text = regex_literal(line)
+    m_script = re.search(r'then script\("([^"]+)"', line)
+    m_args = re.search(r'script\("[^"]+",\s*\{([^}]*)\}', line)
+    m_enable = re.search(r"enable=\$\{([A-Za-z_]\w*)\}", line)
+    script = m_script.group(1).rsplit("/", 1)[-1] if m_script else "?"
+    return {
+        "line": line,
+        "stage": stage,
+        "rx": rx_text,
+        "script": script,
+        "args": tuple(sorted(re.findall(r"\$\{([^}]+)\}", m_args.group(1)))) if m_args else (),
+        "enable": m_enable.group(1) if m_enable else "?",
+    }
+
+
+def shadow_pair_allowed(family, a, b):
+    """同脚本同参数 = 等价重复（谁先命中都拿到完整上下文）；其余只放行白名单。"""
+    if a["script"] == b["script"] and a["args"] == b["args"]:
+        return True
+    return frozenset((a["script"], b["script"])) in SHADOW_ALLOWED_PAIRS.get(family, set())
+
+
+def check_binding_matrix(fp, family, scripts_lines):
+    samples = BINDING_SAMPLES.get(family)
+    if not samples:
+        errors.append(f"{fp}: missing BINDING_SAMPLES for {family}")
+        return
+    entries = [binding_entry(line) for line in scripts_lines]
+    for entry in entries:
+        try:
+            entry["compiled"] = re.compile(entry["rx"]) if entry["rx"] else None
+        except re.error as exc:
+            errors.append(f"{fp}: binding matrix regex: {exc}")
+            entry["compiled"] = None
+    for stage in ("request", "response"):
+        stage_entries = [e for e in entries if e["stage"] == stage and e["compiled"]]
+        sample_list = samples.get(stage, ())
+        if not sample_list:
+            errors.append(f"{fp}: binding matrix needs {stage} URL samples")
+            continue
+        overlaps = 0
+        for entry in stage_entries:
+            if not any(entry["compiled"].match(url) for url in sample_list):
+                errors.append(
+                    f"{fp}: no {stage} sample covers binding "
+                    f"{entry['script']} enable={entry['enable']}: {entry['line'][:90]}"
+                )
+        for url in sample_list:
+            hits = [e for e in stage_entries if e["compiled"].match(url)]
+            for i in range(len(hits)):
+                for j in range(i + 1, len(hits)):
+                    if shadow_pair_allowed(family, hits[i], hits[j]):
+                        continue
+                    overlaps += 1
+                    errors.append(
+                        f"{fp}: {stage} bindings shadow on {url}: "
+                        f"{hits[i]['script']}(enable={hits[i]['enable']}) vs "
+                        f"{hits[j]['script']}(enable={hits[j]['enable']})"
+                    )
+        print(
+            f"  {family} binding matrix: {stage}={len(stage_entries)} bindings / "
+            f"{len(sample_list)} samples / {overlaps} disallowed overlap(s)"
+        )
 
 
 for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGINS:
@@ -355,6 +865,18 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
     if actual != expected:
         errors.append(f"{fp}: counts {actual}, expected {expected}")
 
+    # 部署目录只允许出现被 [Script] 绑定的脚本：删绑定/改脚本名后残留的
+    # 孤儿 .min.js 仍可通过 raw 直链访问，属于无主代码面。
+    deployed = {p.name for p in (path.parent / "scripts").glob("*.min.js")}
+    referenced = set()
+    for line in data.get("Script", []):
+        m_ref = re.search(r'then script\("([^"]+)"', line)
+        if m_ref:
+            referenced.add(m_ref.group(1).rsplit("/", 1)[-1])
+    for name in sorted(deployed - referenced):
+        errors.append(f"{fp}: deployed script referenced by no binding: {name}")
+    print(f"  scripts deployed={len(deployed)} referenced={len(referenced)}")
+
     print(
         f"{fp}: sections={len(sections)} rules={len(rules)} "
         f"rewrites={len(rewrites)} scripts={len(scripts)}"
@@ -427,8 +949,9 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
                         f"(not a declared [Argument] or engine variable): {line[:80]}"
                     )
 
-    if rules:
-        errors.append(f"{fp}: plugin must not contain active static domain rules")
+    # 静态层只允许 AND+PROTOCOL 这种协议限定规则；无条件整域 REJECT 会被
+    # 上面的 counts 断言挡下（rules 列表只数 DOMAIN, 开头），
+    # 真正的“是否短路脚本”交给 check_cross_layer 语义判断。
 
     for name, want in spec["enable"].items():
         got = sum(1 for line in scripts if f"enable=${{{name}}}" in line)
@@ -494,12 +1017,6 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
         )
 
     raw_text = path.read_text(encoding="utf-8")
-    strict_rules = set(re.findall(r"^#\s+DOMAIN,([a-z0-9.-]+),REJECT\s*$", raw_text, re.M))
-    if strict_rules != block_common:
-        errors.append(
-            f"{fp}: commented [Rule] strict-mode set diverges from src/common "
-            f"(rule={sorted(strict_rules)}, common={sorted(block_common)})"
-        )
 
     script_regex_hosts = set()
     for line in scripts:
@@ -521,6 +1038,15 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
         if host not in mitm:
             errors.append(f"{fp}: [MITM] missing block-domain host {host}")
     print(f"  block-domains set: {len(block_common)} hosts pinned to src/common")
+
+    check_binding_matrix(fp, family, scripts)
+    check_static_layer(fp, family, data, mitm)
+    cross_samples = list(spec["samples"].values())
+    for stage_urls in BINDING_SAMPLES.get(family, {}).values():
+        cross_samples.extend(stage_urls)
+    check_cross_layer(
+        fp, family, data, scripts, list(dict.fromkeys(cross_samples))
+    )
 
 
 def check_shared_scripts():
@@ -573,6 +1099,40 @@ def check_shared_scripts():
                 errors.append(
                     f"{target}: stale generated shared script; run `npm run build`")
         print(f"common: {family} shared scripts match families.json")
+
+
+def check_script_safety():
+    """部署脚本与源码的静态安全门禁（网络/动态代码/通知/$done）。"""
+    sources = sorted((ROOT / "src").glob("*/*.js"))
+    dists = sorted((ROOT / "plugins").glob("*/scripts/*.min.js"))
+    if not sources:
+        errors.append("script safety: no source scripts found")
+        return
+    if not dists:
+        errors.append("script safety: no dist scripts found")
+        return
+    problems = 0
+    for path in sources + dists:
+        rel = path.relative_to(ROOT)
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if not SAFE_DONE_RX.search(text):
+            errors.append(f"{rel}: script never calls $done()")
+            problems += 1
+        for label, rx in SAFE_SCRIPT_FORBIDDEN:
+            if rx.search(text):
+                errors.append(f"{rel}: forbidden network/eval API: {label}")
+                problems += 1
+        source_name = path.name.replace(".min.js", ".js")
+        if SAFE_NOTIFY_RX.search(text) and source_name not in SAFE_NOTIFY_ALLOWED:
+            errors.append(
+                f"{rel}: $notification.post is only allowed in "
+                "status.js / daily-reminder.js"
+            )
+            problems += 1
+    print(
+        f"script safety: {len(sources)} sources / {len(dists)} dist scripts / "
+        f"{problems} problem(s)"
+    )
 
 
 def check_ads_family():
@@ -705,6 +1265,58 @@ def check_ads_family():
     for sample in ("http://180.76.76.200/foo", "http://example.com/d?"):
         if any(rx.search(sample) for rx in url_regexes):
             errors.append(f"{ADS_PLUGIN}: HTTPDNS URL-REGEX overmatches {sample}")
+
+    # DOMAIN-WILDCARD 广告子域层：要求 Loon 3.5.3(1008)+，模式集合永久锁定，
+    # 且每条 glob 都不能命中保护名单；同时用正/负样本锁定 glob 语义
+    # （'*' 跨点、不匹配左标签不同段、不匹配共享主域本身）。
+    wildcard_rules = [
+        [part.strip() for part in line.split(",")]
+        for line in rules
+        if line.split(",", 1)[0].strip() == "DOMAIN-WILDCARD"
+    ]
+    wildcard_patterns = [parts[1] for parts in wildcard_rules if len(parts) > 2]
+    if tuple(wildcard_patterns) != ADS_WILDCARDS:
+        errors.append(
+            f"{ADS_PLUGIN}: DOMAIN-WILDCARD set {wildcard_patterns}, "
+            f"expected {list(ADS_WILDCARDS)}"
+        )
+    if len(set(wildcard_patterns)) != len(wildcard_patterns):
+        errors.append(f"{ADS_PLUGIN}: duplicate DOMAIN-WILDCARD rule")
+    if "# DOMAIN-WILDCARD," in raw:
+        errors.append(f"{ADS_PLUGIN}: DOMAIN-WILDCARD rules must stay active")
+    loon_version = meta.get("loon_version", "")
+    loon_build = re.search(r"\((\d+)\)", loon_version)
+    if not loon_build or int(loon_build.group(1)) < ADS_WILDCARD_MIN_BUILD:
+        errors.append(
+            f"{ADS_PLUGIN}: #!loon_version={loon_version!r} must be "
+            f"{ADS_WILDCARD_MIN_BUILD}+ for DOMAIN-WILDCARD"
+        )
+    for parts in wildcard_rules:
+        if len(parts) != 4 or parts[2] != "REJECT" or parts[3] != "pre-matching":
+            errors.append(
+                f"{ADS_PLUGIN}: DOMAIN-WILDCARD must be "
+                f"DOMAIN-WILDCARD,<glob>,REJECT,pre-matching: {','.join(parts)}"
+            )
+    glob_regexes = {
+        pattern: ads_glob_regex(pattern) for pattern in set(wildcard_patterns)
+    }
+    for pattern, regex in glob_regexes.items():
+        for sample in ADS_WILDCARD_HITS.get(pattern, ()):
+            if not regex.fullmatch(sample):
+                errors.append(
+                    f"{ADS_PLUGIN}: DOMAIN-WILDCARD {pattern} misses {sample}"
+                )
+        for root in protected:
+            if regex.fullmatch(root):
+                errors.append(
+                    f"{ADS_PLUGIN}: DOMAIN-WILDCARD {pattern} matches protected root {root}"
+                )
+    for sample in ADS_WILDCARD_MUST_MISS:
+        for pattern, regex in glob_regexes.items():
+            if regex.fullmatch(sample):
+                errors.append(
+                    f"{ADS_PLUGIN}: DOMAIN-WILDCARD {pattern} overmatches {sample}"
+                )
 
     if "# IP-CIDR,203.107.1.0/24,REJECT,no-resolve,pre-matching" not in raw:
         errors.append(f"{ADS_PLUGIN}: optional HTTPDNS IP block must stay commented")
@@ -886,7 +1498,8 @@ def check_ads_family():
     print(
         f"{ADS_PLUGIN}: host_rules={len(host_lines)} "
         f"exact={len(exact)} wildcard={len(wildcard)} "
-        f"general={len(general)} rules={len(rules)}"
+        f"general={len(general)} rules={len(rules)} "
+        f"domain_wildcards={len(wildcard_rules)}"
     )
 
     build = subprocess.run(
@@ -906,6 +1519,9 @@ def check_ads_family():
 
 
 check_shared_scripts()
+check_switch_labels()
+check_quic_count()
+check_script_safety()
 check_ads_family()
 print(f"lint errors: {len(errors)}")
 for err in errors:

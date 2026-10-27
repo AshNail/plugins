@@ -2,7 +2,7 @@
 
 > 依据：官方文档 `https://nsloon.app/docs/`（源仓库 [Loon0x00/LoonManual](https://github.com/Loon0x00/LoonManual) `docs/cn/`，2026-10-27 逐页核对）。
 > 图例：✅ 本仓库已在用 / 🟡 建议你在设备侧开启 / ⚪ 进阶可选 / 🔒 需真机取证后启用 / ❌ 不采纳（带理由）。
-> 适用版本：主配置按当前 stable 功能描述；标注 build 号的是硬门槛（本仓库统一标注 3.5.1(983)+）。
+> 适用版本：主配置按当前 stable 功能描述；标注 build 号的是硬门槛（soda/douyin 标注 3.5.1(983)+，gzip 响应解析需 3.5.1(988)+；ads 插件因 `DOMAIN-WILDCARD` 标注 **3.5.3(1008)+**）。
 
 ## 1. 导入与快捷指令（docs/cn/scheme.md）
 
@@ -56,6 +56,7 @@
 | 组 | 类型 | 本仓库 |
 |---|---|---|
 | 域名 | `DOMAIN` `DOMAIN-SUFFIX` `DOMAIN-KEYWORD` | ✅ KEYWORD 兜底；`DOMAIN` 在 soda/douyin 可选组 |
+| 域名通配 | `DOMAIN-WILDCARD`（Build 1008+，glob，`*` 跨点） | ✅ ads 30 条广告子域通配层（`ads.*` / `adserver.*` / `adx-*` / `advert.*` 等），DNS 阶段整族拒绝 |
 | IP | `IP-CIDR` `IP-CIDR6` `GEOIP` `IP-ASN` | ✅ CIDR 系列（可选网关 IP 组）；❌ GEOIP/IP-ASN 大网段（误伤面大） |
 | HTTP | `URL-REGEX` `USER-AGENT` | ✅ 都在用（UA 通配符 `httpdns*`） |
 | 端口 | `SRC-PORT` `DEST-PORT`（3.1.7+ 支持区间 `80-443`、`>=443`） | ✅ `DEST-PORT,853`（DoT/DoQ 阻断）；区间语法暂无场景 |
@@ -78,6 +79,7 @@
 - ✅ Rewrite v2 侧同步使用 `reject_dict(200)`：soda 开屏品牌上报与 DSP 展示上报、douyin DSP 展示上报都返回 JSON `{}` + `application/json`（`reject(200)` 的空 Body 是 `text/plain`，`reject(200,"{}")` 仍是文本）；规则层 `REJECT-DICT` 与请求层 `reject_dict` 现在一致；
 - 📈 规则引擎性能（官方实测）：10 万级 DOMAIN 规则 ≤5ms/IP-CIDR6 ≤20ms，LRU 缓存近命中 — **可以放心挂外部规则订阅做增强**：
   🟡 主配置 [Rule] 外挂 `.list`（如 anti-AD / hagezi），`tools/ads-audit.py --sources` 已能评估覆盖互补度。
+- ✅ **`DOMAIN-WILDCARD` 已落地**（3.5.3(1008)+）：ads 插件新增 30 条 `DOMAIN-WILDCARD,<glob>,REJECT,pre-matching`，用 `*` 跨点语义按广告专用左标签整族拦截动态子域（`ads.*`、`ads-*`、`adserver.*`、`advertising.*`、`advertising-*`、`advert.*`、`adx-*`、`adtrack-*`、`bannerads.*` 等），弥补 `[Host]` 只能枚举固定域名的缺口。build/lint 双重校验：左标签锚定、只允许 `*`/`?`、拒绝 `*`/`*.com`/`ads*`、不命中 `protected-roots.json`、插件头 Build ≥1008；离线审计把生效 glob 计入覆盖率（默认 10 源覆盖 4,279→7,589 域，其中第二轮 14 条 hyphen/长前缀变体新增 135 个）。
 
 ## 5. 代理与策略组（node.md / policy.md / policygroup.md）
 
@@ -95,11 +97,14 @@
 | `http-response` | 响应到达（$done 改 body/status/headers） | ✅ 全部净化/改写类脚本 |
 | `cron` | 定时（五段 cron；`30 20 * * *` → 6 段可加秒） | ✅ daily-reminder（`reminderCron` 是 [Argument] input） |
 | `network-changed` | 网络切换（只执行配置里的第一个） | ⚪ 玩法建议：切网发一条 `$notification` 提示模式状态 |
-| `generic` | 手动按钮脚本（`img_url` 配图标） | ✅ soda/douyin `status.min.js` 插件状态自检按钮（打卡 + 广告统计 + 开关看板/冲突提醒；全部开关经对象参数透传，`statusNotify` select 可选弹通知/静默） |
+| `generic` | 手动按钮脚本（`img_url` 配图标） | ✅ soda/douyin `status.min.js` 插件状态自检按钮（打卡 + 广告统计 + 开关看板/冲突提醒 + Loon 环境诊断；全部开关经对象参数透传，`statusNotify` select 可选弹通知/静默） |
 
 - ✅ 关键坑已记录：旧语法 `argument=` 不透传开关 → 必须新版 `script("scripts/x.min.js",{${开关}})`，`$argument.<名>` 取值（3.5.1(983)）。
 - ✅ 已落地：`$notification.post` attach 对象 `{openUrl: "@@APP_SCHEME@@"}`（通知横幅一键直接跳转打开对应汽水/抖音 App）。
 - ✅ 已落地：Rewrite v2 `reject_dict(200)` 用于上报端点（JSON `{}` + `application/json`）；`reject_array` 暂无数组响应场景。
+- ✅ **首条命中治理**：同一请求/响应 Loon 只执行配置顺序里第一条 `enable` 为真的脚本。仓库已据此把 settings 两条绑定的参数对齐、给 `hideDouyinTab` 增加独立绑定、把福利页打卡写成所有胜出脚本的副作用（独立 welfare-stamp 绑定只在全关时兜底）；lint 绑定矩阵用真实 URL 样本锁定“无死绑定、重叠必须等效或允许”，状态看板提示 `debugLog` 被清理脚本抢占。
+- ✅ **运行环境诊断**：Generic 状态脚本读取 `$loon`（设备/系统/Loon 版本）、`$script.name/startTime`、`$environment.params.nodeInfo`（兼容文档拼写 `$envirnoment`）与 `$config.getConfig().running_model`，结果页输出「运行环境」行；另用 `$utils.ungzip` 是否存在输出「Loon 能力」行（988+ ✅ / 983–987 ❌）。全部 `typeof` 守卫，旧 build/非节点场景缺失即省略。
+- ✅ **脚本安全门禁**：lint 对 `src/*/*.js` 与部署 `.min.js` 强制 `$done()`、禁用 `$httpClient`/`fetch()`/`XMLHttpRequest`/`WebSocket`/`sendBeacon`/`Function(`/`eval(`/`require(`、限制 `$notification.post` 只出现在 status/daily-reminder，并校验部署目录无孤儿脚本——保证脚本不外发响应数据、不执行动态代码。
 - ❌ `mock_file` / `.mock_file`：外部资源依赖，违背仓库自包含纪律。
 
 ## 7. 插件机制（plugin.md）
@@ -110,7 +115,7 @@
 
 ## 8. `[IP Rewrite]`（Build 1007+，插件专属）
 
-- 语法：`目的单 IPv4 = reflect|reject|drop`；**只收单 IPv4**（不收 CIDR/域名/IPv6/参数）；在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底；**重复声明 IP 会让整个模块失效**；多插件同地址按启用顺序取靠前。
+- 语法：`目的单 IPv4 = reflect|reject|drop`；**只收单 IPv4**（不收 CIDR/域名/IPv6/参数）；在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底；**插件内同 IP 按首条生效**，非法条目或重复的 `[IP Rewrite]` 段才会让整段失效；多插件同地址按启用顺序取靠前。
 - ✅ 已落地原生编译器支持：`tools/build-ads.py` 支持严格单 IPv4 校验、全局去重锁、保护名单阻断（禁 119.29.29.29）；并在 `src/ads/domains.json` 收录 16 条单 IPv4 HTTPDNS 网关接入点（阿里内地 3 + 海外 8、腾讯 4、百度 1），可选直接 drop。
 
 ## 9. 真机取证队列（汇总，按优先级）
@@ -123,6 +128,11 @@
 6. [x] `[Argument]` `select` 下拉类型应用：`statusNotify`（notification/silent）控制 Generic 自检按钮的通知行为；大型「模式预设」仍不采纳——`enable=` 与静态 `[Rule]` 无法由 select 推导，预设会与独立开关形成双重事实源。
 7. [x] 开屏请求拦截跨家族统一：`splash-ad.js` 迁入 `src/common` 单一来源，douyin 新增 `blockSplashAd`；lint 对两家族做 3 hit / 3 miss 边界锁定（`inspire` / `inspire_preload` / `marketing/done` 绝不拦）。
 8. [x] Generic 自检升级为开关看板：全部 `[Argument]` 经对象参数透传，结果页汇总开关并检测冲突（`killRewardAds` / `rewardSafe+cleanAds` / `rewardSafe+settingsClean` / `rewardSafe+blockAdDomains` / `treasureMinimal+killRewardAds`）；lint 锁定绑定必须透传全部开关。
+9. [x] 响应脚本首条命中治理：`settingsClean+hideDouyinEntry` 参数对齐、`hideDouyinTab` 独立绑定、打卡副作用内置于 sanitize/reward-observe/treasure/observe、welfare-stamp 仅兜底；lint 新增绑定矩阵（soda 29 样本 / douyin 16 样本）与允许清单，测试新增 `test_welfare_stamp.js` 10 条断言。
+10. [x] Generic 状态看板环境诊断：`$loon` / `$script` / `$environment` / `$config.getConfig()` / `$utils.ungzip` 全部接入，结果页与通知显示 Loon 版本、脚本执行时间、节点、运行模式与 gzip 能力；`test_status.js` 扩到 40 条，覆盖完整、拼写兼容、缺失与能力两种状态。
+11. [x] 构建门槛对齐：确认 3.5.1(988) 才引入脚本 gzip API；插件保持 983 安装门槛，README/插件描述/真机清单统一注明“gzip 清理需 988+，983–987 只记录状态”。
+12. [x] QUIC→TCP 回退落地（v2.8.0 / v0.8.0，常开无开关）：soda 8 域、douyin 7 域各写一条 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`，只覆盖 `[MITM]` 精确域；不做全局 `PROTOCOL,QUIC,REJECT`。同时落地 `h2 = true`；请求免压缩经真机体积核算后放弃（upsell gzip 后已 183–191 KB）。lint 锁 QUIC 集合、全局 QUIC 禁令、免压缩规则、h2 与 `families.json` 计数；真机回退耗时与证书固定风险仍按 `docs/device-checklist.md` F 段观察。
+13. [x] `DOMAIN-WILDCARD` 广告子域通配层：30 条 glob 生效，插件门槛抬到 3.5.3(1008)+；build 安全校验 + lint 模式/正负样本锁 + 审计工具覆盖率计入全部落地。
 
 ## 10. 明确不采纳清单（持续维护，带理由）
 
@@ -136,6 +146,7 @@
 | `$config.setSelectPolicy` / `$setRunningModel` | 本仓库插件无策略组场景 |
 | `$crypto.aes` / `$utils.gzip` 上行方向 | 现有脚本无加密上行/压缩上行需求 |
 | 域名/开屏拦截改用纯 `Rewrite … then reject_dict(200)` | 保留 `http-request` 脚本：需要逐请求日志、`rewardSafe` 分支与跨家族测试（28 + 22 条断言）；原生 Rewrite 无法输出自定义日志，且开关逻辑一旦写进静态行就失去脚本内的二次域名校验 |
+| 更多广告响应体改用原生 `[Rewrite]` 拒绝 | 现有净化需要字段级裁剪、开关分支与 `X-Soda-Plugin` 诊断头，静态 Rewrite 只能整包拒绝；唯一适合整包拒绝的纯上报端点（splash/DSP show）已经使用 `reject_dict(200)`。新增静态拒绝必须先有真实 HAR 证明端点不承载奖励语义 |
 | 字节系 HTTPDNS 静态 IP 化 | 火山引擎官方文档：动态接入地址（SDK 定期拉最佳 IP），静态化无意义 |
 
 ## 11. 与本仓库的接口速查
@@ -144,6 +155,6 @@
 |---|---|
 | 评估现有拦截覆盖率 | `npm run audit:ads` |
 | 重建 ads 插件 | `npm run build:ads`（改 `src/ads/domains.json`，勿手改生成物） |
-| 全量门禁 | `npm run check`（build + lint + 44 套件/1336 断言） |
+| 全量门禁 | `npm run check`（build + lint + 46 套件/1398 断言） |
 | 远端一致性 | `python3 tools/check-remote.py`（`--list` 看四段清单） |
 | 一键发布 | `python3 tools/publish.py --with-source --yes` |

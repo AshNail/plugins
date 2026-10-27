@@ -10,7 +10,8 @@ It reports:
 
 It reads only non-comment [Host] lines by default, so the optional
 attribution/analytics groups stay out of the audit and are reported separately
-instead. Optional IP rules are always commented [Rule] lines, not [Host] rules.
+instead. Active [Rule] DOMAIN-WILDCARD globs count toward coverage (they are
+DNS-stage blocks); commented DOMAIN-WILDCARD lines are treated as optional.
 
 Examples:
   python3 tools/ads-audit.py --top 40
@@ -304,27 +305,74 @@ def fetch_source(name: str, source: dict, refresh: bool, offline: bool) -> set[s
     raise RuntimeError(f"{name}: unknown parser {source['type']!r}")
 
 
+def normalize_glob(value: str) -> str | None:
+    value = value.strip().lower()
+    if not value or value != value.lower():
+        return None
+    if not re.match(r"^[a-z0-9][a-z0-9-]*(?:\.|-)", value):
+        return None
+    if "*" not in value and "?" not in value:
+        return None
+    if any(char in value for char in "[]!\\ "):
+        return None
+    return value
+
+
+def compile_globs(patterns: set[str]) -> tuple[re.Pattern[str], ...]:
+    return tuple(
+        re.compile(
+            "".join(
+                ".*" if char == "*" else "." if char == "?" else re.escape(char)
+                for char in pattern
+            )
+            + r"\Z"
+        )
+        for pattern in sorted(patterns)
+    )
+
+
 def parse_plugin_rules(
     paths: list[pathlib.Path],
-) -> tuple[set[str], set[str], set[str], set[str]]:
-    """Parse active and default-commented [Host] rules.
+) -> tuple[set[str], set[str], set[str], set[str], set[str], set[str]]:
+    """Parse active and default-commented [Host] rules plus DOMAIN-WILDCARD.
 
-    Returns (active_exact, active_wildcard, optional_exact, optional_wildcard).
-    Only comments that look exactly like a host rule (`domain = 127.0.0.1`)
-    are treated as optional; prose comments are ignored.
+    Returns (active_exact, active_wildcard, optional_exact, optional_wildcard,
+    active_globs, optional_globs). Only comments that look exactly like a host
+    rule (`domain = 127.0.0.1`) are treated as optional; prose comments are
+    ignored. Commented [Rule] DOMAIN-WILDCARD lines are optional globs.
     """
     exact: set[str] = set()
     wildcard: set[str] = set()
     optional_exact: set[str] = set()
     optional_wildcard: set[str] = set()
+    active_globs: set[str] = set()
+    optional_globs: set[str] = set()
     for path in paths:
         if not path.exists():
             raise RuntimeError(f"missing plugin: {path}")
         in_host = False
+        in_rule = False
         for line in path.read_text(encoding="utf-8").splitlines():
             stripped = line.strip()
             if stripped.startswith("[") and stripped.endswith("]"):
                 in_host = stripped.lower() == "[host]"
+                in_rule = stripped.lower() == "[rule]"
+                continue
+            if in_rule and stripped:
+                optional = stripped.startswith("#")
+                candidate = stripped[1:].strip() if optional else stripped
+                if not candidate.startswith("DOMAIN-WILDCARD,"):
+                    continue
+                parts = [part.strip() for part in candidate.split(",")]
+                pattern = normalize_glob(parts[1]) if len(parts) > 2 else None
+                if not pattern:
+                    if optional:
+                        continue
+                    raise RuntimeError(f"{path}: invalid DOMAIN-WILDCARD: {stripped!r}")
+                if optional:
+                    optional_globs.add(pattern)
+                else:
+                    active_globs.add(pattern)
                 continue
             if not in_host or not stripped:
                 continue
@@ -359,7 +407,7 @@ def parse_plugin_rules(
                     optional_exact.add(domain)
                 else:
                     exact.add(domain)
-    return exact, wildcard, optional_exact, optional_wildcard
+    return exact, wildcard, optional_exact, optional_wildcard, active_globs, optional_globs
 
 
 def load_protected() -> list[str]:
@@ -377,14 +425,19 @@ def protected_root(domain: str, roots: list[str]) -> str | None:
     return None
 
 
-def rule_matches(domain: str, exact: set[str], wildcard: set[str]) -> bool:
+def rule_matches(
+    domain: str,
+    exact: set[str],
+    wildcard: set[str],
+    globs: tuple[re.Pattern[str], ...] = (),
+) -> bool:
     if domain in exact:
         return True
     labels = domain.split(".")
     for i in range(1, len(labels)):
         if ".".join(labels[i:]) in wildcard:
             return True
-    return False
+    return any(regex.fullmatch(domain) for regex in globs)
 
 
 def main() -> int:
@@ -427,22 +480,34 @@ def main() -> int:
 
     plugin_paths = [PLUGIN_DIR / "ads.plugin"]
     try:
-        active_exact, active_wildcard, optional_exact, optional_wildcard = parse_plugin_rules(
-            plugin_paths
-        )
+        (
+            active_exact,
+            active_wildcard,
+            optional_exact,
+            optional_wildcard,
+            active_glob_patterns,
+            optional_glob_patterns,
+        ) = parse_plugin_rules(plugin_paths)
         roots = load_protected()
     except RuntimeError as exc:
         log(f"error: {exc}")
         return 2
 
+    active_globs = compile_globs(active_glob_patterns)
+    optional_globs = compile_globs(optional_glob_patterns)
     combined_exact = active_exact | optional_exact
     combined_wildcard = active_wildcard | optional_wildcard
+    combined_globs = compile_globs(active_glob_patterns | optional_glob_patterns)
     if args.include_disabled:
         exact = combined_exact
         wildcard = combined_wildcard
+        globs = combined_globs
+        glob_patterns = active_glob_patterns | optional_glob_patterns
     else:
         exact = active_exact
         wildcard = active_wildcard
+        globs = active_globs
+        glob_patterns = active_glob_patterns
 
     source_domains: dict[str, set[str]] = {}
     failures: list[str] = []
@@ -463,9 +528,13 @@ def main() -> int:
     uncovered_counter: collections.Counter[str] = collections.Counter()
     all_domains: set[str] = set()
     for name, domains in source_domains.items():
-        active_covered = sum(1 for domain in domains if rule_matches(domain, exact, wildcard))
+        active_covered = sum(
+            1 for domain in domains if rule_matches(domain, exact, wildcard, globs)
+        )
         combined_covered = sum(
-            1 for domain in domains if rule_matches(domain, combined_exact, combined_wildcard)
+            1
+            for domain in domains
+            if rule_matches(domain, combined_exact, combined_wildcard, combined_globs)
         )
         coverage[name] = {
             "domains": len(domains),
@@ -478,14 +547,18 @@ def main() -> int:
         }
         for domain in domains:
             all_domains.add(domain)
-            if not rule_matches(domain, exact, wildcard):
+            if not rule_matches(domain, exact, wildcard, globs):
                 uncovered_counter[domain] += 1
 
     active_covered_total = sum(
-        1 for domain in all_domains if rule_matches(domain, active_exact, active_wildcard)
+        1
+        for domain in all_domains
+        if rule_matches(domain, active_exact, active_wildcard, active_globs)
     )
     combined_covered_total = sum(
-        1 for domain in all_domains if rule_matches(domain, combined_exact, combined_wildcard)
+        1
+        for domain in all_domains
+        if rule_matches(domain, combined_exact, combined_wildcard, combined_globs)
     )
     selected_covered = combined_covered_total if args.include_disabled else active_covered_total
     overall = {
@@ -509,7 +582,9 @@ def main() -> int:
         if count < args.min_sources:
             break
         shared = protected_root(domain, roots)
-        optional_covered = rule_matches(domain, optional_exact, optional_wildcard)
+        optional_covered = rule_matches(
+            domain, optional_exact, optional_wildcard, optional_globs
+        )
         candidates.append(
             {
                 "domain": domain,
@@ -537,6 +612,10 @@ def main() -> int:
         root = protected_root(domain, roots)
         if root and domain == root:
             protected_violations.append(domain)
+    for pattern, regex in zip(sorted(glob_patterns), globs):
+        for root in roots:
+            if regex.fullmatch(root):
+                protected_violations.append(f"glob {pattern} -> {root}")
 
     report = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -544,13 +623,20 @@ def main() -> int:
         "rules": {
             "exact": len(exact),
             "wildcard": len(wildcard),
-            "total": len(exact) + len(wildcard),
+            "globs": len(glob_patterns),
+            "total": len(exact) + len(wildcard) + len(glob_patterns),
             "active_exact": len(active_exact),
             "active_wildcard": len(active_wildcard),
-            "active_total": len(active_exact) + len(active_wildcard),
+            "active_globs": len(active_glob_patterns),
+            "active_total": len(active_exact)
+            + len(active_wildcard)
+            + len(active_glob_patterns),
             "optional_exact": len(optional_exact),
             "optional_wildcard": len(optional_wildcard),
-            "optional_total": len(optional_exact) + len(optional_wildcard),
+            "optional_globs": len(optional_glob_patterns),
+            "optional_total": len(optional_exact)
+            + len(optional_wildcard)
+            + len(optional_glob_patterns),
         },
         "sources": {
             name: {
@@ -581,16 +667,17 @@ def main() -> int:
     print(f"- 审计插件：{', '.join(f'`{p}`' for p in report['plugins'])}")
     print(
         f"- 规则：**{report['rules']['total']}** 条"
-        f"（exact {report['rules']['exact']} / wildcard {report['rules']['wildcard']}）"
+        f"（exact {report['rules']['exact']} / wildcard {report['rules']['wildcard']} / "
+        f"glob {report['rules']['globs']}）"
     )
     if args.include_disabled:
         print(
-            f"  - 已含默认注释 [Host] 组 {report['rules']['optional_total']} 条；"
+            f"  - 已含默认注释 [Host] 组与可选 glob {report['rules']['optional_total']} 条；"
             f"核心 {report['rules']['active_total']} 条"
         )
     else:
         print(
-            f"  - 另有默认注释 [Host] 组 {report['rules']['optional_total']} 条，"
+            f"  - 另有默认注释 [Host] 组与可选 glob {report['rules']['optional_total']} 条，"
             "不在默认覆盖里（用 --include-disabled 纳入）"
         )
     print(

@@ -7,6 +7,8 @@
  * 用途：
  *   在 Loon 插件列表或脚本列表中点击「插件状态检查」按钮时手动执行，
  *   实时汇总打卡状态、广告统计、App 唤醒入口，无需等待定时任务。
+ *   同时输出 Loon 运行环境（$loon / $script / $environment /
+ *   $config.getConfig()），方便判断脚本是否运行在预期版本与模式下。
  *   通知模式由 [Argument] statusNotify 的 select 控制：
  *   notification 弹通知并带 openUrl，silent 只写日志与结果页。
  */
@@ -52,7 +54,8 @@ var SWITCH_LABELS = [
   ["cleanUpsell", "弹窗/演出清理"],
   ["cleanActivity", "活动入口清理"],
   ["debugLog", "只读日志"],
-  ["logTaskTitles", "日志带标题"]
+  ["logTaskTitles", "日志带标题"],
+  ["dailyReminder", "每日提醒"]
 ];
 
 function readArgs() {
@@ -79,10 +82,14 @@ function isOn(v) {
 function switchSummary(args) {
   var on = [];
   for (var i = 0; i < SWITCH_LABELS.length; i++) {
-    if (isOn(args[SWITCH_LABELS[i][0]])) on.push(SWITCH_LABELS[i][1]);
-  }
-  if (isOn(args.dailyReminder)) {
-    on.push("每日提醒" + (args.reminderCron ? "(" + args.reminderCron + ")" : ""));
+    var key = SWITCH_LABELS[i][0];
+    if (!isOn(args[key])) continue;
+    var label = SWITCH_LABELS[i][1];
+    /* 每日提醒带上当前 cron，省得再去插件参数里翻。 */
+    if (key === "dailyReminder" && args.reminderCron) {
+      label += "(" + args.reminderCron + ")";
+    }
+    on.push(label);
   }
   return on.join("、") || "全部默认";
 }
@@ -104,6 +111,16 @@ function switchWarnings(args) {
   if (isOn(args.treasureMinimal) && isOn(args.killRewardAds)) {
     out.push("⚠️ 冲突：treasureMinimal+killRewardAds —— 福利页只剩攒时长，但激励已断");
   }
+  /* Loon 同一响应只跑第一条命中的脚本：清理/隐藏会抢占只读日志 */
+  if (isOn(args.cleanAds) && isOn(args.debugLog)) {
+    out.push("ℹ️ 提示：cleanAds+debugLog —— 被清理的端点会挤掉只读日志");
+  }
+  if (isOn(args.treasureMinimal) && isOn(args.debugLog)) {
+    out.push("ℹ️ 提示：treasureMinimal+debugLog —— 福利页日志会被精简脚本挤掉");
+  }
+  if (isOn(args.hideDouyinTab) && isOn(args.debugLog)) {
+    out.push("ℹ️ 提示：hideDouyinTab+debugLog —— 福利页日志会被隐藏脚本挤掉");
+  }
   return out;
 }
 
@@ -118,6 +135,63 @@ function notifyEnabled() {
   } catch (e) {
     return true;
   }
+}
+
+function envText(v) {
+  if (typeof v === "string") return v;
+  try { return JSON.stringify(v); } catch (e) { return String(v); }
+}
+
+/*
+ * Loon 环境诊断：$loon / $script / $environment / $config.getConfig()
+ * 在旧 build 或测试环境里可能缺失，逐项 typeof 守卫；缺失项直接跳过。
+ */
+function envLine() {
+  var bits = [];
+  try {
+    if (typeof $loon !== "undefined" && $loon) bits.push(envText($loon));
+  } catch (e) {}
+  try {
+    if (typeof $script !== "undefined" && $script && $script.name) {
+      var name = String($script.name);
+      if ($script.startTime) name += " @ " + String($script.startTime);
+      bits.push("脚本 " + name);
+    }
+  } catch (e) {}
+  try {
+    var environment = null;
+    if (typeof $environment !== "undefined" && $environment) {
+      environment = $environment;
+    } else if (typeof $envirnoment !== "undefined" && $envirnoment) {
+      environment = $envirnoment;
+    }
+    if (environment && environment.params && environment.params.nodeInfo) {
+      bits.push("节点 " + envText(environment.params.nodeInfo));
+    }
+  } catch (e) {}
+  try {
+    if (typeof $config !== "undefined" && $config &&
+        typeof $config.getConfig === "function") {
+      var raw = $config.getConfig();
+      var cfg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (cfg && typeof cfg.running_model !== "undefined") {
+        var models = ["直连", "分流", "全局代理"];
+        var idx = Number(cfg.running_model);
+        bits.push("运行模式 " + (models[idx] || ("#" + cfg.running_model)));
+      }
+    }
+  } catch (e) {}
+  return bits.join(" · ");
+}
+
+/* gzip 响应清理的分水岭：$utils.ungzip 自 Loon 3.5.1(988) 提供。 */
+function capabilityLine() {
+  var ok = false;
+  try {
+    ok = typeof $utils !== "undefined" && $utils &&
+      typeof $utils.ungzip === "function";
+  } catch (e) {}
+  return "gzip 解压 " + (ok ? "✅" : "❌（需 Loon 3.5.1(988)+）");
 }
 
 (function main() {
@@ -139,14 +213,19 @@ function notifyEnabled() {
   var args = readArgs();
   var switches = switchSummary(args);
   var warns = switchWarnings(args);
+  var env = envLine();
 
   var summary = seenToday ? "今日已打卡" : "今日未打卡";
   var detail = "福利打卡：" + (seenToday ? "✅ 正常（" + seen + "）" : "⚠️ 尚未打卡") + "\n" +
                "广告统计：" + statsText + "\n" +
                "开关状态：" + switches;
+  if (env) detail += "\n运行环境：" + env;
+  detail += "\nLoon 能力：" + capabilityLine();
+  detail += "\n静态层：QUIC 回退 @@QUIC_COUNT@@ 域 · h2（常开）";
   for (var w = 0; w < warns.length; w++) detail += "\n" + warns[w];
 
-  console.log("[@@LOG_TAG@@-status] " + summary + " | " + statsText + " | " + switches);
+  console.log("[@@LOG_TAG@@-status] " + summary + " | " + statsText + " | " + switches +
+    (env ? " | env=" + env : ""));
 
   try {
     if (notifyEnabled() && typeof $notification !== "undefined" && $notification &&

@@ -525,6 +525,18 @@ function todayKey() {
   return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" + (day.length < 2 ? "0" + day : day);
 }
 
+/* 福利页打卡：观测脚本在同一响应上胜出时也要留下“今天来过”的凭证 */
+function stampWelfare(args) {
+  if (!pflag(args, "dailyReminder", false)) return;
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.write !== "function") return;
+    const key = todayKey();
+    $persistentStore.write(key, "soda-welfare-seen");
+    console.log(PREFIX + " welfare stamp " + key);
+  } catch (e) { /* 存储不可用不影响响应 */ }
+}
+
 function recordAdSeconds(seconds) {
   if (seconds < 0) return null;
   try {
@@ -580,8 +592,9 @@ let LOG_TASK_TITLES = false;
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const args = pargs(["logTaskTitles"]);
+    const args = pargs(["logTaskTitles", "dailyReminder"]);
     LOG_TASK_TITLES = pflag(args, "logTaskTitles", false);
+    if (/\/luna\/treasure\/task\/page/.test(url)) stampWelfare(args);
 
     const rule = RULES.find(function (r) { return r.match.test(url); });
     if (!rule) return $done({});

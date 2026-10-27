@@ -874,6 +874,26 @@ function markHeaders(reason) {
   }
 }
 
+/*
+ * 福利页打卡：Loon 对同一响应只执行第一条命中的脚本，独立的
+ * welfare-stamp 绑定会被清理/观测脚本遮蔽。这里让任何胜出的脚本
+ * 在 dailyReminder=true 时顺手写下当天日期，独立绑定只作全关兜底。
+ */
+function stampWelfare(args) {
+  if (!pflag(args, "dailyReminder", false)) return;
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.write !== "function") return;
+    var d = new Date();
+    var m = String(d.getMonth() + 1);
+    var day = String(d.getDate());
+    var key = d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" +
+      (day.length < 2 ? "0" + day : day);
+    $persistentStore.write(key, "soda-welfare-seen");
+    console.log("[soda] welfare stamp " + key);
+  } catch (e) { /* 存储不可用不影响响应 */ }
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -886,13 +906,18 @@ function markHeaders(reason) {
      * 不做任何广告裁剪，避免影响奖励任务。
      * 独立主插件没有 $argument，行为保持不变。
      */
-    const pluginArgs = pargs(["rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab"]);
+    const pluginArgs = pargs([
+      "rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab", "dailyReminder"
+    ]);
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
     /* 显式打开“断激励广告”时不再受保奖励模式保护（用户主动选择：广告完全不发） */
     const killReward = pflag(pluginArgs, "killRewardAds", false);
     const hideDouyin = pflag(pluginArgs, "hideDouyinTab", false);
+    const cleanAds = pflag(pluginArgs, "cleanAds", false);
     const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
     const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
+
+    if (/\/luna\/treasure\/task\/page/.test(url)) stampWelfare(pluginArgs);
 
     if (rewardSafe && !killReward && !isSplash) {
       if (!(hideDouyin && isTreasure)) {
@@ -900,6 +925,11 @@ function markHeaders(reason) {
         return $done({ headers: markHeaders("soda-sanitize;skip=reward-safe") });
       }
       /* 保奖励 + 隐藏听抖音：只删抖音条目，其余原样返回 */
+      return douyinOnly(raw, url);
+    }
+
+    /* hideDouyinTab 独立开关：cleanAds 关着时只删抖音条目，不做广告裁剪 */
+    if (hideDouyin && !cleanAds && !killReward && isTreasure) {
       return douyinOnly(raw, url);
     }
 

@@ -13,6 +13,10 @@ Rule shorthand in [Host]:
   *.example.com  -> wildcard only
   example.com    -> exact only
 
+Ad-subdomain globs in `domain_wildcards` become active
+`DOMAIN-WILDCARD,<glob>,REJECT,pre-matching` rules. They require Loon
+3.5.3(1008)+ and must never match a protected shared root.
+
 Usage:
   python3 tools/build-ads.py            # write the generated plugin
   python3 tools/build-ads.py --check    # verify the committed plugin is current
@@ -33,7 +37,9 @@ SOURCE = ROOT / "src/ads/domains.json"
 PROTECTED = ROOT / "src/ads/protected-roots.json"
 OUT_DIR = ROOT / "plugins/ads"
 TARGET = "127.0.0.1"
-LOON_VERSION = "3.5.1(983)"
+# DOMAIN-WILDCARD 自 Loon 3.5.3(1008) 起提供，插件头必须同步抬高门槛。
+LOON_VERSION = "3.5.3(1008)"
+WILDCARD_MIN_BUILD = 1008
 
 # Loon plugin [General] only supports this whitelist. Anything else is ignored
 # by Loon, so fail loudly instead of shipping a switch that looks useful.
@@ -86,6 +92,11 @@ RULE_TYPES = {
 # left-hand side. `*` is only allowed as a whole leading label.
 DOMAIN_RE = re.compile(
     r"^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$"
+)
+# DOMAIN-WILDCARD globs must be anchored to a literal label plus '.'/'-'.
+# This keeps a typo like `*` or `ads*` from turning into a broad block.
+WILDCARD_LITERAL_RE = re.compile(
+    r"[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*[.-]"
 )
 META_KEYS = ("name", "desc", "author", "version", "homepage", "icon", "tag", "system")
 
@@ -142,6 +153,73 @@ def validate_host_rule(rule: str, where: str, protected: set[str]) -> None:
             f"{where}: refusing to block a protected shared apex: {rule!r} "
             "(use an exact ad subdomain instead)"
         )
+
+
+def build_number(version: str) -> int:
+    match = re.search(r"\((\d+)\)", version or "")
+    if not match:
+        raise BuildError(f"cannot parse Loon build number from {version!r}")
+    return int(match.group(1))
+
+
+def glob_regex(pattern: str) -> re.Pattern[str]:
+    """Translate a Loon DOMAIN-WILDCARD glob for safety checks.
+
+    Loon supports `*` (crosses dots), `?` and `[...]` sets. The ads builder
+    only accepts `*`/`?`; character sets are refused so the protected-root
+    check cannot drift from Loon's semantics.
+    """
+    parts = []
+    for char in pattern:
+        if char == "*":
+            parts.append(".*")
+        elif char == "?":
+            parts.append(".")
+        else:
+            parts.append(re.escape(char))
+    return re.compile("".join(parts) + r"\Z")
+
+
+def validate_domain_wildcards(plugin: dict, protected: set[str]) -> list[str]:
+    where = f"plugin {plugin.get('file', '?')}, domain_wildcards"
+    patterns = plugin.get("domain_wildcards") or []
+    if not isinstance(patterns, list):
+        raise BuildError(f"{where}: must be a list")
+    checked: list[str] = []
+    for raw in patterns:
+        if not isinstance(raw, str) or not raw.strip():
+            raise BuildError(f"{where}: empty glob")
+        pattern = raw.strip()
+        if pattern != pattern.lower():
+            raise BuildError(f"{where}: globs must be lowercase: {pattern!r}")
+        if any(char in pattern for char in "[]!\\ "):
+            raise BuildError(
+                f"{where}: only '*' and '?' are supported in generated globs: {pattern!r}"
+            )
+        if "*" not in pattern and "?" not in pattern:
+            raise BuildError(f"{where}: glob has no wildcard: {pattern!r}")
+        literal = pattern.split("*", 1)[0].split("?", 1)[0]
+        if len(literal) < 4 or not WILDCARD_LITERAL_RE.fullmatch(literal):
+            raise BuildError(
+                f"{where}: glob must start with a literal label of 3+ chars "
+                f"followed by '.' or '-': {pattern!r}"
+            )
+        regex = glob_regex(pattern)
+        for root in protected:
+            if regex.fullmatch(root):
+                raise BuildError(
+                    f"{where}: glob {pattern!r} matches protected shared root {root!r}"
+                )
+        if pattern in checked:
+            raise BuildError(f"{where}: duplicate glob: {pattern!r}")
+        checked.append(pattern)
+
+    if checked and build_number(LOON_VERSION) < WILDCARD_MIN_BUILD:
+        raise BuildError(
+            f"{where}: DOMAIN-WILDCARD needs Loon build {WILDCARD_MIN_BUILD}+, "
+            f"but the plugin declares {LOON_VERSION}"
+        )
+    return checked
 
 
 def is_ipv4(value: str) -> bool:
@@ -319,6 +397,7 @@ def render_plugin(
     counts = {
         "general": 0,
         "rules": 0,
+        "wildcards": 0,
         "rules_disabled": 0,
         "ip_rewrite": 0,
         "ip_rewrite_disabled": 0,
@@ -342,10 +421,12 @@ def render_plugin(
             lines.append(raw.strip())
 
     rules = plugin.get("rules") or []
-    if rules:
+    wildcards = validate_domain_wildcards(plugin, protected)
+    if rules or wildcards:
         lines.append("")
         lines.append("")
         lines.append("[Rule]")
+    if rules:
         render_lines(
             lines,
             rules,
@@ -355,6 +436,19 @@ def render_plugin(
         counts["rules"] = sum(
             1 for raw in rules if raw.strip() and not raw.strip().startswith("#")
         )
+    if wildcards:
+        lines.append("")
+        lines.append("# " + "=" * 76)
+        lines.append("# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+）")
+        lines.append("# " + "-" * 76)
+        lines.append("# 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，")
+        lines.append("# 不命中 a.com、ad.example.com 或 adsl.example.com。")
+        lines.append("# pre-matching 让拒绝发生在 DNS 阶段（配合主配置 domain-reject-mode = DNS）。")
+        lines.append("# 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。")
+        lines.append("# " + "=" * 76)
+        for pattern in wildcards:
+            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT,pre-matching")
+            counts["wildcards"] += 1
 
     rules_disabled = plugin.get("rules_disabled") or []
     if rules_disabled:
@@ -399,7 +493,8 @@ def render_plugin(
         lines.append("# " + "-" * 76)
         lines.append("# 语法：单 IPv4 = reflect|reject|drop。只收单 IPv4（不收 CIDR/域名/IPv6/参数）。")
         lines.append("# 在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底。")
-        lines.append("# 重复声明 IP 会导致整个模块失效。逐行取消行首的 '# ' 后生效。")
+        lines.append("# 同一 IP 重复声明按插件内首条生效；非法条目或重复的 [IP Rewrite] 段才会让整段失效。")
+        lines.append("# 逐行取消行首的 '# ' 后生效。")
         lines.append("# ============================================================================ ")
         for raw in ip_rewrite_disabled:
             if not isinstance(raw, str) or not raw.strip():
@@ -564,6 +659,7 @@ def main() -> int:
         for name, counts in stats.items():
             print(
                 f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
+                f"wildcards={counts['wildcards']:2} "
                 f"optional_rules={counts['rules_disabled']:2} "
                 f"ip_rewrite={counts['ip_rewrite']:2} "
                 f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "
@@ -576,6 +672,7 @@ def main() -> int:
     for name, counts in stats.items():
         print(
             f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
+            f"wildcards={counts['wildcards']:2} "
             f"optional_rules={counts['rules_disabled']:2} "
             f"ip_rewrite={counts['ip_rewrite']:2} "
             f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "

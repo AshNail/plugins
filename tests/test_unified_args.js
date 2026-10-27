@@ -257,6 +257,51 @@ console.log("\n== 9. rewardSafe + hideDouyinTab：只删抖音，不动其它任
     JSON.stringify(o));
 }
 
+console.log("\n== 10. hideDouyinTab 独立：cleanAds=false 只删抖音，不做广告裁剪 ==");
+{
+  const body = {
+    status_code: 0,
+    rewardAdBanner: { id: 1 },
+    task_infos: [
+      { task_key: "douyin_listen", title: "听抖音" },
+      { task_key: "sign_in", title: "签到" }
+    ]
+  };
+  const r = runSanitize(
+    "https://api.qishui.com/luna/treasure/task/page",
+    body,
+    { rewardSafe: false, cleanAds: false, hideDouyinTab: true }
+  );
+  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("抖音条目被删除",
+    o && Array.isArray(o.task_infos) && o.task_infos.length === 1,
+    JSON.stringify(o));
+  check("签到保留", o && o.task_infos[0].task_key === "sign_in", JSON.stringify(o));
+  check("广告字段原样保留（cleanAds 未开）",
+    o && o.rewardAdBanner && o.rewardAdBanner.id === 1, JSON.stringify(o));
+}
+
+console.log("\n== 11. hideDouyinTab 独立：rewardSafe=true 同样只删抖音 ==");
+{
+  const body = {
+    status_code: 0,
+    task_infos: [
+      { task_key: "douyin_listen", title: "听抖音" },
+      { task_key: "reward_ads", title: "看广告得金币" }
+    ]
+  };
+  const r = runSanitize(
+    "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
+    body,
+    { rewardSafe: true, cleanAds: false, hideDouyinTab: true }
+  );
+  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("抖音条目被删除",
+    o && Array.isArray(o.task_infos) && o.task_infos.length === 1,
+    JSON.stringify(o));
+  check("看广告任务保留", o && o.task_infos[0].task_key === "reward_ads", JSON.stringify(o));
+}
+
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +
   "  pass=" + pass + " fail=" + fail);
 process.exit(fail === 0 ? 0 : 1);

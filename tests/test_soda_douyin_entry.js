@@ -115,6 +115,23 @@ console.log("\n== 6. 两个开关都没开：原样放行 ==");
   check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
 }
 
+console.log("\n== 7. settingsClean + hideDouyinEntry 同开：一次调用两件事都做 ==");
+{
+  const r = run(makeSettings(), {
+    rewardSafe: false,
+    settingsClean: true,
+    hideDouyinEntry: true
+  });
+  const o = parse(r.out);
+  check("广告配置被清空",
+    o && Object.keys(o.data.settings.commerce_ad_config).length === 0,
+    o ? JSON.stringify(o.data.settings.commerce_ad_config) : "");
+  check("【听抖音】入口被关掉",
+    o && o.data.settings.anchor_luna_to_douyin === 0,
+    o ? String(o.data.settings.anchor_luna_to_douyin) : "");
+  check("两个开关同开不再互相吞掉", !!o, JSON.stringify(r.out));
+}
+
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +
   "  pass=" + pass + " fail=" + fail);
 process.exit(fail === 0 ? 0 : 1);

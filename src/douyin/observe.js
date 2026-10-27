@@ -381,9 +381,27 @@ function markHeaders(reason) {
   }
 }
 
+/* 福利页打卡：debugLog 单独开启时由观测脚本补写，避免依赖被遮蔽的 stamp 绑定 */
+function stampWelfare(args) {
+  if (!pflag(args, "dailyReminder", false)) return;
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.write !== "function") return;
+    var d = new Date();
+    var m = String(d.getMonth() + 1);
+    var day = String(d.getDate());
+    var key = d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" +
+      (day.length < 2 ? "0" + day : day);
+    $persistentStore.write(key, "douyin-welfare-seen");
+    console.log("[douyin-reward] welfare stamp " + key);
+  } catch (e) { /* 存储不可用不影响响应 */ }
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    const args = pargs(["dailyReminder"]);
+    if (/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) stampWelfare(args);
     const raw = readBody($response);
     if (typeof raw !== "string" || raw.length === 0) return $done({});
     const head = raw.trimStart().slice(0, 1);

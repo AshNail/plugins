@@ -15,10 +15,11 @@ function check(name, cond, extra) {
   }
 }
 
-function runStatus(scriptCode, storeData, argument) {
+function runStatus(scriptCode, storeData, argument, globals) {
   let doneOut = null;
   let notifOut = null;
   const store = Object.assign({}, storeData || {});
+  const g = globals || {};
 
   const $persistentStore = {
     read: (k) => store[k] || "",
@@ -32,10 +33,13 @@ function runStatus(scriptCode, storeData, argument) {
   };
 
   const fn = new Function(
-    "$done", "$persistentStore", "$notification", "$argument", "console", scriptCode
+    "$done", "$persistentStore", "$notification", "$argument",
+    "$loon", "$script", "$environment", "$envirnoment", "$config", "$utils",
+    "console", scriptCode
   );
 
   fn((v) => { doneOut = v; }, $persistentStore, $notification, argument,
+    g.loon, g.script, g.environment, g.envirnoment, g.config, g.utils,
     { log: () => {} });
 
   return { doneOut, notifOut };
@@ -118,6 +122,8 @@ function todayKey() {
   check("soda: 提醒 rewardSafe+cleanAds", body.includes("rewardSafe+cleanAds"), body);
   check("soda: 提醒 rewardSafe+settingsClean", body.includes("rewardSafe+settingsClean"), body);
   check("soda: 提醒 rewardSafe+blockAdDomains", body.includes("rewardSafe+blockAdDomains"), body);
+  check("soda: 提示 cleanAds+debugLog 遮蔽",
+    body.includes("cleanAds+debugLog"), body);
   check("soda: 摘要含每日提醒时间", body.includes("每日提醒(5 9 * * *)"), body);
   check("soda: 通知正文也带冲突提醒", res.notifOut && res.notifOut.body.includes("冲突："),
     JSON.stringify(res.notifOut));
@@ -140,7 +146,51 @@ function todayKey() {
   check("douyin: 提醒 killRewardAds", body.includes("killRewardAds ——"), body);
   check("douyin: 提醒 treasureMinimal+killRewardAds",
     body.includes("treasureMinimal+killRewardAds"), body);
+  check("douyin: 提示 treasureMinimal+debugLog 遮蔽",
+    body.includes("treasureMinimal+debugLog"), body);
   check("douyin: silent 不弹通知", res.notifOut === null, JSON.stringify(res.notifOut));
+}
+
+// 8. 状态看板：Loon 运行环境诊断（$loon/$script/$environment/$config）
+{
+  const globals = {
+    loon: "iPhone 17 · iOS 26.0 · Loon 3.5.1(1007)",
+    script: { name: "status.min.js", startTime: "2026-10-27 20:30:00" },
+    environment: { params: { nodeInfo: "DIRECT" } },
+    config: { getConfig: () => JSON.stringify({ running_model: 1 }) },
+    utils: { ungzip: () => new Uint8Array(0) }
+  };
+  const res = runStatus(sodaStatus, {}, { statusNotify: "silent" }, globals);
+  const body = res.doneOut.content;
+  check("soda: 结果页含运行环境", body.includes("运行环境："), body);
+  check("soda: 环境含 Loon 信息", body.includes("3.5.1(1007)"), body);
+  check("soda: 环境含脚本名与时间", body.includes("status.min.js @ 2026-10-27 20:30:00"), body);
+  check("soda: 环境含节点信息", body.includes("DIRECT"), body);
+  check("soda: 环境含运行模式", body.includes("运行模式 分流"), body);
+  check("soda: 有 ungzip 时显示 gzip 可用",
+    body.includes("Loon 能力：gzip 解压 ✅"), body);
+
+  const typo = runStatus(sodaStatus, {}, { statusNotify: "silent" },
+    { envirnoment: { params: { nodeInfo: "PROXY-NODE" } } });
+  check("soda: 兼容 $envirnoment 拼写", typo.doneOut.content.includes("PROXY-NODE"),
+    typo.doneOut.content);
+
+  const plain = runStatus(sodaStatus, {}, { statusNotify: "silent" });
+  check("soda: 无环境变量时不显示运行环境",
+    !plain.doneOut.content.includes("运行环境："), plain.doneOut.content);
+  check("soda: 无 ungzip 时显示 gzip 不可用",
+    plain.doneOut.content.includes("gzip 解压 ❌（需 Loon 3.5.1(988)+）"),
+    plain.doneOut.content);
+}
+
+// 静态传输层（常开、无开关）：看板必须报出 QUIC 回退域数，数字来自 families.json。
+{
+  const soda = runStatus(sodaStatus, {}, { statusNotify: "silent" });
+  check("soda: 静态层显示 QUIC 回退 8 域",
+    soda.doneOut.content.includes("静态层：QUIC 回退 8 域"), soda.doneOut.content);
+  const douyin = runStatus(douyinStatus, {}, { statusNotify: "silent" });
+  check("douyin: 静态层显示 QUIC 回退 7 域",
+    douyin.doneOut.content.includes("静态层：QUIC 回退 7 域"), douyin.doneOut.content);
 }
 
 console.log(`PASS=${pass} FAIL=${fail}`);

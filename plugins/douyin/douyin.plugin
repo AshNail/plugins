@@ -1,7 +1,7 @@
 #!name=抖音 · douyin
-#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、开屏广告请求拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
+#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、开屏广告请求拦截、只读日志。功能用 [Argument] 开关，传输层常开（QUIC 强制回退 + h2）。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=0.7.7
+#!version=0.8.0
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=ios
@@ -17,7 +17,7 @@
 # 共享脚本层：本插件的 block-domains / daily-reminder / welfare-stamp 与
 # 汽水插件共用同一份源码（src/common/*.js + src/common/families.json），
 # tools/build.js 按家族参数展开到 src/douyin/ 后压缩；名单还由 lint
-# 校验 [Script]/[Rule]/[MITM]/源码四处一致。
+# 校验 [Script]/[MITM]/源码三处一致。
 #
 # 开关：
 #   treasureMinimal  福利页精简（默认开）：只留【攒时长 听歌不中断】
@@ -28,6 +28,16 @@
 #   blockSplashAd    开屏广告请求拦截（默认关）：只堵穿山甲 splash/ 家族
 #   debugLog         只读日志（默认关）：日志前缀 [douyin-reward]
 #   statusNotify     状态自检按钮的通知模式（notification/silent）
+#
+# 两层模型（v0.8.0 起）：
+#   L1 运行时层 = [Argument] 开关：只给“用户可能想改主意”的功能。
+#   L2 静态层   = [Rule]/[Rewrite]/[MITM]：传输与协议层，常开、无开关。
+#     · QUIC 强制回退：[MITM] 里这 7 个域拒绝 HTTP/3，逼回 TCP+TLS，
+#       否则脚本根本看不见流量（MITM 只处理 TCP）。不做全局 QUIC 拒绝。
+#     · h2 = true：让 HTTP/2 与 gRPC 端点进入 MITM 可见范围。
+#   注：曾评估“删 Accept-Encoding 换明文”，实测 upsell 响应 gzip 后就有
+#   183~191 KB，去掉压缩会让单次传输膨胀 5~10 倍，已放弃（详见 docs/loon-native-first.md）。
+#   静态层没有开关，因为“关掉它”等于让上面所有脚本失效；要回滚就删对应行。
 #
 # 重要事实（HAR 取证，别踩坑）：
 #   1. 【攒时长 听歌不中断】= duration_task_section / luna_rewards_ads，
@@ -46,6 +56,10 @@
 #   5. 广告时长是**客户端**字段（advert_duration=30 / launch_duration=30），
 #      但发奖靠服务端凭证（advert/fallback/done/info 的 time_token/nonce →
 #      advert/incentive/done）。少看广告再领奖属于广告欺诈，本插件不做。
+#   6. 同一响应 Loon 只执行“配置顺序里第一条条件为真”的 Response Script。
+#      treasureMinimal 默认开启并排在 welfare-stamp 之前，所以打卡逻辑
+#      已内置进 treasure/observe；独立 welfare-stamp 只在两者都关时兜底。
+#      debugLog 与 treasureMinimal 同开时，福利页日志会被精简脚本遮蔽。
 #
 # 风险：
 #   - MITM beta-luna.douyin.com 后若抖音报网络异常，说明该域名有证书固定，
@@ -59,7 +73,7 @@ cleanFeedAds = switch,false,tag=信息流广告清理,desc=清掉 ads/config、a
 killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。
 cleanUpsell = switch,false,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
 cleanActivity = switch,false,tag=活动入口清理,desc=把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）。会同时断掉激励广告。
+blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。
 blockSplashAd = switch,false,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
 debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
 dailyReminder = switch,false,tag=每日领取提醒,desc=每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。
@@ -68,27 +82,32 @@ statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=
 
 
 # ============================================================================
-# 1. [Rule]
+# 1. [Rule] · 传输层（静态，常开）
 # ----------------------------------------------------------------------------
-# 默认不拦任何域名，保证攒时长（看广告结算）能正常跑。
-# 需要 100% 拦截（不依赖 MITM、能挡 HTTP/3）时取消下面 5 行注释；
-# 注意那会阻断激励广告，攒时长模块随之失效。
+# QUIC 强制回退：只对 [MITM] 里这 7 个精确域拒绝 HTTP/3(QUIC)。
+# 为什么必须常开：脚本只能看见 TCP+TLS；目标域一旦走 HTTP/3，
+# MITM 不生效 → 清洗/拦截脚本“静默看不到流量”，功能像随机失效。
+# 为什么不做全局 PROTOCOL,QUIC,REJECT：那会连视频/通话/直播一起打掉。
+# 代价：首个连接多一次回退（约 100~300ms）；极少数不回退的实现会连不上该接口。
+# 回滚：删掉下面这 7 行，或整段清空（[Rule] 段可留空）。
 # ============================================================================
 
 [Rule]
 
-# ---- 严格模式：取消注释后生效 ----
-# DOMAIN,ad.zijieapi.com,REJECT
-# DOMAIN,lianmengapi.snssdk.com,REJECT
-# DOMAIN,ads5-normal-hl.zijieapi.com,REJECT
-# DOMAIN,zlink.ugsdk.cn,REJECT
-# DOMAIN,praisewindow.ugsdk.cn,REJECT
+AND,((DOMAIN-SUFFIX,beta-luna.douyin.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,polaris.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ad.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,lianmengapi.snssdk.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads5-normal-hl.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,zlink.ugsdk.cn),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,praisewindow.ugsdk.cn),(PROTOCOL,QUIC)),REJECT
 
 
 # ============================================================================
 # 2. [Rewrite]
 # ----------------------------------------------------------------------------
-# DSP 广告展示上报：信息流去广告模式下阻断无用出网，回 200 + JSON {}（reject_dict）避免 SDK 因空 Body 重试；由 cleanFeedAds 开关控制。
+# DSP 广告展示上报：信息流去广告模式下阻断无用出网，回 200 + JSON {}
+# （reject_dict）避免 SDK 因空 Body 重试；由 cleanFeedAds 开关控制。
 # ============================================================================
 
 [Rewrite]
@@ -108,7 +127,7 @@ request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.
 [Script]
 
 # ---- 福利页精简：只留【攒时长 听歌不中断】 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}}) with enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}, ${dailyReminder}}) with enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
 
 # ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}}) with enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
@@ -132,10 +151,10 @@ request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|
 request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
 
 # ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|retrieve|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|retrieve|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js", {${dailyReminder}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
 
 # ---- 只读日志：穿山甲广告平台（广告配置 / 领奖回调 / 开屏广告） ----
-response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
+response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js", {${dailyReminder}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=10, tag="福利页打卡"
 cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
 generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal}, ${cleanFeedAds}, ${killRewardAds}, ${cleanUpsell}, ${cleanActivity}, ${blockAdDomains}, ${blockSplashAd}, ${debugLog}, ${dailyReminder}, ${reminderCron}}) with tag="插件状态自检", img_url="checkmark.seal", timeout=10
@@ -152,6 +171,8 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal
 #                DNS 层拦截；本份名单是 App 内 MITM 兜底层。
 #                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
 #                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
+# h2 = true（常开）：MITM 同时处理 HTTP/2，gRPC 风格端点才可见可改。
+#                若某个 build 不识别该键导致断网，删掉这一行即可回滚。
 # 脚本来源：block-domains.min.js / splash-ad.min.js 由 src/common/*.js +
 #                families.json 生成，与 soda 插件共享单一源码。
 # ============================================================================
@@ -159,3 +180,4 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal
 [MITM]
 
 hostname = %APPEND% beta-luna.douyin.com, polaris.zijieapi.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads5-normal-hl.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn
+h2 = true

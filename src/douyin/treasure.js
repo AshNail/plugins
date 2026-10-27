@@ -229,12 +229,29 @@ function markHeaders(reason) {
   }
 }
 
+/* 福利页打卡：精简脚本默认胜出，若还等独立的 stamp 绑定就永远轮不到 */
+function stampWelfare(args) {
+  if (!pflag(args, "dailyReminder", false)) return;
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.write !== "function") return;
+    var d = new Date();
+    var m = String(d.getMonth() + 1);
+    var day = String(d.getDate());
+    var key = d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" +
+      (day.length < 2 ? "0" + day : day);
+    $persistentStore.write(key, "douyin-welfare-seen");
+    console.log("[douyin-treasure] welfare stamp " + key);
+  } catch (e) { /* 存储不可用不影响响应 */ }
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
     if (!/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) return $done({});
 
-    const args = pargs(["treasureMinimal"]);
+    const args = pargs(["treasureMinimal", "dailyReminder"]);
+    stampWelfare(args);
     if (!pflag(args, "treasureMinimal", true)) {
       console.log("[douyin-treasure] treasureMinimal=off, passthrough: " + url);
       return $done({ headers: markHeaders("douyin-treasure;skip=switch-off") });

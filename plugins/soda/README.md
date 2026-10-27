@@ -10,6 +10,8 @@
 （`script("...", {${开关名}})` + `with enable=${开关名}`）。
 旧版语法的 `argument=[{开关名}]` 在 Loon 3.5.x 上不会把开关值送进脚本——
 真机日志显示脚本被触发但拿不到开关，表现为“插件装了却没效果”（2026-10-20 实测）。
+**gzip 响应体解析依赖 `$utils.ungzip`（Loon 3.5.1(988) 起提供）**：983–987 仍可安装，
+但压缩响应的端点会跳过清理，只记录状态；完整去广告效果请升级到 988+。状态看板会直接显示当前 build 是否具备该能力。
 
 **v2.2.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】全部通过 Loon `[Argument]` 开关控制：`rewardSafe`、`cleanAds`、`blockAdDomains`、`settingsClean`、`debugLog`、`splashClean`、`hideDouyinTab`。默认 `rewardSafe=true`，只清开屏品牌广告。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进本插件，不再单独安装。
 
@@ -300,11 +302,11 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | `settingsClean` | 关 | `conf.qishui.com` 设置层脚本 |
 | `debugLog` | 关 | 20 条只读观测脚本 |
 | `splashClean` | 开 | 开屏品牌广告清理 |
-| `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文，避免误删） |
+| `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文；独立绑定，不需要 `cleanAds`） |
 | `logTaskTitles` | 关 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志 |
 | `hideDouyinEntry` | 关 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开） |
 | `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
-| `statusNotify` | notification | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合 |
+| `statusNotify` | notification | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合，同时输出 `$loon` / 脚本名与执行时间 / 节点 / 运行模式（`$config.getConfig()`） |
 
 关键限制：
 
@@ -313,8 +315,11 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
   - 开关关闭 → 脚本不执行，流量零影响；
   - 开关打开 → 返回 200 空响应，广告 SDK 拿不到广告；
   - `rewardSafe=true` → 脚本内部直接放行，激励广告照常播放。
-  - 代价：HTTPS 必须先 MITM 解密；走 HTTP/3(QUIC) 的请求不经过 MITM，可能拦不住。
-- **要 100% 拦截**（不依赖 MITM、能挡 HTTP/3）：关闭 `rewardSafe` 后取消 `[Rule]` 段 5 行 `DOMAIN` 注释；它会直接阻断激励广告域名，因此不能领奖励。
+  - HTTP/3 不再是漏洞：v2.8.0 起 `[Rule]` 常开 QUIC 强制回退（见下），这些域只会走 TCP+TLS。
+  - 仍依赖 MITM：所以它不能替代 `ads.plugin` 的 DNS 层，两者互补。
+- **静态传输层（常开，无开关）**：`[Rule]` 对这 8 个 `[MITM]` 域做 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`，
+  把 HTTP/3 逼回 TCP；`[MITM]` 开 `h2 = true`。
+  这两项不提供开关——关掉等于让所有脚本看不见流量。回滚方式：删掉对应行。
 - **`[MITM]` 也不能按开关启停**。插件声明 `api.qishui.com, conf.qishui.com` 与 5 个广告域名；即使 `blockAdDomains` 关闭，这些域名也会被解密。如果开启后激励广告播不了（证书固定），把 `[MITM]` 里那 5 个广告域名注释掉即可。
 - **开关冲突保护**：`rewardSafe=true` 时脚本优先保护非开屏端点；但仍建议不要同时打开 `rewardSafe` 与 `cleanAds` / `settingsClean`。
 
@@ -324,20 +329,21 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 
 | 层 | 内容 | 默认 | MITM |
 |---|---|---|---|
+| **L0** | 传输层：8 个 `[MITM]` 域拒绝 QUIC + `h2` | ✅ 常开（无开关） | 是（前置条件） |
 | **L1** | `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads5-normal-hl.zijieapi.com`、`zlink.ugsdk.cn`、`praisewindow.ugsdk.cn`（App Store 评分）→ 拦截 | ⬜（`blockAdDomains` 开关） | 是（脚本） |
-| **L1'** | 同上 5 个域名 → `[Rule]` `REJECT`（手动注释开启，不依赖 MITM、能挡 HTTP/3） | ⬜（手动） | 否 |
 | **L2** | 字段级裁剪（见 3.2） | ✅ 部分（`cleanAds` 开关） | 是 |
 | **L2.5** | 设置层：`conf.qishui.com/service/settings/v3/`；可选 `is.snssdk.com` / `i.snssdk.com` | ⬜（`settingsClean` 开关） | 是 |
 | **L3** | 埋点 `mon/log/applog.zijieapi.com`、`log.qishui.com`、风控 `timon` | ⬜ | 否 |
 
+L0 常开：它不拦任何业务流量，只决定“脚本能不能看见流量”。关掉它，L1/L2/L2.5 会随机失效。
 L1 默认关闭：广告域名被拦后，激励广告就播不了，保奖励模式必须放行。
 L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
 > 跨插件分层：L1 的 5 个域名里，`ad.zijieapi.com` / `lianmengapi.snssdk.com` /
 > `ads5-normal-hl.zijieapi.com` 三个同时也在 `ads.plugin` 的 `[Host]` DNS 层被拦截；
 > `zlink.ugsdk.cn` / `praisewindow.ugsdk.cn` 是 App 内运营端点（口令/弹窗），只由本插件
-> 的开关覆盖，不进全局 DNS 插件。两者互补：DNS 层先拦，MITM 层兜 HTTP/3 与已解析
-> 流量；刷奖励关掉 `ads.plugin` 时，本层 L1 仍然可用。
+> 的开关覆盖，不进全局 DNS 插件。两者互补：DNS 层在解析阶段拦，MITM 层按开关做
+> App 内精准控制；刷奖励关掉 `ads.plugin` 时，本层 L1 仍然可用。
 
 ---
 
@@ -347,12 +353,14 @@ L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
 | 段 | 作用 | 需要 MITM |
 |---|---|---|
-| `[Rule]` | 域名级拦截（严格模式，手动注释开启） | ❌ |
-| `[Rewrite]` | URL 级重写（纯上报 `reject_dict(200)`） | ✅ |
+| `[Rule]` | 传输层：8 个 MITM 域 `AND+PROTOCOL,QUIC` → `REJECT`（常开） | ❌ |
+| `[Rewrite]` | URL 级重写：上报端点 `reject_dict(200)`（开关） | ✅ |
 | `[Script]` | 字段级响应改写 + 广告域名拦截脚本（保留包络） | ✅ |
-| `[MITM]` | 声明 `api.qishui.com`、`conf.qishui.com` 与 5 个广告域名（域名拦截开关需要） | ✅ |
+| `[MITM]` | 声明 `api.qishui.com`、`conf.qishui.com` 与 5 个广告域名（域名拦截开关需要）+ `h2 = true` | ✅ |
 
-> Loon 的 HTTPS Rewrite 必须先经 MITM 解密，才能看到路径并匹配。所以 `[Rewrite]` 不是"无 MITM"方案；真正的无 MITM 方案只有 `[Rule]` 域名拦截。
+> Loon 的 HTTPS Rewrite 必须先经 MITM 解密，才能看到路径并匹配。所以 `[Rewrite]` 不是"无 MITM"方案；
+> 真正的无 MITM 方案是 `ads.plugin` 的 DNS 层。`[Rule]` 在插件里也不能写死业务域名的 REJECT——
+> 那会直接掐断激励广告，所以域名拦截保留为脚本开关。
 
 ### 5.1 历史模式（A/B/C/D/E，已合并）
 
@@ -519,7 +527,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `rewardSafe` | 开 | 保奖励优先；非开屏端点直接放行，域名拦截也放行 |
 | `cleanAds` | 关 | 去广告脚本：广告位、信息流、福利页广告任务（**不动激励素材**） |
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，领奖会变 `amount=-1`） |
-| `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本，HTTP/3 可能漏过） |
+| `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本；QUIC 已由静态层强制回退，不再漏 HTTP/3） |
 | `settingsClean` | 关 | 设置层净化；不要与 `rewardSafe` 同开 |
 | `debugLog` | 关 | 只读日志，可与保奖励同开 |
 | `splashClean` | 开 | 清理开屏品牌广告 |
@@ -531,10 +539,11 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 - **排障**：在保奖励基础上打开 `debugLog`，日志搜 `[soda-reward]`。
 - **去广告**：`rewardSafe=关`、`cleanAds=开`、`splashClean=开`。
 - **强力去广告**：再加 `blockAdDomains=开`；若激励广告因此播不了，把 `[MITM]` 里 5 个广告域名注释掉。
-- **隐藏听抖音**：`hideDouyinTab=开`（可与 `rewardSafe` 同开）。
-- **100% 域名拦截**：关闭 `rewardSafe`，手动取消 `soda.plugin` 里 `[Rule]` 段的 5 行 `DOMAIN` 注释；严格模式会阻断激励广告，不能领奖励。
+- **隐藏听抖音**：`hideDouyinTab=开`（独立生效，不需要 `cleanAds`；`rewardSafe` 同开时只删抖音条目，不做广告裁剪）。
+- **强力域名拦截**：关闭 `rewardSafe` 后开 `blockAdDomains` 即可；HTTP/3 已由 `[Rule]` 的 QUIC 回退覆盖，不需要再手改静态规则。
 
-> Loon 的 `[Rule]` 不能按开关关闭，所以域名拦截改用脚本实现（`blockAdDomains`）：开关关闭时零影响，`rewardSafe=true` 时自动放行；代价是依赖 MITM，HTTP/3(QUIC) 请求可能漏过。
+> Loon 的 `[Rule]` 不能按开关关闭，所以域名拦截改用脚本实现（`blockAdDomains`）：开关关闭时零影响，`rewardSafe=true` 时自动放行。
+> 唯一需要静态层兜的是传输协议：v2.8.0 起 8 个 MITM 域常开 QUIC 回退，脚本才能稳定看见流量。
 
 > 【听抖音】默认保留。它属于福利页的正常任务条目，`hideDouyinTab` 打开后只删除带“抖音”字样的列表项，不动签到 / 听歌 / 分享 / 金币 / 逛商城 / 翻牌 / 引导。字段定位以你提供的珠宝页 HAR 为准。
 
@@ -556,14 +565,14 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | App 是否异常 | 福利页、播放页、会员页各走一遍 |
 | 保奖励模式是否生效 | 只装 `soda.plugin`；默认 `rewardSafe=true`，奖励任务应保留，开屏品牌广告应消失，信息流/DSP/商业弹窗可能仍在 |
 | 去广告脚本是否生效 | `rewardSafe=关`、`cleanAds=开`；开屏/信息流/福利页广告任务应减少 |
-| 域名拦截是否生效 | `blockAdDomains=开`；Loon 日志搜 `[soda-domains] blocked`；HTTP/3 请求可能不出现该日志 |
+| 域名拦截是否生效 | `blockAdDomains=开`；Loon 日志搜 `[soda-domains] blocked`；若某次仍无日志，先看 Loon 规则日志里 QUIC 回退是否命中 |
 | 【听抖音】是否消失 | `hideDouyinTab=开`；福利页不再出现“听抖音”条目，签到/听歌/分享仍在 |
 | 奖励是否正常到账 | 完整看完激励视频，确认金币/畅听/翻牌等奖励到账；不要跳过广告或伪造回调 |
 | 激励链路是否下发 | 打开 `debugLog`，日志搜 `[soda-reward]`；看 `counts.sources` / `counts.adInfosMap` / `tasks` / `reward` 是否为空 |
 
-本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（22 套 / 668 条断言，源码与压缩版各一遍，共 1336 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
+本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（23 套 / 697 条断言，源码与压缩版各一遍，共 1398 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
 
-建议顺序（严格去广告）：**先确认保奖励模式 → 关闭 rewardSafe → 开 cleanAds → 最后手动开 [Rule] 严格模式**，每一步观察一天。
+建议顺序（严格去广告）：**先确认保奖励模式 → 关闭 rewardSafe → 开 cleanAds → 最后开 blockAdDomains**，每一步观察一天。
 
 保奖励模式不要开 `cleanAds` / `settingsClean`；只保留 `splashClean`，需要排障时再开 `debugLog`。
 
@@ -623,7 +632,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.9）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.0）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -646,7 +655,7 @@ loon-plugins/
 │       └── welfare-stamp.js        # ← src/common 生成，勿手改
 ├── tools/
 │   └── build.js                    # src/common 家族展开 + src -> plugins 压缩构建
-├── tests/                          # 脚本层回归测试（22 套 / 668 条断言 × 2 = 1336）
+├── tests/                          # 脚本层回归测试（23 套 / 697 条断言 × 2 = 1398）
 ├── package.json
 ├── package-lock.json
 ├── .github/workflows/check.yml     # CI：build + lint + 测试
@@ -701,6 +710,43 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 ---
 
 ## 11. 版本更新记录
+
+### v2.8.0（2026-10-27）静态传输层常开：QUIC 回退 + h2
+
+- **`[Rule]` 新增 8 条 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`**：只针对 `[MITM]` 里的精确域，
+  把 HTTP/3 逼回 TCP+TLS。这是所有脚本的前置条件——MITM 只处理 TCP，QUIC 流量脚本完全看不见。
+  不做全局 `PROTOCOL,QUIC,REJECT`（会伤视频/通话）。
+- **`[MITM]` 新增 `h2 = true`**：HTTP/2 与 gRPC 风格端点进入可见范围。
+- **删除注释里的 `[Rule]` 严格模式**：静态全域 REJECT 会直接掐断激励广告，且已被 `blockAdDomains`
+  + QUIC 回退覆盖，不再保留“手动取消注释”的分叉。
+- **评估后放弃“请求免压缩”**：`request.header.del("Accept-Encoding")` 本身可行，但自家 HAR 显示
+  `commerce/v2/upsell` 在 gzip 下已有 183–191 KB，去压缩会让单次传输膨胀 5~10 倍；为省一次
+  `$utils.ungzip` 换这个代价是负收益。lint 反向锁死，防止后续又加回来。
+- 这一层**没有开关**：关掉等于让上面所有脚本失效。回滚方式 = 删对应行。
+- 状态看板新增「静态层：QUIC 回退 8 域 · h2（常开）」，条数由 `families.json` 提供、lint 对账插件真实规则数。
+- lint 新增三组守卫：静态层完整性（QUIC 集合 / 全局 QUIC 禁令 / 免压缩反向锁 / h2）、
+  跨层短路矩阵（`[Rule]` 整域拒绝、`[Rewrite]` 终止型复写 vs 脚本，用真实 URL 样本交叉验证）、
+  `SWITCH_LABELS` 与 `[Argument]` 双向一致。
+- 回归：46 套件 / 1398 断言全绿；lint 0 error。
+
+### v2.7.1（2026-10-27）状态看板加入 Loon 环境诊断
+
+- `status.js` 在结果页新增「运行环境」行：`$loon`（设备/系统/Loon 版本）、`$script.name` 与 `startTime`、`$environment.params.nodeInfo`（兼容文档里的 `$envirnoment` 拼写）、`$config.getConfig()` 的 `running_model`（直连/分流/全局代理）。
+- 新增「Loon 能力」行：检测 `$utils.ungzip` 是否存在，988+ 显示 ✅，983–987 显示 ❌ 并标注门槛，避免把“版本旧”误判成“脚本失效”。
+- 所有全局对象都走 `typeof` 守卫：旧 build、generic 非节点场景或测试环境缺失时整行省略，不影响打卡/统计/开关摘要，也不新增任何网络请求。
+- 排障收益：一眼区分“插件没生效”是 Loon 版本旧、运行模式不对，还是脚本根本没被执行。
+- 文档补充 gzip 门槛：`$utils.ungzip` 自 Loon 3.5.1(988) 提供；983–987 可安装，但 gzip 响应端点只记录状态、不清理。
+- 回归：`test_status.js` 31 → 40 条（含完整环境、`$envirnoment` 拼写、无全局对象，以及 ungzip 可用/不可用）；全量 46 套件 / 1398 断言。
+
+### v2.7.0（2026-10-27）修复同 URL 响应脚本遮蔽（首条命中）
+
+- Loon 对同一响应只执行配置顺序里第一条条件为真的 Response Script。旧绑定让实际行为与开关不一致：
+  - `settingsClean + hideDouyinEntry` 同开时，第二条被第一条遮蔽 → 隐藏入口失效。现在两条绑定传同一组三参数，settings 脚本一次处理两件事。
+  - `hideDouyinTab` 原先没有独立绑定，只有开 `cleanAds` 才会顺带生效。新增独立绑定（排在清理之后、只读日志之前），`sanitize.js` 补 `cleanAds=false` 时只做 `douyinOnly` 的分支。
+  - `dailyReminder` 的独立打卡绑定会被 `cleanAds`/`debugLog`/`hideDouyinTab` 胜出的脚本遮蔽，导致提醒误报。现在 `sanitize` 与 `reward-observe` 在命中 `task/page` 时内置写入 `soda-welfare-seen`；独立 `welfare-stamp` 只作全关兜底，并覆盖 `beta-luna` 与 `api.qishui` 两个域名。
+- 状态看板新增遮蔽提示：`cleanAds+debugLog`、`hideDouyinTab+debugLog`。
+- lint 新增绑定矩阵：用真实 URL 样本覆盖每条 request/response 绑定；同 URL 多绑定只允许“同脚本同参数”或显式白名单组合，新增遮蔽直接失败。
+- 回归：新增 `test_welfare_stamp.js` 10 条；`test_unified_args` 27 条、`test_soda_douyin_entry` 17 条、`test_status` 31 条；全量 46 套件 / 1376 断言。
 
 ### v2.6.9（2026-10-27）状态自检升级为开关看板
 
