@@ -11,7 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
     ("plugins/soda/soda.plugin", 5, 0, 2, 39, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 1, 10, "douyin"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 1, 11, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -43,6 +43,16 @@ FAMILY_CHECKS = {
             "blockSplashAd": 1,
             "debugLog": 22,
         },
+        "selects": [
+            ("statusNotify", '"notification","silent"'),
+        ],
+        # Generic 自检按钮必须拿到全部开关，结果页才能给出准确的摘要与冲突提醒。
+        "status": [
+            "rewardSafe", "splashClean", "cleanAds", "killRewardAds",
+            "blockAdDomains", "blockSplashAd", "settingsClean",
+            "hideDouyinEntry", "hideDouyinTab", "debugLog", "logTaskTitles",
+            "dailyReminder", "reminderCron",
+        ],
         "mitm": [
             "api.qishui.com",
             "conf.qishui.com",
@@ -60,6 +70,7 @@ FAMILY_CHECKS = {
             "growth": "https://api.qishui.com/luna/growth/activity_entrance",
             "fallback": "https://api.qishui.com/luna/advert/fallback/done/info",
             "feed": "https://api.qishui.com/luna/feed/song-tab",
+            "splash-v2": "https://ad.zijieapi.com/api/ad/v2/ack/splash/report",
         },
     },
     "douyin": {
@@ -70,6 +81,7 @@ FAMILY_CHECKS = {
             ("cleanUpsell", "false"),
             ("cleanActivity", "false"),
             ("blockAdDomains", "false"),
+            ("blockSplashAd", "false"),
             ("debugLog", "false"),
             ("dailyReminder", "false"),
         ],
@@ -80,8 +92,17 @@ FAMILY_CHECKS = {
             "cleanUpsell": 2,
             "cleanActivity": 1,
             "blockAdDomains": 1,
+            "blockSplashAd": 1,
             "debugLog": 2,
         },
+        "selects": [
+            ("statusNotify", '"notification","silent"'),
+        ],
+        "status": [
+            "treasureMinimal", "cleanFeedAds", "killRewardAds", "cleanUpsell",
+            "cleanActivity", "blockAdDomains", "blockSplashAd", "debugLog",
+            "dailyReminder", "reminderCron",
+        ],
         "mitm": [
             "beta-luna.douyin.com",
             "polaris.zijieapi.com",
@@ -156,6 +177,18 @@ ADS_RULE_TYPES = {
 
 # docs/cn/protocol_rule.md：Loon（3.1.7+）PROTOCOL 规则支持的全量取值。
 PROTOCOL_VALUES = {"HTTP", "HTTPS", "TCP", "QUIC", "STUN", "UDP"}
+
+# 开屏请求拦截绑定的边界：只拦开屏素材/登记家族，绝不能碰激励广告与发奖。
+SPLASH_MUST_HIT = (
+    "https://ads5-normal-hl.zijieapi.com/api/ad/splash/luna/v15/",
+    "https://ad.zijieapi.com/api/ad/splash/stock/",
+    "https://ad.zijieapi.com/api/ad/v2/ack/splash/collect",
+)
+SPLASH_MUST_MISS = (
+    "https://ad.zijieapi.com/api/ad/v1/inspire/",
+    "https://ad.zijieapi.com/api/ad/v1/inspire_preload/",
+    "https://ad.zijieapi.com/api/incentive/marketing/done/",
+)
 
 errors = []
 
@@ -243,7 +276,7 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
     rules = [l for l in data.get("Rule", []) if l.startswith("DOMAIN,")]
     rewrites = [
         l for l in data.get("Rewrite", [])
-        if "reject(" in l or "reject-" in l
+        if re.search(r"reject(?:_(?:dict|array|img|video))?\(", l) or "reject-" in l
     ]
     scripts = [
         l for l in data.get("Script", [])
@@ -259,6 +292,11 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
             re.compile(rx)
         except re.error as exc:
             errors.append(f"{fp}: rewrite regex: {exc}")
+        if "report" in line and "reject_dict(200)" not in line:
+            errors.append(
+                f"{fp}: report endpoint must use reject_dict(200) "
+                f"(JSON Content-Type, empty object): {line[:100]}"
+            )
 
     compiled = []
     for line in scripts:
@@ -338,6 +376,26 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
             errors.append(
                 f"{fp}: missing or wrong Argument switch {name} (expected default {default})"
             )
+    for name, candidates in spec.get("selects", []):
+        if f"{name} = select,{candidates}" not in arg_text:
+            errors.append(
+                f"{fp}: missing or wrong Argument select {name} "
+                f"(expected candidates {candidates})"
+            )
+
+    generic_status = [
+        line for line in data.get("Script", [])
+        if line.startswith("generic") and "status.min.js" in line
+    ]
+    if not generic_status:
+        errors.append(f"{fp}: missing generic status.min.js binding")
+    else:
+        status_line = generic_status[0]
+        for name in ["statusNotify"] + spec.get("status", []):
+            if "${" + name + "}" not in status_line:
+                errors.append(
+                    f"{fp}: generic status.min.js binding missing ${{{name}}}"
+                )
 
     # [Argument] 声明与 [Script]/[Rewrite] 引用对账。插件行是手工维护的，
     # ${名字} 出现 typo 时 build.js 不会拦截（它只 minify 脚本），Loon 会把
@@ -394,6 +452,33 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
         print(f"  {family} sample {label:18} {'HIT' if hit else 'MISS'}")
         if not hit:
             errors.append(f"{fp}: sample {label} not matched")
+
+    # ---- 开屏请求拦截：绑定必须命中 splash 家族，且绝不命中激励/发奖 ----
+    splash_lines = [line for line in scripts if "splash-ad.min.js" in line]
+    if len(splash_lines) != 1:
+        errors.append(
+            f"{fp}: expected exactly one splash-ad.min.js binding, got {len(splash_lines)}"
+        )
+    for line in splash_lines:
+        rx = regex_literal(line)
+        try:
+            splash_rx = re.compile(rx) if rx else None
+        except re.error as exc:
+            errors.append(f"{fp}: splash regex: {exc}")
+            splash_rx = None
+        if splash_rx is None:
+            errors.append(f"{fp}: splash binding without a valid url regex: {line[:100]}")
+            continue
+        for url in SPLASH_MUST_HIT:
+            if not splash_rx.match(url):
+                errors.append(f"{fp}: splash binding misses {url}")
+        for url in SPLASH_MUST_MISS:
+            if splash_rx.match(url):
+                errors.append(f"{fp}: splash binding must not block {url}")
+    print(
+        f"  {family} splash binding: {len(SPLASH_MUST_HIT)} hit / "
+        f"{len(SPLASH_MUST_MISS)} miss checks, shared src/common/splash-ad.js"
+    )
 
     # ---- 「广告域名拦截」名单一致性：单一来源 src/common/block-domains.js ----
     # [Script] 正则、注释 [Rule] 严格模式、block-domains.js 的 BLOCKED_HOSTS

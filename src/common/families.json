@@ -9,6 +9,7 @@
     "block-domains.js",
     "daily-reminder.js",
     "welfare-stamp.js",
+    "splash-ad.js",
     "status.js"
   ],
   "tokens": [

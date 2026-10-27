@@ -27,7 +27,7 @@
 
 **v1.5 已包含**：信息流 `is_advertisement` / `is_ad_item` / `ad_flag` / `adItem` 与 `card.is_ad` 嵌套判定；信息流端点扩展 `playlist/search` / `discover/mix`；福利任务/ banner 增加 `ad_reward` 变体；福利页 `banner_list` 广告项裁剪；新增**设置层实验插件** `SodaClean-Settings.plugin`，通过 `conf.qishui.com/service/settings/v3/` 清空 `commerce_ad_config` / `feed_reward_ad_config` / `reward_ad_fallback_config` / `splash_ad_early_load_config` 等 TTKitchen 配置。
 
-**v1.4 已包含**：开屏 `ad_launch_list` / `ad_launch`、信息流 `ads_blocks` / `ads_info` / `is_ad`、广告位配置 `ad_unit_configs` / `splash_config` / `feed_ads_config` / `reward_config`、DSP 上报 `reject-200`、金币挂件 `widgetAdReward` 广告态。字段地址与描述符见《汽水音乐_20.5.0_开屏与信息流广告_字段取证与净化方案.md》。
+**v1.4 已包含**：开屏 `ad_launch_list` / `ad_launch`、信息流 `ads_blocks` / `ads_info` / `is_ad`、广告位配置 `ad_unit_configs` / `splash_config` / `feed_ads_config` / `reward_config`、DSP 上报 `reject_dict(200)`、金币挂件 `widgetAdReward` 广告态。字段地址与描述符见《汽水音乐_20.5.0_开屏与信息流广告_字段取证与净化方案.md》。
 
 ---
 
@@ -136,12 +136,14 @@ Loon 工作在**网络层**。
 
 ---
 
-## 2. 为什么默认不用 `reject-dict`
+## 2. 为什么配置端点默认不用 `reject-dict`
 
 | 方案 | 返回 | 风险 |
 |---|---|---|
 | `reject-dict` | `{}` | 丢失 `status_code`，App 解码失败 → 重试 / 走默认值 / 弹错误 |
 | 本插件 | 原包络 + 广告容器清空 | App 认为「本次没有广告」，流程正常结束 |
+
+> 纯上报端点（`splash/brand/report`、`ads/report/dsp/show`）没有业务包络，已改用 Rewrite v2 的 `reject_dict(200)`（JSON `{}` + `application/json`）；配置类端点仍走脚本保留包络。注意 `reject(200)` 的空 Body 是 `text/plain`，需要 JSON 时应使用 `reject_dict`。
 
 改写后的激励配置长这样（真实结构）：
 
@@ -237,7 +239,7 @@ Loon → 日志，搜索 `[soda]`。
 | 信息流 | `ads_blocks` / `ads_info` / `is_ad` | 清 `ads_blocks`、`ads_info`；`is_ad=true` 的条目整条丢 |
 | 广告位配置 | `ad_unit_configs` / `feed_ads_config` / `reward_config` | 清空，阻止 SDK 注册广告位 |
 | 会员弹窗 | `card` / `upsell_unique_name` | 清空 |
-| DSP 上报 | `luna/ads/report/dsp/show` | Rewrite `reject-200`，不走上游 |
+| DSP 上报 | `luna/ads/report/dsp/show` | Rewrite `reject_dict(200)`，不走上游 |
 
 `feed-ads` 规则先做字符串预检（`fastReject`）：响应里没有 `ads_blocks` / `ads_info` / `is_ad` / `banner_list` / `feed_reward_ad_entrance` 等标记就直接放行，不对大 feed 响应做 `JSON.parse`。v1.5.1 把 `banner_list` 加入预检，修复“只有 banner 广告时脚本不解析”的漏网。
 
@@ -287,7 +289,7 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 
 ### 3.8 聚合单插件与 Loon 限制
 
-`soda.plugin` 是 Soda 唯一部署插件，使用 Loon `[Argument]` 的 `switch` 控件，把脚本启停做成开关：
+`soda.plugin` 是 Soda 唯一部署插件，使用 Loon `[Argument]` 的 `switch` / `select` 控件，把脚本启停和按钮行为做成参数：
 
 | 开关 | 默认 | 控制的脚本 |
 |---|---|---|
@@ -301,7 +303,8 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文，避免误删） |
 | `logTaskTitles` | 关 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志 |
 | `hideDouyinEntry` | 关 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开） |
-| `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求 `ads5-*.zijieapi.com/api/ad/splash/`，**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
+| `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
+| `statusNotify` | notification | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合 |
 
 关键限制：
 
@@ -345,7 +348,7 @@ L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 | 段 | 作用 | 需要 MITM |
 |---|---|---|
 | `[Rule]` | 域名级拦截（严格模式，手动注释开启） | ❌ |
-| `[Rewrite]` | URL 级重写（纯上报 `reject-200`） | ✅ |
+| `[Rewrite]` | URL 级重写（纯上报 `reject_dict(200)`） | ✅ |
 | `[Script]` | 字段级响应改写 + 广告域名拦截脚本（保留包络） | ✅ |
 | `[MITM]` | 声明 `api.qishui.com`、`conf.qishui.com` 与 5 个广告域名（域名拦截开关需要） | ✅ |
 
@@ -413,40 +416,39 @@ L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
 ### 5.2 为什么 `[Rewrite]` 只放少量纯上报端点
 
-`reject-200` 适合"响应无人解析"的 fire-and-forget 上报，例如：
+纯上报端点是 fire-and-forget，没有业务包络需要保留，适合在 Rewrite 阶段直接回包：
 
 ```
 luna/advert/splash/brand/report
 luna/ads/report/dsp/show
 ```
 
-配置类端点如果直接 `reject-dict`，会丢掉 `status_code`，App 可能重试或走默认值——所以交给 `[Script]` 保留包络。
+两条都用原生 `reject_dict(200)`：返回 JSON `{}` 且带 `application/json`，SDK 按 JSON 解码不会报错。官方的 `reject(200)` 返回空 Body（`text/plain`），`reject(200, "{}")` 也只是普通文本——需要 JSON Content-Type 时必须用 `reject_dict` / `reject_array`。
+
+配置类端点不能直接 `reject_dict`：会丢掉 `status_code`，App 可能重试或走默认值——所以交给 `[Script]` 保留包络、只清广告容器。
 
 ### 5.3 语法说明
 
-本插件使用 Loon 旧版 Rewrite 语法，全版本兼容：
+本插件使用 Loon 3.5.1(983)+ 的新版 Rewrite 语法：
 
 ```
-^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report reject-200
+request if ${splashClean} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/report\/dsp\/show/ then reject_dict(200)
 ```
 
-注意不是 Surge 的 `url reject`。Loon 3.5.1+ 也可以写成新语法：
+注意不是 Surge 的 `url reject`。`reject_dict(status)` 的状态码范围是 100–599；HTTPS 命中需要该域名在 `[MITM]` 中。
+
+### 5.4 请求侧减负：开屏广告请求拦截
+
+`blockSplashAd` 使用 `http-request` 脚本（与 douyin 共用 `src/common/splash-ad.js`，家族差异只有日志前缀），在请求发出前返回 200 + JSON `{}`，走穿山甲（CSJ）开屏素材获取与登记端点的请求不会真正出网。绑定覆盖：
 
 ```
-request if ${url} ~= /^https:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject(200)
+/api/ad/splash/                    # luna/aweme/v14/v15、stock/realtime 等
+/api/ad/vN/splash/                 # 版本化库存
+/api/ad/vN/ack/splash/             # ack 上报
 ```
 
-### 5.4 可选：请求侧减负
-
-`src/soda/request.js` 只做一件事：把 `incentive/config` 与 `ads/config` 请求里的 `preload` 关掉，避免 App 主动预加载广告素材。
-
-在 `[Script]` 里取消这一行注释即可：
-
-```
-http-request ^https?:\/\/api\.qishui\.com\/luna\/(?:advert\/incentive\/config|ads\/config) script-path=scripts/request.min.js, requires-body=true, timeout=10
-```
-
-明确只改 `preload`，不碰 `advert_duration` / `advert_sources` / 发奖字段。
+激励广告（`ad.zijieapi.com/api/ad/v1/inspire/**`）与发奖回调（`api/incentive/marketing/done`）不在匹配范围内，保奖励模式不受影响。如果开启后激励广告播不了（证书固定），把 `[MITM]` 里的广告域名注释掉即可。
 
 ### 5.5 激励链路观测（只读）
 
@@ -559,7 +561,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | 奖励是否正常到账 | 完整看完激励视频，确认金币/畅听/翻牌等奖励到账；不要跳过广告或伪造回调 |
 | 激励链路是否下发 | 打开 `debugLog`，日志搜 `[soda-reward]`；看 `counts.sources` / `counts.adInfosMap` / `tasks` / `reward` 是否为空 |
 
-本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（22 套 / 634 条断言，源码与压缩版各一遍，共 1268 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
+本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（22 套 / 668 条断言，源码与压缩版各一遍，共 1336 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
 
 建议顺序（严格去广告）：**先确认保奖励模式 → 关闭 rewardSafe → 开 cleanAds → 最后手动开 [Rule] 严格模式**，每一步观察一天。
 
@@ -621,7 +623,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.6）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.9）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -633,18 +635,18 @@ loon-plugins/
 │           └── welfare-stamp.min.js   # ← 与 douyin 同源（src/common 生成）
 ├── src/
 │   ├── common/                     # soda/douyin 共享脚本单一来源 + families.json
-│   └── soda/                       # 可读源码（block-domains 等三个为生成物）
+│   └── soda/                       # 可读源码（共享脚本为生成物）
 │       ├── sanitize.js
 │       ├── settings.js
 │       ├── reward-observe.js
-│       ├── splash-ad.js
-│       ├── status.js
+│       ├── splash-ad.js            # ← src/common 生成，勿手改
+│       ├── status.js               # ← src/common 生成，勿手改
 │       ├── block-domains.js        # ← src/common 生成，勿手改
 │       ├── daily-reminder.js       # ← src/common 生成，勿手改
 │       └── welfare-stamp.js        # ← src/common 生成，勿手改
 ├── tools/
 │   └── build.js                    # src/common 家族展开 + src -> plugins 压缩构建
-├── tests/                          # 脚本层回归测试（22 套 / 634 条断言 × 2 = 1268）
+├── tests/                          # 脚本层回归测试（22 套 / 668 条断言 × 2 = 1336）
 ├── package.json
 ├── package-lock.json
 ├── .github/workflows/check.yml     # CI：build + lint + 测试
@@ -699,6 +701,27 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 ---
 
 ## 11. 版本更新记录
+
+### v2.6.9（2026-10-27）状态自检升级为开关看板
+
+- Generic 按钮现在透传全部开关（`rewardSafe` / `cleanAds` / `killRewardAds` / `blockAdDomains` / `blockSplashAd` / `settingsClean` / `hideDouyin*` / `debugLog` / `dailyReminder` / `reminderCron` 等），结果页与通知新增「开关状态」摘要。
+- 冲突组合给出显式提醒：`killRewardAds`、`rewardSafe+cleanAds`、`rewardSafe+settingsClean`、`rewardSafe+blockAdDomains`；`dailyReminder` 打开时带出 cron 时间。
+- lint 锁定 generic 绑定必须透传全部声明开关，防止后续新增开关只进插件、不进状态页。
+- 回归：`test_status.js` 29 条断言（含默认组合无冲突、冲突逐条命中、通知正文带警告）；全量 44 套件 / 1336 断言。
+
+### v2.6.8（2026-10-27）splash-ad 共享源统一（行为不变）
+
+- `splash-ad.js` 从 `src/soda/` 迁入 `src/common/` 单一来源，与 douyin 共用；家族差异只有日志前缀（`[soda-splash]` / `[douyin-splash]`）。
+- douyin 0.7.6 新增 `blockSplashAd` 绑定后，两家族的开屏拦截逻辑、URL 家族判断与响应形态完全一致。
+- lint 新增开屏绑定边界锁：每个家族必须有且仅有一条 splash 绑定，3 个开屏样本命中、`inspire` / `inspire_preload` / `marketing/done` 绝不命中。
+- 回归：`test_splash_ad.js` 双家族 22 条断言（含 JSON Content-Type 与激励预拉取放行）；全量 44 套件 / 1302 断言。
+
+### v2.6.7（2026-10-27）原生 reject_dict + select 参数 + 开屏全家族覆盖
+
+- 上报 Rewrite 从 `reject(200)` 换成 Loon Rewrite v2 原生 `reject_dict(200)`：开屏品牌上报与 DSP 展示上报现在返回 JSON `{}` + `application/json`，不再是无 Content-Type 的空 Body；对 fire-and-forget 上报更友好，仍然零出网。
+- 新增 `[Argument]` `statusNotify = select,"notification","silent"`：Generic 状态自检按钮可选弹通知（带 `openUrl` 一键跳 App）或静默模式；`status.js` 同时兼容对象/字符串参数与缺省值。
+- 开屏请求脚本绑定补齐 `/api/ad/vN/splash/` 与 `/api/ad/vN/ack/splash/`（此前只匹配 `/api/ad/(v1/)?splash/`），与 `splash-ad.js` 内部家族判断和 IPA 取证一致；激励广告与发奖回调仍不在匹配范围。
+- lint 锁定：上报 Rewrite 必须使用 `reject_dict(200)`、`statusNotify` select 候选值、generic 按钮必须透传 `statusNotify`，并新增 `v2/ack/splash` 命中样本。
 
 ### v2.6.6（2026-10-27）upsell v2 弹窗精确清理
 

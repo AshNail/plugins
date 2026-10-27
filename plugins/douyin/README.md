@@ -11,15 +11,17 @@
 若要换成字节自家 CDN 的网页版 favicon（32×32，清晰度较低）：
 `https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.png`。
 
-| 开关 | 默认 | 作用 |
+| 开关/参数 | 默认 | 作用 |
 |---|---|---|
 | `treasureMinimal` | 开 | 福利页只保留【攒时长 听歌不中断】 |
 | `cleanFeedAds` | 关 | 清掉信息流/广告位广告容器（**不影响激励奖励**） |
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
+| `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
 | `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
+| `statusNotify` | notification | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关并提示冲突组合 |
 
 > v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：
 > 原实现会连 `incentive/config`（`preload=true` + `vids[]` 预拉取列表）和 `incentive/retrieve`（素材表）一起清掉，
@@ -189,8 +191,22 @@ POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 tim
 > 副标题“再看3次提前解锁下一天”），30 秒换一天不中断，这已经是最划算的路径。
 > 签到则是**纯听歌 30 秒**、不看广告（但目前被服务端设备风控挡着，见 §2）。
 
-合规可行的只有两种：要么**广告完全不看**（本插件 `cleanAds` / `blockAdDomains` 走的路，此时也不能领该广告对应的奖励），
+合规可行的只有两种：要么**广告完全不看**（本插件 `cleanFeedAds` / `killRewardAds` / `blockAdDomains` 走的路，此时也不能领对应奖励），
 要么**完整看完**再领。本插件的原则是：前者可以，后者不造假。
+
+### 3.4 开屏广告请求拦截（`blockSplashAd`，默认关）
+
+开屏广告和激励广告都走穿山甲（CSJ），但路径分开。`blockSplashAd` 在 `http-request` 阶段只拦开屏素材获取与登记：
+
+```text
+/api/ad/splash/                 # luna/aweme v14/v15、stock/realtime
+/api/ad/vN/splash/              # 版本化库存
+/api/ad/vN/ack/splash/          # ack 上报
+```
+
+命中后返回 200 + JSON `{}`，请求不会真正出网；`ad.zijieapi.com/api/ad/v1/inspire/**`（激励）与 `api/incentive/marketing/done`（发奖回调）不在匹配范围。与汽水共用 `src/common/splash-ad.js`（家族差异只有日志前缀），lint 对两家族做 3 hit / 3 miss 边界锁定。
+
+需要 `ad.zijieapi.com` / `ads5-normal-hl.zijieapi.com` 在 `[MITM]`（本插件已声明）。如果开启后抖音启动异常，先改回关即可。
 
 ---
 
@@ -238,6 +254,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
 | 攒时长是否仍可点 | 按钮应能进入看广告结算流程（`ad_type=ads_get_duration`） |
 | 广告是否还在 | `killRewardAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空；`cleanFeedAds` 只影响信息流广告 |
 | 弹窗/演出是否消失 | `cleanUpsell` 打开后，`upsell_map` 里不应再有 `*ads*` 与 `browse_mall_popup_acc_amount`；音乐节列表为空 |
+| 开屏广告是否还在 | `blockSplashAd` 打开后冷启，日志应出现 `[douyin-splash] blocked`；激励广告仍能正常加载 |
+| 状态看板 | 点「插件状态自检」：结果页含「开关状态」摘要；`treasureMinimal` 与 `killRewardAds` 同开时出现冲突提醒 |
 | 链路取证 | `debugLog` 打开后，日志搜 `[douyin-reward]` |
 
 ### 5.1 清理规则用**真实 93 弹窗**校验过
@@ -322,6 +340,26 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 ---
 
 ## 7. 版本更新记录
+
+### v0.7.7（2026-10-27）状态自检升级为开关看板
+
+- Generic 按钮透传全部开关，结果页与通知新增「开关状态」摘要（`treasureMinimal` / `cleanFeedAds` / `killRewardAds` / `cleanUpsell` / `cleanActivity` / `blockAdDomains` / `blockSplashAd` / `debugLog` / `dailyReminder` / cron）。
+- 冲突组合显式提醒：`killRewardAds` 与 `treasureMinimal+killRewardAds`（福利页只剩攒时长，但激励已断）；与汽水共用 `status.js`。
+- lint 锁定 generic 绑定必须透传全部声明开关。
+- 回归：`test_status.js` 29 条断言；全量 44 套件 / 1336 断言。
+
+### v0.7.6（2026-10-27）开屏广告请求拦截 + 共享源统一
+
+- 新增 `[Argument]` `blockSplashAd`（默认关）与 `http-request` 绑定：只拦穿山甲开屏 `api/ad/splash/`、`api/ad/vN/splash/`、`api/ad/vN/(ack/)splash/` 家族，返回 200 + JSON `{}`；`inspire`、`inspire_preload` 与 `marketing/done` 不在匹配范围，激励与发奖不受影响。
+- `splash-ad.js` 从 `src/soda/` 迁入 `src/common/` 单一来源（家族差异只有日志前缀 `[douyin-splash]` / `[soda-splash]`），与 block-domains / daily-reminder / welfare-stamp / status 同层管理。
+- lint 新增开屏绑定边界锁：每个家族必须有且仅有一条 splash 绑定，3 个开屏样本全部命中，`inspire` / `inspire_preload` / `marketing/done` 三个样本全部不命中。
+- 回归：`test_splash_ad.js` 双家族 22 条断言；全量 44 套件 / 1302 断言。
+
+### v0.7.5（2026-10-27）原生 reject_dict + select 参数
+
+- DSP 展示上报 Rewrite 从 `reject(200)` 换成 Loon Rewrite v2 原生 `reject_dict(200)`：返回 JSON `{}` + `application/json`，避免 SDK 对空 Body / `text/plain` 的解码差异，仍然不产生真实出网。
+- 新增 `[Argument]` `statusNotify = select,"notification","silent"`：Generic 状态自检按钮可选弹通知（带 `openUrl` 跳抖音）或静默模式；`status.js` 与汽水插件共用同一份实现。
+- lint 锁定 `statusNotify` select 候选值与 generic 按钮参数透传，并继续校验上报 Rewrite 必须使用 `reject_dict(200)`。
 
 ### v0.7.4（2026-10-27）福利页预拉取已删任务停止预热 + upsell 频控同步
 

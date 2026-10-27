@@ -75,6 +75,7 @@
 
 - ✅ HTTPDNS 关键词规则已换挡至 `REJECT-DROP`，避免客户端在收到 200 空包后频繁秒级重试产生的重试风暴；
 - ✅ 通用埋点上报特征规则已接入 `REJECT-DICT`（返回 200 + `{}` 空字典），成功欺骗 SDK 判定数据已落库，触发客户端主动执行 `deleteEvents` 清空本地未上传重试队列，彻底避免本地 SQLite 膨胀与射频高频唤醒；
+- ✅ Rewrite v2 侧同步使用 `reject_dict(200)`：soda 开屏品牌上报与 DSP 展示上报、douyin DSP 展示上报都返回 JSON `{}` + `application/json`（`reject(200)` 的空 Body 是 `text/plain`，`reject(200,"{}")` 仍是文本）；规则层 `REJECT-DICT` 与请求层 `reject_dict` 现在一致；
 - 📈 规则引擎性能（官方实测）：10 万级 DOMAIN 规则 ≤5ms/IP-CIDR6 ≤20ms，LRU 缓存近命中 — **可以放心挂外部规则订阅做增强**：
   🟡 主配置 [Rule] 外挂 `.list`（如 anti-AD / hagezi），`tools/ads-audit.py --sources` 已能评估覆盖互补度。
 
@@ -90,21 +91,21 @@
 
 | 类型 | 触发 | 本仓库 |
 |---|---|---|
-| `http-request` | 请求到达（可改 URL/headers/直接回假响应/指定 node 重发） | ✅ soda/douyin `request … script()` |
+| `http-request` | 请求到达（可改 URL/headers/直接回假响应/指定 node 重发） | ✅ soda/douyin `request … script()`：广告域名拦截 + 开屏 splash 家族拦截（共享 `src/common/splash-ad.js`） |
 | `http-response` | 响应到达（$done 改 body/status/headers） | ✅ 全部净化/改写类脚本 |
 | `cron` | 定时（五段 cron；`30 20 * * *` → 6 段可加秒） | ✅ daily-reminder（`reminderCron` 是 [Argument] input） |
 | `network-changed` | 网络切换（只执行配置里的第一个） | ⚪ 玩法建议：切网发一条 `$notification` 提示模式状态 |
-| `generic` | 手动按钮脚本（`img_url` 配图标） | ✅ soda/douyin `status.min.js` 插件状态自检按钮（一键查打卡与广告统计） |
+| `generic` | 手动按钮脚本（`img_url` 配图标） | ✅ soda/douyin `status.min.js` 插件状态自检按钮（打卡 + 广告统计 + 开关看板/冲突提醒；全部开关经对象参数透传，`statusNotify` select 可选弹通知/静默） |
 
 - ✅ 关键坑已记录：旧语法 `argument=` 不透传开关 → 必须新版 `script("scripts/x.min.js",{${开关}})`，`$argument.<名>` 取值（3.5.1(983)）。
 - ✅ 已落地：`$notification.post` attach 对象 `{openUrl: "@@APP_SCHEME@@"}`（通知横幅一键直接跳转打开对应汽水/抖音 App）。
-- 🔒 升级点：Rewrite v2 `reject_dict/reject_array` 与 `.mock_file`（后者因外部资源依赖违背自包含不采纳）。
+- ✅ 已落地：Rewrite v2 `reject_dict(200)` 用于上报端点（JSON `{}` + `application/json`）；`reject_array` 暂无数组响应场景。
+- ❌ `mock_file` / `.mock_file`：外部资源依赖，违背仓库自包含纪律。
 
 ## 7. 插件机制（plugin.md）
 
 - ✅ 元数据齐全并受 lint 校验：soda/douyin 至少 `name/desc/author/version/date`；ads 另含 `homepage/icon/system/loon_version/tag/type`。
-- ✅ `[Argument]` 类型 `bool`（开关）与 `input`（cron 文本）。
-- 🔒 `[Argument]` `select` 下拉类型（值得验：可把「默认/保奖励/去广告」做成单选预设）。
+- ✅ `[Argument]` 类型 `bool`（开关）、`input`（cron 文本）与 `select`（`statusNotify`：notification/silent，`type=string`；候选值经 `script(...,{${statusNotify}})` 以 String 透传）。
 - ✅ 脚本相对路径绑定（`scripts/*.min.js` 与 `.plugin` 同级——这就是 raw 直链部署无需 Pages 的原因）。
 
 ## 8. `[IP Rewrite]`（Build 1007+，插件专属）
@@ -116,10 +117,12 @@
 
 1. [x] `[IP Rewrite]` 落地：编译器支持 + 16 条 HTTPDNS 网关单 IPv4 接入点 + build/lint 单 IPv4 去重锁。
 2. [x] `[General]` 原生 `doh3-server = h3://223.5.5.5/dns-query,h3://223.6.6.6/dns-query`：支持 HTTP/3 0-RTT 加密 DNS 解析，IP 字面量防自举死锁，构建器与 linter 双重强校验。
-3. [x] 第一方上报与打点阻断：Soda 与 Douyin 双插件均实装 DSP 展示上报 Rewrite 阻断（`reject(200)`），配合规则层 `REJECT-DICT` 彻底避免 SDK 重试风暴与本地数据库膨胀。
+3. [x] 第一方上报与打点阻断：Soda 与 Douyin 双插件均实装 DSP 展示上报 Rewrite 阻断（原生 `reject_dict(200)`，JSON `{}` + `application/json`），配合规则层 `REJECT-DICT` 彻底避免 SDK 重试风暴与本地数据库膨胀。
 4. [x] HTTPDNS 关键词规则采用 `REJECT-DROP` 根治秒重试风暴；顺带启用 `$notification` attach openUrl 一键跳转 App。
 5. [x] Generic 手动交互按钮落地：`status.min.js` 支持在 Loon 界面一键触发状态健康检查与统计看板。
-6. [ ] `[Argument]` `select` 下拉类型应用：探索在大型插件中集成模式预设（如默认/保奖励/强力去广告）。
+6. [x] `[Argument]` `select` 下拉类型应用：`statusNotify`（notification/silent）控制 Generic 自检按钮的通知行为；大型「模式预设」仍不采纳——`enable=` 与静态 `[Rule]` 无法由 select 推导，预设会与独立开关形成双重事实源。
+7. [x] 开屏请求拦截跨家族统一：`splash-ad.js` 迁入 `src/common` 单一来源，douyin 新增 `blockSplashAd`；lint 对两家族做 3 hit / 3 miss 边界锁定（`inspire` / `inspire_preload` / `marketing/done` 绝不拦）。
+8. [x] Generic 自检升级为开关看板：全部 `[Argument]` 经对象参数透传，结果页汇总开关并检测冲突（`killRewardAds` / `rewardSafe+cleanAds` / `rewardSafe+settingsClean` / `rewardSafe+blockAdDomains` / `treasureMinimal+killRewardAds`）；lint 锁定绑定必须透传全部开关。
 
 ## 10. 明确不采纳清单（持续维护，带理由）
 
@@ -132,6 +135,7 @@
 | `hijack-dns` / `domain-reject-mode` / `dns-reject-mode`（插件内） | 插件 [General] 白名单外；放主配置清单（第 2 节） |
 | `$config.setSelectPolicy` / `$setRunningModel` | 本仓库插件无策略组场景 |
 | `$crypto.aes` / `$utils.gzip` 上行方向 | 现有脚本无加密上行/压缩上行需求 |
+| 域名/开屏拦截改用纯 `Rewrite … then reject_dict(200)` | 保留 `http-request` 脚本：需要逐请求日志、`rewardSafe` 分支与跨家族测试（28 + 22 条断言）；原生 Rewrite 无法输出自定义日志，且开关逻辑一旦写进静态行就失去脚本内的二次域名校验 |
 | 字节系 HTTPDNS 静态 IP 化 | 火山引擎官方文档：动态接入地址（SDK 定期拉最佳 IP），静态化无意义 |
 
 ## 11. 与本仓库的接口速查
@@ -140,6 +144,6 @@
 |---|---|
 | 评估现有拦截覆盖率 | `npm run audit:ads` |
 | 重建 ads 插件 | `npm run build:ads`（改 `src/ads/domains.json`，勿手改生成物） |
-| 全量门禁 | `npm run check`（build + lint + 44 套件/1268 断言） |
+| 全量门禁 | `npm run check`（build + lint + 44 套件/1336 断言） |
 | 远端一致性 | `python3 tools/check-remote.py`（`--list` 看四段清单） |
 | 一键发布 | `python3 tools/publish.py --with-source --yes` |

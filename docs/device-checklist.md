@@ -1,6 +1,6 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 2.6.6）/ `douyin.plugin`（当前 0.7.4）。
+> 适用：`soda.plugin`（当前 2.6.9）/ `douyin.plugin`（当前 0.7.7）。
 > 红线重申：本仓插件**只做净化与观测**——不缩短广告、不加速播放、不改写领奖请求、
 > 不做后台自动观看/自动领取。领奖链路（`incentive/done` 等全部 59 头请求）只读不动。
 
@@ -16,7 +16,10 @@
 
 ## B. 首次冒烟（5 分钟）
 
-- [ ] 冷启汽水 ×3：无开屏广告；`blockSplashAd` 日志每次冷启命中
+- [ ] 冷启汽水 ×3：无开屏广告；`blockSplashAd` 日志每次冷启命中（splash/ 与 vN/(ack/)splash/ 全家族）
+- [ ] 冷启抖音 ×3（`blockSplashAd=on`）：无开屏广告，日志出现 `[douyin-splash] blocked`；激励广告与发奖链路不受影响
+- [ ] 插件设置 `statusNotify=silent` → 点「插件状态自检」不弹通知、结果页仍显示「开关状态」摘要；切回 `notification` → 弹通知且横幅可跳转 App
+- [ ] 状态看板冲突提醒：临时把 `killRewardAds=on`（或汽水 `rewardSafe+cleanAds`）→ 自检结果页应出现「⚠️ 冲突：」行；改回后消失
 - [ ] 打开福利页：任务分区裁剪生效（treasureMinimal / cleanUpsell / cleanActivity）
 - [ ] 抖音福利页日志含 `migrate_first_ad : true -> false`；`ad_api_preload.task_ids` 只保留页面任务引用的 id（当前样本 9 -> 4）
 - [ ] 抖音商业化接口日志含 `freq_ctrl_cfg : removed 3 entry(ies)`（只删与已删弹窗同名的频控项）

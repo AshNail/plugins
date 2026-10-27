@@ -1,7 +1,10 @@
 /*
- * SodaClean · 开屏广告请求拦截（Loon http-request 脚本）
+ * loon-plugins 共享脚本 · 开屏广告请求拦截（Loon http-request 脚本）
  * ------------------------------------------------------------
- * 取证（2026-10-20 HAR 384_1792499198027.har，20:27 实测）：
+ * soda / douyin 共用同一份源码（本文件），家族差异（日志前缀）由
+ * src/common/families.json 注入的占位符提供。
+ *
+ * 取证（2026-10-20 汽水 HAR 384_1792499198027.har，20:27 实测）：
  *   ads5-normal-hl.zijieapi.com/api/ad/splash/luna/v15/      4,721 B  开屏广告配置（CSJ）
  *   ads5-normal-hl.zijieapi.com/api/ad/splash/stock/            42 B  库存查询
  *   ads5-normal-hl.zijieapi.com/api/ad/splash/stat/ack/v1/     125 B  上报
@@ -19,7 +22,7 @@
  *
  * 本脚本只拦开屏那一段，返回空 JSON 让 SDK 拿不到广告；
  * 走 http-request 阶段，请求不会真正发出去。
- * 开关：blockSplashAd（默认关）。
+ * 开关：blockSplashAd（soda/douyin 均默认关）。
  */
 
 /* ------------------------------------------------------------------ */
@@ -68,7 +71,7 @@ function pflag(args, name, fallback) {
 
     const isSplash =
       /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/splash\//i.test(url) ||
-      /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/v[0-9]\/(?:ack\/)?splash\//i.test(url);
+      /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/v[0-9]+\/(?:ack\/)?splash\//i.test(url);
     if (!isSplash) {
       return $done({});
     }

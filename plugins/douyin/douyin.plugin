@@ -1,7 +1,7 @@
 #!name=抖音 · douyin
-#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
+#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、开屏广告请求拦截、只读日志，全部用 [Argument] 开关控制。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=0.7.4
+#!version=0.7.7
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=ios
@@ -25,7 +25,9 @@
 #   killRewardAds    激励广告素材与预拉取（默认关）：开=广告完全不发，奖励也没了
 #   cleanUpsell      商业化弹窗/商城/演出清理（默认关）
 #   blockAdDomains   广告域名拦截（默认关）：MITM + http-request 脚本
+#   blockSplashAd    开屏广告请求拦截（默认关）：只堵穿山甲 splash/ 家族
 #   debugLog         只读日志（默认关）：日志前缀 [douyin-reward]
+#   statusNotify     状态自检按钮的通知模式（notification/silent）
 #
 # 重要事实（HAR 取证，别踩坑）：
 #   1. 【攒时长 听歌不中断】= duration_task_section / luna_rewards_ads，
@@ -58,9 +60,11 @@ killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config
 cleanUpsell = switch,false,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
 cleanActivity = switch,false,tag=活动入口清理,desc=把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。
 blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）。会同时断掉激励广告。
+blockSplashAd = switch,false,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
 debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
 dailyReminder = switch,false,tag=每日领取提醒,desc=每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。
 reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。
+statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
 
 
 # ============================================================================
@@ -84,13 +88,13 @@ reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分
 # ============================================================================
 # 2. [Rewrite]
 # ----------------------------------------------------------------------------
-# DSP 广告展示上报：信息流去广告模式下阻断无用出网并返回 200 空包；由 cleanFeedAds 开关控制。
+# DSP 广告展示上报：信息流去广告模式下阻断无用出网，回 200 + JSON {}（reject_dict）避免 SDK 因空 Body 重试；由 cleanFeedAds 开关控制。
 # ============================================================================
 
 [Rewrite]
 
-# DSP 广告展示上报：信息流去广告模式下阻断无用出网并返回 200 空包；由 cleanFeedAds 开关控制。
-request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/report\/dsp\/show/ then reject(200)
+# DSP 广告展示上报：信息流去广告模式下阻断无用出网并回 200 + JSON {}；由 cleanFeedAds 开关控制。
+request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/report\/dsp\/show/ then reject_dict(200)
 
 
 # ============================================================================
@@ -124,6 +128,9 @@ response if ${url} ~= /^https?:\/\/polaris\.zijieapi\.com\/luckycat\/activity\/s
 # ---- 广告域名拦截：blockAdDomains 开关 ----
 request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${blockAdDomains}}) with enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
 
+# ---- 开屏广告请求拦截：只拦 ads5-*.zijieapi.com/api/ad/...splash/，不碰激励广告 ----
+request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
+
 # ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|retrieve|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
 
@@ -131,21 +138,21 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/ta
 response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js") with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=10, tag="福利页打卡"
 cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
-generic then script("scripts/status.min.js") with tag="插件状态自检", img_url="checkmark.seal", timeout=10
+generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal}, ${cleanFeedAds}, ${killRewardAds}, ${cleanUpsell}, ${cleanActivity}, ${blockAdDomains}, ${blockSplashAd}, ${debugLog}, ${dailyReminder}, ${reminderCron}}) with tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================
 # 4. [MITM]
 # ----------------------------------------------------------------------------
 # beta-luna.douyin.com：福利页/激励广告/商业化弹窗接口。
-# 5 个广告域名：blockAdDomains 开关需要（HTTPS 必须先解密）。
+# 5 个广告域名：blockAdDomains / blockSplashAd 开关需要（HTTPS 必须先解密）。
 #                如果开开关后激励广告播不了，把这 5 个域名注释掉。
 # 分层关系：其中 ad.zijieapi.com / lianmengapi.snssdk.com /
 #                ads5-normal-hl.zijieapi.com 同时也被 ads.plugin 的 [Host]
 #                DNS 层拦截；本份名单是 App 内 MITM 兜底层。
 #                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
 #                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
-# 脚本来源：block-domains.min.js 由 src/common/block-domains.js +
+# 脚本来源：block-domains.min.js / splash-ad.min.js 由 src/common/*.js +
 #                families.json 生成，与 soda 插件共享单一源码。
 # ============================================================================
 

@@ -56,8 +56,9 @@ function listJs(dir) {
 
 // ---------------------------------------------------------------------------
 // Shared-script layer (src/common):
-//   src/common/block-domains.js / daily-reminder.js / welfare-stamp.js are the
-//   single editable sources for scripts used by BOTH soda and douyin. Per-app
+//   Every file listed in families.json sharedScripts (block-domains,
+//   daily-reminder, welfare-stamp, splash-ad, status) is a single editable
+//   source for scripts used by BOTH soda and douyin. Per-app
 //   differences live in src/common/families.json; this build expands them into
 //   src/<family>/<name>.js (readable, committed, do not hand-edit) which the
 //   regular per-family minify pass then turns into plugins/<family>/scripts/.

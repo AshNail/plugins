@@ -1,7 +1,7 @@
 #!name=汽水音乐 · soda
 #!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音，全部用 [Argument] 开关控制。默认保奖励，不拦任何域名。需要 Loon 3.5.1(983)+；脚本兼容 gzip 压缩响应体，响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=2.6.6
+#!version=2.6.9
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
 #!system=ios
@@ -27,6 +27,7 @@
 #   debugLog       只读日志（默认关）
 #   splashClean    清开屏品牌广告（默认开）
 #   hideDouyinTab  隐藏福利页【听抖音】tab/任务（默认关）
+#   statusNotify   状态自检按钮的通知模式（notification/silent）
 #
 # 推荐组合：
 #   正常领奖励：rewardSafe=true，其余默认
@@ -65,13 +66,14 @@ killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config
 blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，HTTP/3 可能漏过）；保奖励模式下自动放行。
 settingsClean = switch,false,tag=设置层净化（实验）,desc=清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。
 hideDouyinEntry = switch,false,tag=隐藏【听抖音】入口,desc=把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）。
-blockSplashAd = switch,false,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（ads5-*.zijieapi.com/api/ad/splash/）；不影响激励广告与奖励。
+blockSplashAd = switch,false,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
 debugLog = switch,false,tag=只读日志,desc=记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。
 logTaskTitles = switch,false,tag=日志带任务标题,desc=只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口；默认关闭以免把文案写进日志。
 splashClean = switch,true,tag=清开屏品牌广告,desc=清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
 hideDouyinTab = switch,false,tag=隐藏【听抖音】,desc=删除福利页里带“抖音”的 tab/任务条目；默认保留。
 dailyReminder = switch,false,tag=每日领取提醒,desc=每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。
 reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。
+statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
 
 
 # ============================================================================
@@ -98,17 +100,18 @@ reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分
 # ============================================================================
 # 2. [Rewrite]
 # ----------------------------------------------------------------------------
-# 开屏上报是 fire-and-forget，返回 200 空包，减少 SDK 重试。
-# 这个改写对保奖励和去广告模式都安全，因此不单独做开关。
+# 上报端点用原生 reject_dict(200)：回包是 JSON {} 且带 application/json，
+# 比 reject(200) 的空 Body（text/plain）更符合 SDK 的 JSON 解码预期，
+# 同时仍不产生真实出网。这个改写对保奖励和去广告模式都安全。
 # ============================================================================
 
 [Rewrite]
 
-# 开屏广告上报是 fire-and-forget，断开成 200 空包减少 SDK 重试；由 splashClean 开关控制。
-request if ${splashClean} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject(200)
+# 开屏广告上报是 fire-and-forget，回 200 + JSON {} 减少 SDK 重试；由 splashClean 开关控制。
+request if ${splashClean} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject_dict(200)
 
-# DSP 广告展示上报：去广告模式下阻断无用出网并返回 200 空包；由 cleanAds 开关控制。
-request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/report\/dsp\/show/ then reject(200)
+# DSP 广告展示上报：去广告模式下阻断无用出网并回 200 + JSON {}；由 cleanAds 开关控制。
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/report\/dsp\/show/ then reject_dict(200)
 
 
 # ============================================================================
@@ -159,8 +162,8 @@ response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// t
 # ---- 【听抖音】入口：关掉 anchor_luna_to_douyin*（不动广告配置，可与保奖励同开） ----
 response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// then script("scripts/settings.min.js", {${hideDouyinEntry}}) with enable=${hideDouyinEntry}, requires_body=true, timeout=10, tag="隐藏【听抖音】入口"
 
-# ---- 开屏广告请求拦截：只拦 ads5-*.zijieapi.com/api/ad/splash/，不碰激励广告 ----
-request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:v1\/)?splash\// then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
+# ---- 开屏广告请求拦截：splash/ 与 vN/(ack/)splash/ 全家族，不碰激励广告 ----
+request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
 
 # ---- 只读日志：20 个激励/任务/入口端点，不修改响应 ----
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：22 个激励/任务/入口端点绑定，不修改响应"
@@ -187,7 +190,7 @@ response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/don
 response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=10, tag="福利页打卡"
 cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
-generic then script("scripts/status.min.js") with tag="插件状态自检", img_url="checkmark.seal", timeout=10
+generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${splashClean}, ${cleanAds}, ${killRewardAds}, ${blockAdDomains}, ${blockSplashAd}, ${settingsClean}, ${hideDouyinEntry}, ${hideDouyinTab}, ${debugLog}, ${logTaskTitles}, ${dailyReminder}, ${reminderCron}}) with tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================
@@ -196,7 +199,7 @@ generic then script("scripts/status.min.js") with tag="插件状态自检", img_
 # api.qishui.com：保奖励、去广告、日志都需要。
 # conf.qishui.com：settingsClean 打开时才会处理；证书固定导致设置加载失败，
 #                关闭 settingsClean 或停用本插件。
-# 下面 5 个广告域名：blockAdDomains 开关需要它们（HTTPS 必须先解密）。
+# 下面 5 个广告域名：blockAdDomains / blockSplashAd 开关需要它们（HTTPS 必须先解密）。
 #                如果开启后激励广告播不了（证书固定），把这 5 个域名注释掉，
 #                改用 [Rule] 手动严格模式。
 # 分层关系：其中 ad.zijieapi.com / lianmengapi.snssdk.com /
@@ -204,7 +207,7 @@ generic then script("scripts/status.min.js") with tag="插件状态自检", img_
 #                DNS 层拦截；本份名单是 App 内 MITM 兜底层。
 #                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
 #                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
-# 脚本来源：block-domains.min.js 由 src/common/block-domains.js +
+# 脚本来源：block-domains.min.js / splash-ad.min.js 由 src/common/*.js +
 #                families.json 生成，与 douyin 插件共享单一源码。
 # ============================================================================
 

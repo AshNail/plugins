@@ -12,8 +12,8 @@
 
 | 插件 | 版本 | 一句话用途 | 按钮 |
 |---|---:|---|---|
-| 汽水音乐 `soda.plugin` | 2.6.6 | 保奖励 + 去广告 + 广告域名拦截 + 设置层 + 隐藏【听抖音】+ 每日提醒 + 状态自检，全部开关控制 | [![导入 soda](https://img.shields.io/badge/Loon-导入汽水音乐-blue?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin) |
-| 抖音 `douyin.plugin` | 0.7.4 | 福利页精简 + 信息流广告清理 + 商业化弹窗清理 + 状态自检（2026-10 真实 HAR 取证） | [![导入 douyin](https://img.shields.io/badge/Loon-导入抖音-black?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin) |
+| 汽水音乐 `soda.plugin` | 2.6.9 | 保奖励 + 去广告 + 广告域名拦截 + 开屏请求拦截 + 设置层 + 隐藏【听抖音】+ 每日提醒 + 状态自检看板，全部开关控制 | [![导入 soda](https://img.shields.io/badge/Loon-导入汽水音乐-blue?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin) |
+| 抖音 `douyin.plugin` | 0.7.7 | 福利页精简 + 信息流广告清理 + 商业化弹窗清理 + 开屏请求拦截 + 状态自检看板（2026-10 真实 HAR 取证） | [![导入 douyin](https://img.shields.io/badge/Loon-导入抖音-black?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin) |
 | 广告平台拦截器 `ads.plugin` | 2.1.5 | DNS 层全平台拦截 + HTTPDNS 防绕过(REJECT-DROP) + IP Rewrite(Build 1007+) + 公共 DoH/DoT 防泄漏；**零证书、零 MITM/脚本** | [![导入 ads](https://img.shields.io/badge/Loon-导入广告拦截器-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin) |
 
 <details>
@@ -61,7 +61,7 @@ npm run build:ads   # src/ads/domains.json → plugins/ads/ads.plugin
 npm run audit:ads   # 上游清单覆盖率/缺口审计（只读）
 npm run lint        # 结构/正则/脚本引用/压缩语法/ads 数据一致性 + 四处名单一致
 npm run check       # build + build:ads + lint + 全部测试（源码+压缩版）
-npm test            # 仅测试；22 套件 ×2 = 44 套件 / 1268 断言
+npm test            # 仅测试；22 套件 ×2 = 44 套件 / 1336 断言
 ```
 
 仓库结构：
@@ -69,7 +69,7 @@ npm test            # 仅测试；22 套件 ×2 = 44 套件 / 1268 断言
 ```text
 plugins/<family>/<name>.plugin + scripts/*.min.js   # 部署物（相对路径可被 Loon 加载）
 src/<family>/*.js                                   # 可读源码（common 三件为生成物，勿手改）
-src/common/  block-domains / daily-reminder / welfare-stamp + families.json   # soda/douyin 单一来源
+src/common/  block-domains / daily-reminder / welfare-stamp / splash-ad / status + families.json   # soda/douyin 单一来源
 src/ads/     domains.json + protected-roots.json    # ads 单插件数据源
 tests/ tools/{build.js,build-ads.py,audit.py,ads-audit.py,check-remote.py,publish.py}
 .github/workflows/check.yml                         # CI：push 自动跑 npm run check
