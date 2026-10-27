@@ -1,8 +1,9 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音。功能用 [Argument] 开关，传输层常开（QUIC 强制回退 + h2）。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
+#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=2.8.0
+#!version=2.8.5
 #!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
 #!system=ios
 #!loon_version=3.5.1(983)
@@ -44,9 +45,11 @@
 # 两层模型（v2.8.0 起）：
 #   L1 运行时层 = [Argument] 开关：只给“用户可能想改主意”的功能。
 #   L2 静态层   = [Rule]/[Rewrite]/[MITM]：传输与协议层，常开、无开关。
-#     · QUIC 强制回退：[MITM] 里这 8 个域拒绝 HTTP/3，逼回 TCP+TLS，
+#     · QUIC 强制回退：[MITM] 里这 17 个域拒绝 HTTP/3，逼回 TCP+TLS，
 #       否则脚本根本看不见流量（MITM 只处理 TCP）。不做全局 QUIC 拒绝。
-#     · h2 = true：让 HTTP/2 与 gRPC 端点进入 MITM 可见范围。
+#     · h2 = true：零成本保险。官方 MitM 文档只列 hostname/ca-p12/ca-passphrase，
+#       没有 h2（HTTP/2 解密是官方产品页宣称的默认能力）；社区插件通行写，
+#       未知键被忽略，写了不亏。不当能力点宣称。
 #   注：曾评估“删 Accept-Encoding 换明文”，实测 upsell 类响应 gzip 后就有
 #   183~191 KB，去掉压缩会让单次传输膨胀 5~10 倍，已放弃（详见 docs/loon-native-first.md）。
 #   静态层没有开关，因为“关掉它”等于让上面所有脚本失效；要回滚就删对应行。
@@ -73,6 +76,7 @@
 #   - hideDouyinTab 只删福利页里带“抖音”的列表项，不动其它任务。
 # ============================================================================
 
+# >>> GENERATED ARGUMENTS from src/args/soda.json -- do not edit (npm run build:args)
 [Argument]
 rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
 cleanAds = switch,false,tag=去广告脚本,desc=清理广告位、信息流和福利页广告任务；**不动激励广告素材**，所以不影响看广告领奖励。
@@ -88,17 +92,22 @@ hideDouyinTab = switch,false,tag=隐藏【听抖音】,desc=删除福利页里�
 dailyReminder = switch,false,tag=每日领取提醒,desc=每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。
 reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
+# <<< GENERATED ARGUMENTS
 
 
 # ============================================================================
 # 1. [Rule] · 传输层（静态，常开）
 # ----------------------------------------------------------------------------
-# QUIC 强制回退：只对 [MITM] 里这 8 个精确域拒绝 HTTP/3(QUIC)。
+# QUIC 强制回退：只对 [MITM] 里这 17 个精确域拒绝 HTTP/3(QUIC)。
 # 为什么必须常开：脚本只能看见 TCP+TLS；目标域一旦走 HTTP/3，
 # MITM 不生效 → 清洗/拦截脚本“静默看不到流量”，功能像随机失效。
 # 为什么不做全局 PROTOCOL,QUIC,REJECT：那会连视频/通话/直播一起打掉。
 # 代价：首个连接多一次回退（约 100~300ms）；极少数不回退的实现会连不上该接口。
-# 回滚：删掉下面这 8 行，或整段清空（[Rule] 段可留空）。
+# 回滚：删掉下面这 17 行，或整段清空（[Rule] 段可留空）。
+# Pangle 分片族（ads3/ads5 × 5 个后缀）在 [Rule] 里逐个列出：DOMAIN-SUFFIX
+# 不吃通配。对应的 [MITM] 用一条 ads?-normal*.zijieapi.com 覆盖全族——两边
+# 严格对齐，才不会出现「解密了但没回退」的空档。分片清单取自 ads.plugin 的
+# 公开广告数据（ads3/ads5 × normal/-hl/-lf/-lq/-xh），不是猜的。
 # ============================================================================
 
 [Rule]
@@ -107,7 +116,16 @@ AND,((DOMAIN-SUFFIX,api.qishui.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,conf.qishui.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,ad.zijieapi.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,lianmengapi.snssdk.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads3-normal.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads5-normal.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads3-normal-hl.zijieapi.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,ads5-normal-hl.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads3-normal-lf.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads5-normal-lf.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads3-normal-lq.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads5-normal-lq.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads3-normal-xh.zijieapi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,ads5-normal-xh.zijieapi.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,zlink.ugsdk.cn),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,praisewindow.ugsdk.cn),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,beta-luna.douyin.com),(PROTOCOL,QUIC)),REJECT
@@ -123,6 +141,19 @@ AND,((DOMAIN-SUFFIX,beta-luna.douyin.com),(PROTOCOL,QUIC)),REJECT
 
 [Rewrite]
 
+# ----------------------------------------------------------------------------
+# 压缩协商统一成 gzip（常开，无开关）
+# 脚本层只有 $utils.ungzip（Build ≥ 988），br / zstd / deflate 没有解码器：
+# 收到就是乱码 → 落进「不是 JSON」分支 → 表现为「这个端点本来就没广告」。
+# 这是本插件最隐蔽的失效方式，靠事后诊断（X-Soda-Plugin: ce=br）只能定位不能避免。
+# 官方层序：Rewrite 在规则匹配前、Script 之前执行，所以这里直接改请求头，
+# 服务端不会再回 br——从源头消掉这条路径。
+# 条件只留 URL，不写 `${request.header['Accept-Encoding']}`：能命中的域名
+# 就是下面 [MITM] 的完整名单，由 lint 逐个域名对账（少一个就报错）。
+# 代价：gzip 比 br 大约 10~20%，只作用于这几个 JSON 接口。
+# ----------------------------------------------------------------------------
+request if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|conf\.qishui\.com|beta-luna\.douyin\.com|ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then request.header.set("Accept-Encoding", "gzip")
+
 # 开屏广告上报是 fire-and-forget，回 200 + JSON {} 减少 SDK 重试；由 splashClean 开关控制。
 request if ${splashClean} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject_dict(200)
 
@@ -136,6 +167,8 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\
 # 使用 Loon 3.5.1(983) 新版 Script 语法：
 #   response if ${url} ~= /.../ then script("scripts/x.min.js", {${开关名}}) with enable=${开关名}
 # 开关以布尔值透传给脚本（$argument.<参数名>）。
+# debug=${debugLog} 接的是官方 with 属性：打开「只读日志」时同时打开 Loon 的
+#   原生脚本调试输出（命中哪条、耗时、异常），不用再靠 console.log 猜。
 # 保奖励模式优先：rewardSafe=true 时，sanitize 只处理开屏；
 # settings 脚本在 rewardSafe=true 时直接放行。
 # ============================================================================
@@ -144,76 +177,76 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\
 
 # ---- 广告域名拦截：blockAdDomains 开关 ----
 # HTTPS 必须先 MITM 解密才能匹配到域名；rewardSafe=true 时脚本直接放行。
-request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads5-normal-hl\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${rewardSafe}, ${blockAdDomains}}) with enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
+request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${rewardSafe}, ${blockAdDomains}}) with debug=${debugLog}, enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
 
 # ---- 开屏品牌广告：保奖励/去广告共用 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${splashClean}, requires_body=true, timeout=10, tag="开屏品牌广告：保奖励/去广告共用"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${splashClean}, requires_body=true, timeout=10, tag="开屏品牌广告：保奖励/去广告共用"
 
 # ---- 去广告脚本：激励广告配置 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}}) with enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：激励广告配置"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：激励广告配置"
 
 # ---- 去广告脚本：激励素材预拉取 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}}) with enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：激励素材预拉取"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：激励素材预拉取"
 
 # ---- 去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告"
 
 # ---- 去广告脚本：信息流广告 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：信息流广告"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：信息流广告"
 
 # ---- 去广告脚本：商业化弹窗 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/upsells/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：商业化弹窗"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:_sort_decision)?/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/upsells/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：商业化弹窗"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:_sort_decision)?/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="soda response"
 
 # ---- 去广告脚本：福利页只摘 reward_ads ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：福利页只摘 reward_ads"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${dailyReminder}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：task/page 结构化任务（v2.6.1）"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/page/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${dailyReminder}}) with enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：task/page 结构化任务（v2.6.1）"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：福利页只摘 reward_ads"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${dailyReminder}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：task/page 结构化任务（v2.6.1）"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/page/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${dailyReminder}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：task/page 结构化任务（v2.6.1）"
 
 # ---- 隐藏【听抖音】条目：独立开关（cleanAds 关着也能生效） ----
 # 必须排在 sanitize(cleanAds) 之后、reward-observe(debugLog) 之前：
 # 两者同开时 hide 优先，避免“开了隐藏却只看到日志”。
-response if ${url} ~= /^https?:\/\/(?:beta-luna\.douyin\.com|api\.qishui\.com)\/luna\/treasure\/task\/page/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${dailyReminder}}) with enable=${hideDouyinTab}, requires_body=true, timeout=10, tag="隐藏【听抖音】条目：独立开关"
+response if ${url} ~= /^https?:\/\/(?:beta-luna\.douyin\.com|api\.qishui\.com)\/luna\/treasure\/task\/page/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${dailyReminder}}) with debug=${debugLog}, enable=${hideDouyinTab}, requires_body=true, timeout=10, tag="隐藏【听抖音】条目：独立开关"
 
 # ---- 设置层净化（实验）：默认关闭 ----
 # 两条绑定传同一组参数：Loon 只跑第一条命中的响应脚本，参数必须齐全，
 # 否则 settingsClean + hideDouyinEntry 同开时后者会被静默丢弃。
-response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// then script("scripts/settings.min.js", {${rewardSafe}, ${settingsClean}, ${hideDouyinEntry}}) with enable=${settingsClean}, requires_body=true, timeout=10, tag="设置层净化（实验）：清广告配置"
+response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// then script("scripts/settings.min.js", {${rewardSafe}, ${settingsClean}, ${hideDouyinEntry}}) with debug=${debugLog}, enable=${settingsClean}, requires_body=true, timeout=10, tag="设置层净化（实验）：清广告配置"
 
 # ---- 【听抖音】入口：关掉 anchor_luna_to_douyin*（不动广告配置，可与保奖励同开） ----
-response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// then script("scripts/settings.min.js", {${rewardSafe}, ${settingsClean}, ${hideDouyinEntry}}) with enable=${hideDouyinEntry}, requires_body=true, timeout=10, tag="隐藏【听抖音】入口"
+response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// then script("scripts/settings.min.js", {${rewardSafe}, ${settingsClean}, ${hideDouyinEntry}}) with debug=${debugLog}, enable=${hideDouyinEntry}, requires_body=true, timeout=10, tag="隐藏【听抖音】入口"
 
 # ---- 开屏广告请求拦截：splash/ 与 vN/(ack/)splash/ 全家族，不碰激励广告 ----
-request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
+request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with debug=${debugLog}, enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
 
 # ---- 只读日志：20 个激励/任务/入口端点，不修改响应 ----
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：22 个激励/任务/入口端点绑定，不修改响应"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/done/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/retrieve/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/dsp\/retrieve/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/receive/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/settle/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/validate_reward/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/reward-observe.min.js", {${logTaskTitles}, ${dailyReminder}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读观测：task/page 任务标题（v2.6.1 补）"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/page/ then script("scripts/reward-observe.min.js", {${logTaskTitles}, ${dailyReminder}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="只读观测：task/page 任务标题（v2.6.1 补）"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/reward_ads\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/fallback\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/flip_card\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/guide\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/browse_mall\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/growth\/activity\/finish/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/done\/info/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/(?:beta-luna\.douyin\.com|api\.qishui\.com)\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=10, tag="福利页打卡：两域名兜底"
-cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
-generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${splashClean}, ${cleanAds}, ${killRewardAds}, ${blockAdDomains}, ${blockSplashAd}, ${settingsClean}, ${hideDouyinEntry}, ${hideDouyinTab}, ${debugLog}, ${logTaskTitles}, ${dailyReminder}, ${reminderCron}}) with tag="插件状态自检", img_url="checkmark.seal", timeout=10
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：22 个激励/任务/入口端点绑定，不修改响应"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/retrieve/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/incentive\/done/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/retrieve/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/dsp\/retrieve/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/receive/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/reward\/settle/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/validate_reward/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/reward-observe.min.js", {${logTaskTitles}, ${dailyReminder}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读观测：task/page 任务标题（v2.6.1 补）"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/page/ then script("scripts/reward-observe.min.js", {${logTaskTitles}, ${dailyReminder}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读观测：task/page 任务标题（v2.6.1 补）"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/view/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/entrance\/config/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/reward_ads\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/fallback\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/flip_card\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/guide\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/treasure\/task\/browse_mall\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/growth\/activity_entrance/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/growth\/activity\/finish/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/fallback\/done\/info/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/(?:beta-luna\.douyin\.com|api\.qishui\.com)\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=10, tag="福利页打卡：两域名兜底"
+cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
+generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${splashClean}, ${cleanAds}, ${killRewardAds}, ${blockAdDomains}, ${blockSplashAd}, ${settingsClean}, ${hideDouyinEntry}, ${hideDouyinTab}, ${debugLog}, ${logTaskTitles}, ${dailyReminder}, ${reminderCron}}) with debug=${debugLog}, tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================
@@ -225,17 +258,21 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${
 # 下面 5 个广告域名：blockAdDomains / blockSplashAd 开关需要它们（HTTPS 必须先解密）。
 #                如果开启后激励广告播不了（证书固定），把这 5 个域名注释掉。
 # 分层关系：其中 ad.zijieapi.com / lianmengapi.snssdk.com /
-#                ads5-normal-hl.zijieapi.com 同时也被 ads.plugin 的 [Host]
-#                DNS 层拦截；本份名单是 App 内 MITM 兜底层。
+#                ads?-normal*.zijieapi.com（Pangle 分片族）同时也被 ads.plugin
+#                的 [Host] + DOMAIN-WILDCARD 家族层拦截；本份名单是 App 内
+#                MITM 兜底层。这里用 `?`/`*` 而不是逐个枚举 ads3/ads5，
+#                是因为 MITM 支持通配，而 [Rule] 的 DOMAIN-SUFFIX 不支持——
+#                两边各用自己最强的写法，名单靠 lint 校验覆盖关系。
 #                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
 #                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
-# h2 = true（常开）：MITM 同时处理 HTTP/2，gRPC 风格端点才可见可改。
-#                若某个 build 不识别该键导致断网，删掉这一行即可回滚。
+# h2 = true（常开）：未文档化键，社区通行写法。官方 MitM 文档只列三个键，
+#                HTTP/2 解密本就是默认能力，这里保留纯属零成本保险（未知键被忽略）。
+#                若某个 build 把它当非法键导致断网，删掉这一行即可回滚。
 # 脚本来源：block-domains.min.js / splash-ad.min.js 由 src/common/*.js +
 #                families.json 生成，与 douyin 插件共享单一源码。
 # ============================================================================
 
 [MITM]
 
-hostname = %APPEND% api.qishui.com, conf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads5-normal-hl.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn, beta-luna.douyin.com
+hostname = %APPEND% api.qishui.com, conf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn, beta-luna.douyin.com
 h2 = true

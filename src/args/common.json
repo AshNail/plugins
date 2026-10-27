@@ -1,0 +1,26 @@
+{
+  "comment": [
+    "参数 schema 的跨家族共享部分。tools/gen-args.js 读取 src/args/<family>.json 生成",
+    "插件的 [Argument] 段、src/common/status.js 的 SWITCH_LABELS、以及 README 开关表。",
+    "labelOrder 只决定状态看板里开关的显示顺序；新增开关不必先改这里，生成器会把它追加到末尾。",
+    "删除或改名开关后记得同步删掉这里的旧名字，否则 --check 会报错。"
+  ],
+  "labelOrder": [
+    "rewardSafe",
+    "splashClean",
+    "cleanAds",
+    "cleanFeedAds",
+    "killRewardAds",
+    "blockAdDomains",
+    "blockSplashAd",
+    "settingsClean",
+    "hideDouyinEntry",
+    "hideDouyinTab",
+    "treasureMinimal",
+    "cleanUpsell",
+    "cleanActivity",
+    "debugLog",
+    "logTaskTitles",
+    "dailyReminder"
+  ]
+}

@@ -14,8 +14,13 @@ Rule shorthand in [Host]:
   example.com    -> exact only
 
 Ad-subdomain globs in `domain_wildcards` become active
-`DOMAIN-WILDCARD,<glob>,REJECT,pre-matching` rules. They require Loon
-3.5.3(1008)+ and must never match a protected shared root.
+`DOMAIN-WILDCARD,<glob>,REJECT` rules. They require Loon 3.5.3(1008)+ and
+must never match a protected shared root.
+
+Note: Loon rules take no parameters other than the documented `no-resolve`
+(and only IP rules use it). `pre-matching` / `extended-matching` are *Surge*
+parameters — Loon's equivalents are on by default (`domain-reject-mode`
+lives in the main config, which a plugin cannot set), so emit neither.
 
 Usage:
   python3 tools/build-ads.py            # write the generated plugin
@@ -71,7 +76,7 @@ REJECT_POLICIES = {
     "REJECT-ARRAY-NO-DROP",
 }
 IP_REWRITE_ACTIONS = {"reflect", "reject", "drop"}
-RULE_PARAMS = {"extended-matching", "pre-matching", "no-resolve"}
+RULE_PARAMS = {"no-resolve"}
 RULE_TYPES = {
     "DOMAIN",
     "DOMAIN-SUFFIX",
@@ -162,21 +167,40 @@ def build_number(version: str) -> int:
     return int(match.group(1))
 
 
+CLASS_RE = re.compile(r"\[([^\]]*)\]")
+
+
 def glob_regex(pattern: str) -> re.Pattern[str]:
     """Translate a Loon DOMAIN-WILDCARD glob for safety checks.
 
     Loon supports `*` (crosses dots), `?` and `[...]` sets. The ads builder
-    only accepts `*`/`?`; character sets are refused so the protected-root
-    check cannot drift from Loon's semantics.
+    accepts `*`/`?` everywhere and exactly one character class, `[0-9]`:
+    a digit class cannot widen a match to a different brand's host the way
+    `[a-z]` or `[!0-9]` could, so the protected-root check stays meaningful.
     """
     parts = []
-    for char in pattern:
+    index = 0
+    while index < len(pattern):
+        char = pattern[index]
+        if char == "[":
+            end = pattern.find("]", index + 1)
+            if end == -1:
+                raise BuildError(f"unterminated character class: {pattern!r}")
+            body = pattern[index + 1 : end]
+            if body != "0-9":
+                raise BuildError(
+                    f"only the [0-9] character class is supported: {pattern!r}"
+                )
+            parts.append("[0-9]")
+            index = end + 1
+            continue
         if char == "*":
             parts.append(".*")
         elif char == "?":
             parts.append(".")
         else:
             parts.append(re.escape(char))
+        index += 1
     return re.compile("".join(parts) + r"\Z")
 
 
@@ -210,6 +234,86 @@ def validate_domain_wildcards(plugin: dict, protected: set[str]) -> list[str]:
                 raise BuildError(
                     f"{where}: glob {pattern!r} matches protected shared root {root!r}"
                 )
+        if pattern in checked:
+            raise BuildError(f"{where}: duplicate glob: {pattern!r}")
+        checked.append(pattern)
+
+    if checked and build_number(LOON_VERSION) < WILDCARD_MIN_BUILD:
+        raise BuildError(
+            f"{where}: DOMAIN-WILDCARD needs Loon build {WILDCARD_MIN_BUILD}+, "
+            f"but the plugin declares {LOON_VERSION}"
+        )
+    return checked
+
+
+def enumerated_hosts(plugin: dict) -> set[str]:
+    """Every concrete hostname the [Host] layer already enumerates."""
+    out: set[str] = set()
+    for group in plugin.get("groups") or []:
+        for raw in group.get("rules") or []:
+            if not isinstance(raw, str):
+                continue
+            raw = raw.strip()
+            if not raw or raw.startswith("#"):
+                continue
+            for rule in expand_rule(raw):
+                if not rule.startswith("*."):
+                    out.add(rule.lower())
+    return out
+
+
+def validate_family_wildcards(
+    plugin: dict, protected: set[str], enumerated: set[str]
+) -> list[str]:
+    """Digit-shard family globs: `ads[0-9]-normal*.zijieapi.com`.
+
+    These exist to cover siblings the [Host] layer never saw. Each pattern has
+    to earn its place, so the build refuses anything that is not a real family:
+    at least two already-enumerated hosts must match, the first label must keep
+    four literal characters, and no protected shared root may be matched.
+    """
+    where = f"plugin {plugin.get('file', '?')}, family_wildcards"
+    patterns = plugin.get("family_wildcards") or []
+    if not isinstance(patterns, list):
+        raise BuildError(f"{where}: must be a list")
+    checked: list[str] = []
+    for raw in patterns:
+        if not isinstance(raw, str) or not raw.strip():
+            raise BuildError(f"{where}: empty glob")
+        pattern = raw.strip()
+        if pattern != pattern.lower():
+            raise BuildError(f"{where}: globs must be lowercase: {pattern!r}")
+        if any(char in pattern for char in "!\\ "):
+            raise BuildError(f"{where}: unsupported character in glob: {pattern!r}")
+        if "[0-9]" not in pattern:
+            raise BuildError(
+                f"{where}: family globs must contain a [0-9] class: {pattern!r}"
+            )
+        for body in CLASS_RE.findall(pattern):
+            if body != "0-9":
+                raise BuildError(
+                    f"{where}: only [0-9] is supported, got [{body}]: {pattern!r}"
+                )
+        if pattern.count("[") != pattern.count("]"):
+            raise BuildError(f"{where}: unbalanced character class: {pattern!r}")
+        first_label = re.sub(r"\[0-9\]", "", pattern.split(".", 1)[0])
+        literal = first_label.replace("*", "").replace("?", "")
+        if len(literal) < 3:
+            raise BuildError(
+                f"{where}: first label needs 3+ literal characters: {pattern!r}"
+            )
+        regex = glob_regex(pattern)
+        for root in protected:
+            if regex.fullmatch(root):
+                raise BuildError(
+                    f"{where}: glob {pattern!r} matches protected shared root {root!r}"
+                )
+        hits = sorted(host for host in enumerated if regex.fullmatch(host))
+        if len(hits) < 2:
+            raise BuildError(
+                f"{where}: glob {pattern!r} covers {len(hits)} enumerated host(s); "
+                "a family needs at least 2 (use domain_wildcards otherwise)"
+            )
         if pattern in checked:
             raise BuildError(f"{where}: duplicate glob: {pattern!r}")
         checked.append(pattern)
@@ -381,6 +485,8 @@ def render_plugin(
     lines.append(f"#!author={plugin['author']}")
     lines.append(f"#!version={plugin['version']}")
     lines.append(f"#!homepage={plugin['homepage']}")
+    if plugin.get("openUrl"):
+        lines.append(f"#!openUrl={plugin['openUrl']}")
     lines.append(f"#!icon={plugin['icon']}")
     lines.append(f"#!system={plugin['system']}")
     lines.append(f"#!loon_version={LOON_VERSION}")
@@ -398,6 +504,7 @@ def render_plugin(
         "general": 0,
         "rules": 0,
         "wildcards": 0,
+        "family_wildcards": 0,
         "rules_disabled": 0,
         "ip_rewrite": 0,
         "ip_rewrite_disabled": 0,
@@ -422,7 +529,8 @@ def render_plugin(
 
     rules = plugin.get("rules") or []
     wildcards = validate_domain_wildcards(plugin, protected)
-    if rules or wildcards:
+    families = validate_family_wildcards(plugin, protected, enumerated_hosts(plugin))
+    if rules or wildcards or families:
         lines.append("")
         lines.append("")
         lines.append("[Rule]")
@@ -443,12 +551,28 @@ def render_plugin(
         lines.append("# " + "-" * 76)
         lines.append("# 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，")
         lines.append("# 不命中 a.com、ad.example.com 或 adsl.example.com。")
-        lines.append("# pre-matching 让拒绝发生在 DNS 阶段（配合主配置 domain-reject-mode = DNS）。")
         lines.append("# 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。")
         lines.append("# " + "=" * 76)
         for pattern in wildcards:
-            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT,pre-matching")
+            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT")
             counts["wildcards"] += 1
+
+    if families:
+        lines.append("")
+        lines.append("# " + "=" * 76)
+        lines.append("# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+）")
+        lines.append("# " + "-" * 76)
+        lines.append("# 上一层的 glob 只能表达「左标签锚定」，覆盖不到 ads1/ads3/ads5 这类")
+        lines.append("# 编号分片。字符类是 Loon 3.5.3(1008) 起支持的第三类通配符：")
+        lines.append("#   DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com")
+        lines.append("# 命中 ads3-normal-hl / ads5-normal / ads7-normal-xh 等全部分片，")
+        lines.append("# 不命中 ads-normal（类必须恰好一位数字）或 adsxx-normal。")
+        lines.append("# 每条家族 glob 在 build 阶段必须覆盖 2 个以上已枚举主机才被接受，")
+        lines.append("# 因此这里只会出现「已经在用、但只列了一个分片」的真实家族。")
+        lines.append("# " + "=" * 76)
+        for pattern in families:
+            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT")
+            counts["family_wildcards"] += 1
 
     rules_disabled = plugin.get("rules_disabled") or []
     if rules_disabled:
@@ -569,6 +693,7 @@ def expected_outputs() -> tuple[dict[str, str], dict[str, dict]]:
         "updated": source.get("updated"),
         "author": source.get("author"),
         "homepage": source.get("homepage"),
+        "openUrl": source.get("openUrl"),
         "icon": source.get("icon"),
     }
     for key in ("updated", "author", "homepage", "icon"):
@@ -585,7 +710,7 @@ def expected_outputs() -> tuple[dict[str, str], dict[str, dict]]:
         plugin = dict(plugin)
         # Inherit top-level metadata so a new plugin file only carries the
         # fields that differ.
-        for key in ("author", "homepage", "icon"):
+        for key in ("author", "homepage", "icon", "openUrl"):
             plugin.setdefault(key, meta[key])
         file_name = plugin.get("file")
         if not file_name or not file_name.endswith(".plugin"):
@@ -660,6 +785,7 @@ def main() -> int:
             print(
                 f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
                 f"wildcards={counts['wildcards']:2} "
+                f"families={counts['family_wildcards']:2} "
                 f"optional_rules={counts['rules_disabled']:2} "
                 f"ip_rewrite={counts['ip_rewrite']:2} "
                 f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "
@@ -673,6 +799,7 @@ def main() -> int:
         print(
             f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
             f"wildcards={counts['wildcards']:2} "
+            f"families={counts['family_wildcards']:2} "
             f"optional_rules={counts['rules_disabled']:2} "
             f"ip_rewrite={counts['ip_rewrite']:2} "
             f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "

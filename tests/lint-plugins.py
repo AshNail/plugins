@@ -19,20 +19,6 @@ OBSERVER_SCRIPTS = ("reward-observe.min.js", "observe.min.js")
 
 FAMILY_CHECKS = {
     "soda": {
-        "switches": [
-            ("rewardSafe", "true"),
-            ("cleanAds", "false"),
-            ("killRewardAds", "false"),
-            ("blockAdDomains", "false"),
-            ("settingsClean", "false"),
-            ("hideDouyinEntry", "false"),
-            ("blockSplashAd", "false"),
-            ("debugLog", "false"),
-            ("logTaskTitles", "false"),
-            ("splashClean", "true"),
-            ("hideDouyinTab", "false"),
-            ("dailyReminder", "false"),
-        ],
         "enable": {
             "splashClean": 1,
             "cleanAds": 9,
@@ -44,22 +30,12 @@ FAMILY_CHECKS = {
             "blockSplashAd": 1,
             "debugLog": 22,
         },
-        "selects": [
-            ("statusNotify", '"notification","silent"'),
-        ],
-        # Generic 自检按钮必须拿到全部开关，结果页才能给出准确的摘要与冲突提醒。
-        "status": [
-            "rewardSafe", "splashClean", "cleanAds", "killRewardAds",
-            "blockAdDomains", "blockSplashAd", "settingsClean",
-            "hideDouyinEntry", "hideDouyinTab", "debugLog", "logTaskTitles",
-            "dailyReminder", "reminderCron",
-        ],
         "mitm": [
             "api.qishui.com",
             "conf.qishui.com",
             "ad.zijieapi.com",
             "lianmengapi.snssdk.com",
-            "ads5-normal-hl.zijieapi.com",
+            "ads?-normal*.zijieapi.com",
             "zlink.ugsdk.cn",
             "praisewindow.ugsdk.cn",
             "beta-luna.douyin.com",
@@ -75,17 +51,6 @@ FAMILY_CHECKS = {
         },
     },
     "douyin": {
-        "switches": [
-            ("treasureMinimal", "true"),
-            ("cleanFeedAds", "false"),
-            ("killRewardAds", "false"),
-            ("cleanUpsell", "false"),
-            ("cleanActivity", "false"),
-            ("blockAdDomains", "false"),
-            ("blockSplashAd", "false"),
-            ("debugLog", "false"),
-            ("dailyReminder", "false"),
-        ],
         "enable": {
             "treasureMinimal": 1,
             "cleanFeedAds": 1,
@@ -96,20 +61,12 @@ FAMILY_CHECKS = {
             "blockSplashAd": 1,
             "debugLog": 2,
         },
-        "selects": [
-            ("statusNotify", '"notification","silent"'),
-        ],
-        "status": [
-            "treasureMinimal", "cleanFeedAds", "killRewardAds", "cleanUpsell",
-            "cleanActivity", "blockAdDomains", "blockSplashAd", "debugLog",
-            "dailyReminder", "reminderCron",
-        ],
         "mitm": [
             "beta-luna.douyin.com",
             "polaris.zijieapi.com",
             "ad.zijieapi.com",
             "lianmengapi.snssdk.com",
-            "ads5-normal-hl.zijieapi.com",
+            "ads?-normal*.zijieapi.com",
             "zlink.ugsdk.cn",
             "praisewindow.ugsdk.cn",
         ],
@@ -143,6 +100,7 @@ ADS_META_KEYS = (
     "author",
     "version",
     "homepage",
+    "openUrl",
     "icon",
     "system",
     "loon_version",
@@ -178,6 +136,14 @@ ADS_RULE_TYPES = {
 
 # docs/cn/protocol_rule.md：Loon（3.1.7+）PROTOCOL 规则支持的全量取值。
 PROTOCOL_VALUES = {"HTTP", "HTTPS", "TCP", "QUIC", "STUN", "UDP"}
+
+# Loon 规则行只有 `no-resolve` 一个有文档依据的参数（且只用于 IP 类规则）。
+# `pre-matching` / `extended-matching` 是 **Surge** 参数：Loon 里对应的行为
+# （DNS 阶段拒绝、SNI 辅助匹配）默认开启，没有规则级开关；`domain-reject-mode`
+# 属于主配置 `[General]`，插件无法声明。任何规则行出现这两个词都按错误处理，
+# 因为它们要么被静默忽略（写了白写），要么让整条规则解析失败（写了更糟）。
+ADS_RULE_PARAMS = {"no-resolve"}
+SURGE_ONLY_RULE_PARAMS = {"pre-matching", "extended-matching", "no-resolve-sni"}
 
 # DOMAIN-WILDCARD（Loon 3.5.3(1008)+）广告子域通配层。
 # 永久锁死模式集合：只允许由广告专用左标签锚定的 glob，避免误写 `*`、
@@ -263,16 +229,112 @@ ADS_WILDCARD_MUST_MISS = (
 )
 ADS_WILDCARD_MIN_BUILD = 1008
 
+# 数字分片家族层（第二层 DOMAIN-WILDCARD）：Loon 3.5.3(1008) 起支持 `[...]`
+# 字符类，官方示例含 node[0-9].example.com。这一层只允许 `[0-9]`——数字类
+# 不会把匹配扩散到别的品牌主机，`[a-z]` / `[!0-9]` 会，所以不放开。
+# 每条 glob 必须覆盖 2 个以上 [Host] 已枚举的同族主机，杜绝「凭想象造家族」。
+ADS_FAMILY_WILDCARDS = (
+    "ads[0-9]-normal*.zijieapi.com",
+    "p[0-9]-ad-sign.byteimg.com",
+    "v[0-9]-ad.video.yximgs.com",
+    "pangolin-sdk-toutiao[0-9].com",
+    "ads[0-9].msn.com",
+    "ads[0-9]-adnow.com",
+    "ads-splash-i[0-9].xhscdn.com",
+    "ads-splash-v[0-9].xhscdn.com",
+    "pg-ad-b[0-9].ws.126.net",
+    "dns[0-9]*.quad9.net",
+    "dns[0-9]*.nextdns.io",
+)
+# 每条家族 glob 至少要覆盖下面这些「已经在 [Host] 里」的主机。
+ADS_FAMILY_COVERS = {
+    "ads[0-9]-normal*.zijieapi.com": (
+        "ads3-normal.zijieapi.com",
+        "ads5-normal.zijieapi.com",
+        "ads3-normal-hl.zijieapi.com",
+        "ads5-normal-hl.zijieapi.com",
+        "ads3-normal-lf.zijieapi.com",
+        "ads3-normal-lq.zijieapi.com",
+        "ads3-normal-xh.zijieapi.com",
+        "ads5-normal-xh.zijieapi.com",
+    ),
+    "p[0-9]-ad-sign.byteimg.com": (
+        "p3-ad-sign.byteimg.com",
+        "p6-ad-sign.byteimg.com",
+        "p9-ad-sign.byteimg.com",
+    ),
+    "v[0-9]-ad.video.yximgs.com": (
+        "v1-ad.video.yximgs.com",
+        "v2-ad.video.yximgs.com",
+        "v3-ad.video.yximgs.com",
+    ),
+    "pangolin-sdk-toutiao[0-9].com": (
+        "pangolin-sdk-toutiao1.com",
+        "pangolin-sdk-toutiao2.com",
+        "pangolin-sdk-toutiao5.com",
+    ),
+    "ads[0-9].msn.com": ("ads1.msn.com", "ads2.msn.com"),
+    "ads[0-9]-adnow.com": (
+        "ads1-adnow.com",
+        "ads3-adnow.com",
+        "ads5-adnow.com",
+    ),
+    "ads-splash-i[0-9].xhscdn.com": (
+        "ads-splash-i1.xhscdn.com",
+        "ads-splash-i2.xhscdn.com",
+    ),
+    "ads-splash-v[0-9].xhscdn.com": (
+        "ads-splash-v1.xhscdn.com",
+        "ads-splash-v2.xhscdn.com",
+    ),
+    "pg-ad-b[0-9].ws.126.net": (
+        "pg-ad-b1.ws.126.net",
+        "pg-ad-b2.ws.126.net",
+    ),
+    "dns[0-9]*.quad9.net": (
+        "dns9.quad9.net",
+        "dns10.quad9.net",
+        "dns11.quad9.net",
+        "dns12.quad9.net",
+    ),
+    "dns[0-9]*.nextdns.io": (
+        "dns1.nextdns.io",
+        "dns2.nextdns.io",
+        "dns3.nextdns.io",
+    ),
+}
+# 字符类必须「恰好一位数字」时才不多吃：这些样本全部不能命中。
+ADS_FAMILY_MUST_MISS = (
+    "ads-normal-hl.zijieapi.com",
+    "adsxx-normal-hl.zijieapi.com",
+    "ads10-normal-hl.zijieapi.com",
+    "ads3-normal-hl.zijieapi.com.evil.example",
+    "p-ad-sign.byteimg.com",
+    "dns.quad9.net",
+    "ads1.msn.com.evil.example",
+)
+
 
 def ads_glob_regex(pattern):
-    """Loon DOMAIN-WILDCARD glob semantics: '*' crosses dots, '?' one char."""
-    return re.compile(
-        "".join(
-            ".*" if char == "*" else "." if char == "?" else re.escape(char)
-            for char in pattern
-        )
-        + r"\Z"
-    )
+    """Loon DOMAIN-WILDCARD glob semantics: '*' crosses dots, '?' one char,
+    and `[0-9]` is a single-digit character class."""
+    parts = []
+    index = 0
+    while index < len(pattern):
+        char = pattern[index]
+        if char == "[":
+            end = pattern.find("]", index + 1)
+            if end == -1:
+                raise ValueError(f"unterminated class in {pattern!r}")
+            body = pattern[index + 1 : end]
+            if body != "0-9":
+                raise ValueError(f"unsupported class [{body}] in {pattern!r}")
+            parts.append("[0-9]")
+            index = end + 1
+            continue
+        parts.append(".*" if char == "*" else "." if char == "?" else re.escape(char))
+        index += 1
+    return re.compile("".join(parts) + r"\Z")
 
 # 开屏请求拦截绑定的边界：只拦开屏素材/登记家族，绝不能碰激励广告与发奖。
 SPLASH_MUST_HIT = (
@@ -389,6 +451,32 @@ SAFE_DONE_RX = re.compile(r"\$done\s*\(")
 SAFE_NOTIFY_RX = re.compile(r"\$notification\s*(?:\.|\[)\s*[\"']?post")
 SAFE_NOTIFY_ALLOWED = {"status.js", "daily-reminder.js"}
 
+# 官方 Script API 5.3：`$persistentStore.remove()` **不接受参数**，语义是
+# 「清空通过脚本存储 API 保存的全部数据」。传 key 进去不会只删那一项——
+# 曾经用它清「广告开始时间」，结果每量一次时长就把打卡状态、统计、每日提醒
+# 一起抹掉，而且没有任何报错。删单个键只能写 `write(undefined, key)`（5.1）。
+SAFE_STORE_WIPE_RX = re.compile(r"\$persistentStore\s*\.\s*remove\s*\(")
+
+# 上面这条要在「去掉注释」的文本上匹配：解释这条规则的注释本身就会写出
+# `$persistentStore.remove()`，否则守卫会把自己判违规。
+SAFE_COMMENT_RX = re.compile(r"/\*.*?\*/|^\s*//.*$", re.S | re.M)
+
+# 会解析响应体的脚本：只有 gzip 可解（$utils.ungzip），其余编码必须在诊断里点名
+ENCODING_GUARD_SCRIPTS = (
+    "src/soda/sanitize.js",
+    "src/soda/settings.js",
+    "src/soda/reward-observe.js",
+    "src/douyin/clean.js",
+    "src/douyin/treasure.js",
+    "src/douyin/observe.js",
+)
+ENCODING_BRANCH_MARKERS = (
+    "skip=not-json",
+    "skip=json-parse",
+    "non-JSON len=",
+    "JSON parse failed len=",
+)
+
 errors = []
 COMMON_DIR = ROOT / "src/common"
 FAMILIES_FILE = COMMON_DIR / "families.json"
@@ -398,26 +486,61 @@ FAMILIES_FILE = COMMON_DIR / "families.json"
 #   [Rule] 里每个 [MITM] 域都必须有一条 AND+PROTOCOL,QUIC 回退规则；
 #   绝不允许全局 PROTOCOL,QUIC,REJECT（会伤视频/通话）。
 # ---------------------------------------------------------------------------
+# Pangle 分片族：服务端按地区/线路下发 ads3|ads5 × normal|normal-hl|normal-lf|
+# normal-lq|normal-xh，逐个列出（DOMAIN-SUFFIX 不吃通配），由 [MITM] 的
+# ads?-normal*.zijieapi.com 一条覆盖全族。
+PANGLE_SHARDS = (
+    "ads3-normal.zijieapi.com",
+    "ads5-normal.zijieapi.com",
+    "ads3-normal-hl.zijieapi.com",
+    "ads5-normal-hl.zijieapi.com",
+    "ads3-normal-lf.zijieapi.com",
+    "ads5-normal-lf.zijieapi.com",
+    "ads3-normal-lq.zijieapi.com",
+    "ads5-normal-lq.zijieapi.com",
+    "ads3-normal-xh.zijieapi.com",
+    "ads5-normal-xh.zijieapi.com",
+)
+# [MITM] 里覆盖分片族的通配（与 block-domains.js 的 BLOCKED_HOSTS 同字符串）。
+PANGLE_MITM_GLOB = "ads?-normal*.zijieapi.com"
+
+# 拦截名单的正/反样本：名单里出现 glob 后不再做字面集合比对，改验行为。
+BLOCK_HOST_SAMPLES = (
+    "https://ad.zijieapi.com/api/ad/v1/inspire/",
+    "https://lianmengapi.snssdk.com/api/x",
+    "https://ads3-normal-hl.zijieapi.com/api/ad/splash/luna/v15/",
+    "https://ads5-normal.zijieapi.com/api/x",
+    "https://ads3-normal-xh.zijieapi.com/api/x",
+    "https://zlink.ugsdk.cn/a",
+    "https://praisewindow.ugsdk.cn/a",
+)
+BLOCK_HOST_MUST_MISS = (
+    "https://ads-normal-hl.zijieapi.com/api/x",
+    "https://ads3-normal-hl.zijieapi.com.evil.example/api/x",
+    "https://notad.zijieapi.com/api/x",
+    "https://zzlink.ugsdk.cn/a",
+)
+
 QUIC_HOSTS = {
     "soda": (
         "api.qishui.com",
         "conf.qishui.com",
         "ad.zijieapi.com",
         "lianmengapi.snssdk.com",
-        "ads5-normal-hl.zijieapi.com",
         "zlink.ugsdk.cn",
         "praisewindow.ugsdk.cn",
         "beta-luna.douyin.com",
-    ),
+    )
+    + PANGLE_SHARDS,
     "douyin": (
         "beta-luna.douyin.com",
         "polaris.zijieapi.com",
         "ad.zijieapi.com",
         "lianmengapi.snssdk.com",
-        "ads5-normal-hl.zijieapi.com",
         "zlink.ugsdk.cn",
         "praisewindow.ugsdk.cn",
-    ),
+    )
+    + PANGLE_SHARDS,
 }
 
 # 跨层短路的显式允许清单：(rewrite 片段, 脚本名)。为空 = 一条都不许。
@@ -425,7 +548,17 @@ CROSS_LAYER_ALLOWED = set()
 
 # 只有“直接终止请求”的复写才会遮蔽后续脚本；改 header / 改 URL 不会。
 REWRITE_TERMINAL_RX = re.compile(r"\breject(?:_\w+)?\s*\(|\bredirect\s*\(|\s302\s|\s307\s")
+# 原生 Body 改写（body.mock / body.replace / json.*）：文档明确「Response Body
+# Rewrite 命中时，Response Script 不执行」「Request Body Rewrite 或 Mock 命中时，
+# Request Script 不执行」。也就是说它和脚本是二选一，不是叠加。
+REWRITE_BODY_RX = re.compile(
+    r"\b(?:request|response)\.(?:body\.(?:mock|replace)|json\.(?:add|delete|replace|jq))(?:_file)?\s*\("
+)
 DOMAIN_BLOCK_KINDS = ("DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-WILDCARD")
+# 唯一允许出现在 [Rewrite] 里的 Accept-Encoding 写法：把协商降到 gzip。
+# 脚本层只有 $utils.ungzip（Build ≥ 988），br/zstd 没有解码器。
+AE_SET_GZIP = re.compile(
+    r'request\.header\.set\(\s*"Accept-Encoding"\s*,\s*"gzip"\s*\)')
 
 
 def host_of(url):
@@ -478,6 +611,7 @@ def rewrite_entries(rewrite_lines):
                 "stage": stage,
                 "rx": compiled,
                 "terminal": bool(REWRITE_TERMINAL_RX.search(line)),
+                "body": bool(REWRITE_BODY_RX.search(line)),
                 "line": line,
             }
         )
@@ -487,8 +621,13 @@ def rewrite_entries(rewrite_lines):
 def check_cross_layer(fp, family, data, scripts, samples):
     """[Rule] / [Rewrite] / [Script] 三层用同一批真实 URL 交叉验证。
 
-    只锁“会静默吃掉脚本”的组合：静态整域拒绝、终止型复写。
+    只锁“会静默吃掉脚本”的组合：静态整域拒绝、终止型复写、原生 Body 改写。
     传输层优化（删 Accept-Encoding）是互补的，不算短路。
+
+    层序依据（官方文档）：「Rewrite 仅对 HTTP 和经过 MitM 解密的 HTTPS 请求
+    生效，并在规则匹配前执行」。所以在 MITM 内部是 Rewrite → Script；
+    静态 [Rule] 整域拒绝是否先于脚本生效取决于连接有没有进入 HTTP 引擎，
+    文档没有给出可依赖的顺序——这里按“可能先命中”的保守假设处理。
     """
     block = active_domain_blocks(data.get("Rule", []))
     rewrites = rewrite_entries(data.get("Rewrite", []))
@@ -510,7 +649,26 @@ def check_cross_layer(fp, family, data, scripts, samples):
                     f"该 URL 的脚本永远不会执行"
                 )
         for rw in rewrites:
-            if not rw["terminal"] or not rw["rx"].match(url):
+            if not rw["rx"].match(url):
+                continue
+            if rw["body"]:
+                # response.body.mock 在请求出网前就生成响应，两个阶段的脚本都吃不到。
+                stages = {rw["stage"]}
+                if "response.body.mock" in rw["line"]:
+                    stages = {"request", "response"}
+                for entry in entries:
+                    if not entry["compiled"] or not entry["compiled"].match(url):
+                        continue
+                    if entry["stage"] not in stages:
+                        continue
+                    problems += 1
+                    errors.append(
+                        f"{fp}: 跨层短路：原生 Body 改写命中 {url}，"
+                        f"{entry['stage']} 脚本 {entry['script']} 不再执行"
+                        "（文档：Body Rewrite 命中后同阶段 Script 不执行）"
+                    )
+                continue
+            if not rw["terminal"]:
                 continue
             for entry in entries:
                 if not entry["compiled"] or not entry["compiled"].match(url):
@@ -530,6 +688,37 @@ def check_cross_layer(fp, family, data, scripts, samples):
         f"  {family} cross-layer: {len(samples)} url / "
         f"{len(block)} static block / {len(rewrites)} rewrite / {problems} shadow(s)"
     )
+
+
+def mitm_host_list(mitm_text):
+    line = next(
+        (line for line in mitm_text.splitlines() if line.startswith("hostname")), "")
+    return [
+        host.strip()
+        for host in line.split("=", 1)[-1].replace("%APPEND%", "").split(",")
+        if host.strip()
+    ]
+
+
+def glob_host_regex(pattern):
+    return re.compile(
+        "".join(
+            ".*" if char == "*" else "." if char == "?" else re.escape(char)
+            for char in pattern
+        )
+        + r"\Z"
+    )
+
+
+def mitm_covers(host, mitm_text):
+    """[MITM] 支持 `*`/`?` 通配：精确域名或覆盖它的 glob 都算在内。"""
+    for pattern in mitm_host_list(mitm_text):
+        if pattern == host:
+            return True
+        if "*" in pattern or "?" in pattern:
+            if glob_host_regex(pattern).match(host):
+                return True
+    return False
 
 
 def check_static_layer(fp, family, data, mitm_text):
@@ -554,21 +743,75 @@ def check_static_layer(fp, family, data, mitm_text):
                 f"{fp}: global PROTOCOL,QUIC,REJECT is forbidden (breaks video/calls)"
             )
     for host in QUIC_HOSTS[family]:
-        if host not in mitm_text:
+        if not mitm_covers(host, mitm_text):
             errors.append(f"{fp}: QUIC fallback host {host} is not in [MITM]")
-
-    # 免压缩（request.header.del Accept-Encoding）经真机体积核算后放弃：
-    # upsell 类响应 gzip 后 183~191 KB，去压缩会让单次传输膨胀 5~10 倍。
-    # 这里反向锁死：不允许再悄悄加回来，除非先改 docs/loon-native-first.md 的结论。
-    rewrite_text = "\n".join(data.get("Rewrite", []))
-    if "Accept-Encoding" in rewrite_text:
+    # 分片族必须一条 glob 覆盖，而不是悄悄退回逐个枚举的 MITM 名单。
+    if PANGLE_MITM_GLOB not in mitm_host_list(mitm_text):
         errors.append(
-            f"{fp}: no-compress rewrite was rejected on measured payload size; "
-            "see docs/loon-native-first.md (E2)"
+            f"{fp}: [MITM] must use the single glob {PANGLE_MITM_GLOB} "
+            "for the Pangle shard family"
         )
 
+    # 压缩协商：允许「br → gzip 降级」，禁止「免压缩」。
+    #   · 免压缩（request.header.del / replace 掉 Accept-Encoding）经真机体积
+    #     核算后放弃：upsell 类响应 gzip 后 183~191 KB，去压缩膨胀 5~10 倍。
+    #   · br → gzip 是另一回事：脚本层只有 $utils.ungzip，br/zstd 没有解码器，
+    #     收到就是乱码 → 落进「不是 JSON」分支 → 静默不清理。降级保住了压缩，
+    #     只多 10~20% 体积，换来「不会再因为编码而整条失效」。
+    rewrite_lines = data.get("Rewrite", [])
+    for line in rewrite_lines:
+        if "Accept-Encoding" in line and not AE_SET_GZIP.search(line):
+            errors.append(
+                f"{fp}: Accept-Encoding 只允许 "
+                '`request.header.set("Accept-Encoding", "gzip")` 这种降级写法；'
+                "删压缩 / 改 identity 已按体积核算否决"
+                "（docs/loon-native-first.md E2）"
+            )
+
+    # 降级规则必须覆盖 [MITM] 的每一个域名：漏一个，那个域名的 br 响应
+    # 仍然解不开，而且是**静默**的——这类漏配比不写还难查。
+    ae_rules = [
+        line
+        for line in rewrite_lines
+        if line.startswith("request if") and AE_SET_GZIP.search(line)
+    ]
+    if not ae_rules:
+        errors.append(
+            f"{fp}: 缺少 Accept-Encoding 降级规则"
+            '（request.header.set("Accept-Encoding","gzip")）；'
+            "br 响应在脚本层没有解码器，会静默跳过清理"
+        )
+    else:
+        compiled = []
+        for line in ae_rules:
+            rx = regex_literal(line)
+            if not rx:
+                errors.append(f"{fp}: Accept-Encoding 降级规则的 URL 正则解析失败")
+                continue
+            try:
+                compiled.append(re.compile(rx))
+            except re.error as exc:
+                errors.append(f"{fp}: Accept-Encoding 降级正则非法: {exc}")
+        for host in QUIC_HOSTS[family]:
+            probe = f"https://{host}/"
+            if not any(rx.match(probe) for rx in compiled):
+                errors.append(
+                    f"{fp}: [MITM] 域名 {host} 不在 Accept-Encoding 降级规则里；"
+                    "该域名一旦回 br，脚本会静默跳过"
+                )
+
+    # 官方 MitM 文档只列 hostname / ca-p12 / ca-passphrase，没有 h2；
+    # 官方产品页把「解密 HTTPS 和 HTTP/2」写成默认能力、无开关。社区插件通行写
+    # h2 = true，保留它是「未知键被忽略」的零成本保险——但不能对外当成能力点宣称
+    # （统计口径已剔除，见 docs/loon-native-first.md §9.3）。写成 false 才是真错。
     if "h2 = true" not in mitm_text:
-        errors.append(f"{fp}: [MITM] must enable h2 = true for HTTP/2 visibility")
+        if re.search(r"^\s*h2\s*=\s*false\s*$", mitm_text, re.M):
+            errors.append(f"{fp}: [MITM] h2 = false 会主动关掉 HTTP/2 解密")
+        else:
+            errors.append(
+                f"{fp}: [MITM] 缺少 h2 = true（未文档化键，作零成本保险保留；"
+                "见 docs/loon-native-first.md §9.3）"
+            )
 
     hostname_line = next(
         (line for line in mitm_text.splitlines() if line.startswith("hostname")), "")
@@ -621,6 +864,119 @@ def check_switch_labels():
     )
 
 
+ARG_CONTROLS = {"input", "select", "switch"}
+ARG_TYPES = {"string", "number", "boolean"}
+
+
+def split_arg_tokens(rest):
+    """按英文逗号切分，但引号内的逗号不切（`select,"a","b"` / `desc="x,y"`）。"""
+    out, buf, quoted = [], [], False
+    for ch in rest:
+        if ch == '"':
+            quoted = not quoted
+            buf.append(ch)
+        elif ch == "," and not quoted:
+            out.append("".join(buf).strip())
+            buf = []
+        else:
+            buf.append(ch)
+    out.append("".join(buf).strip())
+    return out
+
+
+def parse_argument_line(line):
+    """拆 `name = control,v1,v2,type=..,tag=..,desc=..`。
+
+    每个候选值单独成为一项；`type=` / `tag=` / `desc=` 是元数据。
+    """
+    if "=" not in line:
+        return None
+    name, rest = line.split("=", 1)
+    name = name.strip()
+    if not re.match(r"^[A-Za-z_]\w*$", name):
+        return None
+    tokens = split_arg_tokens(rest)
+    control = tokens[0]
+    values, meta = [], {}
+    for tok in tokens[1:]:
+        m = re.match(r"^(type|tag|desc)\s*=\s*(.*)$", tok)
+        if m:
+            meta[m.group(1)] = m.group(2).strip()
+        elif tok:
+            values.append(tok.strip('"'))
+    return name, control, values, meta
+
+
+def check_argument_schema():
+    """[Argument] 只能出现官方文档定义的控件与类型。
+
+    官方只定义 3 种控件（input / select / switch）和 3 种类型
+    （string / number / boolean），并且明确 `integer` / `float` / `bool`
+    这类别名**不能解析**——写错不会报错，只会让整个参数失效。
+    """
+    total = 0
+    for fp, _s, _r, _w, _sc, _f in PLUGINS:
+        path = ROOT / fp
+        if not path.exists():
+            continue
+        data, _ = parse_plugin(path)
+        seen = set()
+        for line in data.get("Argument", []):
+            parsed = parse_argument_line(line)
+            if not parsed:
+                errors.append(f"{fp}: malformed [Argument] line: {line[:80]}")
+                continue
+            name, control, values, meta = parsed
+            total += 1
+            if name in seen:
+                errors.append(f"{fp}: duplicate [Argument] name: {name}")
+            seen.add(name)
+            if control not in ARG_CONTROLS:
+                errors.append(
+                    f"{fp}: [Argument] {name} uses unknown control {control!r} "
+                    f"(only {sorted(ARG_CONTROLS)})"
+                )
+                continue
+            declared = meta.get("type")
+            if declared is not None and declared not in ARG_TYPES:
+                errors.append(
+                    f"{fp}: [Argument] {name} uses unsupported type {declared!r} "
+                    f"(only {sorted(ARG_TYPES)}; aliases are rejected by Loon)"
+                )
+            kind = declared or "string"
+            if control == "switch":
+                if len(values) != 1 or values[0].lower() not in {"true", "false"}:
+                    errors.append(
+                        f"{fp}: [Argument] {name} switch default must be true/false, "
+                        f"got {values}"
+                    )
+            elif control == "select":
+                if len(values) < 2:
+                    errors.append(
+                        f"{fp}: [Argument] {name} select needs at least 2 options, "
+                        f"got {values}"
+                    )
+            elif len(values) > 1:
+                errors.append(
+                    f"{fp}: [Argument] {name} input takes at most 1 default, got {values}"
+                )
+            if kind == "number":
+                for v in values:
+                    try:
+                        float(v)
+                    except ValueError:
+                        errors.append(
+                            f"{fp}: [Argument] {name} type=number but value {v!r} is not numeric"
+                        )
+            if kind == "boolean":
+                for v in values:
+                    if v.lower() not in {"true", "false"}:
+                        errors.append(
+                            f"{fp}: [Argument] {name} type=boolean but value {v!r} is not a boolean"
+                        )
+    print(f"argument schema: {total} declarations use documented controls/types")
+
+
 def check_quic_count():
     """families.json 的 quicCount 必须等于插件里真实的 QUIC 回退条数。"""
     fam = load_families()
@@ -654,6 +1010,37 @@ def load_families():
     except (OSError, ValueError) as exc:
         errors.append(f"src/common/families.json: cannot read: {exc}")
         return None
+
+
+def load_args_schema(family):
+    """参数开关的唯一事实源；生成器负责插件行/状态标签/README 表。"""
+    path = ROOT / "src" / "args" / f"{family}.json"
+    try:
+        schema = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        errors.append(f"{path.relative_to(ROOT)}: cannot read args schema: {exc}")
+        return None
+    if schema.get("family") != family:
+        errors.append(
+            f"{path.relative_to(ROOT)}: family {schema.get('family')!r} != {family!r}"
+        )
+        return None
+    return schema
+
+
+def check_args_generated():
+    """插件 [Argument] / SWITCH_LABELS / README 表必须与 src/args 逐字节一致。"""
+    proc = subprocess.run(
+        ["node", "tools/gen-args.js", "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        for line in (proc.stdout + proc.stderr).strip().splitlines():
+            errors.append(f"args schema: {line}")
+        return
+    print("  " + proc.stdout.strip())
 
 
 def blocked_hosts_from_source(path, label):
@@ -885,25 +1272,17 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
     spec = FAMILY_CHECKS[family]
 
     meta = parse_meta(path)
-    for key in ("name", "desc", "author", "version", "homepage", "icon"):
+    for key in ("name", "desc", "author", "version", "homepage", "openUrl", "icon"):
         if key not in meta:
             errors.append(f"{fp}: missing #!{key} metadata")
     if "icon" in meta and not meta["icon"].startswith("https://"):
         errors.append(f"{fp}: #!icon must be an https URL, got {meta['icon'][:60]}")
+    if "openUrl" in meta and not meta["openUrl"].startswith("https://"):
+        errors.append(f"{fp}: #!openUrl must be an https URL, got {meta['openUrl'][:60]}")
     print(f"  meta: {meta.get('name', '?')} v{meta.get('version', '?')} icon={meta.get('icon', '-')[:60]}")
 
-    arg_text = "\n".join(data.get("Argument", []))
-    for name, default in spec["switches"]:
-        if f"{name} = switch,{default}" not in arg_text:
-            errors.append(
-                f"{fp}: missing or wrong Argument switch {name} (expected default {default})"
-            )
-    for name, candidates in spec.get("selects", []):
-        if f"{name} = select,{candidates}" not in arg_text:
-            errors.append(
-                f"{fp}: missing or wrong Argument select {name} "
-                f"(expected candidates {candidates})"
-            )
+    schema = load_args_schema(family)
+    arg_names = [item["name"] for item in schema["switches"]] if schema else []
 
     generic_status = [
         line for line in data.get("Script", [])
@@ -913,7 +1292,7 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
         errors.append(f"{fp}: missing generic status.min.js binding")
     else:
         status_line = generic_status[0]
-        for name in ["statusNotify"] + spec.get("status", []):
+        for name in arg_names:
             if "${" + name + "}" not in status_line:
                 errors.append(
                     f"{fp}: generic status.min.js binding missing ${{{name}}}"
@@ -1018,26 +1397,40 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
 
     raw_text = path.read_text(encoding="utf-8")
 
-    script_regex_hosts = set()
+    # 名单里允许 glob（Pangle 分片族），所以不再做「字面集合相等」：
+    # 改成用真实 URL 样本验证「名单」「[Script] 正则」两侧同时命中；
+    # 反样本两侧都不许命中。任一侧漏了或放宽了，样本立刻失败。
+    block_rx = None
     for line in scripts:
         if "block-domains.min.js" not in line:
             continue
-        m = re.search(r"\$\{url\} ~\= (/.+?/) then", line)
-        if not m:
-            continue
-        unescaped = re.sub(r"\\(.)", r"\1", m.group(1))
-        script_regex_hosts = set(re.findall(r"([a-z0-9][a-z0-9.-]*\.[a-z]{2,})", unescaped))
-    if not script_regex_hosts:
-        errors.append(f"{fp}: cannot extract hosts from block-domains script regex")
-    elif script_regex_hosts != block_common:
-        errors.append(
-            f"{fp}: block-domains [Script] regex host set diverges from src/common "
-            f"(regex={sorted(script_regex_hosts)}, common={sorted(block_common)})"
-        )
+        m = re.search(r"\$\{url\} ~\= /(.+?)/ then", line)
+        if m:
+            block_rx = re.compile(re.sub(r"\\(.)", r"\1", m.group(1)))
+    if block_rx is None:
+        errors.append(f"{fp}: cannot extract block-domains script regex")
+    else:
+        for url in BLOCK_HOST_SAMPLES:
+            host = re.match(r"https?://([^/:?#]+)", url).group(1)
+            if not any(glob_host_regex(p).match(host) for p in block_common):
+                errors.append(f"{fp}: block-domains list misses {host}")
+            if not block_rx.search(url):
+                errors.append(f"{fp}: block-domains [Script] regex misses {url}")
+        for url in BLOCK_HOST_MUST_MISS:
+            host = re.match(r"https?://([^/:?#]+)", url).group(1)
+            if any(glob_host_regex(p).match(host) for p in block_common):
+                errors.append(f"{fp}: block-domains list overmatches {host}")
+            if block_rx.search(url):
+                errors.append(f"{fp}: block-domains [Script] regex overmatches {url}")
+    mitm_entries = mitm_host_list(mitm)
     for host in sorted(block_common):
-        if host not in mitm:
+        if host in mitm_entries:
+            continue
+        if any(char in host for char in "*?"):
+            errors.append(f"{fp}: [MITM] must declare the same glob {host}")
+        else:
             errors.append(f"{fp}: [MITM] missing block-domain host {host}")
-    print(f"  block-domains set: {len(block_common)} hosts pinned to src/common")
+    print(f"  block-domains set: {len(block_common)} entries pinned to src/common")
 
     check_binding_matrix(fp, family, scripts)
     check_static_layer(fp, family, data, mitm)
@@ -1101,6 +1494,36 @@ def check_shared_scripts():
         print(f"common: {family} shared scripts match families.json")
 
 
+def check_encoding_guard():
+    """能解 body 的脚本：诊断必须能区分「非 JSON」和「编码不支持」。
+
+    脚本层只有 $utils.ungzip（gzip），br / zstd / deflate 没有解码器；
+    而 br 没有魔数（RFC 7932 是纯 stream format），连「这是不是 br」都只能
+    看 content-encoding。所以每个「解析失败」分支都必须把 ce= 带出来，
+    否则「接口换成 br 了」会被误判成「接口换了形状」，排查方向完全错。
+    """
+    for rel in ENCODING_GUARD_SCRIPTS:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"{rel}: missing body-parsing script")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "function readBody(" not in text:
+            errors.append(f"{rel}: no readBody() found")
+            continue
+        if "function ceTag(" not in text:
+            errors.append(
+                f"{rel}: missing ceTag(); a br/zstd body would look like 'not JSON'")
+            continue
+        if 'ce === "gzip"' not in text:
+            errors.append(f"{rel}: ceTag() must treat gzip as normal (no ce= noise)")
+        for marker in ENCODING_BRANCH_MARKERS:
+            for line in text.splitlines():
+                if marker in line and "ceTag(" not in line:
+                    errors.append(f"{rel}: {marker!r} branch misses ceTag()")
+    print(f"encoding guard: {len(ENCODING_GUARD_SCRIPTS)} body-parsing scripts tagged")
+
+
 def check_script_safety():
     """部署脚本与源码的静态安全门禁（网络/动态代码/通知/$done）。"""
     sources = sorted((ROOT / "src").glob("*/*.js"))
@@ -1122,6 +1545,12 @@ def check_script_safety():
             if rx.search(text):
                 errors.append(f"{rel}: forbidden network/eval API: {label}")
                 problems += 1
+        if SAFE_STORE_WIPE_RX.search(SAFE_COMMENT_RX.sub("", text)):
+            errors.append(
+                f"{rel}: $persistentStore.remove() 会清空全部脚本的键，"
+                "删单个键请用 write(undefined, key)（Script API 5.3）"
+            )
+            problems += 1
         source_name = path.name.replace(".min.js", ".js")
         if SAFE_NOTIFY_RX.search(text) and source_name not in SAFE_NOTIFY_ALLOWED:
             errors.append(
@@ -1132,6 +1561,89 @@ def check_script_safety():
     print(
         f"script safety: {len(sources)} sources / {len(dists)} dist scripts / "
         f"{problems} problem(s)"
+    )
+
+
+# 本插件自己声明的 DNS（[General] 的 dns-server / doh-server）。
+# 把任何一个写进「公共解析器 IP 直连阻断」清单，等于让 Loon 掐断自己的解析链：
+# 表现不是「广告回来」，而是整网不可用。build 管语法，这里管语义。
+OWN_DNS_IPS = {
+    "223.5.5.5", "223.6.6.6",          # dns-server + doh-server
+    "119.29.29.29",                     # dns-server（DNSPod 公共 DNS）
+    "180.184.1.1",                      # dns-server
+    "1.12.12.12",                       # doh-server
+}
+
+# 四家公共解析器的官方 IPv4/IPv6，逐条锁死：少一条就是「以为封了其实漏了一路」，
+# 多一条就要先核对是不是本插件自用的 DNS。
+PUBLIC_RESOLVER_IPS = {
+    "Google": ("8.8.8.8", "8.8.4.4", "2001:4860:4860::8888", "2001:4860:4860::8844"),
+    "Cloudflare": ("1.1.1.1", "1.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001"),
+    "Quad9": ("9.9.9.9", "149.112.112.112", "2620:fe::fe", "2620:fe::9"),
+    "AdGuard": ("94.140.14.14", "94.140.15.15", "2a10:50c0::ad1:ff", "2a10:50c0::ad2:ff"),
+}
+
+
+def check_bypass_dns_guard():
+    """第九轮：公共 DNS 解析器 IP 直连阻断组的语义守卫。
+
+    这条旁路（App 直连 8.8.8.8:443 做 DoH）里连接层没有域名，
+    唯一生效的是 IP 类规则；但它的风险也最大——误伤本插件自用的 DNS
+    会让整网不可用。build 只校验语法，语义由这里承担。
+    """
+    src_path = ROOT / "src/ads/domains.json"
+    try:
+        source = json.loads(src_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(f"ads: cannot read {src_path}: {exc}")
+        return
+    optional = source.get("plugins", {}).get("ads", {}).get("rules_disabled") or []
+
+    blocked_ips = set()
+    for raw in optional:
+        if not isinstance(raw, str):
+            continue
+        line = raw.strip()
+        if line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) < 3:
+            continue
+        if parts[0] in ("IP-CIDR", "IP-CIDR6"):
+            blocked_ips.add(parts[1].split("/", 1)[0])
+
+    problems = 0
+
+    for ip in sorted(blocked_ips & OWN_DNS_IPS):
+        errors.append(
+            f"ads: {ip} 是本插件 [General] 自己声明的 DNS，写进 IP 阻断清单会"
+            "掐断 Loon 自身的解析链（表现为整网不可用）。删掉这一条"
+        )
+        problems += 1
+
+    for vendor, ips in sorted(PUBLIC_RESOLVER_IPS.items()):
+        for ip in ips:
+            if ip not in blocked_ips:
+                errors.append(
+                    f"ads: 公共解析器 {vendor} 的 {ip} 不在可选阻断清单里——"
+                    "这条旁路按「每家两条 v4 + 两条 v6」封，漏一条就漏一路"
+                )
+                problems += 1
+
+    # 生成物必须带上这一段（build 保证，这里再确认一次可选段确实进了插件）
+    plugin = ROOT / ADS_PLUGIN
+    if plugin.exists():
+        raw = plugin.read_text(encoding="utf-8")
+        if "# IP-CIDR,8.8.8.8/32,REJECT,no-resolve" not in raw:
+            errors.append(
+                f"{ADS_PLUGIN}: 缺少公共解析器 IP 直连阻断段；"
+                "改完 src/ads/domains.json 要跑 `python3 tools/build-ads.py`"
+            )
+            problems += 1
+
+    print(
+        "bypass dns guard: %d blocked ip(s) / %d vendor(s) / %d problem(s)"
+        % (len(blocked_ips), len(PUBLIC_RESOLVER_IPS), problems)
     )
 
 
@@ -1162,6 +1674,8 @@ def check_ads_family():
         )
     if "icon" in meta and not meta["icon"].startswith("https://"):
         errors.append(f"{ADS_PLUGIN}: #!icon must be an https URL")
+    if "openUrl" in meta and not meta["openUrl"].startswith("https://"):
+        errors.append(f"{ADS_PLUGIN}: #!openUrl must be an https URL")
     if sections not in (["General", "Rule", "Host"], ["General", "Rule", "IP Rewrite", "Host"]):
         errors.append(
             f"{ADS_PLUGIN}: sections {sections}, expected "
@@ -1216,8 +1730,8 @@ def check_ads_family():
     # in an unsupported policy/parameter.
     rules = data.get("Rule", [])
     required_rules = (
-        "DOMAIN-KEYWORD,httpdns,REJECT-DROP,extended-matching,pre-matching",
-        "DOMAIN-KEYWORD,httpsdns,REJECT-DROP,extended-matching,pre-matching",
+        "DOMAIN-KEYWORD,httpdns,REJECT-DROP",
+        "DOMAIN-KEYWORD,httpsdns,REJECT-DROP",
         "USER-AGENT,httpdns*,REJECT",
         "DEST-PORT,853,REJECT",
     )
@@ -1239,7 +1753,12 @@ def check_ads_family():
         if parts[0] == "PROTOCOL" and parts[1] not in PROTOCOL_VALUES:
             errors.append(f"{ADS_PLUGIN}: unsupported PROTOCOL value: {parts[1]}")
         for param in parts[3:]:
-            if param not in {"extended-matching", "pre-matching", "no-resolve"}:
+            if param in SURGE_ONLY_RULE_PARAMS:
+                errors.append(
+                    f"{ADS_PLUGIN}: [Rule] uses the Surge-only parameter {param!r}; "
+                    "Loon has no such option (see docs/loon-native-first.md §10)"
+                )
+            elif param not in ADS_RULE_PARAMS:
                 errors.append(f"{ADS_PLUGIN}: unsupported [Rule] parameter: {param}")
         if parts[0] == "URL-REGEX":
             try:
@@ -1275,10 +1794,17 @@ def check_ads_family():
         if line.split(",", 1)[0].strip() == "DOMAIN-WILDCARD"
     ]
     wildcard_patterns = [parts[1] for parts in wildcard_rules if len(parts) > 2]
-    if tuple(wildcard_patterns) != ADS_WILDCARDS:
+    ad_label_globs = wildcard_patterns[: len(ADS_WILDCARDS)]
+    family_globs = wildcard_patterns[len(ADS_WILDCARDS) :]
+    if tuple(ad_label_globs) != ADS_WILDCARDS:
         errors.append(
-            f"{ADS_PLUGIN}: DOMAIN-WILDCARD set {wildcard_patterns}, "
+            f"{ADS_PLUGIN}: DOMAIN-WILDCARD set {ad_label_globs}, "
             f"expected {list(ADS_WILDCARDS)}"
+        )
+    if tuple(family_globs) != ADS_FAMILY_WILDCARDS:
+        errors.append(
+            f"{ADS_PLUGIN}: family DOMAIN-WILDCARD set {family_globs}, "
+            f"expected {list(ADS_FAMILY_WILDCARDS)}"
         )
     if len(set(wildcard_patterns)) != len(wildcard_patterns):
         errors.append(f"{ADS_PLUGIN}: duplicate DOMAIN-WILDCARD rule")
@@ -1292,10 +1818,10 @@ def check_ads_family():
             f"{ADS_WILDCARD_MIN_BUILD}+ for DOMAIN-WILDCARD"
         )
     for parts in wildcard_rules:
-        if len(parts) != 4 or parts[2] != "REJECT" or parts[3] != "pre-matching":
+        if len(parts) != 3 or parts[2] != "REJECT":
             errors.append(
                 f"{ADS_PLUGIN}: DOMAIN-WILDCARD must be "
-                f"DOMAIN-WILDCARD,<glob>,REJECT,pre-matching: {','.join(parts)}"
+                f"DOMAIN-WILDCARD,<glob>,REJECT (no extra parameters): {','.join(parts)}"
             )
     glob_regexes = {
         pattern: ads_glob_regex(pattern) for pattern in set(wildcard_patterns)
@@ -1318,13 +1844,46 @@ def check_ads_family():
                     f"{ADS_PLUGIN}: DOMAIN-WILDCARD {pattern} overmatches {sample}"
                 )
 
-    if "# IP-CIDR,203.107.1.0/24,REJECT,no-resolve,pre-matching" not in raw:
+    # 数字分片家族层：每条 glob 必须真的覆盖它声明的主机，类只允许 [0-9]，
+    # 且不能与上一层 glob 重复或越界命中。
+    for pattern in family_globs:
+        if "[0-9]" not in pattern:
+            errors.append(
+                f"{ADS_PLUGIN}: family glob {pattern} must contain a [0-9] class"
+            )
+        for body in re.findall(r"\[([^\]]*)\]", pattern):
+            if body != "0-9":
+                errors.append(
+                    f"{ADS_PLUGIN}: family glob {pattern} uses [{body}]; only [0-9] is allowed"
+                )
+        if pattern in ADS_WILDCARDS:
+            errors.append(f"{ADS_PLUGIN}: family glob {pattern} duplicates ad-label layer")
+        regex = ads_glob_regex(pattern)
+        for host in ADS_FAMILY_COVERS.get(pattern, ()):
+            if not regex.fullmatch(host):
+                errors.append(
+                    f"{ADS_PLUGIN}: family glob {pattern} misses enumerated host {host}"
+                )
+        for root in protected:
+            if regex.fullmatch(root):
+                errors.append(
+                    f"{ADS_PLUGIN}: family glob {pattern} matches protected root {root}"
+                )
+        for sample in ADS_FAMILY_MUST_MISS:
+            if regex.fullmatch(sample):
+                errors.append(
+                    f"{ADS_PLUGIN}: family glob {pattern} overmatches {sample}"
+                )
+    if len(set(family_globs)) != len(family_globs):
+        errors.append(f"{ADS_PLUGIN}: duplicate family DOMAIN-WILDCARD rule")
+
+    if "# IP-CIDR,203.107.1.0/24,REJECT,no-resolve" not in raw:
         errors.append(f"{ADS_PLUGIN}: optional HTTPDNS IP block must stay commented")
     # 2026 全网取证补的网关 IP 也必须保持默认注释（可选层纪律）。
     for marker in (
-        "# IP-CIDR,203.119.238.240/32,REJECT,no-resolve,pre-matching",
-        "# IP-CIDR,43.132.43.43/32,REJECT,no-resolve,pre-matching",
-        "# IP-CIDR6,2401:b180:7001::31d/128,REJECT,no-resolve,pre-matching",
+        "# IP-CIDR,203.119.238.240/32,REJECT,no-resolve",
+        "# IP-CIDR,43.132.43.43/32,REJECT,no-resolve",
+        "# IP-CIDR6,2401:b180:7001::31d/128,REJECT,no-resolve",
     ):
         if marker not in raw:
             errors.append(f"{ADS_PLUGIN}: optional HTTPDNS IP block missing: {marker}")
@@ -1520,8 +2079,12 @@ def check_ads_family():
 
 check_shared_scripts()
 check_switch_labels()
+check_argument_schema()
+check_args_generated()
 check_quic_count()
+check_encoding_guard()
 check_script_safety()
+check_bypass_dns_guard()
 check_ads_family()
 print(f"lint errors: {len(errors)}")
 for err in errors:

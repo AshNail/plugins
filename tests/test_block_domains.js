@@ -35,8 +35,14 @@ for (const family of FAMILIES) {
   {
     const r = runFor(family, AD_URL, { rewardSafe: false, blockAdDomains: true });
     const resp = r.out && r.out.response;
-    check(`${family} 返回 200 空响应`, !!(resp && resp.status === 200), JSON.stringify(r.out));
-    check(`${family} body 为空`, !!(resp && resp.body === ""), JSON.stringify(r.out));
+    check(`${family} 返回 200 响应`, !!(resp && resp.status === 200), JSON.stringify(r.out));
+    /* 与 [Rewrite] 的 reject_dict(200) 同形状：JSON {} + application/json。
+       空 text/plain 会让按 JSON 解析的 SDK 走“解析失败→重试”。 */
+    check(`${family} body 是 JSON {}`, !!(resp && resp.body === "{}"), JSON.stringify(r.out));
+    check(`${family} Content-Type 是 application/json`,
+      !!(resp && resp.headers &&
+        /^application\/json/.test(String(resp.headers["Content-Type"] || ""))),
+      JSON.stringify(r.out));
     check(`${family} 日志记录 ${TAG} blocked`,
       r.logs.join(" ").includes(`${TAG} blocked`),
       r.logs.join(" "));
@@ -66,19 +72,34 @@ for (const family of FAMILIES) {
     check(`${family} API 域名不拦截`, !(r.out && r.out.response), JSON.stringify(r.out));
   }
 
-  console.log(`\n== 5. ${family}: 5 个广告域名全部命中 ==`);
+  console.log(`\n== 5. ${family}: 广告域名（含 Pangle 分片族 glob）全部命中 ==`);
   {
-    const hosts = [
+    const hits = [
       "ad.zijieapi.com",
       "lianmengapi.snssdk.com",
+      "ads3-normal-hl.zijieapi.com",
       "ads5-normal-hl.zijieapi.com",
+      "ads3-normal.zijieapi.com",
+      // 枚举名单里没有的兄弟分片：靠 BLOCKED_HOSTS 的 glob 命中，
+      // 这样服务端换分片（ads7/ads9、-lf/-lq）不会漏。
+      "ads7-normal-xh.zijieapi.com",
+      "ads9-normal.zijieapi.com",
       "zlink.ugsdk.cn",
       "praisewindow.ugsdk.cn"
     ];
-    for (const host of hosts) {
+    for (const host of hits) {
       const r = runFor(family, `https://${host}/x`, { rewardSafe: false, blockAdDomains: true });
       const ok = !!(r.out && r.out.response && r.out.response.status === 200);
       check(`${family} 拦截 ${host}`, ok, JSON.stringify(r.out));
+    }
+    const misses = [
+      "ads-normal-hl.zijieapi.com",                    // 分片位必须是数字
+      "ads5-normal-hl.zijieapi.com.evil.example",       // 后缀伪装
+      "notad.zijieapi.com"                              // 非广告主机
+    ];
+    for (const host of misses) {
+      const r = runFor(family, `https://${host}/x`, { rewardSafe: false, blockAdDomains: true });
+      check(`${family} 不误伤 ${host}`, !(r.out && r.out.response), JSON.stringify(r.out));
     }
   }
 

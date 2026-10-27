@@ -64,7 +64,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[Host]` HTTPDNS 组 | 72 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 57 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
-| `[Rule]` DOMAIN-WILDCARD 通配层 | 30 条 glob（`ads.*`、`adserver.*`、`advertising.*`、`adx-*`、`advert.*` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域的问题；`pre-matching` 在 DNS 阶段拒绝 | 是（Loon 1008+） |
+| `[Rule]` DOMAIN-WILDCARD 通配层 | 30 条 glob（`ads.*`、`adserver.*`、`advertising.*`、`adx-*`、`advert.*` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域的问题；规则行不带参数 | 是（Loon 1008+） |
 | `[General]` | 3 条：公共 DNS + IP 形式 DoH + IP 形式 DoH3 (HTTP/3) | 是 |
 | `[Host]` 归因/统计组 | 2 组、86 条展开规则，默认整组注释 | **否** |
 | `[Rule]` 可选组 | 28 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
@@ -126,8 +126,8 @@ Loon 的 `*.example.com` 不保证覆盖 apex，所以广告专域统一写两�
 `[Host]` 只能枚举已知域名，广告 SDK 常用的随机/多级子域（`ads-xxx.example.com`、`adserver.foo.bar`）枚举不到。插件在 `[Rule]` 里额外生成 30 条：
 
 ```ini
-DOMAIN-WILDCARD,ads.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserver.*,REJECT,pre-matching
+DOMAIN-WILDCARD,ads.*,REJECT
+DOMAIN-WILDCARD,adserver.*,REJECT
 ```
 
 | glob | 命中示例 | 刻意不命中 |
@@ -145,8 +145,33 @@ DOMAIN-WILDCARD,adserver.*,REJECT,pre-matching
 
 - Loon 的 `*` **跨点匹配**：`ads.*` 同时覆盖 `ads.a.com` 与 `ads.a.b.com`，它不是 `*.ads.com`。
 - 每条 glob 在 build 与 lint 阶段都用 `protected-roots.json` 校验，确保不命中保护名单里的共享主域；lint 还用正/负样本锁死语义，禁止改成 `*`、`*.com`、`ads*` 这类宽泛模式。
-- `pre-matching` 让拒绝发生在 DNS 阶段；配合主配置 `domain-reject-mode = DNS` 效果最好（见“主配置加固”）。
+- 规则行**不带参数**。Loon 的规则参数只有 `no-resolve` 一个（IP 类用）；`pre-matching` / `extended-matching` 是 **Surge** 的写法，Loon 里没有——「DNS 阶段拒绝」由主配置 `domain-reject-mode = DNS` 控制（插件无法声明），「SNI 辅助匹配」Loon 默认开启。想要 DNS 阶段就拒绝，把那一行加进主配置（见“主配置加固”）。
 - 误伤时删除对应 `DOMAIN-WILDCARD` 行，或从 `src/ads/domains.json` 的 `domain_wildcards` 删除后重新 build；只影响这一条 glob，不影响 `[Host]`。
+
+#### 数字分片家族层（11 条，第二轮）
+
+左标签锚定的 glob 覆盖不到 `ads1/ads3/ads5` 这类**编号分片**。Loon 3.5.3(1008) 起 `DOMAIN-WILDCARD` 还支持第三类通配符 `[...]`（官方示例 `node[0-9].example.com`），于是可以把「同一家族、只换了数字」的主机折叠成一条：
+
+```ini
+DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT
+DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
+```
+
+| 家族 glob | 覆盖的已枚举主机 | 理由 |
+|---|---|---|
+| `ads[0-9]-normal*.zijieapi.com` | `ads3/ads5 × normal、-hl、-lf、-lq、-xh`（10 台） | 穿山甲按地区/线路下发分片，只列见过的那台必漏 |
+| `p[0-9]-ad-sign.byteimg.com` | `p3/p6/p9` | 广告素材签名，编号分片 |
+| `v[0-9]-ad.video.yximgs.com` | `v1/v2/v3` | 快手广告视频 |
+| `pangolin-sdk-toutiao[0-9].com` | `toutiao1..5` | 穿山甲 SDK 接入点 |
+| `ads[0-9].msn.com` / `ads[0-9]-adnow.com` | `ads1/2`、`ads1/3/5` | 海外广告网 |
+| `ads-splash-i[0-9].xhscdn.com` / `ads-splash-v[0-9].xhscdn.com` | `i1/i2`、`v1/v2` | 小红书开屏 |
+| `pg-ad-b[0-9].ws.126.net` | `b1/b2` | 网易广告位 |
+| `dns[0-9]*.quad9.net` / `dns[0-9]*.nextdns.io` | `dns9..12`、`dns1..3` | 公共 DoH 入口，防泄漏 |
+
+- **只放开 `[0-9]`**：`[a-z]` 或 `[!0-9]` 会把匹配扩散到别的品牌主机，让「保护名单不可被通配命中」这条保证失效。build 里除 `[0-9]` 以外的字符类直接报错。
+- **每条家族 glob 必须「赢得位置」**：build 会数它覆盖了多少台 `[Host]` 里**已经存在**的主机，少于 2 台就拒绝构建——这挡住了「凭想象造家族」。
+- **语义边界同样是锁死的**：lint 用 `ADS_FAMILY_MUST_MISS` 验证 `ads[0-9]-normal*.zijieapi.com` 不会命中 `ads-normal-hl`（少一位）、`ads10-normal-hl`（两位）、`adsxx-normal-hl`（非数字），也不会命中 `…zijieapi.com.evil.example`（后缀伪装）。
+- 审计工具把这一层计入覆盖率（`glob 41`），并继续检查保护名单违规（当前 0 条）。
 
 ---
 
@@ -177,11 +202,11 @@ DOMAIN-WILDCARD,adserver.*,REJECT,pre-matching
 - 公共 DoH：`dns.google`（+`dns64.dns.google`/`8888.google`）、`*.cloudflare-dns.com`（覆盖 security/family/dns64 等全部变体）+ `one.one.one.one` + `1dot1dot1dot1.cloudflare-dns.com`、Quad9 全变体（`dns[.9-12].quad9.net`+`dot.quad9.net`）、`dns[1-3].nextdns.io`+`doh.nextdns.io`、`doh.opendns.com`、AdGuard 新旧域（`=adguard-dns.com` → `adguard-dns.com`+`*.adguard-dns.com` 覆盖 dns/family/unfiltered 变体 + 旧 `dns.adguard.com`）、`doh.cleanbrowsing.org`、Mullvad DoT 族（`dns.mullvad.net`+`*.doh.mullvad.net`+`dot.mullvad.net`）、ControlD（`freedns.controld.com`+`dns.controld.com`+`doh.controld.com`）、`doh.brave.com`、`dns.alidns.com`+`dot.alidns.com`、DNSPod（`doh.pub`/`dns.pub`/`dot.pub`/`sm2.doh.pub`）、`doh.360.cn`/`dot.360.cn`、dns.sb（`doh.dns.sb`/`dot.sb`）、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 共 57 条。
 - 刻意不拦 `doh.dns.apple.com`，避免影响 iOS/macOS 系统解析。
 
-### 广告子域通配层（30 条）
+### 广告子域通配层（30 条 + 11 条家族层）
 
 `ads.*`、`ads-*`、`adserver.*`、`adserver-*`、`adserve.*`、`adserv.*`、`adserv-*`、`adserving.*`、`adserving-*`、`adservice.*`、`adservices.*`、`adsystem.*`、`advertising.*`、`advertising-*`、`advert.*`、`adverts.*`、`advertiser.*`、`adtech.*`、`adtech-*`、`adclick.*`、`adnetwork.*`、`adnetwork-*`、`adx.*`、`adx-*`、`adtrack.*`、`adtrack-*`、`adunit.*`、`bannerads.*`、`sponsorads.*`、`ad-exchange.*`。
 
-这 30 条按“广告专用左标签”覆盖任意层级子域，与 `[Host]` 的精确/通配条目互补：`[Host]` 管已知平台域，通配层管动态/随机广告子域。离线审计（默认 10 个上游源、41.6 万去重域名）显示，该层额外命中约 3,300 个此前未覆盖的广告域名；其中第二轮的 14 条 hyphen/长前缀变体（`adx-*`、`advert.*`、`advertising-*`、`bannerads.*` 等）新增 135 个。
+前 30 条按“广告专用左标签”覆盖任意层级子域，后 11 条按数字分片折叠家族（见上），与 `[Host]` 的精确/通配条目互补：`[Host]` 管已知平台域，通配层管动态/随机广告子域。离线审计（默认 10 个上游源、41.6 万去重域名）显示，该层额外命中约 3,300 个此前未覆盖的广告域名；其中第二轮的 14 条 hyphen/长前缀变体（`adx-*`、`advert.*`、`advertising-*`、`bannerads.*` 等）新增 135 个。
 
 ---
 
@@ -190,11 +215,22 @@ DOMAIN-WILDCARD,adserver.*,REJECT,pre-matching
 ### 插件能做到什么
 
 1. **追加公共 DNS 与 IP 形式 DoH**（`[General]`）：`dns-server` 写具体服务器，不写 `system`；`doh-server` 写 IP，避免 Loon 解析 DoH 域名时被本插件的 Host 规则打断。Loon 同时配置常规 DNS 与加密 DNS 时，会优先使用加密 DNS。
+   **真机取证（2026-10-27，海外蜂窝）**：本插件默认的 AliDNS 系 `doh/doh3` 在境外空回复率 69~74%、
+   `1.12.12.12` 被限流 429——境内用户保持默认即可；境外使用建议把 `doh-server` / `doh3-server`
+   换成就近解析器或直接注释掉（拦截逻辑不依赖加密 DNS，见 `docs/device-checklist.md` I 节）。
 2. **封住已知 HTTPDNS/私有 DoH 域名**（`[Host]`）：强制 App 回退到系统 DNS（Loon）。
 3. **封住公共 DoH 入口**（`[Host]`）：浏览器/App 的 DoH 解析失败后通常回退系统 DNS，广告域继续被 `[Host]` 拦截。
 4. **封住 853 端口**（`[Rule] DEST-PORT,853,REJECT`）：阻断标准 DoT/DoQ，减少 App 自带加密 DNS 绕过。
-5. **未知 HTTPDNS 兜底**（`[Rule]`）：`DOMAIN-KEYWORD,httpdns` / `httpsdns`、`USER-AGENT`、IP 字面量 `URL-REGEX`。
+5. **未知 HTTPDNS 兜底**（`[Rule]`）：`DOMAIN-KEYWORD,httpdns` / `httpsdns`、IP 字面量 `URL-REGEX`（6 条均锚定 `^http://`，只吃明文）、`USER-AGENT` 4 条。**注意**：本插件没有 `[MITM]` 段，而 UA 是 HTTP 请求头、未解密时看不到，这 4 条能否命中**未经验证**——保留是因为成本为零（不解密就不会误伤），验证方法见 `docs/rule-effectiveness.md` 第 3 节。
 6. **动态广告子域**（`[Rule] DOMAIN-WILDCARD`）：`ads.*`、`adserver.*`、`adx-*`、`advert.*` 等 30 条前缀 glob 在 DNS 阶段拒绝任意层级子域，弥补 `[Host]` 只能枚举已知域名的缺口。
+7. **可选：公共解析器 IP 直连阻断**（`[Rule]` 默认注释组，2.5.0 起）：上面 2–4 全都在跟「域名」打交道。
+   但 App 若**直连 `8.8.8.8:443` / `1.1.1.1:853`**，连接层根本没有域名——`[Host]`、
+   `DOMAIN-KEYWORD`、`URL-REGEX` 全部失效，`DEST-PORT,853` 也只挡端口、挡不住跑在 443 上的 DoH。
+   这时唯一还能生效的是 `IP-CIDR` / `IP-CIDR6`（只看 IP，不需要域名也不需要解密），
+   组里收录 Google / Cloudflare / Quad9 / AdGuard 四家共 16 个官方 IPv4 + IPv6。
+   **默认关闭**：若你的主配置拿清单内任一 IP 当 `dns-server` / `doh-server`，
+   开启会掐断 Loon 自己的解析链——表现是**整网不可用**，比广告回来严重得多。
+   开启前逐条核对主配置；本插件自用的 5 个 DNS 刻意不在清单内，lint 会拦住误加。
 
 ### 插件不能做到什么（重要）
 
@@ -234,6 +270,9 @@ dns-reject-mode = LOOPBACKIP
 
 - `hijack-dns = *:53` 会影响所有直连的 53 端口查询；公司/校园/局域网 DNS 用户先加 `skip-proxy`/`bypass-tun` 例外，或把 `*:53` 换成具体网段。
 - 主配置里的 `doh-server` 如果原本是域名形式，比如 `https://doh.pub/dns-query`，请改成 IP 形式，或注释本插件公共 DoH 组里的对应行；否则可能出现“Loon 自己的 DoH 域名被 Host 拦掉”的情况。
+  **真机实锤（2026-10-27）**：主配置 `doq-server = quic://dns.alidns.com:853` 与域名形式 doh.pub 被本插件黑洞
+  共 5553 次（`dns.alidns.com Host Map IP:127.0.0.1` ×3360、`doh.pub` ×2193）——整条加密 DNS 链每秒重试每秒失败。
+  判读签名与处置见 `docs/device-checklist.md` I 节。
 - 这些参数无法由插件替你设置；本插件只负责 `[Host]`/`[Rule]` 层与追加 DNS。
 - 修改后重连 Loon，并在 DNS 检查工具里确认解析不再走运营商 DNS。
 
@@ -333,7 +372,8 @@ npm test
 
 - `general`：`[General]` 原样行；build 只允许 Loon 插件白名单键，`dns-server` 禁止 `system`，`doh-server` 强制 IP 形式。
 - `rules`：`[Rule]` 原样行；build/lint 只允许 REJECT 系列策略。
-- `domain_wildcards`：生效的 `DOMAIN-WILDCARD` glob 列表；build 生成 `DOMAIN-WILDCARD,<glob>,REJECT,pre-matching`，并校验左标签锚定、不含字符集、不命中 `protected-roots.json`。
+- `domain_wildcards`：左标签锚定的 `DOMAIN-WILDCARD` glob；build 生成 `DOMAIN-WILDCARD,<glob>,REJECT`，校验左标签锚定、不允许字符集、不命中 `protected-roots.json`。
+- `family_wildcards`：数字分片家族 glob（含 `[0-9]`）；build 额外要求「至少覆盖 2 台 `[Host]` 已枚举主机」、首标签 3+ 字面量、只允许 `[0-9]`、不命中保护名单，且需要 `#!loon_version` ≥ 1008。
 - `rules_disabled`：默认注释的可选 Rule；build 会加 `# `，不参与匹配。
 - `groups[].disabled`：Host 组默认注释；归因/统计组用它实现“单文件、默认不生效”。
 
@@ -405,6 +445,11 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.6.0**（2026-10-27）：**用真机日志做反向缺口审计**（第五个分母：设备真实访问过、但不在清单的域名）。两份 iPhone 日志（约 4.5 分钟 × 9 万行 + 3.5 小时）里 878 个去重域名逐一与本仓插件清单（含 `*.` 通配语义）交叉比对，按「归因核实 + 真机请求实锤」补 30 条：**analytics 组（默认注释）+27**——`app-analytics-services.com`（GA 别称，Netify 核实）、`mixpanel.com`、腾讯 Beacon/APM（`rmonitor.qq.com`/`h.trace.qq.com`/`unitelogreport.reader.qq.com`）、美团 `dreport`/`wreport`、JPush 统计族、BOSS 直聘 APM、Firebase logging/crashlytics、微信 `badjs`、起点 `upush`；**httpdns 组（常开）+1**——`amdc.alipay.com.cn`（阿里系调度绕路，真机 ×4）；**retail_ctv_audio（常开）+2**——`ads-api.x.com`（X 广告接口）、`ca.iadsdk.apple.com`（补齐清单内 `iadsdk.apple.com` 的已观测子域）。字节系遥测（`mon`/`log`/`abtest`/`mssdk`/`pitaya`）**刻意不加**：与领奖风控/远程配置同源，误伤代价大于收益。顺带取证两处：`Host Map IP:127.0.0.1` 才是黑洞命中的日志格式（此前误把主配置黑名单的 `Reject domain` 记在本插件头上）；主配置若用域名形式 doh/doq，会与防泄漏组互害（本窗口 `dns.alidns.com` 被黑洞 3360 次），处置见 [`docs/device-checklist.md`](../../docs/device-checklist.md) I 节。
+- **2.5.0**（2026-10-27）：换第四个分母——从「规则有没有生效」到「**路径有没有封死**」，新增 `tools/bypass-audit.py` 与 [`docs/bypass-audit.md`](../../docs/bypass-audit.md)。①**枚举 17 条旁路**（App 可以绕开整个插件的路），四态 `sealed` / `partial` / `open` / `na`，每条写清「怎么绕 / Loon 的手段 / 为什么停在这 / 真机怎么证伪」。当前已封死 6、部分封死 4、**有手段未落地 1**、无解 6。②**唯一「有手段未落地」是 IPv6 / AAAA 旁路**：`[Host]` 1301 条黑洞全部只映射 IPv4，官方 `DNS/hostmap` 支持 `ip-mode:ipv4-only`，但只给了单独使用的示例——若 Loon 一个域名只认最后一条，补 ip-mode 会把黑洞**覆盖掉**，比不补更糟。因此**刻意不落地**，等真机两步验证（先验多行共存、再验 AAAA 是否放行）通过后再批量补。③**本轮真落地：公共解析器 IP 直连阻断组（默认注释）**，补 Google / Cloudflare / Quad9 / AdGuard 四家共 16 个官方 IPv4 + IPv6，**逐条取自官方页面不凭印象**。④lint 新增 `check_bypass_dns_guard()`：本插件自用的 5 个 DNS IP 出现即报错，四家 16 个 IP 缺一即报错。⑤三条结论性无解写进审计（主配置规则优先级 本地>插件>订阅、`bypass-tun`、证书固定）——**知道封不了，也是一种封**。
+- **2.4.0**（2026-10-27）：补上 Mintegral 的真实请求域，并撤回上一版「下一步」里做不到的部分。①**Mintegral 此前只拦了品牌域**：清单里只有 `mintegral.com`，而 SDK 的广告请求与统计实际走 `net.rayjump.com` / `setting.rayjump.com` / `analytics.rayjump.com` / `cdn-adn-https.rayjump.com`（Mobvista 旗下 Rayjump 基础设施）。新增 `rayjump.com`（精确 + `*.` 通配）、`mtgglobals.com`、`mintegral.net`，展开 `[Host]` 1295 → 1301 条。**激励 / 插屏 / Banner 仍停在 `strong`，没有升 `full`**——补完一家不等于补完一类。②**删掉三个自己猜错的域**：初版还加了 `adtiming.com`、`smaato.com`、`ogury.com`，核实后全是官网域（真实请求走 AdTiming 的私有端点、`smaato.net`、`ogury.io`），加进去拦不到广告还会拦官网。这正是本插件一直在防的错：从品牌名推域名。③**撤回 90.9% 的假承诺**：上一版把 11 条「下一步」算成可达 90.9%，逐条核对后只有 3 条是「零风险加域名」；其余撞在机制上——`[Argument]` 只作用于 `[Script]`/`[Rewrite]` 的 `enable`，管不到 `[Host]` 与静态 `[Rule]`；`URL-REGEX` 在 HTTPS 下要 MITM 才取得到路径；「最小合法包络」必须改响应体；私有 JSON 提档 = 多适配一个 App。④**每类新增 `blocked` 字段**记录「为什么提不了档」，`--check` 增加两条互斥断言（承诺提档时不许写 `blocked`，距上限停住时必须写）。当前 70.9%（39/55），待做增分 0，结构性停住 13 类。
+- **2.3.1**（2026-10-27）：按「广告类型」补齐两个结构性缺口，并把这件事变成可回归的审计。①**视频贴片/大屏（VAST/VMAP）**：新增 FreeWheel 系 `fwmrm.net`（含 `*.v.fwmrm.net` 二级子域）与 `stickyadstv.com`，以及 Sizmek `serving-sys.com`——这三家是 CTV 与长视频前贴/中贴的广告决策服务器，拦掉后播放器走「无广告」分支，而不再反复拉清单。②**国内聚合**：新增倍孜 `beizi.biz` / `adn-plus.com.cn`（TopOn 之外的第三方聚合，2024 后在中长尾 App 里占比上升）。③新增 **`tools/ad-surface-audit.py`**：把 19 类广告按「可切断点」分成 6 族，逐类声明理论可达档与当前档，并从插件/脚本里**探测证据**；`--check` 会在「声明做了但探不到」「声明没做却探到了」「当前档高于上限」三种情况下失败。生成的 [`docs/ad-type-strategy.md`](../../docs/ad-type-strategy.md) 给出每类的特征、规则思路、覆盖与局限，以及零证书方案 44% 的天花板。当前覆盖率 71%，落地「下一步」后 91%；零证书方案的天花板是 42%。④顺带确认 `[Host]` 官方支持 `*.` 通配（hostmap 文档示例 `*.testflight.apple.com`），`*.v.fwmrm.net` 这类二级通配因此可以显式写。生效 Host 1295 条、生效 Rule 54 条。
+- **2.3.0**（2026-10-27）：把 `DOMAIN-WILDCARD` 的第三类通配符 `[0-9]` 用起来，新增「数字分片家族层」11 条。①左标签 glob 覆盖不到 `ads1/ads3/ads5` 这类编号分片，字符类可以：`ads[0-9]-normal*.zijieapi.com` 一条覆盖 `ads3/ads5 × normal、-hl、-lf、-lq、-xh` 全部 10 台，并把 Pangle 未来新增的分片一起收进来。同类还有 `p[0-9]-ad-sign.byteimg.com`、`v[0-9]-ad.video.yximgs.com`、`pangolin-sdk-toutiao[0-9].com`、`ads[0-9].msn.com`、`ads[0-9]-adnow.com`、`ads-splash-i/v[0-9].xhscdn.com`、`pg-ad-b[0-9].ws.126.net`、`dns[0-9]*.quad9.net`、`dns[0-9]*.nextdns.io`，合计 11 条 glob、覆盖 30+ 台已枚举主机。②build 新增 `family_wildcards` 校验：只允许 `[0-9]`（`[a-z]`/`[!0-9]` 会让保护名单失效）、首标签 3+ 字面量、不命中 `protected-roots.json`，并且**必须覆盖 2 台以上 `[Host]` 已枚举主机**——凭想象造家族进不来。③lint 永久锁定 11 条模式 + 每条声明覆盖的主机 + 反样本（`ads-normal-hl`、`ads10-normal-hl`、`adsxx-normal-hl`、后缀伪装 `…zijieapi.com.evil.example`），并验证 `[0-9]` 之外的字符类直接报错。④审计工具与 build 的 glob 翻译同步支持字符类，覆盖率 7,589→7,592 域（`glob 41`）。⑤**删掉一条编造的参数**：规则行的 `pre-matching` / `extended-matching` 是 Surge 的写法，Loon 官方三页规则文档只定义 `no-resolve`（仅 IP 类用），72 条规则全部清掉，生成物改为 `DOMAIN-WILDCARD,<glob>,REJECT`；想要「DNS 阶段拒绝」的正解是主配置 `domain-reject-mode = DNS`（插件无权声明）。lint 新增 `SURGE_ONLY_RULE_PARAMS` 防回归。
 - **2.2.0**（2026-10-27）：把 Loon 3.5.3(1008) 的 `DOMAIN-WILDCARD` 真正用于覆盖层。①首轮新增 16 条生效 `[Rule]` glob（`ads.*`、`ads-*`、`adserver.*`、`adserver-*`、`adserve.*`、`adserv.*`、`adserving.*`、`adservice.*`、`adservices.*`、`adsystem.*`、`advertising.*`、`adtech.*`、`adclick.*`、`adnetwork.*`、`adx.*`、`adtrack.*`），按广告专用左标签在 DNS 阶段拦截任意层级子域；随后按缓存上游清单再补 14 条 hyphen/长前缀变体（`adx-*`、`advert.*`、`adverts.*`、`advertising-*`、`advertiser.*`、`adserv-*`、`adserving-*`、`adtech-*`、`adnetwork-*`、`adtrack-*`、`adunit.*`、`bannerads.*`、`sponsorads.*`、`ad-exchange.*`），共 30 条生效 glob，第二轮新增 135 个高置信广告域（保护名单命中全部为广告子域）。默认 10 个上游源的离线审计覆盖 4,279→7,589 个域名（1.03%→1.82%）。②build 新增 glob 安全校验：左标签锚定（3+ 字符 + `.`/`-`）、只允许 `*`/`?`、拒绝 `*`/`*.com`/`ads*` 等宽泛模式、不命中保护名单、与 `#!loon_version` Build ≥1008 联动。③lint 永久锁定 30 条模式、正/负样本与 `ads.*` 不命中 `example.com`/`adsl.example.com`、`advert.*` 不命中 `advertise.example.com`；审计工具把生效 glob 计入覆盖率并检查保护名单违规。④插件最低版本从 3.5.1(983) 提高到 **3.5.3(1008)**。
 - **2.1.5**（2026-10-27）：补充广告/测量专域与公共加密 DNS 入口。①核心层新增 `advertnative.com`、`ntvk1.ru`、`lentainform.com`、`valueclickmedia.com`、`medleyads.com`、`bluecava.com`、`voicefive.com` 与零售 CTV 测量域 `events.brightline.tv`，生效 Host 1167→1200 条（exact 744 / wildcard 456）；②公共 DoH/DoT 组 39→57 条，补 NextDNS、ControlD、Quad9、Cloudflare DoT、Mullvad、AliDNS，以及 Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter，堵住更多 App 自带加密解析绕过；③可选统计组新增 `cetrk.com`、`wizaly.com`、`stat.pl`、`soicos.com`、`stats.wp.com`、`nr-data.net`、`annoyingacoustics.com`、`sanalytics.disneyplus.com`，默认注释后展开 72→86 条；④lint 增加上述核心域与公共 DoH 的永久回归锁，防止后续误删。
 - **2.1.4**（2026-10-26）：深化 Loon 现代能力与埋点/遥测拦截。①HTTPDNS 关键词规则采用 `REJECT-DROP`（丢包无回复），防止客户端 SDK 在收到空 200 包后频繁秒级重试造成网络风暴；②新增针对第三方统计与埋点 SDK（如神策）的 `REJECT-DICT` 规则（返回 200 + `{}` 空字典），诱导客户端主动清空本地重试队列（`deleteEvents`），彻底避免本地存储膨胀与无线电唤醒；③提拔纯广告效果监测专域（`coremetrics.com`、`sumome.com`、`insightexpressai.com`、`blueconic.net`、`pixel.watch`）至核心生效层，生效 Host 升至 1155 条、生效 Rule 升至 13 条；④构建工具原生支持 Loon Build 1007+ 插件专属的 `[IP Rewrite]` 语法（单 IPv4 / 严格查重 / 保护名单安全防护），并在可选层收录 16 条单 IPv4 HTTPDNS 网关接入点，可在 TUN 阶段最快阻断。

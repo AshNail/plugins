@@ -309,26 +309,36 @@ def normalize_glob(value: str) -> str | None:
     value = value.strip().lower()
     if not value or value != value.lower():
         return None
-    if not re.match(r"^[a-z0-9][a-z0-9-]*(?:\.|-)", value):
+    if not re.match(r"^[a-z0-9][a-z0-9-]*(?:\[0-9\]|\.|-)", value):
         return None
-    if "*" not in value and "?" not in value:
+    if "*" not in value and "?" not in value and "[0-9]" not in value:
         return None
-    if any(char in value for char in "[]!\\ "):
+    if any(char in value.replace("[0-9]", "") for char in "[]!\\ "):
         return None
+    for body in re.findall(r"\[([^\]]*)\]", value):
+        if body != "0-9":
+            return None
     return value
 
 
 def compile_globs(patterns: set[str]) -> tuple[re.Pattern[str], ...]:
-    return tuple(
-        re.compile(
-            "".join(
-                ".*" if char == "*" else "." if char == "?" else re.escape(char)
-                for char in pattern
-            )
-            + r"\Z"
-        )
-        for pattern in sorted(patterns)
-    )
+    def translate(pattern: str) -> str:
+        parts = []
+        index = 0
+        while index < len(pattern):
+            char = pattern[index]
+            if char == "[":
+                end = pattern.find("]", index + 1)
+                if end == -1 or pattern[index + 1 : end] != "0-9":
+                    raise RuntimeError(f"unsupported glob class: {pattern!r}")
+                parts.append("[0-9]")
+                index = end + 1
+                continue
+            parts.append(".*" if char == "*" else "." if char == "?" else re.escape(char))
+            index += 1
+        return "".join(parts) + r"\Z"
+
+    return tuple(re.compile(translate(pattern)) for pattern in sorted(patterns))
 
 
 def parse_plugin_rules(

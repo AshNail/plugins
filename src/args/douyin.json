@@ -1,0 +1,112 @@
+{
+  "comment": [
+    "抖音插件的参数唯一事实源。改这里，然后 npm run build:args（或 npm run build）。",
+    "生成物：plugins/douyin/douyin.plugin 的 [Argument] 段、status.js 的 SWITCH_LABELS、README 开关表。",
+    "type=switch 必须有 label（状态看板显示名）；input/select 不允许 label。",
+    "tag/desc 会写进插件行，不能含英文逗号或换行（Loon 用逗号分隔属性）。",
+    "readme 是 README 表格里的说明，可含 Markdown；缺失时回退到 tag：desc。"
+  ],
+  "family": "douyin",
+  "app": "抖音",
+  "switches": [
+    {
+      "name": "treasureMinimal",
+      "type": "switch",
+      "default": true,
+      "tag": "福利页精简",
+      "desc": "福利页只保留【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱等入口全部移除。",
+      "label": "福利页精简",
+      "readme": "福利页只保留【攒时长 听歌不中断】"
+    },
+    {
+      "name": "cleanFeedAds",
+      "type": "switch",
+      "default": false,
+      "tag": "信息流广告清理",
+      "desc": "清掉 ads/config、ads/retrieve、ads/dsp/retrieve 的信息流广告容器；不影响激励广告与奖励。",
+      "label": "清信息流广告",
+      "readme": "清掉信息流/广告位广告容器（**不影响激励奖励**）"
+    },
+    {
+      "name": "killRewardAds",
+      "type": "switch",
+      "default": false,
+      "tag": "断掉激励广告",
+      "desc": "清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。",
+      "label": "断激励",
+      "readme": "断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了）"
+    },
+    {
+      "name": "cleanUpsell",
+      "type": "switch",
+      "default": false,
+      "tag": "商业化弹窗/商城/演出清理",
+      "desc": "删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。",
+      "label": "弹窗/演出清理",
+      "readme": "删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表"
+    },
+    {
+      "name": "cleanActivity",
+      "type": "switch",
+      "default": false,
+      "tag": "活动入口清理",
+      "desc": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。",
+      "label": "活动入口清理",
+      "readme": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示"
+    },
+    {
+      "name": "blockAdDomains",
+      "type": "switch",
+      "default": false,
+      "tag": "广告域名拦截",
+      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。",
+      "label": "域名拦截",
+      "readme": "广告/归因域名拦截（MITM + `http-request` 脚本）"
+    },
+    {
+      "name": "blockSplashAd",
+      "type": "switch",
+      "default": false,
+      "tag": "拦截开屏广告请求",
+      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
+      "label": "开屏请求拦截",
+      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调"
+    },
+    {
+      "name": "debugLog",
+      "type": "switch",
+      "default": false,
+      "tag": "只读日志",
+      "desc": "记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。",
+      "label": "只读日志",
+      "readme": "只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测）"
+    },
+    {
+      "name": "dailyReminder",
+      "type": "switch",
+      "default": false,
+      "tag": "每日领取提醒",
+      "desc": "每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。",
+      "label": "每日提醒",
+      "readme": "每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领）"
+    },
+    {
+      "name": "reminderCron",
+      "type": "input",
+      "default": "30 20 * * *",
+      "tag": "提醒时间(cron)",
+      "desc": "五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。",
+      "readme": "提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30"
+    },
+    {
+      "name": "statusNotify",
+      "type": "select",
+      "default": "notification",
+      "values": ["notification", "silent"],
+      "valueType": "string",
+      "tag": "自检通知",
+      "desc": "点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。",
+      "readme": "状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式）"
+    }
+  ]
+}

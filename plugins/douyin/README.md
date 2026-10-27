@@ -13,17 +13,21 @@
 若要换成字节自家 CDN 的网页版 favicon（32×32，清晰度较低）：
 `https://lf1-cdn-tos.bytegoofy.com/goofy/ies/douyin_web/public/favicon.png`。
 
+<!-- >>> GENERATED ARG-TABLE from src/args/douyin.json -- do not edit (npm run build:args) -->
 | 开关/参数 | 默认 | 作用 |
 |---|---|---|
 | `treasureMinimal` | 开 | 福利页只保留【攒时长 听歌不中断】 |
 | `cleanFeedAds` | 关 | 清掉信息流/广告位广告容器（**不影响激励奖励**） |
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
+| `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
 | `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
-| `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
-| `statusNotify` | notification | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式） |
+| `dailyReminder` | 关 | 每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领） |
+| `reminderCron` | `30 20 * * *` | 提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30 |
+| `statusNotify` | `notification` | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式） |
+<!-- <<< GENERATED ARG-TABLE -->
 
 > v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：
 > 原实现会连 `incentive/config`（`preload=true` + `vids[]` 预拉取列表）和 `incentive/retrieve`（素材表）一起清掉，
@@ -208,7 +212,7 @@ POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 tim
 
 命中后返回 200 + JSON `{}`，请求不会真正出网；`ad.zijieapi.com/api/ad/v1/inspire/**`（激励）与 `api/incentive/marketing/done`（发奖回调）不在匹配范围。与汽水共用 `src/common/splash-ad.js`（家族差异只有日志前缀），lint 对两家族做 3 hit / 3 miss 边界锁定。
 
-需要 `ad.zijieapi.com` / `ads5-normal-hl.zijieapi.com` 在 `[MITM]`（本插件已声明）。如果开启后抖音启动异常，先改回关即可。
+需要 `ad.zijieapi.com` / `ads?-normal*.zijieapi.com`（Pangle 分片族）在 `[MITM]`（本插件已声明）。如果开启后抖音启动异常，先改回关即可。
 
 ---
 
@@ -298,6 +302,25 @@ X-Soda-Plugin: douyin-clean;changed=2          upsell 清理生效
 
 抓包里直接看这个头，就能判断“脚本跑了没有、跑到哪一步”。
 
+**③ 编码边界：只认 gzip，br 解不了（v0.8.1 起能看出来）**
+
+Loon 的脚本层只有 `$utils.ungzip`（gzip，Build 988+），没有 brotli / zstd 解码器，
+也没有通用的 `decompress(data, algo)` 入口；官方复写文档全文对压缩没有任何承诺。
+更麻烦的是 **br 没有魔数**（RFC 7932 是纯 stream format，不带 checksum 与原始长度），
+所以脚本连“这段字节是不是 br”都判断不出来——只能读 `content-encoding` 响应头。
+gzip 不一样，`1f 8b` 两个字节就能认，这也是 `readBody()` 只嗅 gzip 的原因。
+
+v0.8.1 起解不了的编码会写进标记，把“编码不支持”和“接口换了形状”分开：
+
+```text
+X-Soda-Plugin: douyin-clean;skip=not-json;ce=br   ← 是 br 压缩体，不是非 JSON
+X-Soda-Plugin: douyin-clean;skip=not-json         ← 真的不是 JSON
+```
+
+`gzip` / `identity` / 没有该头时不加 `ce=`，标记保持干净。真遇到 `ce=br` 的修法：
+**不要删** `Accept-Encoding`（upsell gzip 后已 183–191 KB，去压缩会膨胀 5~10 倍），
+只对那一个端点把请求头设成 `Accept-Encoding: gzip`——压缩照旧，只是禁止服务端选 br。
+
 ## 5.3 【演出】的真正开关在 polaris 活动配置里
 
 2026-10-21 抓包发现，`polaris.zijieapi.com/luckycat/activity/settings/get_dynamic_settings/`
@@ -337,18 +360,74 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 `tests/fixtures/douyin_treasure_page.json` 是 2026-10-20 真机抓到的**福利页原始响应**，
 `test_douyin_treasure.js` 直接拿它跑精简，确保裁剪规则是按真实字段写的，而不是按想象。
 
-本地回归：`npm run check`（build + lint + 源码/压缩版测试；23 套 / 697 条断言 × 2 = 1398）。
+本地回归：`npm run check`（build + lint + coverage + 源码/压缩版测试；26 套 / 798 条断言 × 2 = 1596）。
 
 ---
 
 ## 7. 版本更新记录
+
+### v0.8.5（2026-10-27）插件元数据补齐 `#!openUrl`
+
+- **`#!openUrl` 落地**：插件详情页「打开链接」直达本 README
+  （`https://github.com/AshNail/plugins/blob/main/plugins/douyin/README.md`）。lint 同步校验。
+
+### v0.8.4（2026-10-27）修掉一处「每量一次广告就清空全部存储」
+
+- **`$persistentStore.remove(key)` 不是「删这个键」**：官方 Script API 5.3 写明它不接受参数，
+  语义是清空全部脚本数据。原来领奖回调里调它清开始时间，把 `douyin-welfare-seen`、
+  `douyin-ad-stats` 一起抹了，且无任何报错。改成 `write(undefined, AD_START_KEY)`。
+- **状态页新增「全局直连」告警**：`running_model = 0` 时插件完全不生效，结果页会点名。
+- **新增 `tests/test_store_scope.js`** 与 lint `SAFE_STORE_WIPE_RX`，与汽水共用同一套守卫。
+
+### v0.8.3（2026-10-27）压缩从「事后诊断」变成「事前统一」
+
+- **`[Rewrite]` 把压缩协商降到 gzip（常开）**：脚本层只有 `$utils.ungzip`，br/zstd 解不开，
+  乱码会落进「不是 JSON」分支，看起来和「接口没广告」一样。这里直接改请求头，服务端不再回 br。
+  降级不是免压缩（gzip 比 br 只大 10~20%，免压缩会膨胀 5~10 倍，见 E2）。
+- **回写 body 时清掉 `content-encoding` / `content-length`**：新 body 是明文，旧头指向压缩体，
+  留着会让客户端按 gzip 解明文或按旧长度截断。
+- **`blockAdDomains` 回包改为 `200 + application/json + {}`**，与 `reject_dict(200)` 同形状，
+  避免 SDK 走「解析失败→重试」。
+- **`debug=${debugLog}`**：14 条 `[Script]` 全部挂上官方 `with debug`，与「只读日志」开关联动。
+- **lint 守卫**：`Accept-Encoding` 只允许 gzip 降级写法；降级规则必须覆盖 `[MITM]` 全部域名。
+
+### v0.8.2（2026-10-27）广告拦截从「单分片」升级为「全族」
+
+- **`[MITM]` 用通配代替枚举**：`ads5-normal-hl.zijieapi.com` → `ads?-normal*.zijieapi.com`。
+  官方文档写明 `[MITM] hostname` 支持 `*` / `?`，一条覆盖 `ads3/ads5 × normal/-hl/-lf/-lq/-xh`。
+  分片由服务端下发，以前只在名单里放 ads5，服务端换到 ads3 就整个静默失效。
+- **QUIC 回退补到 16 条**：`[Rule]` 的 `DOMAIN-SUFFIX` 不吃通配，逐个列 10 个分片；
+  与 `[MITM]` 的覆盖关系由 lint 的 `mitm_covers()` 按 glob 校验。
+- **`BLOCKED_HOSTS` 支持 glob**：`?` 一个字符、`*` 任意字符，脚本内预编译成正则；
+  `[Script]` 正则同步改成 `ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com`。
+  lint 改成「正反 URL 样本双向命中」（名单含 glob 后字面集合比对失去意义）。
+- **状态看板**：`静态层：QUIC 回退 16 域`。
+
+### v0.8.1（2026-10-27）编码诊断：把「解不了」和「不是 JSON」分开
+
+- **`readBody()` 旁边新增 `ceTag()`**：读 `content-encoding`，非 gzip 时给诊断标记加上 `;ce=br`。
+  之前 br / zstd / deflate 的响应体都会以乱码落进 `skip=not-json`，和「接口换了形状」
+  长得一模一样；`skip=json-parse` 分支同样带上，覆盖「压缩体凑巧以 `{` 开头」的少数情况。
+- **`gzip` / `identity` / 无该头不加 `ce=`**：正常路径标记保持干净。
+- **`observe.js` 在非 JSON 时不再静默**：原来直接 `$done({})`，接口换形状、返回 HTML
+  错误页、或换成 br 编码三种情况全都看不出来；现在打一行 `non-JSON len=… ce=… url`。
+  `reward-observe.js` 的 `non-JSON` / `JSON parse failed` 日志同步加 `ce=`。
+- 背景（写进 §5.2）：Loon 脚本层只有 `$utils.ungzip`，br 没有魔数、官方复写文档对压缩
+  一字未提，「br 解不了」是硬边界。真遇到 `ce=br` 的修法是只对该端点把 `Accept-Encoding`
+  **设为** `gzip`（不是删掉，删掉会让 183–191 KB 的 upsell 膨胀 5~10 倍）。
+- **lint 新增 `check_encoding_guard()`**：6 个解析 body 的脚本必须同时有 `readBody()` 与
+  `ceTag()`，四条「解析失败」分支都不许漏 `ceTag()`。
+- **新增 `test_encoding_guard.js`（22 断言）**：六脚本 × br/gzip/无头三态、头名大小写、
+  `gzip, br` 逗号列表、正常 JSON 不受干扰。
+- 回归：48 套件 / 1442 断言全绿；lint 0 error。
 
 ### v0.8.0（2026-10-27）静态传输层常开：QUIC 回退 + h2
 
 - **`[Rule]` 新增 7 条 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`**：只针对 `[MITM]` 里的精确域，
   把 HTTP/3 逼回 TCP+TLS。MITM 只处理 TCP，QUIC 流量脚本完全看不见——这是所有脚本的前置条件。
   不做全局 `PROTOCOL,QUIC,REJECT`（会伤视频/通话）。
-- **`[MITM]` 新增 `h2 = true`**：HTTP/2 与 gRPC 风格端点进入可见范围（抖音主站大量用 gRPC）。
+- **`[MITM]` 新增 `h2 = true`**（后经复核：官方 MitM 文档只列 `hostname`/`ca-p12`/`ca-passphrase`，
+  没有 `h2`；HTTP/2 解密是官方产品页宣称的默认能力。保留该行属零成本冗余，不当能力点宣称）。
 - **删除注释里的 `[Rule]` 严格模式**：静态全域 REJECT 会直接掐断攒时长（看广告结算），
   且已被 `blockAdDomains` + QUIC 回退覆盖。
 - **评估后放弃“请求免压缩”**：HAR 里 `commerce/v2/upsell` 在 gzip 下已有 183–191 KB，

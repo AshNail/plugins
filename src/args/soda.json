@@ -1,0 +1,139 @@
+{
+  "comment": [
+    "汽水音乐插件的参数唯一事实源。改这里，然后 npm run build:args（或 npm run build）。",
+    "生成物：plugins/soda/soda.plugin 的 [Argument] 段、status.js 的 SWITCH_LABELS、README 开关表。",
+    "type=switch 必须有 label（状态看板显示名）；input/select 不允许 label。",
+    "tag/desc 会写进插件行，不能含英文逗号或换行（Loon 用逗号分隔属性）。",
+    "readme 是 README 表格里的说明，可含 Markdown；缺失时回退到 tag：desc。"
+  ],
+  "family": "soda",
+  "app": "汽水音乐",
+  "switches": [
+    {
+      "name": "rewardSafe",
+      "type": "switch",
+      "default": true,
+      "tag": "保奖励模式",
+      "desc": "默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。",
+      "label": "保奖励",
+      "readme": "保奖励优先；`sanitize` 对非开屏端点直接放行，`settings` 直接放行，域名拦截脚本也放行"
+    },
+    {
+      "name": "cleanAds",
+      "type": "switch",
+      "default": false,
+      "tag": "去广告脚本",
+      "desc": "清理广告位、信息流和福利页广告任务；**不动激励广告素材**，所以不影响看广告领奖励。",
+      "label": "去广告",
+      "readme": "广告位、信息流、福利页广告任务等清理脚本（**不含激励素材**）"
+    },
+    {
+      "name": "killRewardAds",
+      "type": "switch",
+      "default": false,
+      "tag": "断掉激励广告",
+      "desc": "清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于“广告完全不发”，领奖会变成 amount=-1，请谨慎。",
+      "label": "断激励",
+      "readme": "清空激励广告素材与预拉取 + 兜底发奖凭证；开了领奖会变 `amount=-1`"
+    },
+    {
+      "name": "blockAdDomains",
+      "type": "switch",
+      "default": false,
+      "tag": "广告域名拦截",
+      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。",
+      "label": "域名拦截",
+      "readme": "`block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名"
+    },
+    {
+      "name": "settingsClean",
+      "type": "switch",
+      "default": false,
+      "tag": "设置层净化（实验）",
+      "desc": "清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。",
+      "label": "设置层清理",
+      "readme": "`conf.qishui.com` 设置层脚本"
+    },
+    {
+      "name": "hideDouyinEntry",
+      "type": "switch",
+      "default": false,
+      "tag": "隐藏【听抖音】入口",
+      "desc": "把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）。",
+      "label": "隐藏听抖音入口",
+      "readme": "关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）"
+    },
+    {
+      "name": "blockSplashAd",
+      "type": "switch",
+      "default": false,
+      "tag": "拦截开屏广告请求",
+      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
+      "label": "开屏请求拦截",
+      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常）"
+    },
+    {
+      "name": "debugLog",
+      "type": "switch",
+      "default": false,
+      "tag": "只读日志",
+      "desc": "记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。",
+      "label": "只读日志",
+      "readme": "只读观测脚本（记录响应，不修改内容）"
+    },
+    {
+      "name": "logTaskTitles",
+      "type": "switch",
+      "default": false,
+      "tag": "日志带任务标题",
+      "desc": "只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口；默认关闭以免把文案写进日志。",
+      "label": "日志带标题",
+      "readme": "只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志"
+    },
+    {
+      "name": "splashClean",
+      "type": "switch",
+      "default": true,
+      "tag": "清开屏品牌广告",
+      "desc": "清理开屏品牌广告响应；保奖励和去广告模式都建议开启。",
+      "label": "清开屏",
+      "readme": "开屏品牌广告清理"
+    },
+    {
+      "name": "hideDouyinTab",
+      "type": "switch",
+      "default": false,
+      "tag": "隐藏【听抖音】",
+      "desc": "删除福利页里带“抖音”的 tab/任务条目；默认保留。",
+      "label": "隐藏听抖音条目",
+      "readme": "福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文；独立绑定，不需要 `cleanAds`）"
+    },
+    {
+      "name": "dailyReminder",
+      "type": "switch",
+      "default": false,
+      "tag": "每日领取提醒",
+      "desc": "每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。",
+      "label": "每日提醒",
+      "readme": "每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领）"
+    },
+    {
+      "name": "reminderCron",
+      "type": "input",
+      "default": "30 20 * * *",
+      "tag": "提醒时间(cron)",
+      "desc": "五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。",
+      "readme": "提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30"
+    },
+    {
+      "name": "statusNotify",
+      "type": "select",
+      "default": "notification",
+      "values": ["notification", "silent"],
+      "valueType": "string",
+      "tag": "自检通知",
+      "desc": "点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。",
+      "readme": "状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合，同时输出 `$loon` / 脚本名与执行时间 / 节点 / 运行模式（`$config.getConfig()`）"
+    }
+  ]
+}

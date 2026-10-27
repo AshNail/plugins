@@ -311,11 +311,51 @@ function readBody(resp) {
   return utf8(bytes);
 }
 
-/* 诊断标记：写进响应头，下一次抓包一眼看出脚本跑到哪一步 */
-function markHeaders(reason) {
+/*
+ * 诊断标签：把“脚本解不了的压缩”带进标记。
+ * 脚本层只有 $utils.ungzip（gzip），br / zstd / deflate 没有解码器；
+ * 这些编码下的响应体会以乱码落进“非 JSON”分支，标记带上 ce= 才不会
+ * 被误判成“接口本来就不是 JSON”。br 没有魔数，只能靠响应头识别。
+ */
+function ceTag(resp) {
+  try {
+    var h = (resp && resp.headers) || {};
+    var ce = "";
+    for (var k in h) {
+      if (String(k).toLowerCase() === "content-encoding") { ce = h[k]; break; }
+    }
+    ce = String(ce == null ? "" : ce).trim().toLowerCase();
+    if (!ce || ce === "gzip" || ce === "x-gzip" || ce === "identity") return "";
+    return ";ce=" + ce.replace(/[^a-z0-9,._-]/g, "");
+  } catch (e) {
+    return "";
+  }
+}
+
+/*
+ * 诊断标记：写进响应头，下一次抓包一眼看出脚本跑到哪一步。
+ *
+ * bodyChanged=true 表示这次 $done 带回了新的 body，而它是**未压缩的
+ * UTF-8 字符串**（readBody 已经 ungzip 过）。原响应头里的
+ * content-encoding / content-length 就此过期：
+ *   · 留着 content-encoding:gzip → 客户端拿明文按 gzip 解，JSON 解析失败；
+ *   · 留着 content-length:191234 → 长度对不上，连接挂住或截断。
+ * 删掉这两个头交给 Loon 按实际 body 重算，在「Loon 自己重压」和
+ * 「Loon 原样转发」两种实现下都成立。
+ */
+function markHeaders(reason, bodyChanged) {
   try {
     var h = Object.assign({}, ($response && $response.headers) || {});
     h["X-Soda-Plugin"] = reason;
+    if (bodyChanged) {
+      var drop = [];
+      for (var k in h) {
+        if (!Object.prototype.hasOwnProperty.call(h, k)) continue;
+        var lk = String(k).toLowerCase();
+        if (lk === "content-encoding" || lk === "content-length") drop.push(k);
+      }
+      for (var i = 0; i < drop.length; i++) delete h[drop[i]];
+    }
     return h;
   } catch (e) {
     return null;
@@ -358,7 +398,7 @@ function markHeaders(reason) {
     }
     const head = raw.trimStart().slice(0, 1);
     if (head !== "{" && head !== "[") {
-      return $done({ headers: markHeaders("douyin-clean;skip=not-json") });
+      return $done({ headers: markHeaders("douyin-clean;skip=not-json" + ceTag($response)) });
     }
 
     let obj;
@@ -366,7 +406,7 @@ function markHeaders(reason) {
       obj = JSON.parse(raw);
     } catch (e) {
       console.log("[douyin-clean] JSON parse failed, passthrough: " + url);
-      return $done({ headers: markHeaders("douyin-clean;skip=json-parse") });
+      return $done({ headers: markHeaders("douyin-clean;skip=json-parse" + ceTag($response)) });
     }
 
     const log = [];
@@ -393,7 +433,7 @@ function markHeaders(reason) {
     }
 
     console.log("[douyin-clean] " + log.length + " change(s)\n  " + log.join("\n  "));
-    $done({ body: JSON.stringify(obj), headers: markHeaders("douyin-clean;changed=" + log.length) });
+    $done({ body: JSON.stringify(obj), headers: markHeaders("douyin-clean;changed=" + log.length, true) });
   } catch (e) {
     console.log("[douyin-clean] error, passthrough: " + e);
     $done({});

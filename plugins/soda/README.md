@@ -130,7 +130,7 @@ Loon 工作在**网络层**。
 |---|---|---|
 | `ad.zijieapi.com` | 激励视频/Pangle 广告请求、激励完成上报、负反馈 | `https://ad.zijieapi.com/api/ad/v1`、`/api/incentive/marketing/done` |
 | `lianmengapi.snssdk.com` | 穿山甲联盟 API | 二进制字符串 |
-| `ads5-normal-hl.zijieapi.com` | 广告素材/投放 CDN | `ads5-normal-hl.zijieapi.com` 字符串 |
+| `ads?-normal*.zijieapi.com`（分片族） | 广告素材/投放 CDN；Pangle 按服务端下发在 `ads3/ads5 × normal/-hl/-lf/-lq/-xh` 之间切换 | HAR 里只见过 `ads5-normal-hl`；同族的其余 9 个分片来自本仓库 `ads.plugin` 的公开广告清单 |
 | `zlink.ugsdk.cn` | 归因/转化回传 | `https://zlink.ugsdk.cn/ad/impression/asa/token` |
 | `praisewindow.ugsdk.cn` | App Store 评分弹窗（非广告） | `AppStoreStarAdapter`、`/zebra/praise/click`、`为汽水音乐评分` |
 
@@ -293,20 +293,24 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 
 `soda.plugin` 是 Soda 唯一部署插件，使用 Loon `[Argument]` 的 `switch` / `select` 控件，把脚本启停和按钮行为做成参数：
 
-| 开关 | 默认 | 控制的脚本 |
+<!-- >>> GENERATED ARG-TABLE from src/args/soda.json -- do not edit (npm run build:args) -->
+| 开关/参数 | 默认 | 作用 |
 |---|---|---|
 | `rewardSafe` | 开 | 保奖励优先；`sanitize` 对非开屏端点直接放行，`settings` 直接放行，域名拦截脚本也放行 |
-| `cleanAds` | 关 | 广告位、信息流、福利页广告任务等 7 条清理脚本（**不含激励素材**） |
-| `killRewardAds` | 关 | 清空激励广告素材与预拉取 + 兜底发奖凭证（3 条）；开了领奖会变 `amount=-1` |
-| `blockAdDomains` | 关 | `block-domains.js`：`http-request` 拦截 `ad.zijieapi.com` 等 5 个广告/归因域名 |
+| `cleanAds` | 关 | 广告位、信息流、福利页广告任务等清理脚本（**不含激励素材**） |
+| `killRewardAds` | 关 | 清空激励广告素材与预拉取 + 兜底发奖凭证；开了领奖会变 `amount=-1` |
+| `blockAdDomains` | 关 | `block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名 |
 | `settingsClean` | 关 | `conf.qishui.com` 设置层脚本 |
-| `debugLog` | 关 | 20 条只读观测脚本 |
-| `splashClean` | 开 | 开屏品牌广告清理 |
-| `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文；独立绑定，不需要 `cleanAds`） |
-| `logTaskTitles` | 关 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志 |
 | `hideDouyinEntry` | 关 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开） |
 | `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
-| `statusNotify` | notification | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合，同时输出 `$loon` / 脚本名与执行时间 / 节点 / 运行模式（`$config.getConfig()`） |
+| `debugLog` | 关 | 只读观测脚本（记录响应，不修改内容） |
+| `logTaskTitles` | 关 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志 |
+| `splashClean` | 开 | 开屏品牌广告清理 |
+| `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文；独立绑定，不需要 `cleanAds`） |
+| `dailyReminder` | 关 | 每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领） |
+| `reminderCron` | `30 20 * * *` | 提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30 |
+| `statusNotify` | `notification` | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合，同时输出 `$loon` / 脚本名与执行时间 / 节点 / 运行模式（`$config.getConfig()`） |
+<!-- <<< GENERATED ARG-TABLE -->
 
 关键限制：
 
@@ -317,8 +321,8 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
   - `rewardSafe=true` → 脚本内部直接放行，激励广告照常播放。
   - HTTP/3 不再是漏洞：v2.8.0 起 `[Rule]` 常开 QUIC 强制回退（见下），这些域只会走 TCP+TLS。
   - 仍依赖 MITM：所以它不能替代 `ads.plugin` 的 DNS 层，两者互补。
-- **静态传输层（常开，无开关）**：`[Rule]` 对这 8 个 `[MITM]` 域做 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`，
-  把 HTTP/3 逼回 TCP；`[MITM]` 开 `h2 = true`。
+- **静态传输层（常开，无开关）**：`[Rule]` 对这 17 个广告域名做 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`，
+  把 HTTP/3 逼回 TCP；`[MITM]` 另写 `h2 = true`（未文档化键，零成本冗余，见下）。
   这两项不提供开关——关掉等于让所有脚本看不见流量。回滚方式：删掉对应行。
 - **`[MITM]` 也不能按开关启停**。插件声明 `api.qishui.com, conf.qishui.com` 与 5 个广告域名；即使 `blockAdDomains` 关闭，这些域名也会被解密。如果开启后激励广告播不了（证书固定），把 `[MITM]` 里那 5 个广告域名注释掉即可。
 - **开关冲突保护**：`rewardSafe=true` 时脚本优先保护非开屏端点；但仍建议不要同时打开 `rewardSafe` 与 `cleanAds` / `settingsClean`。
@@ -329,8 +333,8 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 
 | 层 | 内容 | 默认 | MITM |
 |---|---|---|---|
-| **L0** | 传输层：8 个 `[MITM]` 域拒绝 QUIC + `h2` | ✅ 常开（无开关） | 是（前置条件） |
-| **L1** | `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads5-normal-hl.zijieapi.com`、`zlink.ugsdk.cn`、`praisewindow.ugsdk.cn`（App Store 评分）→ 拦截 | ⬜（`blockAdDomains` 开关） | 是（脚本） |
+| **L0** | 传输层：17 条 QUIC 回退（8 个 `[MITM]` 条目，含 Pangle 10 个分片）+ `h2` | ✅ 常开（无开关） | 是（前置条件） |
+| **L1** | `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com`（Pangle 分片族）、`zlink.ugsdk.cn`、`praisewindow.ugsdk.cn`（App Store 评分）→ 拦截 | ⬜（`blockAdDomains` 开关） | 是（脚本） |
 | **L2** | 字段级裁剪（见 3.2） | ✅ 部分（`cleanAds` 开关） | 是 |
 | **L2.5** | 设置层：`conf.qishui.com/service/settings/v3/`；可选 `is.snssdk.com` / `i.snssdk.com` | ⬜（`settingsClean` 开关） | 是 |
 | **L3** | 埋点 `mon/log/applog.zijieapi.com`、`log.qishui.com`、风控 `timon` | ⬜ | 否 |
@@ -339,8 +343,9 @@ L0 常开：它不拦任何业务流量，只决定“脚本能不能看见流�
 L1 默认关闭：广告域名被拦后，激励广告就播不了，保奖励模式必须放行。
 L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
-> 跨插件分层：L1 的 5 个域名里，`ad.zijieapi.com` / `lianmengapi.snssdk.com` /
-> `ads5-normal-hl.zijieapi.com` 三个同时也在 `ads.plugin` 的 `[Host]` DNS 层被拦截；
+> 跨插件分层：L1 的 5 条里，`ad.zijieapi.com` / `lianmengapi.snssdk.com` /
+> `ads?-normal*.zijieapi.com`（Pangle 分片族）三条同时也在 `ads.plugin` 的
+> `[Host]` + `DOMAIN-WILDCARD` 家族层被拦截；
 > `zlink.ugsdk.cn` / `praisewindow.ugsdk.cn` 是 App 内运营端点（口令/弹窗），只由本插件
 > 的开关覆盖，不进全局 DNS 插件。两者互补：DNS 层在解析阶段拦，MITM 层按开关做
 > App 内精准控制；刷奖励关掉 `ads.plugin` 时，本层 L1 仍然可用。
@@ -356,7 +361,7 @@ L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 | `[Rule]` | 传输层：8 个 MITM 域 `AND+PROTOCOL,QUIC` → `REJECT`（常开） | ❌ |
 | `[Rewrite]` | URL 级重写：上报端点 `reject_dict(200)`（开关） | ✅ |
 | `[Script]` | 字段级响应改写 + 广告域名拦截脚本（保留包络） | ✅ |
-| `[MITM]` | 声明 `api.qishui.com`、`conf.qishui.com` 与 5 个广告域名（域名拦截开关需要）+ `h2 = true` | ✅ |
+| `[MITM]` | 声明 `api.qishui.com`、`conf.qishui.com` 与 5 个广告域名（域名拦截开关需要）+ `h2 = true`（未文档化键，保留作冗余） | ✅ |
 
 > Loon 的 HTTPS Rewrite 必须先经 MITM 解密，才能看到路径并匹配。所以 `[Rewrite]` 不是"无 MITM"方案；
 > 真正的无 MITM 方案是 `ads.plugin` 的 DNS 层。`[Rule]` 在插件里也不能写死业务域名的 REJECT——
@@ -410,7 +415,7 @@ L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
 适合“我要完整看完激励视频，正常拿奖励”：
 
-- 不拦 `ad.zijieapi.com` / `lianmengapi.snssdk.com` / `ads5-normal-hl.zijieapi.com`，激励广告能加载；
+- 不拦 `ad.zijieapi.com` / `lianmengapi.snssdk.com` / `ads?-normal*.zijieapi.com`，激励广告能加载；
 - 不跑 `incentive/config` / `incentive/retrieve` / `ads/config` / `ads/retrieve` 脚本，广告源、广告位与 `reward_config` 保持原样；
 - 不跑 `treasure/task/view` / `treasure/entrance` / `growth/activity_entrance` 脚本，奖励任务与入口保留；
 - 不碰 `incentive/done` / `ads/reward/receive|settle` / `commerce/validate_reward`；
@@ -570,7 +575,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | 奖励是否正常到账 | 完整看完激励视频，确认金币/畅听/翻牌等奖励到账；不要跳过广告或伪造回调 |
 | 激励链路是否下发 | 打开 `debugLog`，日志搜 `[soda-reward]`；看 `counts.sources` / `counts.adInfosMap` / `tasks` / `reward` 是否为空 |
 
-本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（23 套 / 697 条断言，源码与压缩版各一遍，共 1398 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
+本地回归：`npm run check`（build + lint + coverage + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（26 套 / 798 条断言，源码与压缩版各一遍，共 1596 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
 
 建议顺序（严格去广告）：**先确认保奖励模式 → 关闭 rewardSafe → 开 cleanAds → 最后开 blockAdDomains**，每一步观察一天。
 
@@ -632,7 +637,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.0）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.5）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -655,7 +660,7 @@ loon-plugins/
 │       └── welfare-stamp.js        # ← src/common 生成，勿手改
 ├── tools/
 │   └── build.js                    # src/common 家族展开 + src -> plugins 压缩构建
-├── tests/                          # 脚本层回归测试（23 套 / 697 条断言 × 2 = 1398）
+├── tests/                          # 脚本层回归测试（26 套 / 798 条断言 × 2 = 1596）
 ├── package.json
 ├── package-lock.json
 ├── .github/workflows/check.yml     # CI：build + lint + 测试
@@ -676,6 +681,28 @@ loon-plugins/
 Loon 偶尔把**未解压的压缩串**交给脚本，`JSON.parse` 直接失败 → 脚本静默放行 → 看起来“插件没效果”。
 v2.4.0 起 `readBody()` 会识别 gzip 魔数并用 `$utils.ungzip`（Build ≥ 988）解压，
 也能直接吃 `Uint8Array`；每个被处理的响应都带 `X-Soda-Plugin` 诊断头。
+
+**只支持 gzip，br 解不了。** 这是 Loon 的硬边界，不是实现偷懒：
+
+- 脚本 API 的完整清单里，能解压的只有 `$utils.ungzip`（gzip）。没有 brotli / zstd /
+  inflate 的入口，也没有 `decompress(data, algo)` 这种通用方法。
+- **br 没有魔数**。RFC 7932 定义的是纯 stream format，不含 checksum、也不含原始长度，
+  所以脚本连「这段字节是不是 br」都判断不出来——只能看 `content-encoding` 响应头。
+  这点和 gzip 不同：`1f 8b` 两个字节就能认。
+- Loon 官方复写文档全文没出现过 `gzip` / `brotli` / `Content-Encoding` 任何一次。
+  唯一沾边的一句是「修改响应 Body 后，Loon 会根据传输协议处理 Content-Length、
+  Transfer-Encoding 和 Content-Encoding 等相关 Header」——那是**写出**时对齐头，
+  不是**读入**时解压。自家真机日志里 gzip 都出现过 `zip decompress error:-3`，
+  更不能指望它默默把 br 解好。
+
+v2.8.1 起 `readBody()` 旁边多了 `ceTag()`：遇到解不了的编码，诊断标记变成
+`soda-sanitize;skip=not-json;ce=br`。在这之前「接口换成 br 了」和「接口本来就不是
+JSON」都只写 `skip=not-json`，排查方向会完全错。`gzip` / `identity` / 没有该头时
+不加这段，标记保持干净。
+
+> 真遇到 `ce=br` 怎么修：**不要**删 `Accept-Encoding`（upsell 在 gzip 下已 183–191 KB，
+> 去压缩会膨胀 5~10 倍）。只对那一个端点把请求头设成 `Accept-Encoding: gzip`，
+> 压缩照旧，只是不许服务端选 br。
 
 ### 2. `killRewardAds` 开着会让领奖变成 amount = -1
 
@@ -711,12 +738,87 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 
 ## 11. 版本更新记录
 
+### v2.8.5（2026-10-27）插件元数据补齐 `#!openUrl`
+
+- **`#!openUrl` 落地**：Loon 插件详情页的「打开链接」现在直达本 README
+  （`https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md`），
+  装完插件不用回仓库找使用说明。lint 同步要求三插件必须带 https 的 `#!openUrl`。
+
+### v2.8.4（2026-10-27）修掉一处「每量一次广告就清空全部存储」
+
+- **`$persistentStore.remove(key)` 不是「删这个键」**：官方 Script API 5.3 写明它**不接受参数**，
+  语义是「清空通过脚本存储 API 保存的全部数据」。原来量完一次广告时长就调它，
+  于是 `soda-welfare-seen`（当日打卡）、`soda-ad-stats`（广告统计）、每日提醒的已读标记
+  一起被抹掉——而且没有任何报错，只表现为「状态页说今天还没打卡」。
+  改成 `write(undefined, AD_START_KEY)`（官方 5.1 的唯一正确写法），只删开始时间这一个键。
+- **状态页新增「全局直连」告警**：`running_model = 0` 时 Loon 不执行规则、不进 MITM、不跑脚本，
+  插件等于没装。以前只显示「运行模式 直连」四个字，现在会点名并给出处置建议。
+  `running_model` 是字符串 `"0"` 也能识别（`Number()` 归一）。
+- **新增 `tests/test_store_scope.js`**（12 断言 × 2 套件）：带 `$persistentStore` 桩跑一遍
+  「广告结束」链路，断言**别的键必须还在**——只断言「目标键没了」是抓不到这个 bug 的。
+- **lint 新增 `SAFE_STORE_WIPE_RX`**：源码或产物里再出现 `$persistentStore.remove(` 直接报错，
+  报错信息指向 Script API 5.3。守卫在剥掉注释后的文本上匹配，避免把自己写进注释的解释判违规。
+
+### v2.8.3（2026-10-27）压缩从「事后诊断」变成「事前统一」
+
+- **`[Rewrite]` 把压缩协商降到 gzip（常开，无开关）**：脚本层只有 `$utils.ungzip`，
+  br / zstd / deflate 没有解码器，收到就是乱码 → 落进「不是 JSON」分支 → 表现为
+  「这个端点本来就没广告」。v2.8.1 的 `ce=br` 只能事后定位，这一版直接在 `[Rewrite]`
+  里 `request.header.set("Accept-Encoding","gzip")`，服务端不会再回 br。
+  这里是**降级不是免压缩**：upsell 类响应 gzip 后已有 183~191 KB，去压缩会膨胀 5~10 倍（E2）。
+- **回写 body 时清掉过期的压缩头**：`markHeaders(reason, bodyChanged)` 在带回新 body 时
+  删掉原响应头的 `content-encoding` / `content-length`。它们指向的是压缩前的旧 body：
+  留着会让客户端拿明文按 gzip 解（JSON 解析失败）或按旧长度截断。只加诊断头的分支不动它们。
+- **`blockAdDomains` 回包对齐 `reject_dict(200)`**：从 `200 + 空 text/plain` 改成
+  `200 + application/json + {}`。官方写明「`reject(200,"{}")` 返回普通文本，需要 JSON
+  Content-Type 时用 `reject_dict`」，空 text/plain 会让按 JSON 解析的广告 SDK 走重试。
+- **`debug=${debugLog}`**：每条 `[Script]` 都挂上官方 `with debug` 属性，打开「只读日志」时
+  同时打开 Loon 原生脚本调试输出（命中哪条、耗时、异常），不用再靠 `console.log` 猜。
+- **lint 新增三道守卫**：`Accept-Encoding` 只允许 `set(...,"gzip")`（删压缩/改 identity 直接报错）；
+  降级规则必须覆盖 `[MITM]` 的每一个域名（漏一个＝那个域名静默失效）；状态看板补「压缩→gzip」。
+
+### v2.8.2（2026-10-27）广告拦截从「单分片」升级为「全族」
+
+- **`[MITM]` 用通配代替枚举**：`ads5-normal-hl.zijieapi.com` → `ads?-normal*.zijieapi.com`。
+  官方文档写明 `[MITM] hostname` 支持 `*` / `?`，这条同时覆盖 `ads3/ads5 × normal/-hl/-lf/-lq/-xh`。
+  之前只要服务端把分片从 ads5 换到 ads3，`blockAdDomains` 就整个静默失效——解密名单里没有它。
+- **QUIC 回退补到 17 条**：`[Rule]` 的 `DOMAIN-SUFFIX` 不吃通配，只能逐个列 10 个分片。
+  两边各用自己最强的写法，覆盖关系由 lint 的 `mitm_covers()` 按 glob 校验。
+  清单取自本仓库 `ads.plugin` 的公开广告数据，不是猜的。
+- **`BLOCKED_HOSTS` 支持 glob**：`?` 一个字符、`*` 任意字符，脚本里预编译成正则。
+  `[Script]` 正则同步改成 `ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com`。
+  lint 从「字面集合相等」改为「正反 URL 样本双向命中」，因为名单里出现 glob 后集合比对没有意义。
+- **状态看板**：`静态层：QUIC 回退 17 域`。
+- **通知剪贴板**：点状态自检通知除了打开 App，还会把完整诊断复制到剪贴板（`attach.clipboard`），
+  报障时直接粘贴即可。
+
+### v2.8.1（2026-10-27）编码诊断：把「解不了」和「不是 JSON」分开
+
+- **`readBody()` 旁边新增 `ceTag()`**：读 `content-encoding`，非 gzip 时给诊断标记加上 `;ce=br`
+  这样的尾巴。之前 br / zstd / deflate 的响应体都会以乱码落进 `skip=not-json`，和
+  「接口换了形状」长得一模一样，排查方向会完全错。
+- **`skip=json-parse` 分支同样带上 `ce=`**：压缩体偶尔能凑巧以 `{` 开头，这时失败发生在
+  `JSON.parse` 而不是头部判断，两条路都得有线索。
+- **`gzip` / `identity` / 无该头不加 `ce=`**：正常路径的标记保持干净，不给抓包添噪声。
+- **两个观察器补上同一线索**：`reward-observe.js` 的 `non-JSON` / `JSON parse failed` 日志加 `ce=`；
+  `douyin/observe.js` 原来在非 JSON 时**完全静默**，现在会打一行 `len=… ce=… url`。
+- 背景（写进 §10.5）：Loon 脚本层只有 `$utils.ungzip`，br 没有魔数、官方复写文档对压缩
+  一字未提，所以「br 解不了」是硬边界；真遇到 `ce=br` 的修法是只对该端点把
+  `Accept-Encoding` **设为** `gzip`（不是删掉，删掉会让 183–191 KB 的 upsell 膨胀 5~10 倍）。
+- **lint 新增 `check_encoding_guard()`**：6 个解析 body 的脚本必须同时有 `readBody()` 与
+  `ceTag()`，且 `skip=not-json` / `skip=json-parse` / `non-JSON len=` / `JSON parse failed len=`
+  四条分支都不许漏 `ceTag()`；`ceTag()` 必须把 gzip 当正常值，防止把正常响应也打上 `ce=`。
+- **新增 `test_encoding_guard.js`（22 断言）**：六脚本 × br/gzip/无头三态、头名大小写、
+  `gzip, br` 逗号列表、以及「正常 JSON 仍走完清理且不被诊断干扰」。
+- 回归：48 套件 / 1442 断言全绿；lint 0 error。
+
 ### v2.8.0（2026-10-27）静态传输层常开：QUIC 回退 + h2
 
 - **`[Rule]` 新增 8 条 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`**：只针对 `[MITM]` 里的精确域，
   把 HTTP/3 逼回 TCP+TLS。这是所有脚本的前置条件——MITM 只处理 TCP，QUIC 流量脚本完全看不见。
   不做全局 `PROTOCOL,QUIC,REJECT`（会伤视频/通话）。
-- **`[MITM]` 新增 `h2 = true`**：HTTP/2 与 gRPC 风格端点进入可见范围。
+- **`[MITM]` 新增 `h2 = true`**（后经复核：官方 MitM 文档只列 `hostname`/`ca-p12`/`ca-passphrase`，
+  没有 `h2`；HTTP/2 解密是官方产品页宣称的默认能力。保留该行属零成本冗余，不当能力点宣称）。
 - **删除注释里的 `[Rule]` 严格模式**：静态全域 REJECT 会直接掐断激励广告，且已被 `blockAdDomains`
   + QUIC 回退覆盖，不再保留“手动取消注释”的分叉。
 - **评估后放弃“请求免压缩”**：`request.header.del("Accept-Encoding")` 本身可行，但自家 HAR 显示

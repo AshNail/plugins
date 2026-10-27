@@ -60,6 +60,9 @@ function todayKey() {
   check("soda: doneOut has summary '未打卡'", res.doneOut && res.doneOut.summary.includes("未打卡"));
   check("soda: notifOut posted", res.notifOut && res.notifOut.title.includes("汽水音乐"));
   check("soda: notif attach openUrl is qishui://", res.notifOut && res.notifOut.attach && res.notifOut.attach.openUrl === "qishui://");
+  check("soda: notif attach clipboard 带完整诊断", res.notifOut && res.notifOut.attach &&
+    typeof res.notifOut.attach.clipboard === "string" &&
+    res.notifOut.attach.clipboard.includes("静态层：QUIC 回退 17 域"), res.notifOut && res.notifOut.attach);
 }
 
 // 2. Soda 今日已打卡 + 广告统计
@@ -175,6 +178,27 @@ function todayKey() {
   check("soda: 兼容 $envirnoment 拼写", typo.doneOut.content.includes("PROXY-NODE"),
     typo.doneOut.content);
 
+  /*
+   * 全局直连（running_model=0）下 Loon 不执行规则、不进 MITM、不跑脚本，
+   * 插件一个动作都不会发生。界面只显示「直连」两个字，用户不会意识到，
+   * 所以结果页必须点名。
+   */
+  const direct = runStatus(sodaStatus, {}, { statusNotify: "silent" }, {
+    config: { getConfig: () => JSON.stringify({ running_model: 0 }) }
+  });
+  const dbody = direct.doneOut.content;
+  check("soda: 全局直连时点名插件不生效",
+    dbody.includes("运行模式 直连（⚠️ 插件不生效）"), dbody);
+  check("soda: 全局直连时给出处置建议",
+    dbody.includes("改成「分流」或「全局代理」"), dbody);
+
+  const viaBypass = runStatus(sodaStatus, {}, { statusNotify: "silent" }, {
+    config: { getConfig: () => JSON.stringify({ running_model: "2" }) }
+  });
+  check("soda: 全局代理不报警",
+    viaBypass.doneOut.content.includes("运行模式 全局代理") &&
+    !viaBypass.doneOut.content.includes("插件不生效"), viaBypass.doneOut.content);
+
   const plain = runStatus(sodaStatus, {}, { statusNotify: "silent" });
   check("soda: 无环境变量时不显示运行环境",
     !plain.doneOut.content.includes("运行环境："), plain.doneOut.content);
@@ -186,11 +210,11 @@ function todayKey() {
 // 静态传输层（常开、无开关）：看板必须报出 QUIC 回退域数，数字来自 families.json。
 {
   const soda = runStatus(sodaStatus, {}, { statusNotify: "silent" });
-  check("soda: 静态层显示 QUIC 回退 8 域",
-    soda.doneOut.content.includes("静态层：QUIC 回退 8 域"), soda.doneOut.content);
+  check("soda: 静态层显示 QUIC 回退 17 域",
+    soda.doneOut.content.includes("静态层：QUIC 回退 17 域"), soda.doneOut.content);
   const douyin = runStatus(douyinStatus, {}, { statusNotify: "silent" });
-  check("douyin: 静态层显示 QUIC 回退 7 域",
-    douyin.doneOut.content.includes("静态层：QUIC 回退 7 域"), douyin.doneOut.content);
+  check("douyin: 静态层显示 QUIC 回退 16 域",
+    douyin.doneOut.content.includes("静态层：QUIC 回退 16 域"), douyin.doneOut.content);
 }
 
 console.log(`PASS=${pass} FAIL=${fail}`);

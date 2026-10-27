@@ -1,8 +1,9 @@
 #!name=广告平台拦截器 · All-in-One
-#!desc=单插件 All-in-One：DNS 广告拦截 + DOMAIN-WILDCARD 广告子域通配(1008+) + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
+#!desc=单插件 All-in-One：DNS 广告拦截 + DOMAIN-WILDCARD 广告子域通配 + 数字分片家族层([0-9] 字符类, 1008+) + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.2.0
+#!version=2.6.0
 #!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.3(1008)
@@ -17,6 +18,7 @@
 # 核心 [Host] 把广告专域、HTTPDNS/私有 DoH、公网 DoH 入口映射到 127.0.0.1；DNS 阶段生效，HTTP/3 同样拦截。
 # HTTPDNS 防绕过：已知域名走 [Host]；未知的 httpdns/httpsdns 由 [Rule] 关键词、UA、URL-REGEX 兜底；853 端口阻断 DoT/DoQ。
 # DNS 防泄漏：插件 [General] 追加公共 DNS 与 IP 形式 DoH；Loon 插件不支持 hijack-dns/domain-reject-mode/dns-reject-mode，完整加固见 README 主配置段。
+# 旁路：DNS 层只管得着「域名」，App 直连 8.8.8.8:443 / 1.1.1.1:853 时域名不存在，只有 IP-CIDR 拦得住——该组默认注释，开启前必须确认主配置没在用这些 DNS（见 docs/bypass-audit.md）。
 # 共享主域（qq.com、baidu.com、google.com、facebook.com、snssdk.com、kuaishou.com、unity3d.com 等）绝不整域封禁，只列广告专用子域。
 # 广告子域通配层：[Rule] 使用 DOMAIN-WILDCARD（Loon 3.5.3(1008)+）按广告专用前缀拦截任意层级子域（如 ads.* / adserver.* / adx.*），弥补 [Host] 无法表达的动态子域；不匹配共享主域本身。
 # 和 soda/douyin 冲突：本插件会同时拦掉激励广告（穿山甲/优量汇/快手联盟），保奖励模式会失效。刷奖励时请禁用本插件。
@@ -37,20 +39,22 @@ doh3-server = h3://223.5.5.5/dns-query,h3://223.6.6.6/dns-query
 
 [Rule]
 # HTTPDNS / 私有 DoH 关键词兜底：已知域名在 [Host] 中，未知域名在这里拦。
-# extended-matching 让 HTTPS 按 SNI 匹配；pre-matching 在 DNS 阶段优先拒绝
-# （需要主配置 domain-reject-mode = DNS，见 README）。
+# 规则行不带参数：Loon 规则只有 `no-resolve` 一个有文档依据的参数（IP 类用），
+# Surge 的 `pre-matching` / `extended-matching` 在 Loon 里没有对应写法——
+# 「DNS 阶段拒绝」由主配置 `domain-reject-mode` 控制（插件不能声明），
+# 「SNI 辅助匹配」Loon 默认启用。写了要么被忽略，要么让整条规则解析失败。
 # HTTPDNS 关键词采用 REJECT-DROP（丢包无回复）：这些 SDK 在收到 REJECT 的 200 空包后会秒级重试，
 # REJECT-DROP 让连接静默超时，避免重试风暴；代价是首次超时略慢。
-DOMAIN-KEYWORD,httpdns,REJECT-DROP,extended-matching,pre-matching
-DOMAIN-KEYWORD,httpsdns,REJECT-DROP,extended-matching,pre-matching
+DOMAIN-KEYWORD,httpdns,REJECT-DROP
+DOMAIN-KEYWORD,httpsdns,REJECT-DROP
 USER-AGENT,httpdns*,REJECT
 USER-AGENT,Httpdns*,REJECT
 USER-AGENT,httpsdns*,REJECT
 USER-AGENT,Httpsdns*,REJECT
-URL-REGEX,^http:\/\/[0-9]+(\.[0-9]+){3}(:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery)(?:\/|\?|$),REJECT,extended-matching
-URL-REGEX,^http:\/\/\[[0-9a-fA-F:]+\](:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery)(?:\/|\?|$),REJECT,extended-matching
-URL-REGEX,^http:\/\/api\.weibo\.cn\/[0-9]+\/httpdns\/config,REJECT,extended-matching
-URL-REGEX,^http:\/\/amdc\.alipay\.com\/s\?query,REJECT,extended-matching
+URL-REGEX,^http:\/\/[0-9]+(\.[0-9]+){3}(:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery)(?:\/|\?|$),REJECT
+URL-REGEX,^http:\/\/\[[0-9a-fA-F:]+\](:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery)(?:\/|\?|$),REJECT
+URL-REGEX,^http:\/\/api\.weibo\.cn\/[0-9]+\/httpdns\/config,REJECT
+URL-REGEX,^http:\/\/amdc\.alipay\.com\/s\?query,REJECT
 # 埋点与上报防护：采用 REJECT-DICT 返回 200 + 空字典 {}，诱导统计 SDK（如神策）清空本地重试队列，避免存储膨胀与 CPU 频繁唤醒。
 URL-REGEX,^http:\/\/.+\/sa(\.gif)?\?project=,REJECT-DICT
 URL-REGEX,^http:\/\/.+\/v[0-9]*\/(?:event|log|track)\/(?:report|upload|batch),REJECT-DICT
@@ -62,39 +66,61 @@ DEST-PORT,853,REJECT
 # ----------------------------------------------------------------------------
 # 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，
 # 不命中 a.com、ad.example.com 或 adsl.example.com。
-# pre-matching 让拒绝发生在 DNS 阶段（配合主配置 domain-reject-mode = DNS）。
 # 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。
 # ============================================================================
-DOMAIN-WILDCARD,ads.*,REJECT,pre-matching
-DOMAIN-WILDCARD,ads-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserver.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserver-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserve.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserv.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserv-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserving.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adserving-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adservice.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adservices.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adsystem.*,REJECT,pre-matching
-DOMAIN-WILDCARD,advertising.*,REJECT,pre-matching
-DOMAIN-WILDCARD,advertising-*,REJECT,pre-matching
-DOMAIN-WILDCARD,advert.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adverts.*,REJECT,pre-matching
-DOMAIN-WILDCARD,advertiser.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adtech.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adtech-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adclick.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adnetwork.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adnetwork-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adx.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adx-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adtrack.*,REJECT,pre-matching
-DOMAIN-WILDCARD,adtrack-*,REJECT,pre-matching
-DOMAIN-WILDCARD,adunit.*,REJECT,pre-matching
-DOMAIN-WILDCARD,bannerads.*,REJECT,pre-matching
-DOMAIN-WILDCARD,sponsorads.*,REJECT,pre-matching
-DOMAIN-WILDCARD,ad-exchange.*,REJECT,pre-matching
+DOMAIN-WILDCARD,ads.*,REJECT
+DOMAIN-WILDCARD,ads-*,REJECT
+DOMAIN-WILDCARD,adserver.*,REJECT
+DOMAIN-WILDCARD,adserver-*,REJECT
+DOMAIN-WILDCARD,adserve.*,REJECT
+DOMAIN-WILDCARD,adserv.*,REJECT
+DOMAIN-WILDCARD,adserv-*,REJECT
+DOMAIN-WILDCARD,adserving.*,REJECT
+DOMAIN-WILDCARD,adserving-*,REJECT
+DOMAIN-WILDCARD,adservice.*,REJECT
+DOMAIN-WILDCARD,adservices.*,REJECT
+DOMAIN-WILDCARD,adsystem.*,REJECT
+DOMAIN-WILDCARD,advertising.*,REJECT
+DOMAIN-WILDCARD,advertising-*,REJECT
+DOMAIN-WILDCARD,advert.*,REJECT
+DOMAIN-WILDCARD,adverts.*,REJECT
+DOMAIN-WILDCARD,advertiser.*,REJECT
+DOMAIN-WILDCARD,adtech.*,REJECT
+DOMAIN-WILDCARD,adtech-*,REJECT
+DOMAIN-WILDCARD,adclick.*,REJECT
+DOMAIN-WILDCARD,adnetwork.*,REJECT
+DOMAIN-WILDCARD,adnetwork-*,REJECT
+DOMAIN-WILDCARD,adx.*,REJECT
+DOMAIN-WILDCARD,adx-*,REJECT
+DOMAIN-WILDCARD,adtrack.*,REJECT
+DOMAIN-WILDCARD,adtrack-*,REJECT
+DOMAIN-WILDCARD,adunit.*,REJECT
+DOMAIN-WILDCARD,bannerads.*,REJECT
+DOMAIN-WILDCARD,sponsorads.*,REJECT
+DOMAIN-WILDCARD,ad-exchange.*,REJECT
+
+# ============================================================================
+# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+）
+# ----------------------------------------------------------------------------
+# 上一层的 glob 只能表达「左标签锚定」，覆盖不到 ads1/ads3/ads5 这类
+# 编号分片。字符类是 Loon 3.5.3(1008) 起支持的第三类通配符：
+#   DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com
+# 命中 ads3-normal-hl / ads5-normal / ads7-normal-xh 等全部分片，
+# 不命中 ads-normal（类必须恰好一位数字）或 adsxx-normal。
+# 每条家族 glob 在 build 阶段必须覆盖 2 个以上已枚举主机才被接受，
+# 因此这里只会出现「已经在用、但只列了一个分片」的真实家族。
+# ============================================================================
+DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT
+DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
+DOMAIN-WILDCARD,v[0-9]-ad.video.yximgs.com,REJECT
+DOMAIN-WILDCARD,pangolin-sdk-toutiao[0-9].com,REJECT
+DOMAIN-WILDCARD,ads[0-9].msn.com,REJECT
+DOMAIN-WILDCARD,ads[0-9]-adnow.com,REJECT
+DOMAIN-WILDCARD,ads-splash-i[0-9].xhscdn.com,REJECT
+DOMAIN-WILDCARD,ads-splash-v[0-9].xhscdn.com,REJECT
+DOMAIN-WILDCARD,pg-ad-b[0-9].ws.126.net,REJECT
+DOMAIN-WILDCARD,dns[0-9]*.quad9.net,REJECT
+DOMAIN-WILDCARD,dns[0-9]*.nextdns.io,REJECT
 
 # ============================================================================
 # 可选规则（默认关闭）
@@ -108,41 +134,75 @@ DOMAIN-WILDCARD,ad-exchange.*,REJECT,pre-matching
 # 腾讯云《企业版 IP》cloud.tencent.com/document/product/379/59133、
 # 百度智能云《访问入口》cloud.baidu.com/doc/HTTPDNS/s/Njwvxm8ub。
 # —— 阿里云 HTTPDNS 启动接入点（内地 IPv4）——
-# IP-CIDR,203.107.1.0/24,REJECT,no-resolve,pre-matching
-# IP-CIDR,203.119.238.240/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,106.11.25.239/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,59.82.99.47/32,REJECT,no-resolve,pre-matching
+# IP-CIDR,203.107.1.0/24,REJECT,no-resolve
+# IP-CIDR,203.119.238.240/32,REJECT,no-resolve
+# IP-CIDR,106.11.25.239/32,REJECT,no-resolve
+# IP-CIDR,59.82.99.47/32,REJECT,no-resolve
 # —— 阿里云 HTTPDNS 启动接入点（内地 IPv6 /128）——
-# IP-CIDR6,2401:b180:7001::31d/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,2408:4003:1f40::30a/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,2401:b180:2000:20::10/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,2401:b180:2000:30::1c/128,REJECT,no-resolve,pre-matching
+# IP-CIDR6,2401:b180:7001::31d/128,REJECT,no-resolve
+# IP-CIDR6,2408:4003:1f40::30a/128,REJECT,no-resolve
+# IP-CIDR6,2401:b180:2000:20::10/128,REJECT,no-resolve
+# IP-CIDR6,2401:b180:2000:30::1c/128,REJECT,no-resolve
 # —— 阿里云 HTTPDNS 启动接入点（海外 IPv4：香港/新加坡/美洲/欧洲，
 # 服务国际 SDK 路由；与阿里云海外网段相邻，注意与 CDN 业务共用的可能）——
-# IP-CIDR,47.56.234.194/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,47.56.119.115/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,161.117.200.122/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,47.74.222.190/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,47.246.131.175/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,47.246.131.141/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,47.89.80.182/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,47.246.146.77/32,REJECT,no-resolve,pre-matching
+# IP-CIDR,47.56.234.194/32,REJECT,no-resolve
+# IP-CIDR,47.56.119.115/32,REJECT,no-resolve
+# IP-CIDR,161.117.200.122/32,REJECT,no-resolve
+# IP-CIDR,47.74.222.190/32,REJECT,no-resolve
+# IP-CIDR,47.246.131.175/32,REJECT,no-resolve
+# IP-CIDR,47.246.131.141/32,REJECT,no-resolve
+# IP-CIDR,47.89.80.182/32,REJECT,no-resolve
+# IP-CIDR,47.246.146.77/32,REJECT,no-resolve
 # —— 阿里云海外 IPv6 /128（香港/新加坡行原文档共用 240b:4000:f10 段）——
-# IP-CIDR6,240b:4000:f10::178/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,240b:4000:f10::188/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,2404:2280:4000::2bb/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,2404:2280:4000::23e/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,2404:2280:3000::176/128,REJECT,no-resolve,pre-matching
-# IP-CIDR6,2404:2280:3000::188/128,REJECT,no-resolve,pre-matching
+# IP-CIDR6,240b:4000:f10::178/128,REJECT,no-resolve
+# IP-CIDR6,240b:4000:f10::188/128,REJECT,no-resolve
+# IP-CIDR6,2404:2280:4000::2bb/128,REJECT,no-resolve
+# IP-CIDR6,2404:2280:4000::23e/128,REJECT,no-resolve
+# IP-CIDR6,2404:2280:3000::176/128,REJECT,no-resolve
+# IP-CIDR6,2404:2280:3000::188/128,REJECT,no-resolve
 # —— 腾讯云 HTTPDNS 接入 IP（标准版 98/99 + 企业版 43.132.x；
 # 119.29.29.29 是公共 DNS 且为本插件 dns-server，刻意不拦）——
-# IP-CIDR,119.29.29.98/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,119.29.29.99/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,43.132.43.43/32,REJECT,no-resolve,pre-matching
-# IP-CIDR,43.132.55.55/32,REJECT,no-resolve,pre-matching
+# IP-CIDR,119.29.29.98/32,REJECT,no-resolve
+# IP-CIDR,119.29.29.99/32,REJECT,no-resolve
+# IP-CIDR,43.132.43.43/32,REJECT,no-resolve
+# IP-CIDR,43.132.55.55/32,REJECT,no-resolve
 # —— 百度 HTTPDNS 唯一 BGP anycast VIP（旧组里的 186.76.76.200 是笔误：
 # 官方文档任何版本都不存在该 IP，只有 180.76.76.200）——
-# IP-CIDR,180.76.76.200/32,REJECT,no-resolve,pre-matching
+# IP-CIDR,180.76.76.200/32,REJECT,no-resolve
+# —— 可选：公共 DNS 解析器 IP 直连阻断（默认关闭）——
+# 旁路形状：App 不请求 DoH 域名，而是直连 8.8.8.8:443 / 1.1.1.1:853。
+# 此时连接层根本没有「域名」：[Host] 黑洞、DOMAIN-KEYWORD、URL-REGEX 全部失效，
+# DEST-PORT,853 也只挡端口、挡不住跑在 443 上的 DoH。
+# 唯一还能生效的是 IP 类规则——它只看 IP，不需要域名也不需要解密。
+# 风险：若你的主配置把下列任一 IP 用作 dns-server / doh-server，开启后 Loon
+# 自身的解析链会被自己的规则掐断（表现为整网不可用，比广告回来严重得多）。
+# 开启前逐条核对主配置；本插件自己使用的 DNS（223.5.5.5、223.6.6.6、
+# 119.29.29.29、180.184.1.1、1.12.12.12）刻意不在清单内，lint 会拦住误加。
+# 依据（均取自各服务商官方页面，不凭印象填 IP）：
+# Google developers.google.com/speed/public-dns/docs/using、
+# Cloudflare developers.cloudflare.com/1.1.1.1/ip-addresses/、
+# Quad9 quad9.net/service/service-addresses-and-features/、
+# AdGuard adguard-dns.io/en/public-dns.html。
+# —— Google Public DNS ——
+# IP-CIDR,8.8.8.8/32,REJECT,no-resolve
+# IP-CIDR,8.8.4.4/32,REJECT,no-resolve
+# IP-CIDR6,2001:4860:4860::8888/128,REJECT,no-resolve
+# IP-CIDR6,2001:4860:4860::8844/128,REJECT,no-resolve
+# —— Cloudflare 1.1.1.1 ——
+# IP-CIDR,1.1.1.1/32,REJECT,no-resolve
+# IP-CIDR,1.0.0.1/32,REJECT,no-resolve
+# IP-CIDR6,2606:4700:4700::1111/128,REJECT,no-resolve
+# IP-CIDR6,2606:4700:4700::1001/128,REJECT,no-resolve
+# —— Quad9（推荐档：恶意拦截 + DNSSEC）——
+# IP-CIDR,9.9.9.9/32,REJECT,no-resolve
+# IP-CIDR,149.112.112.112/32,REJECT,no-resolve
+# IP-CIDR6,2620:fe::fe/128,REJECT,no-resolve
+# IP-CIDR6,2620:fe::9/128,REJECT,no-resolve
+# —— AdGuard DNS（Default 档）——
+# IP-CIDR,94.140.14.14/32,REJECT,no-resolve
+# IP-CIDR,94.140.15.15/32,REJECT,no-resolve
+# IP-CIDR6,2a10:50c0::ad1:ff/128,REJECT,no-resolve
+# IP-CIDR6,2a10:50c0::ad2:ff/128,REJECT,no-resolve
 # —— 可选：STUN 协议阻断（PROTOCOL 规则为 Loon 3.1.7+ 语法）——
 # 防 WebRTC 真实 IP 泄露的协议级一拦；代价是部分 App 的语音/视频通话会失败。
 # 更稳妥的主配置解法见 docs/loon-feature-checklist.md 的 disable-stun 段。
@@ -585,7 +645,7 @@ msadsscale.microsoft.com = 127.0.0.1
 # ============================================================================
 # 全球移动广告 SDK / 聚合平台
 # ----------------------------------------------------------------------------
-# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。
+# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。
 # ============================================================================
 applovin.com = 127.0.0.1
 *.applovin.com = 127.0.0.1
@@ -678,11 +738,21 @@ bidease.com = 127.0.0.1
 *.bidease.com = 127.0.0.1
 cr.adsappier.com = 127.0.0.1
 *.cr.adsappier.com = 127.0.0.1
+beizi.biz = 127.0.0.1
+*.beizi.biz = 127.0.0.1
+adn-plus.com.cn = 127.0.0.1
+*.adn-plus.com.cn = 127.0.0.1
+rayjump.com = 127.0.0.1
+*.rayjump.com = 127.0.0.1
+mtgglobals.com = 127.0.0.1
+*.mtgglobals.com = 127.0.0.1
+mintegral.net = 127.0.0.1
+*.mintegral.net = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据
 # ----------------------------------------------------------------------------
-# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。
+# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。
 # ============================================================================
 adnxs.com = 127.0.0.1
 *.adnxs.com = 127.0.0.1
@@ -1180,6 +1250,11 @@ bluecava.com = 127.0.0.1
 *.bluecava.com = 127.0.0.1
 voicefive.com = 127.0.0.1
 *.voicefive.com = 127.0.0.1
+fwmrm.net = 127.0.0.1
+*.fwmrm.net = 127.0.0.1
+*.v.fwmrm.net = 127.0.0.1
+serving-sys.com = 127.0.0.1
+*.serving-sys.com = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告
@@ -1276,6 +1351,8 @@ iadsdk.apple.com = 127.0.0.1
 adsdk.yandex.ru = 127.0.0.1
 advertising.yahoo.com = 127.0.0.1
 events.brightline.tv = 127.0.0.1
+ads-api.x.com = 127.0.0.1
+ca.iadsdk.apple.com = 127.0.0.1
 
 # ============================================================================
 # 弹窗 / Popunder / 成人广告网络
@@ -1412,6 +1489,7 @@ yyapp-httpdns.gslb.yy.com = 127.0.0.1
 union-httpdns.gslb.yy.com = 127.0.0.1
 yuyin-httpdns.gslb.yy.com = 127.0.0.1
 httpdns-v6.gslb.yy.com = 127.0.0.1
+amdc.alipay.com.cn = 127.0.0.1
 
 # ============================================================================
 # 公共 DoH 解析器（DNS 防泄漏）
@@ -1509,7 +1587,7 @@ doh.kommespaeter.de = 127.0.0.1
 # ============================================================================
 # 应用 / Web 统计（可选，默认注释）
 # ----------------------------------------------------------------------------
-# Google Analytics/Firebase、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats 等统计/事件端点。默认注释；会让统计报表与部分实验/远程配置失效。
+# Google Analytics/Firebase（含 app-measurement / app-analytics-services / firebaselogging / crashlytics）、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Mixpanel、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats，以及 2026-10-27 真机日志实锤的 腾讯 Beacon/APM（rmonitor / h.trace / unitelogreport）、美团 dreport/wreport、JPush 统计、BOSS 直聘 APM、微信 badjs、起点 upush 等。默认注释；会让统计报表与部分实验/远程配置失效。
 #
 # ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
 # ============================================================================
@@ -1577,3 +1655,35 @@ doh.kommespaeter.de = 127.0.0.1
 # annoyingacoustics.com = 127.0.0.1
 # *.annoyingacoustics.com = 127.0.0.1
 # sanalytics.disneyplus.com = 127.0.0.1
+# app-analytics-services.com = 127.0.0.1
+# *.app-analytics-services.com = 127.0.0.1
+# mixpanel.com = 127.0.0.1
+# *.mixpanel.com = 127.0.0.1
+# catdot.dianping.com = 127.0.0.1
+# unitelogreport.reader.qq.com = 127.0.0.1
+# rmonitor.qq.com = 127.0.0.1
+# *.rmonitor.qq.com = 127.0.0.1
+# h.trace.qq.com = 127.0.0.1
+# stats.jpush.cn = 127.0.0.1
+# stats-ipv6.jpush.cn = 127.0.0.1
+# status.jpush.cn = 127.0.0.1
+# status-ipv6.jpush.cn = 127.0.0.1
+# ali-stats.jpush.cn = 127.0.0.1
+# gd-stats.jpush.cn = 127.0.0.1
+# tsis.jpush.cn = 127.0.0.1
+# tsis-ipv6.jpush.cn = 127.0.0.1
+# dreport.meituan.net = 127.0.0.1
+# *.dreport.meituan.net = 127.0.0.1
+# wreport.meituan.net = 127.0.0.1
+# *.wreport.meituan.net = 127.0.0.1
+# metrics-picture.d.meituan.net = 127.0.0.1
+# maplocatesdksnapshot.d.meituan.net = 127.0.0.1
+# data-sdk-uuid-log.d.meituan.net = 127.0.0.1
+# apm-ios.zhipin.com = 127.0.0.1
+# logapi-ios.zhipin.com = 127.0.0.1
+# firebaselogging-pa.googleapis.com = 127.0.0.1
+# crashlyticsreports-pa.googleapis.com = 127.0.0.1
+# badjs.weixinbridge.com = 127.0.0.1
+# upush.qidian.com = 127.0.0.1
+# upushv6.qidian.com = 127.0.0.1
+# stats.v2core.com = 127.0.0.1

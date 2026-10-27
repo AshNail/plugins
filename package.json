@@ -4,14 +4,28 @@
   "private": true,
   "description": "Personal Loon plugin collection",
   "scripts": {
-    "build": "node tools/build.js",
+    "build": "node tools/gen-args.js && node tools/build.js",
+    "build:args": "node tools/gen-args.js",
+    "check:args": "node tools/gen-args.js --check",
     "test": "python3 tests/run-all.py",
     "test:src": "python3 tests/run-all.py --src",
     "test:dist": "python3 tests/run-all.py --dist",
     "lint": "python3 tests/lint-plugins.py",
-    "check": "npm run build && npm run build:ads && npm run lint && npm test",
+    "check": "npm run check:args && npm run build && npm run build:ads && npm run lint && npm run check:loon && npm run check:surfaces && npm run check:effective && npm run check:bypass && npm test",
+    "bypass": "python3 tools/bypass-audit.py",
+    "bypass:write": "python3 tools/bypass-audit.py --write",
+    "check:bypass": "python3 tools/bypass-audit.py --check",
     "build:ads": "python3 tools/build-ads.py",
-    "audit:ads": "python3 tools/ads-audit.py"
+    "audit:ads": "python3 tools/ads-audit.py",
+    "coverage": "python3 tools/loon-coverage.py",
+    "coverage:write": "python3 tools/loon-coverage.py --write",
+    "check:loon": "python3 tools/loon-coverage.py --check",
+    "surfaces": "python3 tools/ad-surface-audit.py",
+    "surfaces:write": "python3 tools/ad-surface-audit.py --write",
+    "check:surfaces": "python3 tools/ad-surface-audit.py --check",
+    "effective": "python3 tools/rule-effectiveness.py",
+    "effective:write": "python3 tools/rule-effectiveness.py --write",
+    "check:effective": "python3 tools/rule-effectiveness.py --check"
   },
   "devDependencies": {
     "terser": "^5.51.2"

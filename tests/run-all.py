@@ -19,6 +19,7 @@ SUITES = [
     "test_feed_flags.js",
     "test_feed_expand.js",
     "test_reward_observe.js",
+    "test_store_scope.js",
     "test_unified_args.js",
     "test_block_domains.js",
     "test_douyin_treasure.js",
@@ -32,6 +33,8 @@ SUITES = [
     "test_soda_kill_reward.js",
     "test_status.js",
     "test_welfare_stamp.js",
+    "test_encoding_guard.js",
+    "test_args_schema.js",
 ]
 
 parser = argparse.ArgumentParser()

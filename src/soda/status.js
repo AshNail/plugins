@@ -39,6 +39,7 @@ function readStore(key) {
  * 「当前开关摘要 + 冲突提醒」。标签只覆盖两家族真实存在的开关，
  * 不认识的键自动忽略。
  */
+/* >>> GENERATED SWITCH_LABELS from src/args/*.json -- do not edit (npm run build:args) */
 var SWITCH_LABELS = [
   ["rewardSafe", "保奖励"],
   ["splashClean", "清开屏"],
@@ -55,8 +56,9 @@ var SWITCH_LABELS = [
   ["cleanActivity", "活动入口清理"],
   ["debugLog", "只读日志"],
   ["logTaskTitles", "日志带标题"],
-  ["dailyReminder", "每日提醒"]
+  ["dailyReminder", "每日提醒"],
 ];
+/* <<< GENERATED SWITCH_LABELS */
 
 function readArgs() {
   var r;
@@ -137,6 +139,9 @@ function notifyEnabled() {
   }
 }
 
+/* envLine() 顺手记下运行模式，给下面的「模式告警」用 */
+var RUNNING_MODEL = null;
+
 function envText(v) {
   if (typeof v === "string") return v;
   try { return JSON.stringify(v); } catch (e) { return String(v); }
@@ -177,7 +182,14 @@ function envLine() {
       if (cfg && typeof cfg.running_model !== "undefined") {
         var models = ["直连", "分流", "全局代理"];
         var idx = Number(cfg.running_model);
-        bits.push("运行模式 " + (models[idx] || ("#" + cfg.running_model)));
+        RUNNING_MODEL = idx;
+        /*
+         * 0 = 全局直连。这种模式下 Loon 不执行规则、不进 [MITM]、不跑脚本，
+         * 插件等于没装——而界面上只会显示「直连」两个字，用户不会知道
+         * 自己刚装的去广告插件一个动作都没执行。这里必须点名。
+         */
+        bits.push("运行模式 " + (models[idx] || ("#" + cfg.running_model)) +
+          (idx === 0 ? "（⚠️ 插件不生效）" : ""));
       }
     }
   } catch (e) {}
@@ -214,6 +226,12 @@ function capabilityLine() {
   var switches = switchSummary(args);
   var warns = switchWarnings(args);
   var env = envLine();
+  if (RUNNING_MODEL === 0) {
+    warns.unshift(
+      "⚠️ 当前是「全局直连」：Loon 不执行规则、不解密、不跑脚本，" +
+      "本插件所有功能都不会生效。改成「分流」或「全局代理」后再看。"
+    );
+  }
 
   var summary = seenToday ? "今日已打卡" : "今日未打卡";
   var detail = "福利打卡：" + (seenToday ? "✅ 正常（" + seen + "）" : "⚠️ 尚未打卡") + "\n" +
@@ -221,7 +239,7 @@ function capabilityLine() {
                "开关状态：" + switches;
   if (env) detail += "\n运行环境：" + env;
   detail += "\nLoon 能力：" + capabilityLine();
-  detail += "\n静态层：QUIC 回退 8 域 · h2（常开）";
+  detail += "\n静态层：QUIC 回退 17 域 · h2 · 压缩→gzip（常开）";
   for (var w = 0; w < warns.length; w++) detail += "\n" + warns[w];
 
   console.log("[soda-status] " + summary + " | " + statsText + " | " + switches +
@@ -234,7 +252,8 @@ function capabilityLine() {
         "汽水音乐 · 状态自检",
         summary,
         detail,
-        { "openUrl": "qishui://" }
+        /* 点通知：打开 App + 把同一份诊断复制到剪贴板（直接粘进 issue 即可） */
+        { "openUrl": "qishui://", "clipboard": detail }
       );
     }
   } catch (e) {}

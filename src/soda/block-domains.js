@@ -12,7 +12,8 @@
  *   「完整域名拦截」这个能力。
  *   这里改用 http-request 脚本 + enable={blockAdDomains}：
  *     - 开关关闭时脚本根本不执行，流量不受影响；
- *     - 开关打开时返回 200 空响应，广告 SDK 拿不到广告；
+ *     - 开关打开时回 200 + application/json + {}（与 [Rewrite] 的
+ *       reject_dict(200) 同形状），广告 SDK 拿不到广告也不会去重试；
  *     - rewardSafe=true 时脚本内部直接放行，激励广告照常播放。
  *
  * 已知限制：
@@ -24,9 +25,10 @@
  *      （例如赠送时长）由 App 决定，插件不伪造任何奖励。
  *
  * 与 ads.plugin 的分层：
- *   下面 5 个域名中的 ad.zijieapi.com / lianmengapi.snssdk.com /
- *   ads5-normal-hl.zijieapi.com 已同时被 ads.plugin 的 [Host] DNS 层拦截；
- *   本脚本是 App 内 MITM 层的兜底与精准控制（ads.plugin 刷奖励时要关）。
+ *   下面 5 条里的 ad.zijieapi.com / lianmengapi.snssdk.com 与
+ *   ads?-normal*.zijieapi.com（Pangle 分片族）已同时被 ads.plugin 的
+ *   [Host] DNS 层 + DOMAIN-WILDCARD 家族层拦截；本脚本是 App 内 MITM 层的
+ *   兜底与精准控制（ads.plugin 刷奖励时要关）。
  */
 
 /* 被拦截的广告 / 归因域名（lint 会校验：本数组 = [Script] 正则 = [MITM] 超集） */
@@ -68,13 +70,36 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
+/* 被拦截的广告 / 归因域名（lint 会校验：本数组 = [Script] 正则 = [MITM] 超集）
+   条目可以是精确域名，也可以是 glob：`?` 恰好一个字符、`*` 任意字符。
+   分片族用 glob 表达：Pangle 按服务端下发在 ads3/ads5 × 区域后缀之间切换，
+   逐个枚举必然漏掉没见过的分片，一条 `ads?-normal*.zijieapi.com` 全收。 */
 const BLOCKED_HOSTS = [
   "ad.zijieapi.com",
   "lianmengapi.snssdk.com",
-  "ads5-normal-hl.zijieapi.com",
+  "ads?-normal*.zijieapi.com",
   "zlink.ugsdk.cn",
   "praisewindow.ugsdk.cn"
 ];
+
+/* glob → RegExp：只把 `*`/`?` 当通配，其余字符按字面量转义。 */
+const BLOCKED_RX = BLOCKED_HOSTS.map(function (pattern) {
+  var src = "";
+  for (var i = 0; i < pattern.length; i++) {
+    var c = pattern.charAt(i);
+    if (c === "*") src += ".*";
+    else if (c === "?") src += ".";
+    else src += /[a-z0-9.-]/.test(c) ? c : "\\" + c;
+  }
+  return new RegExp("^" + src + "$");
+});
+
+function hostBlocked(host) {
+  for (var i = 0; i < BLOCKED_RX.length; i++) {
+    if (BLOCKED_RX[i].test(host)) return true;
+  }
+  return false;
+}
 
 function hostOf(url) {
   const m = String(url || "").match(/^https?:\/\/([^\/:?#]+)/i);
@@ -100,16 +125,20 @@ function hostOf(url) {
 
     /* 二次确认域名，避免脚本被改挂后误伤其它请求 */
     const host = hostOf(url);
-    if (host === "" || BLOCKED_HOSTS.indexOf(host) === -1) {
+    if (host === "" || !hostBlocked(host)) {
       return $done({});
     }
 
     console.log("[soda-domains] blocked: " + url);
+    /* 回包形状与 [Rewrite] 的 reject_dict(200) 对齐：200 + application/json + {}。
+       文档明确「reject(200,"{}") 返回普通文本；需要 JSON Content-Type 时用
+       reject_dict」。广告 SDK 一律按 JSON 解析，空 text/plain 会落进
+       "解析失败 → 重试" 分支，等于把一次拦截变成一次重试风暴。 */
     return $done({
       response: {
         status: 200,
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-        body: ""
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: "{}"
       }
     });
   } catch (e) {
