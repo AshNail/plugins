@@ -73,7 +73,7 @@ Loon 工作在**网络层**。
 | `luna/ads/retrieve`、`luna/ads/dsp/retrieve` | `ad_launch` `ad_launch_list` `ads_blocks` `ads_info` | 通用广告拉取 |
 | 信息流（`luna/feed/*`、`luna/playlist/feed/media` 等） | `ads_blocks` `ads_info` `is_ad` | 信息流广告块与广告条目标记 |
 | `luna/commerce/upsells`（v1） | `card` `upsell_unique_name` `countdown` | 会员升级 / 挽回弹窗（旧版） |
-| `luna/commerce/v2/upsell` | `sceneUpsellsMap` / `upellsVariables` / `sortControlUniqueNames` / `popupConfig` 等（Swift 属性名；线上键大小写待真实响应确认） | 奖励入口 / 商业化弹窗；金币挂件配置在 `candidates[].fixed_entrance.coin_widget_data` |
+| `luna/commerce/v2/upsell` | `upsell_map` / `sort_control_unique_names` / `cold_launch_timing` / `freq_ctrl_cfg`（2026-10-20 真 HAR，snake_case）；`sceneUpsellsMap` / `upellsVariables` / `popupConfig` 为二进制 Swift 属性名，线上键名待确认 | 商业化弹窗（`upsell_map` 实体）按名字精确清理；金币挂件配置在 `candidates[].fixed_entrance.coin_widget_data`（奖励入口） |
 | `luna/treasure/entrance/config` | `main_icon` `main_tab`（`TreasureEntranceConfigResponse`） | 福利入口；`coin_widget_data` 的直接宿主是 upsell 的 `FixedEntrance` |
 
 ### 1.1 设置层：TTKitchen 下发（v1.5 新增，v1.5.1 扩展）
@@ -178,7 +178,7 @@ Loon 工作在**网络层**。
 | `luna/ads/config` | `ad_unit_configs` / `splash_config` / `feed_ads_config` / `reward_config` / `search_banner` / `feed_widget` / `commerce_libra_ad_config` / `commerce_common_ad_config` / `adn_group_config` / `splash_dsp_config` / `preload_dsp_config` / `splash_mannor_config` / `ad_ignore_player_status_config` → 空容器（数组 `[]`，对象 `{}`） |
 | `luna/ads/{retrieve,dsp/retrieve}`、`luna/advert/fallback/done/info` | `ad_launch` / `ad_launch_list` / `ads_blocks` / `ads_info` / `ad_infos` / 上述广告配置 → 空容器（数组 `[]`，对象 `{}`） |
 | 信息流（`luna/feed/*`、`luna/v2/feed/*`、`luna/playlist/detail`、`luna/playlist/search`、`luna/search/track`、`luna/search-block`、`luna/search-categories`、`luna/card`、`luna/discover/mix`、`luna/media/assistant/related`、`luna/me/discover`、`luna/featured-content/list` 等） | 清 `ads_blocks` / `ads_info` / `ad_info` / `video_end_ad` / `feed_ads` / `feed_reward_ad_entrance`；`is_ad` / `is_advertisement` / `is_ad_item` / `ad_flag` / `adItem` 为 true 的条目整条丢；`banner_list` 里的广告项裁掉 |
-| `luna/commerce/{upsells,v2/upsell,v2/upsell_sort_decision}` | v1：`card` / `upsells` / `upsell_unique_name` / `items` / `popups` / `list → []`；v2 目前尚未覆盖 `sceneUpsellsMap` → `candidates` → `fixedEntrance.coinWidgetData`（已知缺口，见报告 14.11） |
+| `luna/commerce/{upsells,v2/upsell,v2/upsell_sort_decision}` | v1：`card` / `upsells` / `upsell_unique_name` / `items` / `popups` / `list → []`；v2：`upsell_map` 里广告/商城命名的弹窗实体逐个删除，同步清理 `freq_ctrl_cfg.freq_ctrl_map` 同名项、`sort_control_unique_names` 与 `cold_launch_timing.upsell_item_unique_names`（含只登记无实体的广告弹窗）；奖励/发奖/兜底弹窗与 `variables` / `libra_params_map` 不动。`sceneUpsellsMap → candidates → fixedEntrance.coinWidgetData` 仍不处理（奖励入口，非广告实体） |
 | `luna/treasure/entrance/config`、`luna/growth/activity_entrance` | 摘 `labels`；若响应内出现 `coin_widget_state_list`，按 `widgetAdReward` 等广告态过滤；清 `reward_ad_banner` / `ads_banner` / `ad_snap` / `popup_show_ad` 等；`banner_list` 只裁广告项（含 `ad_reward`） |
 | `luna/treasure/task/view` | 只摘 `task_infos` / `tasks` / `taskList` / `list` / `data` 里匹配 `ad_reward` / `reward_ads` / `incentive` / `watch_video` / `commerce_ad` / `ad_snap` / 看视频 / 看广告 的任务；同样裁广告 banner/popup |
 
@@ -559,7 +559,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | 奖励是否正常到账 | 完整看完激励视频，确认金币/畅听/翻牌等奖励到账；不要跳过广告或伪造回调 |
 | 激励链路是否下发 | 打开 `debugLog`，日志搜 `[soda-reward]`；看 `counts.sources` / `counts.adInfosMap` / `tasks` / `reward` 是否为空 |
 
-本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（12 套 / 302 条断言，源码与压缩版各一遍，共 604 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
+本地回归：`npm run check`（build + lint + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（22 套 / 634 条断言，源码与压缩版各一遍，共 1268 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
 
 建议顺序（严格去广告）：**先确认保奖励模式 → 关闭 rewardSafe → 开 cleanAds → 最后手动开 [Rule] 严格模式**，每一步观察一天。
 
@@ -579,7 +579,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | 信息流广告残留 | 广告条目是 `video + ad_info` 时，默认保守策略只清 `ad_info`，不丢整条；按 3.6 改成看到 `ad_info` 就丢 |
 | SDK 日志「注册广告位失败」 | `ad_unit_configs` 被清空，属预期，不影响播放 |
 | 金币挂件只剩签到/累积/可领取 | `coin_widget_state_list` 里的 `widgetAdReward` 广告态被摘掉，属预期 |
-| 金币挂件仍显示广告态 | 主插件 v1.5.2 的 `upsell` 规则未覆盖 v2 `sceneUpsellsMap` → `candidates` → `fixedEntrance.coinWidgetData`；待后续补定向裁剪 |
+| 金币挂件仍显示广告态 | 福利页 `coin_widget_state_list` 广告态已由 `treasure-entrance` 摘除；upsell 的 `fixedEntrance.coinWidgetData` 是入口配置，尚无真机广告态字段样本，暂不裁剪 |
 | 广告配置有本地缓存 | 首次启用后旧配置可能仍生效；清 App 缓存/重装，或等 `expires_at` 过期 |
 | 打开设置层后 App 设置加载失败/断网 | `conf.qishui.com` 证书固定；关闭 `settingsClean` 回滚 |
 | 启用 `is.snssdk.com` 后广告 SDK 初始化失败/崩溃 | BDADSDK 设置被清空或证书固定；注释该 Script/MITM 行，只保留 `conf.qishui.com` |
@@ -621,12 +621,13 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.2）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.6.6）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
 │           ├── reward-observe.min.js
 │           ├── splash-ad.min.js
+│           ├── status.min.js
 │           ├── block-domains.min.js   # ← 与 douyin 同源（src/common 生成）
 │           ├── daily-reminder.min.js  # ← 与 douyin 同源（src/common 生成）
 │           └── welfare-stamp.min.js   # ← 与 douyin 同源（src/common 生成）
@@ -637,12 +638,13 @@ loon-plugins/
 │       ├── settings.js
 │       ├── reward-observe.js
 │       ├── splash-ad.js
+│       ├── status.js
 │       ├── block-domains.js        # ← src/common 生成，勿手改
 │       ├── daily-reminder.js       # ← src/common 生成，勿手改
 │       └── welfare-stamp.js        # ← src/common 生成，勿手改
 ├── tools/
 │   └── build.js                    # src/common 家族展开 + src -> plugins 压缩构建
-├── tests/                          # 脚本层回归测试（20 套 / 510 条断言 × 2）
+├── tests/                          # 脚本层回归测试（22 套 / 634 条断言 × 2 = 1268）
 ├── package.json
 ├── package-lock.json
 ├── .github/workflows/check.yml     # CI：build + lint + 测试
@@ -697,6 +699,32 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 ---
 
 ## 11. 版本更新记录
+
+### v2.6.6（2026-10-27）upsell v2 弹窗精确清理
+
+- `commerce/v2/upsell` 的 `upsell_map` 实装：真实 93 弹窗样本中删除 18 个广告/商城弹窗（`*_ads_*`、`reward_ad_cold_launch_popup`、`browse_mall_popup_acc_amount` 等），奖励/发奖/兜底弹窗全部保留。
+- 同步清理三处调度引用：`freq_ctrl_cfg.freq_ctrl_map` 只删与已删弹窗同名的 3 项（共享 `background_voice_prompt` 与非弹窗 `widget_ad` 保留）；`sort_control_unique_names` 14→6；`cold_launch_timing.upsell_item_unique_names` 23→20，含只登记无实体的 `cold_launch_popup_ads_text`。
+- `fastReject` 新增 `upsell_map` 标记，只带该字段的响应也能进入 JSON 处理；`variables` / `libra_params_map` / `status_code` 原样保留。
+- 说明：`sceneUpsellsMap → candidates → fixedEntrance.coinWidgetData` 属于奖励入口，不作为广告实体删除。
+
+### v2.6.5（2026-10-27）task/page 预拉取精确收紧
+
+- `task/page` 页面级广告开关收紧：`config.migrate_first_ad` 置 false。
+- `config.ad_api_preload.task_ids` 不再原样保留：只留“仍在页面里的任务”引用的 id（`task.id` / `ad_snap.task_id` / `base_ad_diversion.id`），被摘掉的广告任务与页面快照里不存在的 id 丢弃；一条不剩时同步关闭 `preload`。保留任务（签到/翻卡/红包雨/开宝箱等）的广告预拉取不受影响。
+- 真实样本回归：9 个预拉取 id 收紧为 4 个（保留任务的 600607/600585/600625/600662），`music_incentive_ad` 的 600572 与 4 个已不存在 id 被清掉。
+
+### v2.6.4（2026-10-27）广告源/retrieve 补齐 + 大响应预检
+
+- `luna/ads/retrieve` 纳入 `cleanAds`：补齐 `ad_launch` / `ad_launch_list` / `ads_blocks` / `ads_info` 及广告位配置字段，不再只处理 `ads/config` 与 `ads/dsp/retrieve`。
+- `sanitize` 的 `fastReject` 改为从每条规则的 kill/falsy/prune 键自动生成（兼容 camelCase/snake_case），修复手写正则漏键导致 upsell 等响应被提前放行的问题；新增规则不会再漏同步。
+- 无广告标记的大响应直接返回 `X-Soda-Plugin: soda-sanitize;noop=no-marker`，避免无谓 `JSON.parse`。
+
+### v2.6.3（2026-10-26）传感器误触 / 商业推广 / 上报阻断
+
+- 开屏与广告位清理补 `shake_info` / `twist_info` / `motion_info` / `interaction_info` / `splash_cache`，覆盖摇一摇、扭转、前倾等传感器误触广告。
+- 信息流广告条目识别扩展 `is_promoted` / `is_sponsored` / `is_commercial` 与 `promoted` / `sponsored`。
+- 新增 `luna/ads/report/dsp/show` 请求阻断（`reject(200)`，`cleanAds` 控制），减少已清理广告的无用上报。
+- 新增 `status.js` Generic 状态脚本与通知 attach openUrl；设置层同步关闭摇一摇/扭一扭传感器、开屏预加载与缓存开关。
 
 ### v2.6.2（2026-10-26）共享脚本单一来源整合（行为不变）
 

@@ -1,12 +1,12 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.1.4
+#!version=2.1.5
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.1(983)
-#!date=2026-10-26
+#!date=2026-10-27
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -641,7 +641,7 @@ cr.adsappier.com = 127.0.0.1
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据
 # ----------------------------------------------------------------------------
-# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks 等广告专用域。
+# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。
 # ============================================================================
 adnxs.com = 127.0.0.1
 *.adnxs.com = 127.0.0.1
@@ -1125,11 +1125,25 @@ bttrack.com = 127.0.0.1
 *.bttrack.com = 127.0.0.1
 etahub.com = 127.0.0.1
 *.etahub.com = 127.0.0.1
+advertnative.com = 127.0.0.1
+*.advertnative.com = 127.0.0.1
+ntvk1.ru = 127.0.0.1
+*.ntvk1.ru = 127.0.0.1
+lentainform.com = 127.0.0.1
+*.lentainform.com = 127.0.0.1
+valueclickmedia.com = 127.0.0.1
+*.valueclickmedia.com = 127.0.0.1
+medleyads.com = 127.0.0.1
+*.medleyads.com = 127.0.0.1
+bluecava.com = 127.0.0.1
+*.bluecava.com = 127.0.0.1
+voicefive.com = 127.0.0.1
+*.voicefive.com = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告
 # ----------------------------------------------------------------------------
-# Amazon/eBay/Uber/Walmart/Roundel/Kroger/Instacart 零售媒体，Samsung/LG/Roku/DOOH，Spotify/SoundCloud/Triton/AdsWizz 音频广告，Snap/Pinterest/Reddit/LinkedIn/X/Yahoo/Microsoft/Apple/Yandex 广告域。共享主域只列广告子域。
+# Amazon/eBay/Uber/Walmart/Roundel/Kroger/Instacart 零售媒体，Samsung/LG/Roku/DOOH，Brightline CTV 事件，Spotify/SoundCloud/Triton/AdsWizz 音频广告，Snap/Pinterest/Reddit/LinkedIn/X/Yahoo/Microsoft/Apple/Yandex 广告域。共享主域只列广告子域。
 # ============================================================================
 ebayadservices.com = 127.0.0.1
 *.ebayadservices.com = 127.0.0.1
@@ -1220,6 +1234,7 @@ geo.yahoo.com = 127.0.0.1
 iadsdk.apple.com = 127.0.0.1
 adsdk.yandex.ru = 127.0.0.1
 advertising.yahoo.com = 127.0.0.1
+events.brightline.tv = 127.0.0.1
 
 # ============================================================================
 # 弹窗 / Popunder / 成人广告网络
@@ -1360,7 +1375,7 @@ httpdns-v6.gslb.yy.com = 127.0.0.1
 # ============================================================================
 # 公共 DoH 解析器（DNS 防泄漏）
 # ----------------------------------------------------------------------------
-# 把浏览器/App 自带的公共 DoH 入口映射到 127.0.0.1，防止它们绕过 Loon DNS 继续解析广告域。Loon 自身已改用 IP 形式 DoH（见 [General]），不依赖这些域名；如果你的主配置 doh-server 仍使用这里的域名，先改成 IP 形式，或注释掉对应行。doh.dns.apple.com 刻意不拦，避免影响 iOS/macOS 系统解析。
+# 把浏览器/App 自带的公共 DoH/DoT 入口映射到 127.0.0.1，防止它们绕过 Loon DNS 继续解析广告域。除主流厂商外，2026-10-27 补充 Applied Privacy、LibreDNS、Tiar、FFMUC、Digitale Gesellschaft、Hostux、SecureDNS、Crypto.sx、DNSForge、Kommespaeter 等公共加密 DNS。Loon 自身已改用 IP 形式 DoH（见 [General]），不依赖这些域名；如果你的主配置 doh-server 仍使用这里的域名，先改成 IP 形式，或注释掉对应行。doh.dns.apple.com 刻意不拦，避免影响 iOS/macOS 系统解析。
 # ============================================================================
 dns.google = 127.0.0.1
 chrome.cloudflare-dns.com = 127.0.0.1
@@ -1401,6 +1416,24 @@ dns64.dns.google = 127.0.0.1
 8888.google = 127.0.0.1
 doh.dns.sb = 127.0.0.1
 dot.sb = 127.0.0.1
+doh.nextdns.io = 127.0.0.1
+dns.controld.com = 127.0.0.1
+doh.controld.com = 127.0.0.1
+dot.quad9.net = 127.0.0.1
+1dot1dot1dot1.cloudflare-dns.com = 127.0.0.1
+dot.mullvad.net = 127.0.0.1
+dot.alidns.com = 127.0.0.1
+doh.applied-privacy.net = 127.0.0.1
+doh.libredns.gr = 127.0.0.1
+doh.tiar.app = 127.0.0.1
+doh.tiarap.org = 127.0.0.1
+doh.ffmuc.net = 127.0.0.1
+dns.digitale-gesellschaft.ch = 127.0.0.1
+doh.hostux.net = 127.0.0.1
+doh.securedns.eu = 127.0.0.1
+doh.crypto.sx = 127.0.0.1
+doh.dnsforge.net = 127.0.0.1
+doh.kommespaeter.de = 127.0.0.1
 
 # ============================================================================
 # 移动归因 / MMP（可选，默认注释）
@@ -1435,7 +1468,7 @@ dot.sb = 127.0.0.1
 # ============================================================================
 # 应用 / Web 统计（可选，默认注释）
 # ----------------------------------------------------------------------------
-# Google Analytics/Firebase、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Yandex、Pinterest、LinkedIn、Yahoo 等统计/事件端点。默认注释；会让统计报表与部分实验/远程配置失效。
+# Google Analytics/Firebase、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats 等统计/事件端点。默认注释；会让统计报表与部分实验/远程配置失效。
 #
 # ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
 # ============================================================================
@@ -1489,3 +1522,17 @@ dot.sb = 127.0.0.1
 # metrics-logger.spot.im = 127.0.0.1
 # trace.qq.com = 127.0.0.1
 # track.uc.cn = 127.0.0.1
+# cetrk.com = 127.0.0.1
+# *.cetrk.com = 127.0.0.1
+# wizaly.com = 127.0.0.1
+# *.wizaly.com = 127.0.0.1
+# stat.pl = 127.0.0.1
+# *.stat.pl = 127.0.0.1
+# soicos.com = 127.0.0.1
+# *.soicos.com = 127.0.0.1
+# stats.wp.com = 127.0.0.1
+# nr-data.net = 127.0.0.1
+# *.nr-data.net = 127.0.0.1
+# annoyingacoustics.com = 127.0.0.1
+# *.annoyingacoustics.com = 127.0.0.1
+# sanalytics.disneyplus.com = 127.0.0.1

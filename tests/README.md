@@ -20,7 +20,7 @@ npm test            # 源码 + 压缩版都跑
 npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 ```
 
-`run-all.py` 默认对源码和压缩版各跑一遍；`SODA_SCRIPT_SET=src|dist`（或 `SCRIPT_SET`）由 `tests/load-script.js` 读取，`loadScript(name, family)` 可以加载不同插件族。`lint-plugins.py` 检查每个 App 唯一部署插件（`soda.plugin`、`douyin.plugin`）的 section、域名、Rewrite/Script 行数、正则编译、`script-path` 是否指向存在的 `.min.js`、源码是否存在、压缩脚本能否通过 `node --check`，并确认压缩脚本确实比源码小且行数不超过 5 行。它还会验证：插件没有启用的静态 `[Rule]` 域名、每条脚本都带 `enable=${开关}`、开关默认值正确、`[MITM]` 覆盖 API/设置/广告域名、关键端点能被脚本正则命中，以及 `#!name/#!desc/#!author/#!version/#!homepage/#!icon` 元数据齐全且 `#!icon` 是 https 链接。
+`run-all.py` 默认对源码和压缩版各跑一遍；`SODA_SCRIPT_SET=src|dist`（或 `SCRIPT_SET`）由 `tests/load-script.js` 读取，`loadScript(name, family)` 可以加载不同插件族。`lint-plugins.py` 检查每个 App 唯一部署插件（`soda.plugin`、`douyin.plugin`）的 section、域名、Rewrite/Script 行数、正则编译、脚本引用（新版 `script("...")` 与旧 `script-path=`）是否指向存在的 `.min.js`、源码是否存在、压缩脚本能否通过 `node --check`，并确认压缩脚本确实比源码小且行数不超过 5 行。它还会验证：插件没有启用的静态 `[Rule]` 域名、每条脚本都带 `enable=${开关}`、开关默认值正确、`[MITM]` 覆盖 API/设置/广告域名、关键端点能被脚本正则命中，以及 `#!name/#!desc/#!author/#!version/#!date` 元数据齐全且 `#!icon` 是 https 链接。
 
 对单 ads 插件，lint 还会检查 `[General]`/`[Rule]`/`[Host]` 的顺序、General 白名单、DoH 必须使用 IP、Rule 只能 REJECT、默认注释的归因/统计组没有被误启用、共享主域保护名单、旧的三份 ads 文件确实删除，以及生成物与 `src/ads/domains.json` 逐字节一致。
 
@@ -34,32 +34,35 @@ npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 | `test_prune.js` | 13 | `incentive/config` 的 `advert_sources` / `feed_advert_config` / `preload` |
 | `test_taskinfos.js` | 1 | `task_infos` 广告任务裁剪（保留签到/听歌/逛商城） |
 | `test_ads_surfaces.js` | 33 | 开屏、广告位、DSP、兜底、卡片、增长入口、upsell |
+| `test_soda_upsell_v2.js` | 56 | soda `upsell_map`：真实 93 弹窗样本删除广告/商城实体、奖励弹窗保留、排序/冷启动/频控同步、只带 `upsell_map` 的响应也能命中 |
 | `test_treasure_prune2.js` | 15 | 福利任务、banner、弹窗、金币挂件、`commerce_ad_task` / `ad_snap` |
-| `test_settings.js` | 66 | TTKitchen 设置层、BDADSDK 形态、可选 `i`/`is` 主机、AGGRESSIVE/DRY_RUN/INJECT_MISSING |
-| `test_feed_flags.js` | 10 | `is_advertisement` / `ad_flag` / `adItem` / `card.is_ad` |
+| `test_settings.js` | 85 | TTKitchen 设置层、BDADSDK 形态、可选 `i`/`is` 主机、AGGRESSIVE/DRY_RUN/INJECT_MISSING |
+| `test_feed_flags.js` | 17 | `is_advertisement` / `ad_flag` / `adItem` / `card.is_ad` / promoted / sponsored / commercial |
 | `test_feed_expand.js` | 16 | 扩展 feed 端点、`search-block` 仅 `banner_list` 场景 |
-| `test_reward_observe.js` | 91 | 激励链路只读观测：计数、任务摘要、进度字段、发奖字段、upsell 入口变量、隐私过滤、大响应放行 |
-| `test_block_domains.js` | 7 | 广告域名拦截脚本：开关关闭不拦、`rewardSafe` 放行、非广告域名不拦、返回 200 空响应 |
-| `test_douyin_upsell.js` | 39 | 真实 93 弹窗样本：广告/商城弹窗被删、奖励与兜底弹窗保留、variables 不动、排序与冷启动引用同步清理 |
+| `test_reward_observe.js` | 101 | 激励链路只读观测：计数、任务摘要、进度字段、发奖字段、upsell 入口变量、隐私过滤、大响应放行 |
+| `test_block_domains.js` | 28 | 广告域名拦截脚本：开关关闭不拦、`rewardSafe` 放行、非广告域名不拦、返回 200 空响应 |
+| `test_douyin_upsell.js` | 46 | 真实 93 弹窗样本：广告/商城弹窗被删、奖励与兜底弹窗保留、variables 不动、排序/冷启动引用同步清理、频控表只删同名项 |
 | `test_soda_splash_ad.js` | 8 | 开屏广告请求拦截：开屏路径被拦、激励广告与发奖回调绝不拦、开关关闭放行 |
-| `test_soda_douyin_entry.js` | 13 | 【听抖音】入口：设置层 anchor_luna_to_douyin* 置 0、不动其它设置、保奖励模式下也能生效、与清广告配置互不干扰 |
+| `test_soda_douyin_entry.js` | 14 | 【听抖音】入口：设置层 anchor_luna_to_douyin* 置 0、不动其它设置、保奖励模式下也能生效、与清广告配置互不干扰 |
 | `test_douyin_activity.js` | 19 | polaris 活动配置（真实样本 181 个活动）：音乐节/抖音运营活动 canshow 置 false、其它活动不动、开关关闭原样放行 |
 | `test_soda_kill_reward.js` | 12 | 断激励广告：显式 killRewardAds 才清激励素材（保奖励模式下也能清）、只开 cleanAds 时素材保持原样、广告位配置照常清理 |
 | `test_soda_task_titles.js` | 7 | 只读日志带任务标题：默认不打文案、开关打开后带 title、view.title 形态也能取到 |
-| `test_douyin_treasure.js` | 32 | 抖音福利页精简：只留攒时长模块、其余分区全部移除、广告预拉取 id 清空、开关关闭原样放行、参数对象/数组/字符串三种形态都识别、**真实抓包样本**回归 |
-| `test_douyin_clean.js` | 20 | 抖音广告配置/商业化弹窗/演出清理：广告源与素材清空、商城与广告弹窗删除、排序与冷启动引用同步清理、音乐节列表清空 |
-| `test_unified_args.js` | 19 | 聚合插件开关：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目 |
+| `test_douyin_treasure.js` | 38 | 抖音福利页精简：只留攒时长模块、其余分区全部移除、`migrate_first_ad` 关闭、广告预拉取只留保留任务引用、开关关闭原样放行、参数对象/数组/字符串三种形态都识别、**真实抓包样本**回归 |
+| `test_douyin_clean.js` | 44 | 抖音广告配置/商业化弹窗/演出清理：广告源与素材清空、`ads/retrieve` 的 `ad_launch*` / `ads_blocks` / `ads_info` 清理、商城与广告弹窗删除、排序/冷启动/频控同名项同步清理、音乐节列表清空 |
+| `test_soda_task_page_v2.js` | 31 | `treasure/task/page/v2` 结构化任务判别：只摘激励广告任务、保留签到/翻卡/攒时长、预拉取只留保留任务引用、真实样本回归 |
+| `test_unified_args.js` | 22 | 聚合插件开关：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目 |
+| `test_status.js` | 9 | Generic 状态脚本：汽水/抖音打卡摘要、广告统计、通知 attach openUrl |
 
-合计 **344** 条断言；源码与压缩版各一遍，共 **688** 条。
+合计 **634** 条断言；源码与压缩版各一遍，共 **1268** 条。
 
 ## 抖音插件（douyin.plugin）
 
 `plugins/douyin/douyin.plugin` 依据 2026-10 三份真实 HAR 取证实现，测试集中在 `test_douyin_treasure.js`、`test_douyin_clean.js` 与 lint：
 
 - 福利页精简：只保留 `duration_task_section` / `luna_rewards_ads`（攒时长 听歌不中断），其余分区整体删除；
-- 被删任务的广告预拉取 id（`config.ad_api_preload.task_ids`）清空；
+- `config.migrate_first_ad` 关闭；`config.ad_api_preload.task_ids` 只留保留任务引用的 id，一条不剩时 `preload` 关闭；
 - 激励广告配置清理：`advert_sources` / `feed_advert_config` / `vids` / `preload` 与 `ad_infos_map` / `ad_infos`；
-- 商业化弹窗清理：删 `*ads*` 弹窗与 `browse_mall_popup_acc_amount`（商城），同步清理排序与冷启动引用，保留领奖与兜底弹窗；
+- 商业化弹窗清理：删 `*ads*` 弹窗与 `browse_mall_popup_acc_amount`（商城），同步清理排序、冷启动引用与同名频控项，保留领奖与兜底弹窗；
 - 演出清理：`growth/music_festival/performance_details` 的 `detail_list` 清空（汽水音乐节）。
 
 ## 聚合插件（soda.plugin）
@@ -67,22 +70,23 @@ npm run lint        # 插件结构、正则、脚本引用、压缩脚本语法
 `plugins/soda/soda.plugin` 是汽水音乐唯一部署插件，用 Loon `[Argument]` 开关控制脚本，测试集中在 `test_unified_args.js`、`test_block_domains.js` 与 lint：
 
 - `rewardSafe=true` 时，`sanitize` 对非开屏端点直接放行；开屏品牌广告仍清理；
-- `rewardSafe=false` + `cleanAds=true` 时，去广告脚本正常清理；
+- `rewardSafe=false` + `cleanAds=true` 时，去广告脚本正常清理；v2 `commerce/v2/upsell` 的 `upsell_map` 只删广告/商城弹窗，排序/冷启动/频控引用同步（`test_soda_upsell_v2.js`，真实 93 弹窗样本）；
 - `settings` 在 `rewardSafe=true` 时直接放行；
 - `hideDouyinTab=true` 时只删除带“抖音”的列表项，其它任务（签到/听歌/看广告任务）保留；
 - 没有 `$argument` 时行为保持不变（脚本可独立运行）；
 - 域名拦截脚本：`blockAdDomains=false` 或 `rewardSafe=true` 时一律放行，其它域名不受影响；
-- lint 验证 7 个开关的默认值、32 条脚本都带 `enable={...}`、插件没有静态 `[Rule]` 域名。
+- lint 验证 13 个参数的默认值、39 条脚本绑定都带 `enable={...}`、插件没有静态 `[Rule]` 域名。
 
-## 只读观测插件
+## 只读观测与状态自检
 
-`SodaClean-Reward-Debug.plugin` 不新增字段裁剪，测试集中在 `test_reward_observe.js` 与 lint：
+`reward-observe.js` 与 `status.js` 都只读，不修改响应；测试集中在 `test_reward_observe.js`、`test_status.js` 与 lint：
 
-- 20 个激励/任务/入口端点必须命中；`splash`、`commerce/upsells`（v1）、`commerce/v2/upsell_sort_decision`、`feed` 不应被观测；
+- 激励/任务/入口端点必须命中；`splash`、`commerce/upsells`（v1）、`commerce/v2/upsell_sort_decision`、`feed` 不应被观测；
 - `commerce/v2/upsell` 只输出奖励入口变量和场景数，不输出弹窗文案、会员到期时间或 token；
-- 脚本永远返回 `$done({})`，不写 `body`；
+- 观测脚本永远返回 `$done({})`，不写 `body`；
 - 日志过滤 `access_token` / `device_id` / `cookie` 等敏感键与值；
-- 非 JSON、空体、超过 256KB 的响应只记录状态，不解析。
+- 非 JSON、空体、超过 256KB 的响应只记录状态，不解析；
+- `status.js` 通过 `$notification` 输出打卡摘要，attach openUrl 分别使用 `qishui://` / `snssdk1128://`。
 
 ## 注意
 

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated": "2026-10-26",
+  "updated": "2026-10-27",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "icon": "https://cdn.adguard.com/public/Adguard/Common/logo.png",
@@ -9,7 +9,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.1.4",
+      "version": "2.1.5",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -496,7 +496,7 @@
         {
           "id": "adtech",
           "title": "全球广告交易 / SSP / DSP / 验证 / 数据",
-          "note": "Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks 等广告专用域。",
+          "note": "Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。",
           "rules": [
             "=adnxs.com",
             "=adnxs-simple.com",
@@ -740,13 +740,20 @@
             "=blueconic.net",
             "=pixel.watch",
             "=bttrack.com",
-            "=etahub.com"
+            "=etahub.com",
+            "=advertnative.com",
+            "=ntvk1.ru",
+            "=lentainform.com",
+            "=valueclickmedia.com",
+            "=medleyads.com",
+            "=bluecava.com",
+            "=voicefive.com"
           ]
         },
         {
           "id": "retail_ctv_audio",
           "title": "零售媒体 / CTV / 音频 / 社交平台广告",
-          "note": "Amazon/eBay/Uber/Walmart/Roundel/Kroger/Instacart 零售媒体，Samsung/LG/Roku/DOOH，Spotify/SoundCloud/Triton/AdsWizz 音频广告，Snap/Pinterest/Reddit/LinkedIn/X/Yahoo/Microsoft/Apple/Yandex 广告域。共享主域只列广告子域。",
+          "note": "Amazon/eBay/Uber/Walmart/Roundel/Kroger/Instacart 零售媒体，Samsung/LG/Roku/DOOH，Brightline CTV 事件，Spotify/SoundCloud/Triton/AdsWizz 音频广告，Snap/Pinterest/Reddit/LinkedIn/X/Yahoo/Microsoft/Apple/Yandex 广告域。共享主域只列广告子域。",
           "rules": [
             "=ebayadservices.com",
             "=uberads.com",
@@ -803,7 +810,8 @@
             "geo.yahoo.com",
             "iadsdk.apple.com",
             "adsdk.yandex.ru",
-            "advertising.yahoo.com"
+            "advertising.yahoo.com",
+            "events.brightline.tv"
           ]
         },
         {
@@ -921,7 +929,7 @@
         {
           "id": "doh_public",
           "title": "公共 DoH 解析器（DNS 防泄漏）",
-          "note": "把浏览器/App 自带的公共 DoH 入口映射到 127.0.0.1，防止它们绕过 Loon DNS 继续解析广告域。Loon 自身已改用 IP 形式 DoH（见 [General]），不依赖这些域名；如果你的主配置 doh-server 仍使用这里的域名，先改成 IP 形式，或注释掉对应行。doh.dns.apple.com 刻意不拦，避免影响 iOS/macOS 系统解析。",
+          "note": "把浏览器/App 自带的公共 DoH/DoT 入口映射到 127.0.0.1，防止它们绕过 Loon DNS 继续解析广告域。除主流厂商外，2026-10-27 补充 Applied Privacy、LibreDNS、Tiar、FFMUC、Digitale Gesellschaft、Hostux、SecureDNS、Crypto.sx、DNSForge、Kommespaeter 等公共加密 DNS。Loon 自身已改用 IP 形式 DoH（见 [General]），不依赖这些域名；如果你的主配置 doh-server 仍使用这里的域名，先改成 IP 形式，或注释掉对应行。doh.dns.apple.com 刻意不拦，避免影响 iOS/macOS 系统解析。",
           "rules": [
             "dns.google",
             "chrome.cloudflare-dns.com",
@@ -960,7 +968,25 @@
             "dns64.dns.google",
             "8888.google",
             "doh.dns.sb",
-            "dot.sb"
+            "dot.sb",
+            "doh.nextdns.io",
+            "dns.controld.com",
+            "doh.controld.com",
+            "dot.quad9.net",
+            "1dot1dot1dot1.cloudflare-dns.com",
+            "dot.mullvad.net",
+            "dot.alidns.com",
+            "doh.applied-privacy.net",
+            "doh.libredns.gr",
+            "doh.tiar.app",
+            "doh.tiarap.org",
+            "doh.ffmuc.net",
+            "dns.digitale-gesellschaft.ch",
+            "doh.hostux.net",
+            "doh.securedns.eu",
+            "doh.crypto.sx",
+            "doh.dnsforge.net",
+            "doh.kommespaeter.de"
           ]
         },
         {
@@ -985,7 +1011,7 @@
         {
           "id": "analytics",
           "title": "应用 / Web 统计（可选，默认注释）",
-          "note": "Google Analytics/Firebase、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Yandex、Pinterest、LinkedIn、Yahoo 等统计/事件端点。默认注释；会让统计报表与部分实验/远程配置失效。",
+          "note": "Google Analytics/Firebase、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats 等统计/事件端点。默认注释；会让统计报表与部分实验/远程配置失效。",
           "rules": [
             "=google-analytics.com",
             "=app-measurement.com",
@@ -1024,7 +1050,15 @@
             "=hexagon-analytics.com",
             "metrics-logger.spot.im",
             "trace.qq.com",
-            "track.uc.cn"
+            "track.uc.cn",
+            "=cetrk.com",
+            "=wizaly.com",
+            "=stat.pl",
+            "=soicos.com",
+            "stats.wp.com",
+            "=nr-data.net",
+            "=annoyingacoustics.com",
+            "sanalytics.disneyplus.com"
           ],
           "disabled": true
         }

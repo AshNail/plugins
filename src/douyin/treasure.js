@@ -23,7 +23,9 @@
  *
  * 精简策略：只保留【攒时长 听歌不中断】一个分区 + 它的那一个任务，
  * 其余分区（我的资产/做任务赚金币/开宝箱）整体移除；
- * 被移除任务的广告预拉取 id 一并清空，避免后台还在预拉广告。
+ * 页面级广告开关同步收紧：migrate_first_ad 置 false，
+ * ad_api_preload.task_ids 只留“仍在页面里的任务”引用的 id，
+ * 一条不剩时 preload 也关掉，避免后台还在预拉被删任务的广告。
  *
  * 说明：这是“少看广告入口”的纯客户端裁剪，不改任何发奖字段，
  * 也不伪造领奖；被删掉的任务本来就要靠看广告/跨端跳转才能完成。
@@ -34,6 +36,67 @@ const KEEP_TASKS = ["luna_rewards_ads"];
 
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
+}
+
+/*
+ * 只保留仍在页面里的任务自己引用的预拉取 id：
+ *   task.id / task.ad_snap.task_id / discrepancy_data.*.base_ad_diversion.id
+ * 被裁掉的分区任务、以及页面快照里不存在的 id 一并丢弃；
+ * 一条不剩时关掉 preload。保留下来的 luna_rewards_ads 若命中列表则不受影响。
+ */
+function collectRetainedTaskIds(sections, ids) {
+  for (const section of sections) {
+    if (!isPlainObject(section)) continue;
+    const groups = [section.task_group, section.widget_task_group];
+    for (const group of groups) {
+      if (!isPlainObject(group) || !Array.isArray(group.tasks)) continue;
+      for (const task of group.tasks) {
+        if (!isPlainObject(task)) continue;
+        if (task.id !== undefined && task.id !== null && task.id !== "") {
+          ids[String(task.id)] = true;
+        }
+        if (isPlainObject(task.ad_snap) && task.ad_snap.task_id !== undefined) {
+          ids[String(task.ad_snap.task_id)] = true;
+        }
+        const dd = task.discrepancy_data;
+        if (!isPlainObject(dd)) continue;
+        for (const k of Object.keys(dd)) {
+          const sub = dd[k];
+          if (isPlainObject(sub) && isPlainObject(sub.base_ad_diversion) &&
+              sub.base_ad_diversion.id !== undefined) {
+            ids[String(sub.base_ad_diversion.id)] = true;
+          }
+        }
+      }
+    }
+  }
+}
+
+function pruneAdConfig(cfg, sections, log) {
+  if (!isPlainObject(cfg)) return;
+
+  if (cfg.migrate_first_ad === true) {
+    cfg.migrate_first_ad = false;
+    log.push("config.migrate_first_ad : true -> false");
+  }
+
+  const pre = cfg.ad_api_preload;
+  if (!isPlainObject(pre) || !Array.isArray(pre.task_ids)) return;
+
+  const ids = {};
+  collectRetainedTaskIds(sections, ids);
+  const kept = pre.task_ids.filter(function (id) {
+    return ids[String(id)] === true;
+  });
+  if (kept.length !== pre.task_ids.length) {
+    log.push("config.ad_api_preload.task_ids : " +
+      pre.task_ids.length + " -> " + kept.length);
+    pre.task_ids = kept;
+  }
+  if (pre.preload === true && pre.task_ids.length === 0) {
+    pre.preload = false;
+    log.push("config.ad_api_preload.preload : true -> false");
+  }
 }
 
 function pruneTreasure(obj, log) {
@@ -65,17 +128,7 @@ function pruneTreasure(obj, log) {
   }
   data.sections = kept;
 
-  const cfg = data.config;
-  if (isPlainObject(cfg) && isPlainObject(cfg.ad_api_preload) &&
-      Array.isArray(cfg.ad_api_preload.task_ids)) {
-    if (cfg.ad_api_preload.task_ids.length > 0) {
-      log.push(
-        "config.ad_api_preload.task_ids : " +
-        cfg.ad_api_preload.task_ids.length + " -> 0"
-      );
-    }
-    cfg.ad_api_preload.task_ids = [];
-  }
+  pruneAdConfig(data.config, kept, log);
 
   return true;
 }

@@ -9,8 +9,9 @@
  *   plugins/<family>/<Name>.plugin         deployable plugin
  *   plugins/<family>/scripts/<name>.min.js deployable script
  *
- * The plugin must reference scripts with a relative path:
- *   script-path=scripts/<name>.min.js
+ * The plugin must reference scripts with a relative path, using the v2 inline
+ * form (legacy script-path= is still recognized):
+ *   script("scripts/<name>.min.js", {...})
  */
 "use strict";
 
@@ -112,10 +113,16 @@ function pluginScriptRefs(pluginFile) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith(";")) continue;
-    const match = trimmed.match(/\bscript-path=([^,\s]+)/);
-    if (match) refs.push(match[1]);
+    // Current plugins use the v2 inline form: script("scripts/x.min.js", {...}).
+    for (const match of trimmed.matchAll(/\bscript\(\s*["']([^"']+)["']/g)) {
+      refs.push(match[1]);
+    }
+    // Keep the legacy custom-node syntax covered as well.
+    for (const match of trimmed.matchAll(/\bscript-path=([^,\s]+)/g)) {
+      refs.push(match[1]);
+    }
   }
-  return refs;
+  return [...new Set(refs)];
 }
 
 async function minifyFile(family, file) {

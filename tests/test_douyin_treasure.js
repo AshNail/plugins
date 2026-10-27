@@ -151,7 +151,7 @@ console.log("\n== 2. 我的资产/签到/商城/看广告/翻卡/红包雨/开�
   check("没有开宝箱任务", s.indexOf("music_ug_treasure") === -1);
 }
 
-console.log("\n== 3. 广告预拉取 id 清空 ==");
+console.log("\n== 3. 广告预拉取 id 清空（被删任务不再预拉）==");
 {
   const r = run(makePage(), { treasureMinimal: true });
   const o = parse(r.out);
@@ -159,6 +159,19 @@ console.log("\n== 3. 广告预拉取 id 清空 ==");
     o && Array.isArray(o.data.config.ad_api_preload.task_ids) &&
     o.data.config.ad_api_preload.task_ids.length === 0,
     JSON.stringify(o && o.data.config));
+  check("preload -> false", o && o.data.config.ad_api_preload.preload === false);
+  check("migrate_first_ad -> false", o && o.data.config.migrate_first_ad === false);
+}
+
+console.log("\n== 3b. 保留任务引用的预拉取 id 不误删 ==");
+{
+  const page = makePage();
+  page.data.config.ad_api_preload.task_ids = ["600590", "600607", "601039"];
+  const o = parse(run(page, { treasureMinimal: true }).out);
+  const pre = o && o.data.config.ad_api_preload;
+  check("只剩保留任务 id 600590",
+    pre && pre.task_ids.join(",") === "600590", pre && pre.task_ids);
+  check("仍有引用时 preload 保持开启", pre && pre.preload === true, pre && pre.preload);
 }
 
 console.log("\n== 4. treasureMinimal=false：原样放行 ==");
@@ -218,6 +231,8 @@ console.log("\n== 8. 真实抓包样本（tests/fixtures/douyin_treasure_page.js
     o && Array.isArray(o.data.config.ad_api_preload.task_ids) &&
     o.data.config.ad_api_preload.task_ids.length === 0,
     o ? JSON.stringify(o.data.config.ad_api_preload) : "");
+  check("preload 关闭", o && o.data.config.ad_api_preload.preload === false);
+  check("migrate_first_ad 关闭", o && o.data.config.migrate_first_ad === false);
 }
 
 console.log("\n== 9. 压缩体 / 二进制体：脚本要能自己解压 ==");

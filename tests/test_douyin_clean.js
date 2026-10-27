@@ -36,6 +36,7 @@ function parse(out) {
 const INCENTIVE_CONFIG = "https://beta-luna.douyin.com/luna/advert/incentive/config";
 const INCENTIVE_RETRIEVE = "https://beta-luna.douyin.com/luna/advert/incentive/retrieve";
 const FEED_ADS = "https://beta-luna.douyin.com/luna/ads/dsp/retrieve";
+const FEED_ADS_RETRIEVE = "https://beta-luna.douyin.com/luna/ads/retrieve";
 const UPSELL = "https://beta-luna.douyin.com/luna/commerce/v2/upsell";
 const FESTIVAL = "https://beta-luna.douyin.com/luna/growth/music_festival/performance_details";
 
@@ -128,6 +129,36 @@ console.log("\n== 4. cleanFeedAds：清信息流广告容器 ==");
   check("enable_ads -> false", o && o.enable_ads === false);
 }
 
+console.log("\n== 4b. cleanFeedAds：ads/retrieve 清广告对象与配置 ==");
+{
+  const body = {
+    status_code: 0,
+    ad_launch: { id: "launch" },
+    ad_launch_list: [{ id: "launch-list" }],
+    ads_blocks: [{ id: 1 }],
+    ads_info: { a: 1 },
+    ad_unit_configs: { x: 1 },
+    splash_config: { rit: "splash" },
+    feed_ads_config: { enable: true },
+    reward_config: { rit: "reward" },
+    data: { title: "normal-feed" }
+  };
+  const r = run(FEED_ADS_RETRIEVE, body, { cleanFeedAds: true });
+  const o = parse(r.out);
+  check("ads/retrieve: ad_launch -> {}", o && Object.keys(o.ad_launch).length === 0,
+    JSON.stringify(o));
+  check("ads/retrieve: ad_launch_list -> []",
+    o && Array.isArray(o.ad_launch_list) && o.ad_launch_list.length === 0);
+  check("ads/retrieve: ads_blocks -> []",
+    o && Array.isArray(o.ads_blocks) && o.ads_blocks.length === 0);
+  check("ads/retrieve: ads_info -> {}", o && Object.keys(o.ads_info).length === 0);
+  check("ads/retrieve: ad_unit_configs -> {}", o && Object.keys(o.ad_unit_configs).length === 0);
+  check("ads/retrieve: splash_config -> {}", o && Object.keys(o.splash_config).length === 0);
+  check("ads/retrieve: feed_ads_config -> {}", o && Object.keys(o.feed_ads_config).length === 0);
+  check("ads/retrieve: reward_config -> {}", o && Object.keys(o.reward_config).length === 0);
+  check("ads/retrieve: 非广告字段保留", o && o.data && o.data.title === "normal-feed");
+}
+
 console.log("\n== 5. cleanUpsell：删广告弹窗与商城弹窗，保留其它 ==");
 {
   const body = {
@@ -137,6 +168,7 @@ console.log("\n== 5. cleanUpsell：删广告弹窗与商城弹窗，保留其它
       preview_popup_ads: { popup: {} },
       cold_launch_popup_ads_progress: { popup: {} },
       reward_ad_cold_launch_popup: { popup: {} },
+      background_voice_prompt_ad: { popup: {} },
       coin_widget: { widget: {} },
       task_page_svip_popup: { popup: {} },
       reward_video_load_fail_compensate: { popup: {} }
@@ -144,6 +176,15 @@ console.log("\n== 5. cleanUpsell：删广告弹窗与商城弹窗，保留其它
     sort_control_unique_names: ["coin_widget", "preview_popup_ads", "browse_mall_popup_acc_amount"],
     cold_launch_timing: {
       upsell_item_unique_names: ["cold_launch_popup_ads_progress", "coin_widget"]
+    },
+    freq_ctrl_cfg: {
+      freq_ctrl_map: {
+        preview_popup_ads: { day_max_cnt: 1 },
+        background_voice_prompt_ad: { day_max_cnt: 2 },
+        background_voice_prompt: { day_max_cnt: 2 },
+        widget_ad: { day_max_cnt: 1 },
+        coin_widget: { day_max_cnt: 1 }
+      }
     },
     variables: { ads_days_obtained: "if(...)", is_svip: "..." }
   };
@@ -163,6 +204,15 @@ console.log("\n== 5. cleanUpsell：删广告弹窗与商城弹窗，保留其它
     JSON.stringify(o.sort_control_unique_names));
   check("冷启动列表同步清理",
     o.cold_launch_timing.upsell_item_unique_names.indexOf("cold_launch_popup_ads_progress") === -1);
+  const freq = o.freq_ctrl_cfg.freq_ctrl_map;
+  check("同名频控项清理 (preview_popup_ads)",
+    !("preview_popup_ads" in freq), Object.keys(freq).join(","));
+  check("同名频控项清理 (background_voice_prompt_ad)",
+    !("background_voice_prompt_ad" in freq), Object.keys(freq).join(","));
+  check("共享频控键保留 (background_voice_prompt)",
+    "background_voice_prompt" in freq, Object.keys(freq).join(","));
+  check("非 upsell 广告频控键保留 (widget_ad)", "widget_ad" in freq, Object.keys(freq).join(","));
+  check("普通弹窗频控键保留 (coin_widget)", "coin_widget" in freq, Object.keys(freq).join(","));
   check("variables 不动", !!o.variables && !!o.variables.ads_days_obtained);
 }
 

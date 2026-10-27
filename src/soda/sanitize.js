@@ -98,13 +98,17 @@ const RULES = [
     id: "upsell",
     match: /\/luna\/commerce\/(?:upsells|v2\/upsell(?:_sort_decision)?)/,
     /*
-     * 取证：upsell 响应字段 card / countdown / upsell_unique_name
-     *（字段描述符 0x1147cb278）。
+     * 取证：v1 响应字段 card / countdown / upsell_unique_name
+     *（字段描述符 0x1147cb278）；v2 真响应改用 upsell_map{} 承载弹窗，
+     * 由 cleanUpsellMap() 精确处理（见下方函数注释）。
+     * extraReject 让只带 upsell_map 的响应也能进入 JSON 处理，
+     * 否则大响应预检可能直接放行。
      */
     kill: ["upsells", "upsellList", "upsellUniqueName", "card",
            "items", "popups", "list"],
     falsy: ["show", "isShow", "visible", "enable", "enabled"],
-    killArrayData: true
+    killArrayData: true,
+    extraReject: /"upsell_map"\s*:/
   },
   {
     id: "feed-ads",
@@ -121,8 +125,7 @@ const RULES = [
     prune: [
       { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ],
-    dropAdItems: true,
-    fastReject: /ads_blocks|ads_info|ad_info|ad_data|ad_extra|video_end_ad|audio_ad|mid_roll_ad|pause_ad|recommend_ad|search_banner|sponsor_card|commercial_notice|feed_ads|feed_reward_ad_entrance|banner_list|"bannerList"\s*:|"is_ad"\s*:|"isAd"\s*:|"is_advert"\s*:|"isAdvert"\s*:|"is_advertisement"\s*:|"isAdvertisement"\s*:|"is_ad_item"\s*:|"isAdItem"\s*:|"ad_item"\s*:|"adItem"\s*:|"ad_flag"\s*:|"adFlag"\s*:|"is_promoted"\s*:|"isPromoted"\s*:|"is_sponsored"\s*:|"isSponsored"\s*:|"is_commercial"\s*:|"isCommercial"\s*:/
+    dropAdItems: true
   },
   {
     id: "treasure-entrance",
@@ -172,23 +175,73 @@ const RULES = [
      * （music_incentive_ad / polaris_incentive_ad_v3 家族 / 标题广告词），
      * 签到、翻卡、攒时长、逛街等正常任务保留（它们的 ad_token/ad_snap
      * 只是观测归因，不作为判别依据）。banner 广告位照旧清。
+     * 页面级广告开关（migrate_first_ad / ad_api_preload）在
+     * pruneTaskAdPreload() 里按“仍保留的任务”精确收紧。
      */
     kill: ["adsBanner", "rewardAdBanner", "rewardAdBannerExtra",
            "popupShowAd", "actionPopupShowAd"],
+    falsy: ["migrateFirstAd"],
     prune: [
       { key: "tasks", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看广告|看视频|广告/i },
       { key: "taskInfos", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看广告|看视频|广告/i },
       { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ],
-    fastReject: /"sections"\s*:|"tasks"\s*:/
+    extraReject: /"sections"\s*:/
   }
 ];
+
+/*
+ * 大响应预检（fastReject）由规则本身生成，而不是手写：
+ * 只要 JSON 里出现任一 kill/falsy/prune 键（同时兼容 camelCase 与
+ * snake_case），就进入 JSON.parse 精细处理；没有就直接放行。
+ * 手写正则很容易漏键（例如 upsell 的 upsells/show 被漏掉），
+ * 这里从规则表派生，新增规则时自动同步。
+ */
+function escapeRe(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function markerForKeys(keys) {
+  const parts = [];
+  for (const key of keys) {
+    const tokens = String(key)
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+    if (tokens.length === 0) continue;
+    parts.push('"' + tokens.map(escapeRe).join("[_-]?") + '"\\s*:');
+  }
+  return parts;
+}
+
+/* 信息流条目显式广告标记（dropAdItems 的价值级判据） */
+const AD_ITEM_MARKER =
+  '"(?:is[_-]?(?:ad|advert|advertisement|ad[_-]?item|promoted|sponsored|commercial)|ad[_-]?(?:flag|item))"\\s*:\\s*(?:true|1|"1"|"true")';
+
+for (const rule of RULES) {
+  const keys = (rule.kill || []).concat(rule.falsy || []);
+  for (const p of rule.prune || []) keys.push(p.key);
+
+  const parts = markerForKeys(keys);
+  if (rule.dropAdItems) parts.push(AD_ITEM_MARKER);
+  if (rule.extraReject) parts.push(rule.extraReject.source);
+  if (rule.killArrayData) {
+    parts.push('"data"\\s*:\\s*\\[');
+    parts.push("^\\s*\\[");
+  }
+  rule.fastReject = new RegExp(parts.join("|"), "i");
+}
 
 /* ------------------------------------------------------------------ */
 /* 工具                                                               */
 /* ------------------------------------------------------------------ */
 function normalizeKey(k) {
   return String(k).toLowerCase().replace(/[_-]/g, "");
+}
+
+function isPlainObject(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
 function emptyLike(v) {
@@ -421,6 +474,150 @@ function isAdTaskEntry(item) {
   if (key && AD_TASK_KEY_RE.test(key)) return true;
   if (typeof item.type === "string" && AD_TASK_TYPE.test(item.type)) return true;
   return AD_TASK_TITLE.test(taskTitleOf(item));
+}
+
+/*
+ * 【页面级广告预拉取收紧（真样本 = config.ad_api_preload）】
+ * ------------------------------------------------------------
+ * 只保留“仍留在 sections 里的任务”自己引用的 task_id：
+ *   task.id / task.ad_snap.task_id / discrepancy_data.*.base_ad_diversion.id
+ * 被摘掉的广告任务和页面快照里不存在的预拉取 id 全部丢弃；
+ * 一条不剩时把 preload 也关掉。保留的任务若仍需看广告，其 id 会留下，
+ * 不会被误伤。migrate_first_ad 由规则 falsy 置 false。
+ */
+function collectRetainedTaskIds(sections, ids) {
+  for (const section of sections) {
+    if (!isPlainObject(section)) continue;
+    const groups = [section.task_group, section.widget_task_group];
+    for (const group of groups) {
+      if (!isPlainObject(group) || !Array.isArray(group.tasks)) continue;
+      for (const task of group.tasks) {
+        if (!isPlainObject(task)) continue;
+        if (task.id !== undefined && task.id !== null && task.id !== "") {
+          ids[String(task.id)] = true;
+        }
+        if (isPlainObject(task.ad_snap) && task.ad_snap.task_id !== undefined) {
+          ids[String(task.ad_snap.task_id)] = true;
+        }
+        const dd = task.discrepancy_data;
+        if (!isPlainObject(dd)) continue;
+        for (const k of Object.keys(dd)) {
+          const sub = dd[k];
+          if (isPlainObject(sub) && isPlainObject(sub.base_ad_diversion) &&
+              sub.base_ad_diversion.id !== undefined) {
+            ids[String(sub.base_ad_diversion.id)] = true;
+          }
+        }
+      }
+    }
+  }
+}
+
+function pruneTaskAdPreload(obj, log) {
+  const data = isPlainObject(obj) && isPlainObject(obj.data) ? obj.data : null;
+  if (!data) return;
+
+  const cfg = data.config;
+  const sections = Array.isArray(data.sections) ? data.sections : [];
+
+  const pre = isPlainObject(cfg) && isPlainObject(cfg.ad_api_preload)
+    ? cfg.ad_api_preload : null;
+  if (!pre) return;
+
+  if (Array.isArray(pre.task_ids)) {
+    const ids = {};
+    collectRetainedTaskIds(sections, ids);
+    const kept = pre.task_ids.filter(function (id) {
+      return ids[String(id)] === true;
+    });
+    if (kept.length !== pre.task_ids.length) {
+      log.push("config.ad_api_preload.task_ids : " +
+        pre.task_ids.length + " -> " + kept.length);
+      pre.task_ids = kept;
+    }
+  }
+  if (pre.preload === true && Array.isArray(pre.task_ids) && pre.task_ids.length === 0) {
+    pre.preload = false;
+    log.push("config.ad_api_preload.preload : true -> false");
+  }
+}
+
+/*
+ * 【v2 商业化弹窗精确清理（真样本 = beta-luna commerce/v2/upsell）】
+ * ------------------------------------------------------------
+ * 93 个弹窗的 HAR 实证：v2 用 upsell_map{} 承载弹窗实体，v1 的
+ * card / upsells / upsell_unique_name 已不存在。只删广告/商城命名的实体
+ *（ad_incentive_backup_card、*_ads_*、*_reward_ad_*、browse_mall_*），
+ * 奖励/发奖/兜底弹窗（reward_*、feed_*_reward_popup、coin_widget）保留。
+ * 同时同步三处引用，避免“实体删了但还会被调度”：
+ *   freq_ctrl_cfg.freq_ctrl_map / sort_control_unique_names /
+ *   cold_launch_timing.upsell_item_unique_names
+ * 共享频控键（background_voice_prompt）与非弹窗键（widget_ad）不动。
+ */
+const AD_UPSELL_RE = /(^|_)ads?(_|$)/;
+const MALL_UPSELLS = ["browse_mall_popup_acc_amount"];
+
+function isHiddenUpsellName(name) {
+  if (typeof name !== "string") return false;
+  return AD_UPSELL_RE.test(name) || MALL_UPSELLS.indexOf(name) !== -1;
+}
+
+function cleanUpsellMap(obj, log) {
+  const map = obj.upsell_map;
+  if (!isPlainObject(map)) return;
+
+  const removed = [];
+  for (const name of Object.keys(map)) {
+    if (!isHiddenUpsellName(name)) continue;
+    delete map[name];
+    removed.push(name);
+  }
+  if (removed.length === 0) return;
+
+  log.push("upsell_map : removed " + removed.length + " popup(s) -> " +
+    removed.slice(0, 8).join(", ") + (removed.length > 8 ? " ..." : ""));
+
+  /* 只删与已删弹窗同名的频控项：共享键与非弹窗键必须保留 */
+  const freqCfg = obj.freq_ctrl_cfg;
+  if (isPlainObject(freqCfg) && isPlainObject(freqCfg.freq_ctrl_map)) {
+    const fmap = freqCfg.freq_ctrl_map;
+    const dropped = [];
+    for (const name of Object.keys(fmap)) {
+      if (removed.indexOf(name) === -1) continue;
+      delete fmap[name];
+      dropped.push(name);
+    }
+    if (dropped.length > 0) {
+      log.push("freq_ctrl_cfg : removed " + dropped.length + " entry(ies) -> " +
+        dropped.slice(0, 6).join(", ") + (dropped.length > 6 ? " ..." : ""));
+    }
+  }
+
+  /*
+   * 列表里可能有“只登记、没有实体”的广告弹窗（cold_launch_popup_ads_text），
+   * 因此按名字判据全量过滤，而不是只删 removed 里的条目。
+   */
+  if (Array.isArray(obj.sort_control_unique_names)) {
+    const before = obj.sort_control_unique_names.length;
+    obj.sort_control_unique_names = obj.sort_control_unique_names.filter(function (n) {
+      return !isHiddenUpsellName(n);
+    });
+    if (obj.sort_control_unique_names.length !== before) {
+      log.push("sort_control_unique_names : " + before + " -> " +
+        obj.sort_control_unique_names.length + " item(s)");
+    }
+  }
+  const clt = obj.cold_launch_timing;
+  if (isPlainObject(clt) && Array.isArray(clt.upsell_item_unique_names)) {
+    const before = clt.upsell_item_unique_names.length;
+    clt.upsell_item_unique_names = clt.upsell_item_unique_names.filter(function (n) {
+      return !isHiddenUpsellName(n);
+    });
+    if (clt.upsell_item_unique_names.length !== before) {
+      log.push("cold_launch_timing : " + before + " -> " +
+        clt.upsell_item_unique_names.length + " item(s)");
+    }
+  }
 }
 
 function dropAdItems(node, log, path, depth) {
@@ -752,6 +949,8 @@ function markHeaders(reason) {
     const log = [];
     const before = JSON.stringify(obj);
     rewrite(obj, rule, "$", log, 0);
+    if (rule.id === "upsell") cleanUpsellMap(obj, log);
+    if (rule.id === "task-page") pruneTaskAdPreload(obj, log);
     if (rule.dropAdItems) dropAdItems(obj, log, "$", 0);
     if (hideDouyin && isTreasure) dropDouyinItems(obj, log, "$", 0);
 

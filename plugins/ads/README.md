@@ -59,17 +59,17 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1056 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` 核心广告组 | 14 组、1071 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
 | `[Host]` HTTPDNS 组 | 72 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
-| `[Host]` 公共 DoH 组 | 39 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb 等 | 是（见风险表） |
+| `[Host]` 公共 DoH 组 | 57 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
 | `[General]` | 3 条：公共 DNS + IP 形式 DoH + IP 形式 DoH3 (HTTP/3) | 是 |
-| `[Host]` 归因/统计组 | 2 组、72 条展开规则，默认整组注释 | **否** |
+| `[Host]` 归因/统计组 | 2 组、86 条展开规则，默认整组注释 | **否** |
 | `[Rule]` 可选组 | 28 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**18 组、1167 条生效 Host、72 条默认注释 Host、13 条生效 Rule、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
+合计：**18 组、1200 条生效 Host（exact 744 / wildcard 456）、86 条默认注释 Host、13 条生效 Rule、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
 
 ### 归因/统计组（默认关闭）
 
@@ -123,7 +123,7 @@ Loon 的 `*.example.com` 不保证覆盖 apex，所以广告专域统一写两�
 
 ## 覆盖范围
 
-### 核心广告组（14 组 / 1024 条展开）
+### 核心广告组（14 组 / 1071 条展开）
 
 | 组 | 代表 |
 |---|---|
@@ -142,10 +142,10 @@ Loon 的 `*.example.com` 不保证覆盖 apex，所以广告专域统一写两�
 | 手机厂商广告 SDK | 小米、华为、OPPO/HeyTap、vivo（Android；iOS 不受影响） |
 | 弹窗/Popunder | PropellerAds、PopAds、PopCash、ExoClick、JuicyAds、TrafficJunky、Adsterra、HilltopAds、Clickadu、SpyLog 等 |
 
-### HTTPDNS / 公共 DoH（111 条展开）
+### HTTPDNS / 公共 DoH（129 条展开）
 
 - HTTPDNS/私有 DoH：`*.httpdns.aliyuncs.com`（含阿里《启动接入点》`resolvers-*` 域名兜底）、`httpdns.aliyuncs.com`、`httpdns.qq.com`、`httpdns.baidu.com`、`httpdns.volcengineapi.com`、`httpdns.pro`、`dns.weixin.qq.com`、`dns.jd.com`、`resolver.msg.xiaomi.net` 等 72 条。
-- 公共 DoH：`dns.google`（+`dns64.dns.google`/`8888.google`）、`*.cloudflare-dns.com`（覆盖 security/family/dns64 等全部变体）+ `one.one.one.one`、Quad9 全变体（`dns[.9-12].quad9.net`）、`dns[1-3].nextdns.io`、`doh.opendns.com`、AdGuard 新旧域（`=adguard-dns.com` → `adguard-dns.com`+`*.adguard-dns.com` 覆盖 dns/family/unfiltered 变体 + 旧 `dns.adguard.com`）、`doh.cleanbrowsing.org`、Mullvad DoT 族（`dns.mullvad.net`+`*.doh.mullvad.net`）、`freedns.controld.com`、`doh.brave.com`、`dns.alidns.com`、DNSPod（`doh.pub`/`dns.pub`/`dot.pub`/`sm2.doh.pub`）、`doh.360.cn`/`dot.360.cn`、dns.sb（`doh.dns.sb`/`dot.sb`）共 39 条。
+- 公共 DoH：`dns.google`（+`dns64.dns.google`/`8888.google`）、`*.cloudflare-dns.com`（覆盖 security/family/dns64 等全部变体）+ `one.one.one.one` + `1dot1dot1dot1.cloudflare-dns.com`、Quad9 全变体（`dns[.9-12].quad9.net`+`dot.quad9.net`）、`dns[1-3].nextdns.io`+`doh.nextdns.io`、`doh.opendns.com`、AdGuard 新旧域（`=adguard-dns.com` → `adguard-dns.com`+`*.adguard-dns.com` 覆盖 dns/family/unfiltered 变体 + 旧 `dns.adguard.com`）、`doh.cleanbrowsing.org`、Mullvad DoT 族（`dns.mullvad.net`+`*.doh.mullvad.net`+`dot.mullvad.net`）、ControlD（`freedns.controld.com`+`dns.controld.com`+`doh.controld.com`）、`doh.brave.com`、`dns.alidns.com`+`dot.alidns.com`、DNSPod（`doh.pub`/`dns.pub`/`dot.pub`/`sm2.doh.pub`）、`doh.360.cn`/`dot.360.cn`、dns.sb（`doh.dns.sb`/`dot.sb`）、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 共 57 条。
 - 刻意不拦 `doh.dns.apple.com`，避免影响 iOS/macOS 系统解析。
 
 ---
@@ -360,6 +360,7 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.1.5**（2026-10-27）：补充广告/测量专域与公共加密 DNS 入口。①核心层新增 `advertnative.com`、`ntvk1.ru`、`lentainform.com`、`valueclickmedia.com`、`medleyads.com`、`bluecava.com`、`voicefive.com` 与零售 CTV 测量域 `events.brightline.tv`，生效 Host 1167→1200 条（exact 744 / wildcard 456）；②公共 DoH/DoT 组 39→57 条，补 NextDNS、ControlD、Quad9、Cloudflare DoT、Mullvad、AliDNS，以及 Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter，堵住更多 App 自带加密解析绕过；③可选统计组新增 `cetrk.com`、`wizaly.com`、`stat.pl`、`soicos.com`、`stats.wp.com`、`nr-data.net`、`annoyingacoustics.com`、`sanalytics.disneyplus.com`，默认注释后展开 72→86 条；④lint 增加上述核心域与公共 DoH 的永久回归锁，防止后续误删。
 - **2.1.4**（2026-10-26）：深化 Loon 现代能力与埋点/遥测拦截。①HTTPDNS 关键词规则采用 `REJECT-DROP`（丢包无回复），防止客户端 SDK 在收到空 200 包后频繁秒级重试造成网络风暴；②新增针对第三方统计与埋点 SDK（如神策）的 `REJECT-DICT` 规则（返回 200 + `{}` 空字典），诱导客户端主动清空本地重试队列（`deleteEvents`），彻底避免本地存储膨胀与无线电唤醒；③提拔纯广告效果监测专域（`coremetrics.com`、`sumome.com`、`insightexpressai.com`、`blueconic.net`、`pixel.watch`）至核心生效层，生效 Host 升至 1155 条、生效 Rule 升至 13 条；④构建工具原生支持 Loon Build 1007+ 插件专属的 `[IP Rewrite]` 语法（单 IPv4 / 严格查重 / 保护名单安全防护），并在可选层收录 16 条单 IPv4 HTTPDNS 网关接入点，可在 TUN 阶段最快阻断。
 - **2.1.3**（2026-10-26）：可选 `[Rule]` 组接入 Loon 3.1.7+ 的 `PROTOCOL` 协议规则，新增 `PROTOCOL,STUN,REJECT`（协议级阻断 STUN，防 WebRTC 真实 IP 泄露；会断部分 App 的语音/视频通话，默认注释；主配置更优解 `disable-stun = true`）。默认注释 Rule 合计 27→28 条。功能盘点见 [`docs/loon-feature-checklist.md`](../../docs/loon-feature-checklist.md)。
 - **2.1.2**（2026-10-26）：全网取证强化 DNS 层。①公共 DoH 组 16→39 条：补 AdGuard 新域 `dns.adguard-dns.com`（`=adguard-dns.com` 展开覆盖 dns/family/unfiltered 变体——官方文档 DoQ 示例即用此域；旧域 `dns.adguard.com` 保留）、`*.cloudflare-dns.com` 通配 + `one.one.one.one`/`dns.cloudflare.com`、Quad9 全变体、NextDNS DoT 节点 `dns1-3.nextdns.io`、DNSPod `dns.pub`/`dot.pub`/`sm2.doh.pub`、`dot.360.cn`、`dns64.dns.google`/`8888.google`、dns.sb（`doh.dns.sb`/`dot.sb`）、Mullvad DoT 族、ControlD `freedns.controld.com`；来源 curl wiki 公共 DoH 清单、AdGuard DNS KB、DNSPod 官方文档。②HTTPDNS 组补 `*.httpdns.aliyuncs.com`（覆盖阿里《启动接入点》`resolvers-cn/hk/sg/us/de` 域名兜底）。③可选 HTTPDNS 网关 IP 组 5→27 条：新增阿里内地接入点 `203.119.238.240`/`106.11.25.239`/`59.82.99.47` 与 4 个 IPv6 接入点、海外接入点（香港/新加坡/美洲/欧洲 IPv4 ×8 + IPv6 ×6，与阿里云海外 CDN 网段相邻已加风险注释）、腾讯企业版 `43.132.43.43`/`43.132.55.55`；删除笔误 IP `186.76.76.200`（百度官方文档任何版本都只有 `180.76.76.200`），lint 永久锁掉并新增 `119.29.29.29`（本插件 dns-server）禁拦保护；依据阿里云 doc 2868011、腾讯云 doc 379/59133、百度智能云《访问入口》。生效 Host 合计 1135 条（exact 694 / wildcard 441）。

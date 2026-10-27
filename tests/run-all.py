@@ -13,6 +13,7 @@ SUITES = [
     "test_prune.js",
     "test_taskinfos.js",
     "test_ads_surfaces.js",
+    "test_soda_upsell_v2.js",
     "test_treasure_prune2.js",
     "test_settings.js",
     "test_feed_flags.js",

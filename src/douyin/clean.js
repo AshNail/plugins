@@ -4,7 +4,7 @@
  * 全部字段来自 HAR 实测（381_1792495728793.har、383_1792495850343.har）。
  *
  * 开关分工（务必分清，v0.2.0 起）：
- *   cleanFeedAds   信息流/广告位广告（ads/config、ads/dsp/retrieve）
+ *   cleanFeedAds   信息流/广告位广告（ads/config、ads/retrieve、ads/dsp/retrieve）
  *                   —— 不影响激励奖励，可以随便开。
  *   killRewardAds  激励广告素材与预拉取（advert/incentive/config|retrieve）
  *                   —— 开这个等于“广告完全不发”，攒时长/看广告赚金币随之失效。
@@ -22,8 +22,9 @@
  *    beta-luna.douyin.com/luna/advert/incentive/retrieve
  *      ad_infos_map          素材表（每条含 launch_duration=30 / video_list / component.countdown）
  *      ad_infos[]
- *    beta-luna.douyin.com/luna/ads/config、/luna/ads/dsp/retrieve
- *      广告容器（cleanFeedAds；本次抓包里服务端本身就返回 {}）
+ *    beta-luna.douyin.com/luna/ads/config、/luna/ads/retrieve、/luna/ads/dsp/retrieve
+ *      广告容器（cleanFeedAds；config/dsp 在本次抓包里服务端本身就返回 {}，
+ *      retrieve 与汽水共用同一套 ad_launch / ads_blocks / ads_info 字段）
  *
  * 2. 商业化弹窗 / 商城（cleanUpsell）
  *    beta-luna.douyin.com/luna/commerce/v2/upsell
@@ -32,6 +33,7 @@
  *        *ads* / *_ad / ad_*            广告类弹窗（开屏/预览/冷启动/回放…）
  *      sort_control_unique_names[]、cold_launch_timing.upsell_item_unique_names[]
  *        同步清掉被删的 unique_name，否则排序/冷启动仍会引用空弹窗
+ *      freq_ctrl_cfg.freq_ctrl_map{}  只删与已删弹窗同名的频控项（共享键保留）
  *      variables{}           入口资格变量，保持原样（不改发奖/资格判断）
  *
  * 3. 演出（汽水音乐节）（cleanUpsell）
@@ -58,8 +60,10 @@ const KILL_CONTAINERS = {
     falsy: []
   },
   "ads-config": {
-    kill: ["adconfig", "adinfos", "adinfo", "ads", "adsinfo", "adsblocks",
-           "addata", "adextra", "adunitconfigs", "adsources",
+    kill: ["adconfig", "adinfos", "adinfo", "ads", "adlist", "adsinfo", "adsblocks",
+           "addata", "adextra", "adunitconfigs", "adsources", "adlaunch", "adlaunchlist",
+           "adlaunches", "advertsources", "banners", "sources",
+           "splashconfig", "feedadsconfig", "rewardconfig",
            "shakeinfo", "twistinfo", "motioninfo", "interactioninfo", "splashcache",
            "splashdspconfig", "preloaddspconfig", "splashmannorconfig", "adignoreplayerstatusconfig",
            "adngroupconfig", "commercelibraadconfig", "commercecommonadconfig",
@@ -128,6 +132,28 @@ function handleUpsell(obj, log) {
 
   log.push("upsell_map : removed " + removed.length + " popup(s) -> " +
     removed.slice(0, 8).join(", ") + (removed.length > 8 ? " ..." : ""));
+
+  /*
+   * 频控表里与已删弹窗同名的条目一并清掉（例如 preview_popup_ads /
+   * background_voice_prompt_ad）。只删同名项：像 background_voice_prompt
+   * 这种被普通弹窗共享的频控键，以及 widget_ad 等非 upsell 实体的键必须保留。
+   */
+  const removedSet = {};
+  for (const n of removed) removedSet[n] = true;
+  const freqCfg = obj.freq_ctrl_cfg;
+  if (isPlainObject(freqCfg) && isPlainObject(freqCfg.freq_ctrl_map)) {
+    const fmap = freqCfg.freq_ctrl_map;
+    const dropped = [];
+    for (const name of Object.keys(fmap)) {
+      if (removedSet[name] !== true) continue;
+      delete fmap[name];
+      dropped.push(name);
+    }
+    if (dropped.length > 0) {
+      log.push("freq_ctrl_cfg : removed " + dropped.length + " entry(ies) -> " +
+        dropped.slice(0, 6).join(", ") + (dropped.length > 6 ? " ..." : ""));
+    }
+  }
 
   /*
    * 排序列表 / 冷启动列表里的引用也要同步清理。
@@ -305,7 +331,7 @@ function markHeaders(reason) {
     let mode = null;
     if (/\/luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
       if (pflag(args, "killRewardAds", false)) mode = "incentive";
-    } else if (/\/luna\/ads\/(?:config|dsp\/retrieve)/.test(url)) {
+    } else if (/\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) {
       if (pflag(args, "cleanFeedAds", false)) mode = "feed-ads";
     } else if (/\/luna\/commerce\/v2\/upsell/.test(url)) {
       if (pflag(args, "cleanUpsell", false)) mode = "upsell";
@@ -324,6 +350,11 @@ function markHeaders(reason) {
     const raw = readBody($response);
     if (typeof raw !== "string" || raw.length === 0) {
       return $done({ headers: markHeaders("douyin-clean;skip=no-body") });
+    }
+    /* 广告位/信息流端点也可能返回大体积响应；没有广告标记就不解析。 */
+    if (mode === "feed-ads" &&
+        !/ad|splash|feed|reward|search|commercial|interstitial|popup|banner|shake|twist|motion|interaction|audio|midroll|pause|recommend|sponsor|enable/i.test(raw)) {
+      return $done({ headers: markHeaders("douyin-clean;noop=no-marker") });
     }
     const head = raw.trimStart().slice(0, 1);
     if (head !== "{" && head !== "[") {

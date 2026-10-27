@@ -1,6 +1,6 @@
 # Loon 全功能清单（本仓库视角）
 
-> 依据：官方文档 `https://loon0x00.github.io/docs/`（源仓库 [Loon0x00/LoonManual](https://github.com/Loon0x00/LoonManual) `docs/cn/` 全 30 页，2026-10-26 逐页核对）。
+> 依据：官方文档 `https://nsloon.app/docs/`（源仓库 [Loon0x00/LoonManual](https://github.com/Loon0x00/LoonManual) `docs/cn/`，2026-10-27 逐页核对）。
 > 图例：✅ 本仓库已在用 / 🟡 建议你在设备侧开启 / ⚪ 进阶可选 / 🔒 需真机取证后启用 / ❌ 不采纳（带理由）。
 > 适用版本：主配置按当前 stable 功能描述；标注 build 号的是硬门槛（本仓库统一标注 3.5.1(983)+）。
 
@@ -46,7 +46,7 @@
 
 ## 3. DNS 面板与解析（dns.md / hostmap.md）
 
-- ✅ `[Host]` 域名映射（ads 用 127.0.0.1 黑洞）；`=` 速记 = 域 + `*.域`。
+- ✅ `[Host]` 域名映射（ads 用 127.0.0.1 黑洞）；本仓库构建器速记 `=` → 域 + `*.域`（不是 Loon 语法，由 `tools/build-ads.py` 展开）。
 - ✅ IP 形式 DoH（`https://223.5.5.5/dns-query`）——插件 [General]。
 - 🔒 `h3://223.5.5.5/dns-query`（DoH3，需看 Loon DNS 页是否生效）、`quic://` DoQ。
 - ⚪ DoT 域名形式 `tls://` 与 IP 形式取舍：插件防泄漏名单已拦公共 DoH 入口域名。
@@ -67,11 +67,11 @@
 
 | 策略 | 回包 | 适用 |
 |---|---|---|
-| `REJECT` | 200 + 空 | 默认广告拦截 |
+| `REJECT` | 404 + 空 body | 默认广告拦截 |
 | `REJECT-IMG` | 200 + 1px GIF | `<img>`/开屏图占位（App 需要「图被拒绝」语义时） |
 | `REJECT-DICT` | 200 + 空 JSON 对象 `{}` | 上报/埋点接口需要 JSON 才不报错 |
 | `REJECT-ARRAY`（文档写作 `REJECT-ARRY`） | 200 + `[]` | 上报接口要数组时 |
-| `REJECT-DROP` | 无回包直接丢 | **防重试风暴**（SDK 失败秒重试场景）；`*-NO-DROP` 家族是关掉防重试的变体 |
+| `REJECT-DROP` | 无回包直接丢 | **防重试风暴**（SDK 失败秒重试场景）；官方文档未列 `*-NO-DROP` 变体 |
 
 - ✅ HTTPDNS 关键词规则已换挡至 `REJECT-DROP`，避免客户端在收到 200 空包后频繁秒级重试产生的重试风暴；
 - ✅ 通用埋点上报特征规则已接入 `REJECT-DICT`（返回 200 + `{}` 空字典），成功欺骗 SDK 判定数据已落库，触发客户端主动执行 `deleteEvents` 清空本地未上传重试队列，彻底避免本地 SQLite 膨胀与射频高频唤醒；
@@ -102,7 +102,7 @@
 
 ## 7. 插件机制（plugin.md）
 
-- ✅ `#!meta` 全键（name/desc/author/version/homepage/icon/system/loon_version/date/tag/type）全部用上并受 lint 校验。
+- ✅ 元数据齐全并受 lint 校验：soda/douyin 至少 `name/desc/author/version/date`；ads 另含 `homepage/icon/system/loon_version/tag/type`。
 - ✅ `[Argument]` 类型 `bool`（开关）与 `input`（cron 文本）。
 - 🔒 `[Argument]` `select` 下拉类型（值得验：可把「默认/保奖励/去广告」做成单选预设）。
 - ✅ 脚本相对路径绑定（`scripts/*.min.js` 与 `.plugin` 同级——这就是 raw 直链部署无需 Pages 的原因）。
@@ -140,6 +140,6 @@
 |---|---|
 | 评估现有拦截覆盖率 | `npm run audit:ads` |
 | 重建 ads 插件 | `npm run build:ads`（改 `src/ads/domains.json`，勿手改生成物） |
-| 全量门禁 | `npm run check`（build + lint + 40 套件/1020 断言） |
+| 全量门禁 | `npm run check`（build + lint + 44 套件/1268 断言） |
 | 远端一致性 | `python3 tools/check-remote.py`（`--list` 看四段清单） |
 | 一键发布 | `python3 tools/publish.py --with-source --yes` |

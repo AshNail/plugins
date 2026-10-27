@@ -51,7 +51,7 @@ data.feedback_schema                  领奖反馈弹窗
 data.namespace = luna_incentive
 ```
 
-`treasureMinimal=true` 时：只保留 `duration_task_section`（只留 `luna_rewards_ads`），其余分区整体删除，并把 `config.ad_api_preload.task_ids` 清空（被删任务的广告不再预拉取）。
+`treasureMinimal=true` 时：只保留 `duration_task_section`（只留 `luna_rewards_ads`），其余分区整体删除；`config.migrate_first_ad` 置 false，`config.ad_api_preload.task_ids` 只留保留下来的任务自己引用的 id（被删任务与页面里不存在的 id 不再预拉取），一条不剩时 `preload` 一并关闭。
 
 ### 【攒时长 听歌不中断】本质就是看广告
 
@@ -322,6 +322,25 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 ---
 
 ## 7. 版本更新记录
+
+### v0.7.4（2026-10-27）福利页预拉取已删任务停止预热 + upsell 频控同步
+
+- **福利页**：`config.migrate_first_ad` 置 false；`config.ad_api_preload.task_ids` 改为按保留任务引用过滤（`task.id` / `ad_snap.task_id` / `base_ad_diversion.id`），被裁掉的任务和页面里不存在的 id 不再预拉取，一条不剩时 `preload` 关闭；保留任务若仍引用预拉取 id 则不受影响。
+- **商业化弹窗**：删除广告/商城弹窗后，同步删除 `freq_ctrl_cfg.freq_ctrl_map` 里与已删弹窗同名的频控项（真实样本 82→79）；`background_voice_prompt` 这类被普通弹窗共享的键、以及 `widget_ad` 等非 upsell 实体的键保持原样。
+- 回归：`test_douyin_treasure.js` 38 条、`test_douyin_upsell.js` 46 条、`test_douyin_clean.js` 44 条。
+
+### v0.7.3（2026-10-27）ads/retrieve 补齐 + 大响应预检
+
+- `cleanFeedAds` 绑定的信息流清理从 `ads/(config|dsp/retrieve)` 扩到 `ads/(config|retrieve|dsp/retrieve)`；`clean.js` 新增 `ad_launch` / `ad_launch_list` / `ad_launches` / `ads_blocks` / `ads_info` / `ad_unit_configs` / `splash_config` / `feed_ads_config` / `reward_config` 等字段清理。
+- 广告配置响应在 `JSON.parse` 前先做广告标记预检，无标记的大响应直接放行并写 `X-Soda-Plugin: douyin-clean;noop=no-marker`。
+- 只读观测绑定同步覆盖 `ads/retrieve`。
+
+### v0.7.2（2026-10-26）传感器误触 / 商业推广 / 上报阻断
+
+- 广告配置清理补 `shake_info` / `twist_info` / `motion_info` / `interaction_info` / `splash_cache`、DSP/广告位配置字段，并把 `preload` / `enable_ads` / `enable_ad` 置 false。
+- 信息流广告条目识别扩展 `is_promoted` / `is_sponsored` / `is_commercial`。
+- 新增 `luna/ads/report/dsp/show` 请求阻断（`reject(200)`，`cleanFeedAds` 控制）。
+- 新增 `status.js` Generic 状态脚本与通知 attach openUrl。
 
 ### v0.7.1（2026-10-26）共享脚本单一来源整合（行为不变）
 

@@ -196,7 +196,7 @@ def parse_plugin(path):
     cur = None
     for line in path.read_text().splitlines():
         s = line.strip()
-        m = re.match(r"^\[([A-Za-z]+)\]$", s)
+        m = re.match(r"^\[([A-Za-z][A-Za-z ]*)\]$", s)
         if m:
             cur = m.group(1)
             sections.append(cur)
@@ -665,9 +665,9 @@ def check_ads_family():
 
     # [Host] is the core DNS layer.
     host_lines = data.get("Host", [])
-    if len(host_lines) < 700:
+    if len(host_lines) < 1100:
         errors.append(
-            f"{ADS_PLUGIN}: only {len(host_lines)} active Host rules, expected >= 700"
+            f"{ADS_PLUGIN}: only {len(host_lines)} active Host rules, expected >= 1100"
         )
     exact = set()
     wildcard = set()
@@ -698,6 +698,43 @@ def check_ads_family():
     for domain in ("doubleclick.net", "applovin.com", "pangle.io", "gdtimg.com"):
         if domain not in wildcard:
             errors.append(f"{ADS_PLUGIN}: core wildcard missing: *.{domain}")
+    # 2026-10-27 审计补的高置信广告/测量域，防止后续整理时被误删。
+    for domain in (
+        "advertnative.com",
+        "ntvk1.ru",
+        "lentainform.com",
+        "valueclickmedia.com",
+        "medleyads.com",
+        "bluecava.com",
+        "voicefive.com",
+        "events.brightline.tv",
+    ):
+        if domain not in exact and domain not in wildcard:
+            errors.append(f"{ADS_PLUGIN}: audited ad domain missing: {domain}")
+    # 公共加密 DNS 防绕过入口（含 DoT 域名兜底）。
+    for domain in (
+        "doh.applied-privacy.net",
+        "doh.libredns.gr",
+        "dns.controld.com",
+        "doh.controld.com",
+        "doh.ffmuc.net",
+        "1dot1dot1dot1.cloudflare-dns.com",
+        "dot.quad9.net",
+        "dot.mullvad.net",
+    ):
+        if domain not in exact and domain not in wildcard:
+            errors.append(f"{ADS_PLUGIN}: public encrypted-DNS entry missing: {domain}")
+    # 默认注释的统计组也要有这几条真实补漏（保持 disabled，不能激活）。
+    for marker in (
+        "# cetrk.com = 127.0.0.1",
+        "# wizaly.com = 127.0.0.1",
+        "# stat.pl = 127.0.0.1",
+        "# soicos.com = 127.0.0.1",
+        "# stats.wp.com = 127.0.0.1",
+        "# nr-data.net = 127.0.0.1",
+    ):
+        if marker not in raw:
+            errors.append(f"{ADS_PLUGIN}: optional analytics marker missing: {marker}")
     for domain in (
         "httpdns.aliyuncs.com",
         "httpdns.qq.com",

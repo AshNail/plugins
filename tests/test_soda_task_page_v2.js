@@ -64,12 +64,35 @@ console.log("\n== 1. cleanAds · 真样本全量回归（beta-luna task/page/v2�
   ck("widget 任务保留", tasksOf(out, "widget_task_section").includes("music_ug_treasure"));
   const a = out.data.sections[0].asset_group.assets;
   ck("资产金额未动 (256/55/3)", a.map((x) => x.amount).join(",") === "256,55,3", a.map((x) => x.amount));
-  ck("ad_api_preload 未动", out.data.config.ad_api_preload.task_ids.length === 9);
+  ck("ad_api_preload 只留页面任务引用 (9→4)",
+     out.data.config.ad_api_preload.task_ids.join(",") ===
+       "600607,600585,600625,600662",
+     out.data.config.ad_api_preload.task_ids);
+  ck("仍有保留任务引用 → preload 开启", out.data.config.ad_api_preload.preload === true);
+  ck("migrate_first_ad 关闭", out.data.config.migrate_first_ad === false);
   const signTask = out.data.sections[2].task_group.tasks.find((t) => t.key === "soda_music_sign_in");
   ck("签到 rewards 明细未动", !!signTask && signTask.rewards && signTask.rewards.length === 7);
   ck("sections 标题未动",
      out.data.sections[2].view.title.plain_text === "做任务 赚金币");
   ck("logs 有摘除记录", r.logs.some((l) => l.indexOf("tasks") !== -1 && l.indexOf("1/") !== -1), r.logs.join("|").slice(0, 120));
+}
+
+console.log("\n== 1b. ad_api_preload：只留仍在页面里的任务引用 ==");
+{
+  const page = JSON.parse(PAGE);
+  page.data.config.ad_api_preload.task_ids = [
+    "600590",  // duration 任务 id（保留）
+    "600691",  // 翻卡 ad_snap.task_id（保留）
+    "600572",  // music_incentive_ad 任务 id（已被摘）
+    "600577",  // 签到 ad_snap.task_id（保留）
+    "601039"   // 页面里不存在
+  ];
+  const r = run(URL_PAGE, page, { rewardSafe: false, cleanAds: true });
+  const out = JSON.parse(r.out.body);
+  const pre = out.data.config.ad_api_preload;
+  ck("保留被引用 id（600590/600691/600577）",
+     pre.task_ids.join(",") === "600590,600691,600577", pre.task_ids);
+  ck("有引用时 preload 保持开启", pre.preload === true, pre.preload);
 }
 
 console.log("\n== 2. 结构化判别哨兵（extra.ad_task_id/ad_snap 不再有杀伤力）==");

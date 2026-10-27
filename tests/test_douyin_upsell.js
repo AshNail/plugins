@@ -143,6 +143,23 @@ console.log("\n== 5. 排序/冷启动引用同步清理 ==");
     JSON.stringify(o.cold_launch_timing.upsell_item_unique_names));
 }
 
+console.log("\n== 5b. 频控表：只删与已删弹窗同名的条目 ==");
+{
+  const o = parse(run(real, { cleanUpsell: true }).out);
+  const before = real.freq_ctrl_cfg.freq_ctrl_map;
+  const freq = o.freq_ctrl_cfg.freq_ctrl_map;
+  check("freq 条数 82 -> 79",
+    Object.keys(before).length === 82 && Object.keys(freq).length === 79,
+    String(Object.keys(freq).length));
+  for (const n of ["ads_close_persuade_vip_popup", "background_voice_prompt_ad",
+                   "vip_close_persuade_ads_popup"]) {
+    check("已删同名频控 " + n, !(n in freq));
+  }
+  check("共享频控键 background_voice_prompt 保留", "background_voice_prompt" in freq);
+  check("非 upsell 实体的 widget_ad 保留", "widget_ad" in freq);
+  check("排序列表内普通弹窗频控保留", "coin_guided_login_popup" in freq);
+}
+
 console.log("\n== 6. cleanUpsell 关闭：原样放行 ==");
 {
   const r = run(real, { cleanUpsell: false });
