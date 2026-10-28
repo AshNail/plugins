@@ -2,7 +2,7 @@
 
 > 起点读书:官方 SDK 清单声明穿山甲+腾讯七巧板(优量汇系)——两组装备黑洞 + 起点自有广告统计端点(adstat.qidian.com/adsite.yuewen.com,官方政策自证)。Argus 广告位(magev6.if.qidian.com/adv)与章节内容同域,零 MITM 不可分。看「福利中心」视频领章节卡依赖 SDK,启用即断。零证书。
 
-版本 **1.1.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.2.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -23,21 +23,24 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
-起点读书 iOS 未做证书固定：开屏/书架广告位与章节内容同主机 magev6.if.qidian.com，[Host] 黑洞会废掉 App，正解是 MITM 后按路径 reject。下列规则来自 app2smile / blackmatrix7 / fmz200 三家公开模块（reject-200 语义 = Loon 的 REJECT），默认整段注释、装证书后按需启用。
+起点读书 iOS 未做证书固定：开屏/书架广告位与章节内容同主机 magev6.if.qidian.com，[Host] 黑洞会废掉 App，正解是 MITM 后按路径拦。下列规则来自 app2smile / blackmatrix7 / fmz200 三家公开模块（源里的 reject-200 对应 Loon 的 REJECT-DICT：200 + {} JSON），默认整段注释、装证书后按需启用。refresh（我的界面内测推广）与 getTopOperation（书架置顶推广）两条源注释明写『推广』；源里的 argus/api/v1/adv 宽前缀与 followsubscribe 同组写着『投票、章末免费领取章节卡』——那是功能不是广告，刻意不收。
 
 - 解密主机（`[MITM] hostname`，2 个）：`magev6.if.qidian.com`, `mage.if.qidian.com`
-- 路径级规则（`URL-REGEX`，6 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
+- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，2 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 会静默失效；启用本层时应连同这些行一起取消注释。
+- 路径级规则（`URL-REGEX`，8 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 
 ```text
 # URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/client/getsplashscreen,REJECT-DICT
 # URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/adv/getadvlistbatch,REJECT-DICT
 # URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getHoverAdv,REJECT-DICT
 # URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getad,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/refresh,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getTopOperation,REJECT-DICT
 # URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/client/iosad,REJECT-DICT
 # URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/dailyrecommend/getdailyrecommend,REJECT-DICT
 ```
 
-启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③按需取消规则行注释。
+启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，否则规则会落在上一段的末尾而不生效）。
 
 > 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。
 

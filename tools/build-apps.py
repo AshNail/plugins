@@ -26,10 +26,12 @@
 """
 from __future__ import annotations
 
+import fnmatch
 import json
 import pathlib
 import re
 import sys
+from urllib.parse import urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 APPS = ROOT / "src/apps"
@@ -289,19 +291,31 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
+def escape_regex_slashes(pattern: str) -> str:
+    return re.sub(r"(?<!\\)/", r"\\/", pattern)
+
+
 def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
     """可选 MITM 增强层：整段注释输出。
 
     只对未做证书固定的 App 有效；启用需要用户先装并信任 Loon 证书，再逐行取消
     注释。因为默认全注释，插件头仍是纯 rule/host 零证书形态，lint 的段白名单不受
-    影响（注释头不会被解析成 section）。这里的每条 URL-REGEX/脚本都必须来自
+    影响（注释头不会被解析成 section）。这里的每条 URL-REGEX / jq / 脚本都必须来自
     公开可引用的规则源（enhance.sources），不凭空造路径。
     """
     mitm_hosts = enh.get("mitm_hosts", [])
     url_rules = enh.get("url_regex", [])
+    rewrite_json = enh.get("rewrite_json", [])
     scripts = enh.get("scripts", [])
-    if not (mitm_hosts or url_rules or scripts):
-        raise BuildError(f"{where}: enhance 存在但三段全空")
+    if not (mitm_hosts or url_rules or rewrite_json or scripts):
+        raise BuildError(f"{where}: enhance 存在但各段全空")
+    if (url_rules or rewrite_json) and not mitm_hosts:
+        raise BuildError(f"{where}: enhance 路径规则需要 mitm_hosts（HTTPS 必须先解密）")
+    if rewrite_json and scripts:
+        raise BuildError(
+            f"{where}: enhance 的 response.json.jq 与 Response Script 互斥"
+            "（官方：Response Body Rewrite 命中时同阶段脚本不执行）"
+        )
     for h in mitm_hosts:
         if h.lower() in roots:
             raise BuildError(f"{where}: enhance MITM 命中共享主域 {h!r}")
@@ -314,14 +328,49 @@ def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
             raise BuildError(f"{where}: enhance URL-REGEX 需三段（类型,正则,动作）: {r!r}")
         if parts[2] not in ACTIONS | {"REJECT-DICT", "REJECT-IMG"}:
             raise BuildError(f"{where}: enhance 动作不在白名单: {r!r}")
+    for item in rewrite_json:
+        if not isinstance(item, dict):
+            raise BuildError(f"{where}: enhance.rewrite_json 项必须是对象")
+        url, jq = item.get("url", ""), item.get("jq", "")
+        sample, note, source = item.get("sample", ""), item.get("note", ""), item.get("source", "")
+        if not url.startswith("^https?://"):
+            raise BuildError(f"{where}: rewrite_json.url 必须以 ^https?:// 开头: {url!r}")
+        if not jq or any(c in jq for c in "`\n\r"):
+            raise BuildError(f"{where}: rewrite_json.jq 不能为空或含反引号/换行: {jq!r}")
+        if not note or not source:
+            raise BuildError(f"{where}: rewrite_json 必须带 note 与 source")
+        try:
+            rx = re.compile(url)
+        except re.error as e:
+            raise BuildError(f"{where}: rewrite_json.url 正则非法: {e}: {url!r}") from e
+        if not sample.startswith(("http://", "https://")):
+            raise BuildError(f"{where}: rewrite_json.sample 必须是完整 URL: {sample!r}")
+        host = (urlsplit(sample).hostname or "").lower()
+        if not host or not any(fnmatch.fnmatch(host, h.lower()) for h in mitm_hosts):
+            raise BuildError(
+                f"{where}: rewrite_json.sample 主机 {host!r} 不在 mitm_hosts 内（路径规则必须先解密）"
+            )
+        if not rx.match(sample):
+            raise BuildError(
+                f"{where}: rewrite_json.url 不匹配 sample（证据路径对不上）: {url!r} vs {sample!r}"
+            )
     out = [""]
     out.append("# " + "=" * 72)
     out.append("# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）")
     out.append("# " + "-" * 72)
     for note in enh.get("intro", "").splitlines():
         out.append(f"# {note}")
-    out.append("# 启用步骤：①Loon 里装并信任证书 → ②取消 [MITM] 头与其 hostname 行的注释 →")
-    out.append("#           ③按需取消下面 [Rule]/[Script] 行的注释。")
+    circled = "①②③④⑤⑥"
+    steps = ["Loon 里装并信任证书", "取消 [MITM] 头与其 hostname 行的注释"]
+    if rewrite_json:
+        steps.append("取消 [Rewrite] 头及其下所需 response.json.jq 行的注释")
+    if url_rules:
+        steps.append("取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行")
+    if scripts:
+        steps.append("如含脚本，再取消 [Script] 头与其脚本行的注释")
+    for i, step in enumerate(steps):
+        prefix = "# 启用步骤：" if i == 0 else "#           "
+        out.append(prefix + circled[i] + step + (" →" if i < len(steps) - 1 else "。"))
     out.append("# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，")
     out.append("# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。")
     out.append("# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。")
@@ -334,11 +383,41 @@ def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
         out.append("# " + "-" * 60)
         out.append("# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。")
         out.append("# hostname = %APPEND% " + ", ".join(mitm_hosts))
-    if url_rules or scripts:
-        out.append("# [Rule] / [Script]（路径级去广告，需上面 MITM 命中该域才看得到 path）")
+    if rewrite_json:
+        out.append("#")
+        out.append("# [Rewrite]")
         out.append("# " + "-" * 60)
+        out.append("# 下列响应 JSON 改写必须放在 [Rewrite] 段：取消本行（# [Rewrite]）与所需行的注释才生效。")
+        out.append("# response.json.jq 是 Loon 原生 jq：只删广告字段/节点、保留 mtop 包络；")
+        out.append("# 与 Response Script 互斥（body rewrite 命中后脚本不执行），本层不含脚本。")
+        for item in rewrite_json:
+            out.append(f"# 来源 {item['source']}：{item['note']}")
+            out.append(
+                f"# response if ${{url}} ~= /{escape_regex_slashes(item['url'])}/"
+                f" then response.json.jq(`{item['jq']}`)"
+            )
+    if url_rules:
+        out.append("#")
+        out.append("# [Rule]")
+        out.append("# " + "-" * 60)
+        out.append("# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。")
+        quic = [h for h in mitm_hosts if not any(c in h for c in "*?[]:")]
+        skipped = [h for h in mitm_hosts if h not in quic]
+        if quic:
+            out.append("# QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的")
+            out.append("# " + ("URL-REGEX / response.json.jq 会静默失效。" if rewrite_json else "URL-REGEX 会静默失效。"))
+            out.append("# 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。")
+            for h in quic:
+                out.append(f"# AND,((DOMAIN-SUFFIX,{h}),(PROTOCOL,QUIC)),REJECT")
+        if skipped:
+            out.append("# 通配主机无法用 DOMAIN-SUFFIX 表达，QUIC 回退需另行处理: " + ", ".join(skipped))
         for r in url_rules:
             out.append(f"# {r}")
+    if scripts:
+        out.append("#")
+        out.append("# [Script]")
+        out.append("# " + "-" * 60)
+        out.append("# 下列脚本必须放在 [Script] 段：取消本行（# [Script]）与所需脚本行的注释才生效。")
         for s in scripts:
             out.append(f"# {s}")
     out.append("")

@@ -19,14 +19,14 @@
 ### 13 个 App 专属去广告插件（零证书默认态，`[Host]`/`[Rule]`；3 个非固定 App 另带默认注释的可选 MITM 增强层）
 
 每个插件的证据、置信分级（A/B/C）与「能力天花板」如实写在各自 README；与 `ads.plugin` 的域重叠是有意设计（按 App 开关是分组语义）。
-美团/闲鱼/起点读书未做证书固定，插件文末附**整段默认注释**的 `[MITM]` + `URL-REGEX` 路径级规则（同域广告接口黑洞会伤功能，只有解密后按路径拦才可能净化）；装不装证书、启不启用完全自愿，银行/微信/米家/京东/X/Instagram 因证书固定、mmtls 或支付风控红线**不提供**本层。
+美团/闲鱼/起点读书未做证书固定，插件文末附**整段默认注释**的 `[MITM]` + `URL-REGEX` 路径级规则（同域广告接口黑洞会伤功能，只有解密后按路径拦才可能净化）；闲鱼另附 `[Rewrite]` 的 `response.json.jq` 注释态规则，在 mtop 包络里只删信息流广告字段。装不装证书、启不启用完全自愿，银行/微信/米家/京东/X/Instagram 因证书固定、mmtls 或支付风控红线**不提供**本层。
 
 | 插件 | 覆盖对象 | 天花板一句话 |
 |---|---|---|
 | [wechat](plugins/wechat/README.md) | 微信进程内 GDT/优量汇 + 8 个朋友圈/视频号素材主机 | 素材空白化、条目不可移除（mmtls 内联） |
 | [meituan](plugins/meituan/README.md) | iOS 官方 SDK 目录实证 ADN（Sigmob/ToBid/美数）+ impdsp/mads + 遥测；+可选 MITM 层（开屏/启动配置路径 REJECT-DICT + p[0-9] 广告图 REJECT-IMG 回 1px GIF） | 自建广告与业务同域同 CDN，≈25-35% 可切；路径层需装证书 |
-| [xianyu](plugins/xianyu/README.md) | iyes.youku.com + AMDC + Tunion/afpapi；+可选 MITM 层（mtop splash.ads / ad.expose 路径） | 广告 100% 内嵌 mtop 网关，DNS 层≈0-5%；路径层需装证书 |
-| [qidian](plugins/qidian/README.md) | 起点读书 first-party 广告域 + 遥测；+可选 MITM 层（magev6 argus 6 条广告接口，REJECT-DICT） | 推荐位与内容同域（magev6）黑洞不可分；路径层需装证书 |
+| [xianyu](plugins/xianyu/README.md) | iyes.youku.com + AMDC + Tunion/afpapi；+可选 MITM 层（splash.ads / ad.expose 路径拒绝 + 15 条 `response.json.jq` 信息流字段裁剪） | 广告 100% 内嵌 mtop 网关，DNS 层≈0-5%；路径/JSON 层需装证书，JSON 规则默认注释、逐条启用 |
+| [qidian](plugins/qidian/README.md) | 起点读书 first-party 广告域 + 遥测；+可选 MITM 层（magev6 argus 8 条广告/推广接口，REJECT-DICT） | 推荐位与内容同域（magev6）黑洞不可分；路径层需装证书 |
 | [banks](plugins/banks/README.md) | 招商/银联 6 银行 App 广告端点 | 银行 App 无第三方 ADN，广告≈全内联 |
 | [jd](plugins/jd/README.md) | 京东自建广告交易/点击监测（生效：dsp-x/ads-union/ccc-x/addata/skdisplay；默认关：x.jd.com 族 + 埋点）；商品图 CDN 与交易/风控/凭证域显式放行 | 广告素材与商品同 API 同图床，DNS 只能切交易/监测层 |
 | [mijia](plugins/mijia/README.md) | 小米系统广告域（ad.xiaomi.com 族） | 只影响米家 App 内推广位 |
@@ -92,7 +92,7 @@ npm run build:app-readmes  # src/apps/*.json → plugins/<slug>/README.md
 npm run audit:ads   # 上游清单覆盖率/缺口审计（只读）
 npm run lint        # 结构/正则/脚本引用/安全边界/孤儿脚本/压缩语法/ads 数据一致性 + 四处名单一致
 npm run check       # build + build:ads + lint + coverage + 全部测试（源码+压缩版）
-npm run coverage    # Loon 能力覆盖/利用率报表（117 条能力，探测真实用法）
+npm run coverage    # Loon 能力覆盖/利用率报表（155 条能力，探测真实用法）
 npm test            # 仅测试；26 套件 ×2 = 52 套件 / 1596 断言
 ```
 

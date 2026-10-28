@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Structural lint for the Loon plugins (soda/douyin + the single ads plugin)."""
+import fnmatch
 import json
 import pathlib
 import re
 import subprocess
 import sys
+from urllib.parse import urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+
+def escape_regex_slashes(pattern):
+    return re.sub(r"(?<!\\)/", r"\\/", pattern)
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
@@ -2179,12 +2185,16 @@ def check_app_plugins():
             raw = plugin.read_text()
             for line in raw.splitlines():
                 s = line.strip()
-                if s.startswith(("[MITM]", "hostname =", "URL-REGEX,")):
+                if s.startswith(("[MITM]", "hostname =", "URL-REGEX,", "response if", "response.json.jq")):
                     errors.append(
                         f"apps/{slug}: enhance line must stay commented: {s!r}"
                     )
             if not rd_has_section(plugin.parent / "README.md", "可选 MITM 增强层"):
                 errors.append(f"apps/{slug}: README missing 可选 MITM 增强层 section")
+            elif "QUIC 回退" not in (plugin.parent / "README.md").read_text():
+                errors.append(
+                    f"apps/{slug}: README must explain the QUIC fallback (MITM sees TCP only)"
+                )
             for key in ("mitm_hosts", "url_regex", "sources"):
                 if not enh.get(key):
                     errors.append(f"apps/{slug}: enhance.{key} empty")
@@ -2192,6 +2202,117 @@ def check_app_plugins():
                 parts = r.split(",")
                 if parts[0] != "URL-REGEX" or len(parts) != 3:
                     errors.append(f"apps/{slug}: enhance url_regex malformed: {r!r}")
+            rewrite_json = enh.get("rewrite_json", [])
+            if rewrite_json and enh.get("scripts"):
+                errors.append(
+                    f"apps/{slug}: enhance response.json.jq 与 Response Script 互斥"
+                    "（官方：Response Body Rewrite 命中时脚本不执行）"
+                )
+            for item in rewrite_json:
+                if not isinstance(item, dict):
+                    errors.append(f"apps/{slug}: enhance rewrite_json item must be an object")
+                    continue
+                url, jq = item.get("url", ""), item.get("jq", "")
+                sample, note, source = item.get("sample", ""), item.get("note", ""), item.get("source", "")
+                if not url.startswith("^https?://"):
+                    errors.append(f"apps/{slug}: rewrite_json.url must start with ^https?://: {url!r}")
+                if not jq or any(c in jq for c in "`\n\r"):
+                    errors.append(f"apps/{slug}: rewrite_json.jq invalid: {jq!r}")
+                if not note or not source:
+                    errors.append(f"apps/{slug}: rewrite_json needs note + source: {url!r}")
+                try:
+                    rx = re.compile(url)
+                except re.error as e:
+                    errors.append(f"apps/{slug}: rewrite_json.url bad regex: {e}: {url!r}")
+                    continue
+                if not sample.startswith(("http://", "https://")):
+                    errors.append(f"apps/{slug}: rewrite_json.sample not a full URL: {sample!r}")
+                    continue
+                host = (urlsplit(sample).hostname or "").lower()
+                if not any(fnmatch.fnmatch(host, h.lower()) for h in enh.get("mitm_hosts", [])):
+                    errors.append(
+                        f"apps/{slug}: rewrite_json.sample host {host!r} not in enhance.mitm_hosts"
+                    )
+                if not rx.match(sample):
+                    errors.append(
+                        f"apps/{slug}: rewrite_json.url does not match its sample: {url!r} vs {sample!r}"
+                    )
+            if rewrite_json and "response.json.jq" not in (plugin.parent / "README.md").read_text():
+                errors.append(f"apps/{slug}: README must document response.json.jq")
+            quic_hosts = [
+                h for h in enh.get("mitm_hosts", [])
+                if not any(c in h for c in "*?[]:")
+            ]
+            raw_lines = raw.splitlines()
+
+            def line_index(text):
+                try:
+                    return raw_lines.index(text)
+                except ValueError:
+                    return -1
+
+            if enh.get("mitm_hosts") and line_index("# [MITM]") < 0:
+                errors.append(f"apps/{slug}: enhance missing uncommentable '# [MITM]' header")
+            rewrite_i = line_index("# [Rewrite]")
+            if rewrite_json and rewrite_i < 0:
+                errors.append(
+                    f"apps/{slug}: enhance response.json.jq missing uncommentable '# [Rewrite]' header"
+                )
+            for item in rewrite_json:
+                if not isinstance(item, dict):
+                    continue
+                want = (
+                    f"# response if ${{url}} ~= /{escape_regex_slashes(item.get('url', ''))}/"
+                    f" then response.json.jq(`{item.get('jq', '')}`)"
+                )
+                if want not in raw_lines:
+                    errors.append(
+                        f"apps/{slug}: generated response.json.jq line missing/!= source: {item.get('url')!r}"
+                    )
+                elif rewrite_i >= 0 and line_index(want) < rewrite_i:
+                    errors.append(
+                        f"apps/{slug}: response.json.jq must sit under the '# [Rewrite]' header"
+                    )
+            rule_i = line_index("# [Rule]")
+            if enh.get("url_regex") and rule_i < 0:
+                errors.append(
+                    f"apps/{slug}: enhance URL-REGEX missing uncommentable '# [Rule]' header"
+                )
+            for h in quic_hosts:
+                want = f"# AND,((DOMAIN-SUFFIX,{h}),(PROTOCOL,QUIC)),REJECT"
+                if want not in raw_lines:
+                    errors.append(
+                        f"apps/{slug}: enhance host {h} missing commented QUIC fallback "
+                        "(MITM only sees TCP; HTTP/3 would silently skip URL-REGEX)"
+                    )
+                elif rule_i >= 0 and line_index(want) < rule_i:
+                    errors.append(
+                        f"apps/{slug}: QUIC fallback must sit under the '# [Rule]' header"
+                    )
+            for r in enh.get("url_regex", []):
+                want = f"# {r}"
+                if rule_i >= 0 and line_index(want) < rule_i:
+                    errors.append(
+                        f"apps/{slug}: URL-REGEX must sit under the '# [Rule]' header"
+                    )
+            if enh.get("scripts"):
+                script_i = line_index("# [Script]")
+                if script_i < 0:
+                    errors.append(
+                        f"apps/{slug}: enhance scripts missing uncommentable '# [Script]' header"
+                    )
+                else:
+                    for s in enh.get("scripts", []):
+                        if line_index(f"# {s}") < script_i:
+                            errors.append(
+                                f"apps/{slug}: enhance script must sit under the '# [Script]' header"
+                            )
+            for line in raw_lines:
+                s = line.strip()
+                if s.startswith("AND,") and "PROTOCOL,QUIC" in s:
+                    errors.append(
+                        f"apps/{slug}: QUIC fallback must stay commented: {s!r}"
+                    )
         rd = plugin.parent / "README.md"
         if not rd.exists():
             errors.append(f"apps/{slug}: missing plugins/{slug}/README.md")

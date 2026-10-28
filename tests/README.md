@@ -18,7 +18,7 @@ npm run test:src    # 只测 src/soda/*.js
 npm run test:dist   # 只测 plugins/soda/scripts/*.min.js
 npm test            # 源码 + 压缩版都跑
 npm run lint        # 插件结构、正则、脚本引用、脚本安全边界、压缩脚本语法
-npm run coverage    # Loon 能力覆盖/利用率（111 条能力，探测真实用法）
+npm run coverage    # Loon 能力覆盖/利用率（155 条能力，探测真实用法）
 npm run coverage:write  # 重新生成 docs/loon-coverage.md
 ```
 

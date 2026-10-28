@@ -2,6 +2,7 @@
 """从 src/apps/*.json 生成 plugins/<slug>/README.md（单一真源：README 不许手写漂移）。"""
 import json
 import pathlib
+import re
 import sys
 from urllib.parse import quote
 
@@ -9,6 +10,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 APPS = ROOT / "src/apps"
 RAW = "https://raw.githubusercontent.com/AshNail/plugins/main/plugins"
 REPO = "https://github.com/AshNail/plugins"
+
+
+def escape_regex_slashes(pattern):
+    return re.sub(r"(?<!\\)/", r"\\/", pattern)
 
 
 def render(app, sdklib, ads_groups):
@@ -69,7 +74,10 @@ def render(app, sdklib, ads_groups):
         lines.append(f"| {title}（引用组） | A | 启用 | {note} 共 {n_h} 域 / {n_r} 规则。 |")
     if enh:
         n_regex = len(enh.get("url_regex", []))
+        n_json = len(enh.get("rewrite_json", []))
         n_hosts = len(enh.get("mitm_hosts", []))
+        quic = [h for h in enh.get("mitm_hosts", []) if not any(c in h for c in "*?[]:")]
+        skipped = [h for h in enh.get("mitm_hosts", []) if h not in quic]
         lines += [
             "",
             "## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）",
@@ -77,16 +85,53 @@ def render(app, sdklib, ads_groups):
             enh.get("intro", ""),
             "",
             f"- 解密主机（`[MITM] hostname`，{n_hosts} 个）：{', '.join('`' + h + '`' for h in enh.get('mitm_hosts', []))}",
-            f"- 路径级规则（`URL-REGEX`，{n_regex} 条，命中即拦对应广告接口/素材，不影响同域功能请求）：",
-            "",
-            "```text",
+            f"- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，{len(quic)} 条，注释态）："
+            "MITM 只解密 TCP，App 走 HTTP/3 时"
+            + (" `URL-REGEX` 与 `response.json.jq` 都会静默失效" if n_json else " `URL-REGEX` 会静默失效")
+            + "；启用本层时应连同这些行一起取消注释。",
         ]
-        for r in enh.get("url_regex", []):
-            lines.append(f"# {r}")
+        if skipped:
+            lines.append(
+                f"- 通配主机（{', '.join('`' + h + '`' for h in skipped)}）无法用 `DOMAIN-SUFFIX` 表达 QUIC 回退，"
+                "启用该层的这一域时需另行处理。"
+            )
+        if n_regex:
+            lines += [
+                f"- 路径级规则（`URL-REGEX`，{n_regex} 条，命中即拦对应广告接口/素材，不影响同域功能请求）：",
+                "",
+                "```text",
+            ]
+            for r in enh.get("url_regex", []):
+                lines.append(f"# {r}")
+            lines += ["```", ""]
+        if n_json:
+            lines += [
+                f"- 响应 JSON 改写（`response.json.jq`，{n_json} 条，注释态）：MITM 解密后按公开模块的 jq "
+                "只删广告字段/节点、保留 mtop 包络；与 Response Script 二选一（本层不含脚本）。"
+                "建议逐条启用、真机确认后再加下一条。",
+                "",
+                "```text",
+            ]
+            for item in enh.get("rewrite_json", []):
+                lines.append(f"# 来源 {item['source']}：{item['note']}")
+                lines.append(
+                    f"# response if ${{url}} ~= /{escape_regex_slashes(item['url'])}/"
+                    f" then response.json.jq(`{item['jq']}`)"
+                )
+            lines += ["```", ""]
+        steps = ["Loon 装并信任证书", "取消插件内 `[MITM]` 头与 hostname 行注释"]
+        if n_json:
+            steps.append("取消 `[Rewrite]` 头与所需 `response.json.jq` 行的注释")
+        if n_regex:
+            steps.append(
+                "取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，"
+                "否则规则会落在上一段的末尾而不生效）"
+            )
+        if enh.get("scripts"):
+            steps.append("取消 `[Script]` 头与所需脚本行的注释")
+        circled = "①②③④⑤⑥"
+        lines.append("启用步骤：" + " → ".join(circled[i] + s for i, s in enumerate(steps)) + "。")
         lines += [
-            "```",
-            "",
-            "启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③按需取消规则行注释。",
             "",
             "> 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，"
             "那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。",

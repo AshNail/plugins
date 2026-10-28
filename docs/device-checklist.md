@@ -191,7 +191,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 不装证书 = 本层永不生效，上面各项判读不变；启用与否、启用几条完全自愿，随时可回滚（重新注释即回到原状）。
 
 - [ ] **前置**：Loon → 证书管理 → 生成/安装 CA → iOS 设置里「通用→关于→证书信任设置」打开完全信任；无证书时取消注释也无效，先装证书再改规则。
-- [ ] **qidian**：只取消 `[MITM]` 头 + `hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com` + 6 条 `URL-REGEX`（REJECT-DICT）。验证：冷启动开屏广告秒过、书架悬浮广告/每日推荐位消失；正文阅读、听书、评论、支付必须无恙（同主机业务路径不在正则内）。日志应见 `Reject ... by URL-Regex` 且主机仍正常解析。
+- [ ] **qidian**：只取消 `[MITM]` 头 + `hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com` + 8 条 `URL-REGEX`（REJECT-DICT）。验证：冷启动开屏广告秒过、书架悬浮广告/每日推荐位消失、我的页内测推广与书架置顶推广消失；正文阅读、听书、评论、支付必须无恙（同主机业务路径不在正则内）。日志应见 `Reject ... by URL-Regex` 且主机仍正常解析。
 - [ ] **meituan**：同法启用 `wmapi/apimobile/p?.meituan.net` 层。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；广告图路径命中后应看到 1px 图（`REJECT-IMG` 200 + GIF，不是 404）且商品图正常；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
-- [ ] **xianyu**：启用 `acs.m.goofish.com`/`g-acs.m.goofish.com` 层只拦 `splash.ads`、`idle.ad.expose` 两条路径。验证：开屏广告消失；发布、下单、聊天、扫一扫无恙。**若出现网关异常（登录转圈、接口报错）立即注释回滚**——mtop 网关被解密本身就改变连接形态，个别版本可能敏感，本层对该 App 定位是「实验」。
+- [ ] **xianyu**：本层有三块——`# [MITM]`（2 主机）、`# [Rewrite]`（15 条 `response.json.jq`）、`# [Rule]`（2 条 QUIC 回退 + 2 条 `URL-REGEX`，拦 `splash.ads`/`idle.ad.expose`）。建议顺序：先只开 `[MITM]` + QUIC + 两条 `URL-REGEX`，验证开屏广告消失且发布、下单、聊天、扫一扫无恙；再开 `[Rewrite]` 里**一条** `group.myself.banner`（`.data.bannerList = []`，最保守），确认群聊页 banner 消失、消息列表正常、响应仍是合法 JSON；第二步试 `item.recommend`（只删 mamaAD）与三条占位规则（`user.strategy.list` / `search.shade` / `search.activate`）；最后再试「只留 item/业务分区」的激进规则：`home.nextfresh`、`search.search`、`local.home`、`search.discover`、`item.buy.feeds`、`item.recommend.list`，以及最激进的 `user.page.my.adapter`（我的页面只留 head/user/trade 分区）。任一规则导致白屏/接口报错，只重新注释该行即可回滚；整体异常（登录转圈、全局接口报错）则整段恢复注释。**若 jq 规则全无效果，先怀疑 Loon 没执行 jq（响应压缩/内容类型不满足），不要改正则硬试**——mtop 网关被解密本身就改变连接形态，本层对该 App 定位是「实验」。
 - [ ] **共同回滚判据**：银行/支付/门锁等红线域绝不允许进 `[MITM]` hostname；增强层启用后若 App 报「网络异常/证书错误」，说明该 App 实际做了固定或检测，接受现实、整段恢复注释（插件注释已声明此可能）。

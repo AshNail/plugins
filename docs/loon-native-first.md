@@ -37,8 +37,8 @@
 
 ## 0. 五条判断
 
-1. **增量不在「堆总量」，在「按类型补齐」。** ads 已有 1301 条展开 `[Host]` 映射、30 条 `DOMAIN-WILDCARD` + 11 条字符类家族，域名总量接近饱和；但**按广告类型看仍有整类空白**——贴片、大屏、聚合长尾、直播挂件。第六轮补的是「类」不是「量」：FreeWheel / Sizmek / 倍孜三个域，把视频贴片从「无效」提到「弱效」，并用 `tools/ad-surface-audit.py` 把这条判断变成可回归的数字。`[Rewrite]` 全仓仍然只用 `reject_dict(200)` 一个动作；本轮补的是 `[Rule]` 的 `AND+PROTOCOL,QUIC`，`header.*` / `body.mock` / `json.jq` / `reject_array` / `reject_img` 仍未使用（其中 `header.del` 经实测后主动放弃，见 E2）。
-2. **MITM 的真实边界是传输层，不是规则层。** 脚本只能看见 TCP+TLS。两个绕过面：HTTPDNS（已有 `[Host]` + `REJECT-DROP` + `[IP Rewrite]` 三重）与 QUIC/HTTP/3（**目前零配置**）。
+1. **增量不在「堆总量」，在「按类型补齐」。** ads 已有 1301 条展开 `[Host]` 映射、30 条 `DOMAIN-WILDCARD` + 11 条字符类家族，域名总量接近饱和；但**按广告类型看仍有整类空白**——贴片、大屏、聚合长尾、直播挂件。第六轮补的是「类」不是「量」：FreeWheel / Sizmek / 倍孜三个域，把视频贴片从「无效」提到「弱效」，并用 `tools/ad-surface-audit.py` 把这条判断变成可回归的数字。`[Rewrite]` 生效动作此前只有 `reject_dict(200)`；第十七轮起 xianyu 在注释态 MITM 层新增 `response.json.jq` ×15（只删信息流广告字段），生效项仍为 0。`header.*` / `body.mock` / `reject_array` 仍未使用（`reject_img` 已在 meituan 注释增强层落地；`header.del` 经实测后主动放弃，见 E2）。
+2. **MITM 的真实边界是传输层，不是规则层。** 脚本只能看见 TCP+TLS。两个绕过面：HTTPDNS（已有 `[Host]` + `REJECT-DROP` + `[IP Rewrite]` 三重）与 QUIC/HTTP/3（soda 17 / douyin 16 域常开；meituan/xianyu/qidian 的可选 MITM 层按精确主机带注释态回退，通配主机 `p?.meituan.net` 无法用 `DOMAIN-SUFFIX` 表达、已在生成物中注明）。
 3. **三个站点证明的范式是「一份源码 → 多端产物 + 参数 schema + 原生降级版」。** 本仓库第 1 项已做到（`families.json`），参数 schema 已由 E6 补上；原生降级版按 E7 结论明确不做。
 4. **当前最大风险是一致性，不是功能不足。** soda 39 条 `response if`、37 处 `requires_body`；同一批开关名曾散在 5 个地方手写，E6 已把 `[Argument]`、`SWITCH_LABELS`、README 表收敛到 `src/args/*.json`，lint 的开关清单也改为从 schema 派生。只剩 `[Script]` 绑定是行为接线，继续由 lint 对账。
 5. **边界不动。** 不做激励欺诈；外部资源依赖（`mock_file`、第三方网关）继续拒绝。但**内联 `body.mock`** 不引入任何外部依赖，不在禁令范围内。
@@ -105,11 +105,11 @@ Biliverse 的 Rewrite 版把 JSON 接口整体重定向到第三方网关 `app.n
 | `[Rule]` | `AND` / `OR` / `NOT` 逻辑组合 | 规则 | ✅ `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC))` |
 | `[Rule]` | `REJECT` / `-DROP` / `-DICT` | 规则 | ✅ |
 | `[Rule]` | `REJECT-IMG` / `REJECT-ARRAY` | 规则 | ❌ 见 §9.1 |
-| `[Rewrite]` | `reject` 族六种（含 `reject_video`） | 复写（规则匹配前）**【文档】** | ✅ 仅 `reject_dict` ×3；其余见 §9.1 |
+| `[Rewrite]` | `reject` 族六种（含 `reject_video`） | 复写（规则匹配前）**【文档】** | ✅ 生效仅 `reject_dict` ×3；xianyu 注释层另有 `response.json.jq` ×15；其余见 §9.1 |
 | `[Rewrite]` | `header-add` / `header-del` / `header-replace` | 复写 | ❌ 评估后放弃（E2） |
 | `[Rewrite]` | URL 重写 / 302 / 307 | 复写 | ❌ |
 | `[Rewrite]` v2 | `response.body.mock(...)` / `response.header.set(...)` | 复写 | ❌ **实证可用** |
-| `[Rewrite]` | `json.add/replace/delete/jq` · `body.replace` · `body.mock` | 复写 | ❌ 与脚本二选一，见 §8 / §9.1 |
+| `[Rewrite]` | `json.add/replace/delete/jq` · `body.replace` · `body.mock` | 复写 | 🟡 `response.json.jq` 在 xianyu 注释层；其余与脚本二选一，见 §8 / §9.1 |
 | `[Rewrite]` | 批量数组参数（`*.header.set([...],[...])`） | 复写 | ❌ 等价多写几条，见 §9.1 |
 | `[Script]` | `http-request` / `http-response` | 脚本 | ✅ 57 条绑定（soda 43 / douyin 14） |
 | `[Script]` | `cron` / `generic` | 脚本 | ✅ 提醒 + 状态看板 |
@@ -383,8 +383,9 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | `reject_video(status)` | 🟡 | 开屏/激励素材若**直接在 MITM 可见的接口上返回视频字节**，用空视频比空包友好（播放器解码成功、不进重试）。现实里素材都走 CDN 域名拦截，用不上 |
 | `*.header.add/set/del/replace` | ❌ | 我们改 Body 不改头；唯一想改的 `Accept-Encoding` 已由体积实测否决（E2，见 §4） |
 | `*.body.replace(Regex, …)` | ❌ | 正文级正则替换对 JSON 不安全：嵌套括号、转义序列、同名字段都会误伤。字段级裁剪必须走解析 |
-| `*.json.add/replace/delete(KeyPath)` | 🟡 | 只有「整包删一个 key、无开关、无包络依赖」时才成立；现有 sanitize 全是字段级 + 正则 prune + 开关分支，且与脚本二选一（§8） |
-| `*.json.jq(JQ)` / `jq_file` | ❌ | jq 表达式是可执行逻辑，维护与审计成本高；同样是脚本的替代品而非补充 |
+| `*.json.add/replace/delete(KeyPath)` | ❌ | 现有 sanitize 全是字段级 + 正则 prune + 开关分支，且与脚本二选一（§8）；同一 App 内没有「无脚本、只删固定 key」的端点 |
+| `*.json.jq(JQ)`（原生 jq） | 🟡 **xianyu 注释态落地** | 与脚本二选一，但在**没有响应脚本**的可选 MITM 层成立：xianyu 用 15 条 jq 只删信息流广告字段/节点、保留 mtop 包络，证据来自 ddgksf2013/fmz200 的 `http-response-jq`；默认注释、逐条启用 |
+| `*.json.jq_file` | ❌ | 插件资源文件是包外依赖，违背自包含纪律；内联 jq 已够用 |
 | `request.body.mock(_file)` | ❌ | `mock_file` 依赖外部资源（纪律禁止）；内联 `mock` 需要完整包络样本，违背「保留包络、只删字段」 |
 | `response.body.mock(_file)` | ❌ | 同上；且 mock 响应在请求出网前生成，会把同 URL 的脚本全废掉（§8） |
 | 批量数组参数（`header.set([...],[...])`） | 🟡 | 等价于多写几条，只省配置行数；等真的出现「一次改 5 个 key」再换 |
