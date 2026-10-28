@@ -1,10 +1,10 @@
 #!name=银行 App 聚合 · 遥测瘦身
 #!desc=覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:六款银行 App 官方 SDK 目录均无第三方广告网络,广告≈100% 第一方内嵌(DNS 拦不到 banner 本体)。本插件只裁已证实的自建广告端点与穿山甲内网域;登录/支付/二维码/推送零接触。银行证书固定,MITM 不可行也不做。
 #!author=edy
-#!version=1.0.0
+#!version=1.1.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/banks/README.md
-#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f1/6a/4e/f16a4eb9-1de3-833f-0f56-df39c3df6d09/AppIcon-0-1x_U007ephone-0-1-0-sRGB-85-220-0.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.1(983)
 #!date=2026-10-28
@@ -18,6 +18,7 @@
 # 红线（绝不出现）：各银行主域整族（*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作）/ wap.cmpassport.com+e.189.cn+ms.zzx9.cn(一键登录) / getui+gepush(买单吧与中行的唯一自建推送,杀了=交易提醒消失) / wallet.95516.com+mobilepaybeta.95516.com(付款码/HCE) / cfca.com.cn(数字证书扫码付) / cmbc.maam.cc(招行行内嵌优量汇测试域,黑洞会触发招行侧异常)。
 # App 内正确开关:个性化推荐/商业推送在各银行隐私设置页可关(云闪付隐私政策明列路径),网络层拦不到第一方运营位是物理限制,不是规则没生效。
 # 网上流传的『银行广告域名清单』几乎全不可用——本插件有效规则 4 条,是四大公开列表(anti-AD 11 万域/AdGuard-CN/AW/bm7 Advertising)+官方 SDK 目录交叉验证后的真实上限。
+# 第二轮全网取证复检(2026-10-28)：CT 枚举六大行域空间无独立 ads/stat/log 前缀投放子域;明确禁加——hotpatch.cup.com.cn(云闪付热修复通道,与 ads.95516.com 同 IP 段群)/market.cmbchina.com(招行连隐私政策都托管在此,典型运营混装)/mbs.boc.cn(中行主接口,开屏广告是其 /advertType/ 路径,MITM 不可行则 DNS 无解)/pic1cdn.cmbchina.com(业务图混装);track.bankcomm.com 仅存在性证据(C 级,隐私政策未列广告 SDK),不采。
 # 本文件由 tools/build-apps.py 从 src/apps/banks.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -54,3 +55,10 @@ mbads.paas.cmbchina.com = 127.0.0.1
 # （默认关闭的组：整组注释，取消注释即启用）
 # ads.95516.com = 127.0.0.1
 # analytics.95516.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 银行日志上报单源候选（默认关）（置信 B）
+# log.cmbchina.com=招行日志上报(hagezi-pro 单源);jf365.boc.cn 同在清单但那是中行积分商城(拦了=用户权益受损,拒收示范)——本组只列 log 域,且等真机日志证实再开。
+# 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
+# （默认关闭的组：整组注释，取消注释即启用）
+# log.cmbchina.com = 127.0.0.1

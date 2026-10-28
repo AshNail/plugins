@@ -2,7 +2,7 @@
 
 > 微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。
 
-版本 **1.1.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.1.2** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -37,4 +37,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/wechat/wechat.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/wechat.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 30 条，[Rule] 0 条。
+统计：精确/通配黑洞 31 条，[Rule] 0 条。

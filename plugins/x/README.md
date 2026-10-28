@@ -2,7 +2,7 @@
 
 > 如实定位:X 时间线推广推文与正常内容同 API 同 CDN(pbs/video.twimg.com),DNS 层 App 内广告减少≈0。本插件黑洞广告像素/嵌入 syndication/广告后台域——隐私收益真实,广告数量不变。零证书。
 
-版本 **1.0.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.0.2** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -23,6 +23,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/x/x.plugin
 
 - 红线（绝不进任何组）：t.co / *.twimg.com / api.twitter.com / x.com / twitter.com / api-stream.twitter.com——全部核心。
 - AdGuard 官方口径:Twitter/X 广告与内容同服务器,DNS 拦截无法阻止,只能靠浏览器内容规则（MITM 层）——超出本插件约束。
+- 第二轮取证复检(2026-10-28)：iOS 信息流推广与正常内容同走 api.x.com/GraphQL 响应内联,App 内无第三方 ADN(X 自有广告栈);AdguardFilters 一方跟踪清单零 twitter.com 条目;static.ads-twitter.com(X Pixel/Web 埋点)已被现有 DOMAIN-SUFFIX,ads-twitter.com 覆盖,ads-api/ads.x.com 组维持默认关——iOS DNS 层增量见底是已验证结论,不是漏查。
 
 ## 证据与验证
 

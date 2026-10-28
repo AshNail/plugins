@@ -2,7 +2,7 @@
 
 > 起点读书:官方 SDK 清单声明穿山甲+腾讯七巧板(优量汇系)——两组装备黑洞 + 起点自有广告统计端点(adstat.qidian.com/adsite.yuewen.com,官方政策自证)。Argus 广告位(magev6.if.qidian.com/adv)与章节内容同域,零 MITM 不可分。看「福利中心」视频领章节卡依赖 SDK,启用即断。零证书。
 
-版本 **1.0.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.1.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -21,12 +21,36 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 | 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 50 域 / 0 规则。 |
 | 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 10 域 / 0 规则。 |
 
+## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
+
+起点读书 iOS 未做证书固定：开屏/书架广告位与章节内容同主机 magev6.if.qidian.com，[Host] 黑洞会废掉 App，正解是 MITM 后按路径 reject。下列规则来自 app2smile / blackmatrix7 / fmz200 三家公开模块（reject-200 语义 = Loon 的 REJECT），默认整段注释、装证书后按需启用。
+
+- 解密主机（`[MITM] hostname`，2 个）：`magev6.if.qidian.com`, `mage.if.qidian.com`
+- 路径级规则（`URL-REGEX`，6 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
+
+```text
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/client/getsplashscreen,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/adv/getadvlistbatch,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getHoverAdv,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getad,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/client/iosad,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/dailyrecommend/getdailyrecommend,REJECT-DICT
+```
+
+启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③按需取消规则行注释。
+
+> 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。
+
+证据：
+- https://github.com/app2smile/rules/blob/master/plugin/qidian.plugin
+- https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin
+- https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
+
 ## 红线与天花板（如实）
 
 - 官方声明源:acts.qidian.com/pact/sdk_table.html 列穿山甲(北京巨量引擎)+七巧板通用 SDK(深圳腾讯,程序化广告推送/监测/归因)+腾讯灯塔/Ostar 画像;未声明快手/百青藤/倍孜——未声明的联盟一律不加(纪律同 ads v2.4.0)。
 - 红线（绝不进任何拦截组）：magev6.if.qidian.com（Argus 主 API:章节目录/书架与广告位 adv 同域同主机——黑洞=起点废掉）/ druid.if.qidian.com（章节目录）/ h5.if.qidian.com / cococdn.qidian.com / bookcover.yuewen.com / *.qidianalipay.com（广告图床与书城、充值共用）。
-- adv/getadvlistbatch 路径证据:Yu9191 Rewrite 以 reject-200 拦此路径——路径级拦截需 MITM,超出本插件约束;DNS 层能切的是联盟填充那部分(开屏/插屏/横幅约一半,估计)。
-- 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App' 只是分组开关。配合全局 ads 插件的 httpdns 组使用,否则黑洞可被 HTTPDNS 绕过。
+- adv/getadvlistbatch 路径证据:Yu9191 Rewrite 以 reject-200 拦此路径;app2smile/blackmatrix7/fmz200 三源同族路径规则——起点 iOS 未做证书固定,路径级拦截可行,已按纪律放进文末 enhance 层（默认注释，装证书后自行取消注释）。
 - 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
 
 ## 证据与验证

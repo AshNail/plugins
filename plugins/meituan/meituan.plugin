@@ -1,10 +1,10 @@
 #!name=美团 · 去广告
 #!desc=美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞。首页轮播/信息流/开屏素材与业务同域同 CDN——DNS 层收益约 25-35%，其余是「加载失败留白」。交易、支付、骑手调度零接触。零证书。
 #!author=edy
-#!version=1.1.0
+#!version=1.2.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/meituan/README.md
-#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/de/7e/9e/de7e9e88-fb46-d039-d61b-cb349ea8f05f/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.1(983)
 #!date=2026-10-28
@@ -112,3 +112,29 @@ s3plus-pre.51ping.com = 127.0.0.1
 # （默认关闭的组：整组注释，取消注释即启用）
 # catdot.dianping.com = 127.0.0.1
 # catreport.dianping.com = 127.0.0.1
+
+
+# ========================================================================
+# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
+# ------------------------------------------------------------------------
+# 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。
+# 启用步骤：①Loon 里装并信任证书 → ②取消 [MITM] 头与其 hostname 行的注释 →
+#           ③按需取消下面 [Rule]/[Script] 行的注释。
+# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
+# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
+# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
+# 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin
+# 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin
+# 证据: https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
+# ========================================================================
+
+# [MITM]
+# ------------------------------------------------------------
+# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
+# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net
+# [Rule] / [Script]（路径级去广告，需上面 MITM 命中该域才看得到 path）
+# ------------------------------------------------------------
+# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
+# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT
+# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/loadInfo\?,REJECT-DICT
+# URL-REGEX,^https?://p[0-9]\.meituan\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\.jpg,REJECT

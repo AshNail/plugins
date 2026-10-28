@@ -2,7 +2,7 @@
 
 > 如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内广告 DNS 层≈0。黑洞 FB 转化像素、网页播放器 VAST 域与已死徽章服务;不碰 graph/gateway/fbcdn 主域。零证书。
 
-版本 **1.0.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.1.1** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -17,7 +17,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/instagram/instagr
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | FB 像素与专属广告端点（A 级） | A | 启用 | pixel.facebook.com=网页转化像素(Conversions API);an.facebook.com=网页播放器片头广告 VAST 标签;badges.instagram.com=已停用的旧徽章服务。 |
-| netseer IP 关联遥测（默认关,纯隐私收益） | B | 默认关闭 | Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）——按完整后缀 REJECT 专属子域,绝不升级为整域 fbcdn。间接降低广告定向精度,不减少广告数量。 |
+| netseer IP 关联遥测（默认关,纯隐私收益） | B | 默认关闭 | Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）——按完整后缀 REJECT 专属子域,绝不升级为整域 fbcdn。netseer.com=被 Meta 收购的测量公司本体域（anti-AD/AdGuard/hagezi/StevenBlack 4 源收录,覆盖率审计反查出的缺口）。间接降低广告定向精度,不减少广告数量。 |
 | Meta / Audience Network（FAN）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 5 域 / 0 规则。 |
 
 ## 红线与天花板（如实）
@@ -33,4 +33,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/instagram/instagr
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/instagram.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 8 条，[Rule] 2 条。
+统计：精确/通配黑洞 10 条，[Rule] 2 条。

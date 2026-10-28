@@ -2,13 +2,14 @@
   "slug": "x",
   "name": "X · 广告像素与遥测瘦身",
   "desc": "如实定位:X 时间线推广推文与正常内容同 API 同 CDN(pbs/video.twimg.com),DNS 层 App 内广告减少≈0。本插件黑洞广告像素/嵌入 syndication/广告后台域——隐私收益真实,广告数量不变。零证书。",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "date": "2026-10-28",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,遥测,X,Twitter",
   "comment": [
     "红线（绝不进任何组）：t.co / *.twimg.com / api.twitter.com / x.com / twitter.com / api-stream.twitter.com——全部核心。",
-    "AdGuard 官方口径:Twitter/X 广告与内容同服务器,DNS 拦截无法阻止,只能靠浏览器内容规则（MITM 层）——超出本插件约束。"
+    "AdGuard 官方口径:Twitter/X 广告与内容同服务器,DNS 拦截无法阻止,只能靠浏览器内容规则（MITM 层）——超出本插件约束。",
+    "第二轮取证复检(2026-10-28)：iOS 信息流推广与正常内容同走 api.x.com/GraphQL 响应内联,App 内无第三方 ADN(X 自有广告栈);AdguardFilters 一方跟踪清单零 twitter.com 条目;static.ads-twitter.com(X Pixel/Web 埋点)已被现有 DOMAIN-SUFFIX,ads-twitter.com 覆盖,ads-api/ads.x.com 组维持默认关——iOS DNS 层增量见底是已验证结论,不是漏查。"
   ],
   "sdks": [],
   "groups": [
@@ -22,8 +23,14 @@
         "https://pgl.yoyo.org/adservers/serverlist.php",
         "https://github.com/privacy-protection-tools/anti-AD"
       ],
-      "hosts": ["syndication.twitter.com", "p.twitter.com", "urls.api.twitter.com"],
-      "rules": ["DOMAIN-SUFFIX,ads-twitter.com,REJECT"]
+      "hosts": [
+        "syndication.twitter.com",
+        "p.twitter.com",
+        "urls.api.twitter.com"
+      ],
+      "rules": [
+        "DOMAIN-SUFFIX,ads-twitter.com,REJECT"
+      ]
     },
     {
       "id": "adconsole",
@@ -31,8 +38,18 @@
       "tier": "B",
       "disabled": true,
       "note": "ads*.twitter/x.com=广告管理控制台后端（黑洞不影响时间线广告,只断广告主后台）;analytics/scribe=统计与日志。不用广告主后台可开。",
-      "sources": ["https://github.com/stevenblack/hosts"],
-      "hosts": ["ads.twitter.com", "ads-api.twitter.com", "ads-bidder-api.twitter.com", "ads.x.com", "analytics.twitter.com", "scribe.twitter.com"]
+      "sources": [
+        "https://github.com/stevenblack/hosts"
+      ],
+      "hosts": [
+        "ads.twitter.com",
+        "ads-api.twitter.com",
+        "ads-bidder-api.twitter.com",
+        "ads.x.com",
+        "analytics.twitter.com",
+        "scribe.twitter.com"
+      ]
     }
-  ]
+  ],
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/4e/08/09/4e08099e-194f-0f99-8a34-431e234774a5/ProductionAppIcon-0-0-1x_U007emarketing-0-8-0-0-0-85-220.png/512x512bb.jpg"
 }

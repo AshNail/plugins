@@ -2,7 +2,7 @@
   "slug": "bubei-danci",
   "name": "不背单词 · 跟踪瘦身",
   "desc": "如实结论:不背单词官方 SDK 目录(learnywhere.cn/lexis/sdklist 渲染取证)没有任何广告联盟——变现是酷币/会员内购,「去广告」对这个 App 实际=去跟踪。本插件只裁埋点组,友盟推送系默认关(拦了断签到提醒)。零证书。",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "date": "2026-10-28",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,不背单词,跟踪",
@@ -18,8 +18,12 @@
       "title": "站外埋点",
       "tier": "B",
       "note": "ns.360wgjs.com 收录于 anti-AD/PiT 等三家列表;拦后无功能损失。",
-      "sources": ["https://github.com/privacy-protection-tools/anti-AD"],
-      "hosts": ["ns.360wgjs.com"]
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD"
+      ],
+      "hosts": [
+        "ns.360wgjs.com"
+      ]
     },
     {
       "id": "umeng",
@@ -27,8 +31,13 @@
       "tier": "B",
       "disabled": true,
       "note": "umeng.com 族是它的统计+推送+一键登录底座:DOMAIN-SUFFIX 整域拦=签到提醒与号码认证同断。只在「不在乎推送、只要隐私」时开。",
-      "sources": ["https://learnywhere.cn/lexis/sdklist"],
-      "rules": ["DOMAIN-SUFFIX,umeng.com,REJECT"]
+      "sources": [
+        "https://learnywhere.cn/lexis/sdklist"
+      ],
+      "rules": [
+        "DOMAIN-SUFFIX,umeng.com,REJECT"
+      ]
     }
-  ]
+  ],
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/48/36/52/48365279-607a-013c-c68a-9be7e3332099/AppIcon-0-1x_U007emarketing-0-8-0-85-220-0.png/512x512bb.jpg"
 }

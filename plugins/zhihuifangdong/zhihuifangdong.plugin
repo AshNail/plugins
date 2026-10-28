@@ -1,10 +1,10 @@
 #!name=智慧房东 · 去广告
 #!desc=智慧房东（uni-app 打包+多广告网络聚合）:穿山甲/优量汇/快手联盟/倍孜黑洞,开屏、插屏、信息流广告位加载失败即本插件生效方式。通通锁控门与个推收租提醒零接触。零证书。
 #!author=edy
-#!version=1.0.0
+#!version=1.0.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihuifangdong/README.md
-#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/3a/70/5b/3a705b83-e4d3-139c-2882-4ba6751fe6fa/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.1(983)
 #!date=2026-10-28

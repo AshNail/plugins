@@ -128,7 +128,7 @@ SURFACES = [
         protocol="半标准",
         attack=[
             ("[Host]", "ad.zijieapi.com = 127.0.0.1", "SDK 拿不到填充，直接走「无广告」分支，最彻底"),
-            ("[Rule]", "DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT", "兜住 SDK 的数字分片族，一条顶十几条"),
+            ("[Rule]", "DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT（TF 3.5.3+，默认注释）", "兜住 SDK 的数字分片族，一条顶十几条"),
             ("[Script]", "response if ${url} ~= /\\/splash\\/brand\\/retrieve/ then script(sanitize)", "业务域开屏只能剥响应，删掉 brand 对象"),
             ("[Rewrite]", "request ... then reject_dict(200)", "上报接口回 `{}`，避免 SDK 因上报失败重试"),
         ],
@@ -170,7 +170,7 @@ SURFACES = [
         protocol="半标准",
         attack=[
             ("[Host]", "pangolin.snssdk.com = 127.0.0.1", "连素材都不下载，最省流量"),
-            ("[Rule]", "DOMAIN-WILDCARD,ads-*,REJECT", "兜住聚合平台的中转域"),
+            ("[Rule]", "DOMAIN-WILDCARD,ads-*,REJECT（TF 3.5.3+，默认注释）", "兜住聚合平台的中转域"),
             ("[Script]", "response if ${url} ~= /incentive\\/config/ then script(sanitize)", "自营激励位才需要"),
         ],
         ceiling="full", achieved="strong", next_to="strong",
@@ -191,7 +191,7 @@ SURFACES = [
         protocol="半标准",
         attack=[
             ("[Host]", "与激励视频同一批 SDK 域", "一次拦截同时干掉插屏与激励"),
-            ("[Rule]", "DOMAIN-WILDCARD,adserver.*,REJECT", "补充长尾 SDK"),
+            ("[Rule]", "DOMAIN-WILDCARD,adserver.*,REJECT（TF 3.5.3+，默认注释）", "补充长尾 SDK"),
         ],
         ceiling="full", achieved="strong", next_to="strong",
         probes=[
@@ -211,11 +211,12 @@ SURFACES = [
         protocol="半标准",
         attack=[
             ("[Host]", "联盟素材与投放域", "刷新请求拿不到填充，位空着"),
-            ("[Rule]", "DOMAIN-WILDCARD,bannerads.*,REJECT", "长尾联盟"),
+            ("[Rule]", "DOMAIN-WILDCARD,bannerads.*,REJECT（TF 3.5.3+，默认注释层）", "长尾联盟（正式版靠 [Host] 逐条兜底）"),
         ],
         ceiling="full", achieved="strong", next_to="strong",
         probes=[
-            ("plugins/ads/ads.plugin", r"DOMAIN-WILDCARD\s*,\s*bannerads\.\*", False),
+            # bannerads.* 通配已降为默认注释层（需 3.5.3），不计入正式版生效证据；
+            # banner 的 strong 由常开 [Host]（googlesyndication 等联盟素材/投放域）承担。
             ("plugins/ads/ads.plugin", r"googlesyndication", False),
         ],
         limits="广告容器仍占高度，会出现空白条；WebView 渲染的 banner 需要额外拦联盟 JS 域。",
@@ -360,7 +361,7 @@ SURFACES = [
         protocol="标准协议",
         attack=[
             ("[Host]", "ads.roku.com = 127.0.0.1", "同一份清单直接复用"),
-            ("[Rule]", "DOMAIN-WILDCARD", "补长尾大屏 SDK"),
+            ("[Rule]", "DOMAIN-WILDCARD（TF 3.5.3+，默认注释层）", "补长尾大屏 SDK"),
         ],
         ceiling="partial", achieved="weak", next_to="weak",
         probes=[
@@ -884,11 +885,11 @@ def render_md(rows):
     L.append("*.pangolin-sdk-toutiao.com = 127.0.0.1")
     L.append("```")
     L.append("")
-    L.append("**② 动态子域 → DOMAIN-WILDCARD**（3.5.3(1008)+，`*` 跨点、`[0-9]` 字符类）")
+    L.append("**② 动态子域 → DOMAIN-WILDCARD**（`*` 跨点、`[0-9]` 字符类；语法仅 3.5.3(1008)+，当前只在 TestFlight——ads 插件里默认注释，App Store 3.5.2 用户保持注释、由 ① 的 `[Host]` 逐条兜底，3.5.3+ 取消注释才启用整族）")
     L.append("")
     L.append("```ini")
-    L.append("DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT")
-    L.append("DOMAIN-WILDCARD,adserver.*,REJECT")
+    L.append("# DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT")
+    L.append("# DOMAIN-WILDCARD,adserver.*,REJECT")
     L.append("```")
     L.append("")
     L.append("**③ 上报类 → 回 200 + `{}`**（不要回 404，SDK 会重试）")

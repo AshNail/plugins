@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated": "2026-10-27",
+  "updated": "2026-10-28",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "openUrl": "https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md",
@@ -9,8 +9,8 @@
     "ads": {
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
-      "desc": "单插件 All-in-One：DNS 广告拦截 + DOMAIN-WILDCARD 广告子域通配 + 数字分片家族层([0-9] 字符类, 1008+) + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.6.0",
+      "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
+      "version": "2.7.0",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -20,7 +20,7 @@
         "DNS 防泄漏：插件 [General] 追加公共 DNS 与 IP 形式 DoH；Loon 插件不支持 hijack-dns/domain-reject-mode/dns-reject-mode，完整加固见 README 主配置段。",
         "旁路：DNS 层只管得着「域名」，App 直连 8.8.8.8:443 / 1.1.1.1:853 时域名不存在，只有 IP-CIDR 拦得住——该组默认注释，开启前必须确认主配置没在用这些 DNS（见 docs/bypass-audit.md）。",
         "共享主域（qq.com、baidu.com、google.com、facebook.com、snssdk.com、kuaishou.com、unity3d.com 等）绝不整域封禁，只列广告专用子域。",
-        "广告子域通配层：[Rule] 使用 DOMAIN-WILDCARD（Loon 3.5.3(1008)+）按广告专用前缀拦截任意层级子域（如 ads.* / adserver.* / adx.*），弥补 [Host] 无法表达的动态子域；不匹配共享主域本身。",
+        "广告子域通配层：DOMAIN-WILDCARD（ads.* / adserver.* / adx.* 等广告专用前缀，弥补 [Host] 表达不了任意层级子域）需 Loon 3.5.3(1008)+，当前仅 TestFlight——默认注释输出，App Store 3.5.2 用户保持注释即可正常使用其余全部层；3.5.3+ 用户逐行去掉行首 '# ' 启用。",
         "和 soda/douyin 冲突：本插件会同时拦掉激励广告（穿山甲/优量汇/快手联盟），保奖励模式会失效。刷奖励时请禁用本插件。",
         "归因/统计组默认以注释生成；需要时在 src/ads/domains.json 把对应组 disabled 改为 false 后重新 build。",
         "为保持零证书，单插件不包含 FAN 共享域 MITM/Rewrite 增强；不拦 graph.facebook.com/www.facebook.com，但 b-graph.facebook.com 等广告测量子域仍生效，异常时按 README 风险表删除。",

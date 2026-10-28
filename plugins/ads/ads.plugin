@@ -1,13 +1,13 @@
 #!name=广告平台拦截器 · All-in-One
-#!desc=单插件 All-in-One：DNS 广告拦截 + DOMAIN-WILDCARD 广告子域通配 + 数字分片家族层([0-9] 字符类, 1008+) + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏。[Host]/[Rule]/[General] 三层；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
+#!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.6.0
+#!version=2.7.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!loon_version=3.5.3(1008)
-#!date=2026-10-27
+#!loon_version=3.5.2(996)
+#!date=2026-10-28
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -20,7 +20,7 @@
 # DNS 防泄漏：插件 [General] 追加公共 DNS 与 IP 形式 DoH；Loon 插件不支持 hijack-dns/domain-reject-mode/dns-reject-mode，完整加固见 README 主配置段。
 # 旁路：DNS 层只管得着「域名」，App 直连 8.8.8.8:443 / 1.1.1.1:853 时域名不存在，只有 IP-CIDR 拦得住——该组默认注释，开启前必须确认主配置没在用这些 DNS（见 docs/bypass-audit.md）。
 # 共享主域（qq.com、baidu.com、google.com、facebook.com、snssdk.com、kuaishou.com、unity3d.com 等）绝不整域封禁，只列广告专用子域。
-# 广告子域通配层：[Rule] 使用 DOMAIN-WILDCARD（Loon 3.5.3(1008)+）按广告专用前缀拦截任意层级子域（如 ads.* / adserver.* / adx.*），弥补 [Host] 无法表达的动态子域；不匹配共享主域本身。
+# 广告子域通配层：DOMAIN-WILDCARD（ads.* / adserver.* / adx.* 等广告专用前缀，弥补 [Host] 表达不了任意层级子域）需 Loon 3.5.3(1008)+，当前仅 TestFlight——默认注释输出，App Store 3.5.2 用户保持注释即可正常使用其余全部层；3.5.3+ 用户逐行去掉行首 '# ' 启用。
 # 和 soda/douyin 冲突：本插件会同时拦掉激励广告（穿山甲/优量汇/快手联盟），保奖励模式会失效。刷奖励时请禁用本插件。
 # 归因/统计组默认以注释生成；需要时在 src/ads/domains.json 把对应组 disabled 改为 false 后重新 build。
 # 为保持零证书，单插件不包含 FAN 共享域 MITM/Rewrite 增强；不拦 graph.facebook.com/www.facebook.com，但 b-graph.facebook.com 等广告测量子域仍生效，异常时按 README 风险表删除。
@@ -62,45 +62,48 @@ URL-REGEX,^http:\/\/.+\/v[0-9]*\/(?:event|log|track)\/(?:report|upload|batch),RE
 DEST-PORT,853,REJECT
 
 # ============================================================================
-# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+）
+# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+，当前仅 TestFlight）
 # ----------------------------------------------------------------------------
 # 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，
 # 不命中 a.com、ad.example.com 或 adsl.example.com。
 # 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。
+# 默认保持注释：App Store 正式版仍是 3.5.2(996)，低版本遇到未知规则类型
+# 的行为官方未文档化（可能跳过、也可能整段失效），不拿 [Rule] 核心层冒险。
+# 已装 3.5.3+（TF build 1008-1011）的用户：逐行去掉行首 '# ' 即启用本层。
 # ============================================================================
-DOMAIN-WILDCARD,ads.*,REJECT
-DOMAIN-WILDCARD,ads-*,REJECT
-DOMAIN-WILDCARD,adserver.*,REJECT
-DOMAIN-WILDCARD,adserver-*,REJECT
-DOMAIN-WILDCARD,adserve.*,REJECT
-DOMAIN-WILDCARD,adserv.*,REJECT
-DOMAIN-WILDCARD,adserv-*,REJECT
-DOMAIN-WILDCARD,adserving.*,REJECT
-DOMAIN-WILDCARD,adserving-*,REJECT
-DOMAIN-WILDCARD,adservice.*,REJECT
-DOMAIN-WILDCARD,adservices.*,REJECT
-DOMAIN-WILDCARD,adsystem.*,REJECT
-DOMAIN-WILDCARD,advertising.*,REJECT
-DOMAIN-WILDCARD,advertising-*,REJECT
-DOMAIN-WILDCARD,advert.*,REJECT
-DOMAIN-WILDCARD,adverts.*,REJECT
-DOMAIN-WILDCARD,advertiser.*,REJECT
-DOMAIN-WILDCARD,adtech.*,REJECT
-DOMAIN-WILDCARD,adtech-*,REJECT
-DOMAIN-WILDCARD,adclick.*,REJECT
-DOMAIN-WILDCARD,adnetwork.*,REJECT
-DOMAIN-WILDCARD,adnetwork-*,REJECT
-DOMAIN-WILDCARD,adx.*,REJECT
-DOMAIN-WILDCARD,adx-*,REJECT
-DOMAIN-WILDCARD,adtrack.*,REJECT
-DOMAIN-WILDCARD,adtrack-*,REJECT
-DOMAIN-WILDCARD,adunit.*,REJECT
-DOMAIN-WILDCARD,bannerads.*,REJECT
-DOMAIN-WILDCARD,sponsorads.*,REJECT
-DOMAIN-WILDCARD,ad-exchange.*,REJECT
+# DOMAIN-WILDCARD,ads.*,REJECT
+# DOMAIN-WILDCARD,ads-*,REJECT
+# DOMAIN-WILDCARD,adserver.*,REJECT
+# DOMAIN-WILDCARD,adserver-*,REJECT
+# DOMAIN-WILDCARD,adserve.*,REJECT
+# DOMAIN-WILDCARD,adserv.*,REJECT
+# DOMAIN-WILDCARD,adserv-*,REJECT
+# DOMAIN-WILDCARD,adserving.*,REJECT
+# DOMAIN-WILDCARD,adserving-*,REJECT
+# DOMAIN-WILDCARD,adservice.*,REJECT
+# DOMAIN-WILDCARD,adservices.*,REJECT
+# DOMAIN-WILDCARD,adsystem.*,REJECT
+# DOMAIN-WILDCARD,advertising.*,REJECT
+# DOMAIN-WILDCARD,advertising-*,REJECT
+# DOMAIN-WILDCARD,advert.*,REJECT
+# DOMAIN-WILDCARD,adverts.*,REJECT
+# DOMAIN-WILDCARD,advertiser.*,REJECT
+# DOMAIN-WILDCARD,adtech.*,REJECT
+# DOMAIN-WILDCARD,adtech-*,REJECT
+# DOMAIN-WILDCARD,adclick.*,REJECT
+# DOMAIN-WILDCARD,adnetwork.*,REJECT
+# DOMAIN-WILDCARD,adnetwork-*,REJECT
+# DOMAIN-WILDCARD,adx.*,REJECT
+# DOMAIN-WILDCARD,adx-*,REJECT
+# DOMAIN-WILDCARD,adtrack.*,REJECT
+# DOMAIN-WILDCARD,adtrack-*,REJECT
+# DOMAIN-WILDCARD,adunit.*,REJECT
+# DOMAIN-WILDCARD,bannerads.*,REJECT
+# DOMAIN-WILDCARD,sponsorads.*,REJECT
+# DOMAIN-WILDCARD,ad-exchange.*,REJECT
 
 # ============================================================================
-# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+）
+# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+，仅 TF）
 # ----------------------------------------------------------------------------
 # 上一层的 glob 只能表达「左标签锚定」，覆盖不到 ads1/ads3/ads5 这类
 # 编号分片。字符类是 Loon 3.5.3(1008) 起支持的第三类通配符：
@@ -110,17 +113,17 @@ DOMAIN-WILDCARD,ad-exchange.*,REJECT
 # 每条家族 glob 在 build 阶段必须覆盖 2 个以上已枚举主机才被接受，
 # 因此这里只会出现「已经在用、但只列了一个分片」的真实家族。
 # ============================================================================
-DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT
-DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
-DOMAIN-WILDCARD,v[0-9]-ad.video.yximgs.com,REJECT
-DOMAIN-WILDCARD,pangolin-sdk-toutiao[0-9].com,REJECT
-DOMAIN-WILDCARD,ads[0-9].msn.com,REJECT
-DOMAIN-WILDCARD,ads[0-9]-adnow.com,REJECT
-DOMAIN-WILDCARD,ads-splash-i[0-9].xhscdn.com,REJECT
-DOMAIN-WILDCARD,ads-splash-v[0-9].xhscdn.com,REJECT
-DOMAIN-WILDCARD,pg-ad-b[0-9].ws.126.net,REJECT
-DOMAIN-WILDCARD,dns[0-9]*.quad9.net,REJECT
-DOMAIN-WILDCARD,dns[0-9]*.nextdns.io,REJECT
+# DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT
+# DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
+# DOMAIN-WILDCARD,v[0-9]-ad.video.yximgs.com,REJECT
+# DOMAIN-WILDCARD,pangolin-sdk-toutiao[0-9].com,REJECT
+# DOMAIN-WILDCARD,ads[0-9].msn.com,REJECT
+# DOMAIN-WILDCARD,ads[0-9]-adnow.com,REJECT
+# DOMAIN-WILDCARD,ads-splash-i[0-9].xhscdn.com,REJECT
+# DOMAIN-WILDCARD,ads-splash-v[0-9].xhscdn.com,REJECT
+# DOMAIN-WILDCARD,pg-ad-b[0-9].ws.126.net,REJECT
+# DOMAIN-WILDCARD,dns[0-9]*.quad9.net,REJECT
+# DOMAIN-WILDCARD,dns[0-9]*.nextdns.io,REJECT
 
 # ============================================================================
 # 可选规则（默认关闭）

@@ -228,6 +228,9 @@ ADS_WILDCARD_MUST_MISS = (
     "adunit2.example.com",
 )
 ADS_WILDCARD_MIN_BUILD = 1008
+# 当前 App Store 正式版 = Loon 3.5.2(996)；TestFlight 才是 3.5.3(1008-1011)。
+# 任何插件的 #!loon_version 都不得高于正式版 build，否则真实用户无法导入。
+ADS_APPSTORE_STABLE_BUILD = 996
 
 # 数字分片家族层（第二层 DOMAIN-WILDCARD）：Loon 3.5.3(1008) 起支持 `[...]`
 # 字符类，官方示例含 node[0-9].example.com。这一层只允许 `[0-9]`——数字类
@@ -1785,20 +1788,31 @@ def check_ads_family():
         if any(rx.search(sample) for rx in url_regexes):
             errors.append(f"{ADS_PLUGIN}: HTTPDNS URL-REGEX overmatches {sample}")
 
-    # DOMAIN-WILDCARD 广告子域层：要求 Loon 3.5.3(1008)+，模式集合永久锁定，
-    # 且每条 glob 都不能命中保护名单；同时用正/负样本锁定 glob 语义
-    # （'*' 跨点、不匹配左标签不同段、不匹配共享主域本身）。
-    wildcard_rules = [
+    # DOMAIN-WILDCARD 两层（广告子域 + 数字分片家族）：语法仅 Loon 3.5.3(1008)+
+    # 提供，而当前 App Store 正式版是 3.5.2(996)，低版本遇到未知规则类型的行为
+    # 官方未文档化。因此两层必须以注释行存在：活动 [Rule] 里出现 DOMAIN-WILDCARD
+    # 会把正式版用户置于「整段不可用」风险，永久禁止。
+    # glob 语义校验（'*' 跨点、正/负样本、保护名单）照常跑在注释层上。
+    active_wildcards = [
         [part.strip() for part in line.split(",")]
         for line in rules
         if line.split(",", 1)[0].strip() == "DOMAIN-WILDCARD"
     ]
-    wildcard_patterns = [parts[1] for parts in wildcard_rules if len(parts) > 2]
+    if active_wildcards:
+        errors.append(
+            f"{ADS_PLUGIN}: DOMAIN-WILDCARD rules must stay commented — "
+            "App Store 3.5.2(996) 不能解析该规则类型"
+        )
+    commented_globs = [
+        m.group(1)
+        for m in re.finditer(r"(?m)^# DOMAIN-WILDCARD,([^,]+),REJECT[ \t]*$", raw)
+    ]
+    wildcard_patterns = list(commented_globs)
     ad_label_globs = wildcard_patterns[: len(ADS_WILDCARDS)]
     family_globs = wildcard_patterns[len(ADS_WILDCARDS) :]
     if tuple(ad_label_globs) != ADS_WILDCARDS:
         errors.append(
-            f"{ADS_PLUGIN}: DOMAIN-WILDCARD set {ad_label_globs}, "
+            f"{ADS_PLUGIN}: commented DOMAIN-WILDCARD set {ad_label_globs}, "
             f"expected {list(ADS_WILDCARDS)}"
         )
     if tuple(family_globs) != ADS_FAMILY_WILDCARDS:
@@ -1808,21 +1822,14 @@ def check_ads_family():
         )
     if len(set(wildcard_patterns)) != len(wildcard_patterns):
         errors.append(f"{ADS_PLUGIN}: duplicate DOMAIN-WILDCARD rule")
-    if "# DOMAIN-WILDCARD," in raw:
-        errors.append(f"{ADS_PLUGIN}: DOMAIN-WILDCARD rules must stay active")
     loon_version = meta.get("loon_version", "")
     loon_build = re.search(r"\((\d+)\)", loon_version)
-    if not loon_build or int(loon_build.group(1)) < ADS_WILDCARD_MIN_BUILD:
+    if not loon_build or int(loon_build.group(1)) > ADS_APPSTORE_STABLE_BUILD:
         errors.append(
-            f"{ADS_PLUGIN}: #!loon_version={loon_version!r} must be "
-            f"{ADS_WILDCARD_MIN_BUILD}+ for DOMAIN-WILDCARD"
+            f"{ADS_PLUGIN}: #!loon_version={loon_version!r} must not exceed the "
+            f"App Store stable build ({ADS_APPSTORE_STABLE_BUILD}) — TestFlight "
+            "gating blocks real users from importing"
         )
-    for parts in wildcard_rules:
-        if len(parts) != 3 or parts[2] != "REJECT":
-            errors.append(
-                f"{ADS_PLUGIN}: DOMAIN-WILDCARD must be "
-                f"DOMAIN-WILDCARD,<glob>,REJECT (no extra parameters): {','.join(parts)}"
-            )
     glob_regexes = {
         pattern: ads_glob_regex(pattern) for pattern in set(wildcard_patterns)
     }
@@ -2058,7 +2065,7 @@ def check_ads_family():
         f"{ADS_PLUGIN}: host_rules={len(host_lines)} "
         f"exact={len(exact)} wildcard={len(wildcard)} "
         f"general={len(general)} rules={len(rules)} "
-        f"domain_wildcards={len(wildcard_rules)}"
+        f"domain_wildcards_commented={len(commented_globs)}"
     )
 
     build = subprocess.run(
@@ -2077,10 +2084,13 @@ def check_ads_family():
         print("ads: generated plugin matches src/ads/domains.json")
 
 
-APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD"}
+APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
 APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP"}
 APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+\s*=\s*\d{1,3}(?:\.\d{1,3}){3}$")
 APP_SECTIONS = {"Rule", "Host"}
+# 做了证书固定/等效私有加密通道（mmtls）的 App：MITM 不可行甚至触发风控，
+# 它们的 src/apps JSON 永远不许出现 enhance 层（用户裁决：仅非固定 App 加默认关增强层）。
+APP_NO_ENHANCE_SLUGS = {"banks", "wechat", "mijia", "x", "instagram"}
 
 
 def collect_source_urls(plugin):
@@ -2090,6 +2100,10 @@ def collect_source_urls(plugin):
         if s.startswith("# 证据:"):
             urls.append(s.split("# 证据:", 1)[1].strip())
     return urls
+
+
+def rd_has_section(readme, heading):
+    return readme.exists() and heading in readme.read_text(encoding="utf-8")
 
 
 def check_app_plugins():
@@ -2119,6 +2133,13 @@ def check_app_plugins():
                 errors.append(f"apps/{slug}: header missing #{key} in {plugin.relative_to(ROOT)}")
         if meta.get("type") != "normal":
             errors.append(f"apps/{slug}: #!type must be normal, got {meta.get('type')!r}")
+        m_build = re.search(r"\((\d+)\)", meta.get("loon_version", ""))
+        if m_build and int(m_build.group(1)) > ADS_APPSTORE_STABLE_BUILD:
+            errors.append(
+                f"apps/{slug}: #!loon_version={meta.get('loon_version')!r} gates on a "
+                f"TestFlight build (> {ADS_APPSTORE_STABLE_BUILD}); App Store users "
+                "could not import"
+            )
         for key in ("homepage", "openUrl", "icon"):
             val = meta.get(key, "")
             if val and not val.startswith("https://"):
@@ -2134,9 +2155,11 @@ def check_app_plugins():
             if parts[-1] not in APP_RULE_ACTIONS:
                 errors.append(f"apps/{slug}: rule action not whitelisted: {line}")
             if parts[0] == "DOMAIN-WILDCARD":
-                m = re.search(r"\((\d+)\)", meta.get("loon_version", ""))
-                if not m or int(m.group(1)) < 1008:
-                    errors.append(f"apps/{slug}: DOMAIN-WILDCARD needs #!loon_version build>=1008, got {meta.get('loon_version')!r}")
+                errors.append(
+                    f"apps/{slug}: DOMAIN-WILDCARD is TestFlight-only (3.5.3/1008); "
+                    "app plugins must stay importable on App Store stable (3.5.2/996) — "
+                    "use [Host] '*.domain' blackhole instead"
+                )
         for line in parsed.get("Host", []):
             if not APP_HOST_RE.match(line):
                 errors.append(f"apps/{slug}: bad [Host] line: {line}")
@@ -2146,6 +2169,29 @@ def check_app_plugins():
         for url in collect_source_urls(plugin):
             if not url.startswith("https://"):
                 errors.append(f"apps/{slug}: evidence url not https: {url}")
+        enh = data.get("enhance")
+        if enh is not None:
+            if slug in APP_NO_ENHANCE_SLUGS:
+                errors.append(
+                    f"apps/{slug}: cert-pinned app must not ship an enhance/MITM layer "
+                    "(红线：MITM 不可行也不做)"
+                )
+            raw = plugin.read_text()
+            for line in raw.splitlines():
+                s = line.strip()
+                if s.startswith(("[MITM]", "hostname =", "URL-REGEX,")):
+                    errors.append(
+                        f"apps/{slug}: enhance line must stay commented: {s!r}"
+                    )
+            if not rd_has_section(plugin.parent / "README.md", "可选 MITM 增强层"):
+                errors.append(f"apps/{slug}: README missing 可选 MITM 增强层 section")
+            for key in ("mitm_hosts", "url_regex", "sources"):
+                if not enh.get(key):
+                    errors.append(f"apps/{slug}: enhance.{key} empty")
+            for r in enh.get("url_regex", []):
+                parts = r.split(",")
+                if parts[0] != "URL-REGEX" or len(parts) != 3:
+                    errors.append(f"apps/{slug}: enhance url_regex malformed: {r!r}")
         rd = plugin.parent / "README.md"
         if not rd.exists():
             errors.append(f"apps/{slug}: missing plugins/{slug}/README.md")

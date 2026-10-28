@@ -13,9 +13,10 @@ Rule shorthand in [Host]:
   *.example.com  -> wildcard only
   example.com    -> exact only
 
-Ad-subdomain globs in `domain_wildcards` become active
-`DOMAIN-WILDCARD,<glob>,REJECT` rules. They require Loon 3.5.3(1008)+ and
-must never match a protected shared root.
+Ad-subdomain globs in `domain_wildcards` become `DOMAIN-WILDCARD,<glob>,REJECT`
+rules. The rule type requires Loon 3.5.3(1008)+ (currently TestFlight-only),
+so both wildcard layers are emitted COMMENTED by default — uncommented only on
+3.5.3+. Globs must never match a protected shared root.
 
 Note: Loon rules take no parameters other than the documented `no-resolve`
 (and only IP rules use it). `pre-matching` / `extended-matching` are *Surge*
@@ -42,8 +43,11 @@ SOURCE = ROOT / "src/ads/domains.json"
 PROTECTED = ROOT / "src/ads/protected-roots.json"
 OUT_DIR = ROOT / "plugins/ads"
 TARGET = "127.0.0.1"
-# DOMAIN-WILDCARD 自 Loon 3.5.3(1008) 起提供，插件头必须同步抬高门槛。
-LOON_VERSION = "3.5.3(1008)"
+# 版本门槛 = App Store 正式版基线：Loon 3.5.2(996)。
+# DOMAIN-WILDCARD 自 3.5.3(1008)（当前仅 TestFlight）起提供，低版本对未知规则类型
+# 是「跳过还是整段报错」官方文档未详述——因此两层通配默认注释输出，
+# 3.5.2 用户不受任何影响，3.5.3+ 用户逐行去掉 '# ' 即可启用。
+LOON_VERSION = "3.5.2(996)"
 WILDCARD_MIN_BUILD = 1008
 
 # Loon plugin [General] only supports this whitelist. Anything else is ignored
@@ -238,11 +242,6 @@ def validate_domain_wildcards(plugin: dict, protected: set[str]) -> list[str]:
             raise BuildError(f"{where}: duplicate glob: {pattern!r}")
         checked.append(pattern)
 
-    if checked and build_number(LOON_VERSION) < WILDCARD_MIN_BUILD:
-        raise BuildError(
-            f"{where}: DOMAIN-WILDCARD needs Loon build {WILDCARD_MIN_BUILD}+, "
-            f"but the plugin declares {LOON_VERSION}"
-        )
     return checked
 
 
@@ -318,11 +317,6 @@ def validate_family_wildcards(
             raise BuildError(f"{where}: duplicate glob: {pattern!r}")
         checked.append(pattern)
 
-    if checked and build_number(LOON_VERSION) < WILDCARD_MIN_BUILD:
-        raise BuildError(
-            f"{where}: DOMAIN-WILDCARD needs Loon build {WILDCARD_MIN_BUILD}+, "
-            f"but the plugin declares {LOON_VERSION}"
-        )
     return checked
 
 
@@ -547,20 +541,23 @@ def render_plugin(
     if wildcards:
         lines.append("")
         lines.append("# " + "=" * 76)
-        lines.append("# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+）")
+        lines.append("# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+，当前仅 TestFlight）")
         lines.append("# " + "-" * 76)
         lines.append("# 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，")
         lines.append("# 不命中 a.com、ad.example.com 或 adsl.example.com。")
         lines.append("# 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。")
+        lines.append("# 默认保持注释：App Store 正式版仍是 3.5.2(996)，低版本遇到未知规则类型")
+        lines.append("# 的行为官方未文档化（可能跳过、也可能整段失效），不拿 [Rule] 核心层冒险。")
+        lines.append("# 已装 3.5.3+（TF build 1008-1011）的用户：逐行去掉行首 '# ' 即启用本层。")
         lines.append("# " + "=" * 76)
         for pattern in wildcards:
-            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT")
+            lines.append(f"# DOMAIN-WILDCARD,{pattern},REJECT")
             counts["wildcards"] += 1
 
     if families:
         lines.append("")
         lines.append("# " + "=" * 76)
-        lines.append("# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+）")
+        lines.append("# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+，仅 TF）")
         lines.append("# " + "-" * 76)
         lines.append("# 上一层的 glob 只能表达「左标签锚定」，覆盖不到 ads1/ads3/ads5 这类")
         lines.append("# 编号分片。字符类是 Loon 3.5.3(1008) 起支持的第三类通配符：")
@@ -571,7 +568,7 @@ def render_plugin(
         lines.append("# 因此这里只会出现「已经在用、但只列了一个分片」的真实家族。")
         lines.append("# " + "=" * 76)
         for pattern in families:
-            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT")
+            lines.append(f"# DOMAIN-WILDCARD,{pattern},REJECT")
             counts["family_wildcards"] += 1
 
     rules_disabled = plugin.get("rules_disabled") or []
@@ -784,8 +781,8 @@ def main() -> int:
         for name, counts in stats.items():
             print(
                 f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
-                f"wildcards={counts['wildcards']:2} "
-                f"families={counts['family_wildcards']:2} "
+                f"wildcards_opt={counts['wildcards']:2} "
+                f"families_opt={counts['family_wildcards']:2} "
                 f"optional_rules={counts['rules_disabled']:2} "
                 f"ip_rewrite={counts['ip_rewrite']:2} "
                 f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "
@@ -798,8 +795,8 @@ def main() -> int:
     for name, counts in stats.items():
         print(
             f"{name:18} general={counts['general']:2} rules={counts['rules']:2} "
-            f"wildcards={counts['wildcards']:2} "
-            f"families={counts['family_wildcards']:2} "
+            f"wildcards_opt={counts['wildcards']:2} "
+            f"families_opt={counts['family_wildcards']:2} "
             f"optional_rules={counts['rules_disabled']:2} "
             f"ip_rewrite={counts['ip_rewrite']:2} "
             f"optional_ip_rewrite={counts['ip_rewrite_disabled']:2} "

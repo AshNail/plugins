@@ -1,10 +1,10 @@
 #!name=闲鱼 · 去广告（能力有限）
-#!desc=闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名，九家主流黑名单 goofish 零命中即侧证）。DNS 层只能补阿里广告 SDK 端点 iyes.youku.com + AMDC 调度——这是如实的≈0-5% 收益插件。零证书。
+#!desc=闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名，九家主流黑名单 goofish 零命中即侧证）。DNS 层只能补阿里广告 SDK 端点 iyes.youku.com、淘宝客 Tunion 归因接口与 AMDC 调度——这是如实的≈0-5% 收益插件。零证书。
 #!author=edy
-#!version=1.1.0
+#!version=1.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/xianyu/README.md
-#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/c1/e1/9f/c1e19fc8-8acb-9f5d-64fd-222a57b4c8a6/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.1(983)
 #!date=2026-10-28
@@ -18,6 +18,7 @@
 # 取证否决：m.goofish.com / awl.goofish.com 实测 NXDOMAIN（不存在）;xianyu.mobi 与 blackmatrix7 的 16 个乱码域是淘宝短链跳转服务（cname.tb.cn），拦=断分享链接;cdn.ynuf.aliapp.org=阿里无线安全 UMID 指纹,禁拦。
 # 证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。
 # 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+# 第二轮取证复检(2026-10-28)：mma.alimama.com 实测 NXDOMAIN(网传『阿里妈妈端点』不存在,禁凭品牌造域);开屏素材无 alicdn 之外的独立 CDN(墨鱼 GoofishAds.conf 亦无单独素材域);h-adashx.ut.taobao.com=阿里 UT/AdashX 埋点,全阿里系 App 共享,属全局 ads 插件的决策面,不进本按 App 插件。
 # 本文件由 tools/build-apps.py 从 src/apps/xianyu.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -39,6 +40,14 @@
 iyes.youku.com = 127.0.0.1
 
 # ------------------------------------------------------------
+# 淘宝客/阿里妈妈 API 端点（置信 B）
+# tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、全局 ads 插件的 =alimama.com 整域黑洞罩不到它,故在此精确单列;afpapi.alimama.com 已由 ads 插件 alibaba 组整域覆盖,此处只作按 App 开关的完整起见。DoH 实测 afpapi CNAME 终结于 adsz.wagbridge.tanx.alimama.com(Tanx=阿里妈妈 AdX)。
+# 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list
+# 证据: https://www.alimama.com/about.htm
+afpapi.alimama.com = 127.0.0.1
+tunion-api.m.taobao.com = 127.0.0.1
+
+# ------------------------------------------------------------
 # 淘宝系 AMDC HTTPDNS 调度（默认关）（置信 B）
 # amdc.m/amdcopen.m.taobao.com=阿里 HTTPDNS 调度;闲鱼净化脚本专改 /amdc/mobileDispatch。拦=广告域解析绕过消失,但阿里系 App 若无回退逻辑可能拖慢建连——默认关,验证后再开。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
@@ -46,3 +55,25 @@ iyes.youku.com = 127.0.0.1
 # （默认关闭的组：整组注释，取消注释即启用）
 # amdc.m.taobao.com = 127.0.0.1
 # amdcopen.m.taobao.com = 127.0.0.1
+
+
+# ========================================================================
+# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
+# ------------------------------------------------------------------------
+# 闲鱼 iOS 未做证书固定：开屏/推荐流广告是 mtop 主网关 acs.m.goofish.com 的路径名（splash.ads / idle.ad.expose），黑洞整网关=废掉 App，正解是 MITM 后按路径 reject-200。规则取自 ddgksf2013 GoofishAds 公开模块（单源 B 级，fmz200 同域但注释未启用），默认整段注释。信息流 mamaAD 卡片去留要的是改写响应体删节点（jsonjq-response-body），非 Loon 原生 reject 且改 body 有风险，本层不做——只拦开屏与曝光计数。注意本层是「解密网关后精确拦广告路径」，不是黑洞网关。
+# 启用步骤：①Loon 里装并信任证书 → ②取消 [MITM] 头与其 hostname 行的注释 →
+#           ③按需取消下面 [Rule]/[Script] 行的注释。
+# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
+# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
+# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
+# 证据: https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf
+# ========================================================================
+
+# [MITM]
+# ------------------------------------------------------------
+# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
+# hostname = %APPEND% acs.m.goofish.com, g-acs.m.goofish.com
+# [Rule] / [Script]（路径级去广告，需上面 MITM 命中该域才看得到 path）
+# ------------------------------------------------------------
+# URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop.*splash\.ads,REJECT
+# URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop\.idle\.ad\.expose,REJECT

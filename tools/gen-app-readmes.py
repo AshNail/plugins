@@ -20,12 +20,18 @@ def render(app, sdklib, ads_groups):
         f"style=for-the-badge&logo=safari&logoColor=white)]"
         f"(https://www.nsloon.com/openloon/import?plugin={quote(url, safe='')})"
     )
+    enh = app.get("enhance") or {}
+    tier_line = (
+        "零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）"
+        if enh else
+        "零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）"
+    )
     lines = [
         f"# {name}",
         "",
         f"> {app['desc']}",
         "",
-        f"版本 **{app['version']}** ｜ 最低 Loon **{app['loonVersion']}** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）",
+        f"版本 **{app['version']}** ｜ 最低 Loon **{app['loonVersion']}** ｜ {tier_line}",
         "",
         "## 安装",
         "",
@@ -61,6 +67,34 @@ def render(app, sdklib, ads_groups):
         title = meta.get("title", sid)
         note = meta.get("note", "域名真源见 ads 组/SDK 库")
         lines.append(f"| {title}（引用组） | A | 启用 | {note} 共 {n_h} 域 / {n_r} 规则。 |")
+    if enh:
+        n_regex = len(enh.get("url_regex", []))
+        n_hosts = len(enh.get("mitm_hosts", []))
+        lines += [
+            "",
+            "## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）",
+            "",
+            enh.get("intro", ""),
+            "",
+            f"- 解密主机（`[MITM] hostname`，{n_hosts} 个）：{', '.join('`' + h + '`' for h in enh.get('mitm_hosts', []))}",
+            f"- 路径级规则（`URL-REGEX`，{n_regex} 条，命中即拦对应广告接口/素材，不影响同域功能请求）：",
+            "",
+            "```text",
+        ]
+        for r in enh.get("url_regex", []):
+            lines.append(f"# {r}")
+        lines += [
+            "```",
+            "",
+            "启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③按需取消规则行注释。",
+            "",
+            "> 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，"
+            "那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。",
+            "",
+            "证据：",
+        ]
+        for src in enh.get("sources", []):
+            lines.append(f"- {src}")
     lines += ["", "## 红线与天花板（如实）", ""]
     for c in app.get("comment", []):
         lines.append(f"- {c}")

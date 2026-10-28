@@ -2,7 +2,7 @@
   "slug": "wechat",
   "name": "微信 · 广告素材黑洞",
   "desc": "微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "date": "2026-10-28",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,微信,优量汇,广点通",
@@ -55,7 +55,8 @@
         "app-support.qq.com",
         "qzs.qq.com",
         "xn--8rtx55n.cn",
-        "wapx.adinall.com"
+        "wapx.adinall.com",
+        "app-tj.adinall.com"
       ]
     },
     {
@@ -82,5 +83,6 @@
         "badjs.weixinbridge.com"
       ]
     }
-  ]
+  ],
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/84/6b/3a/846b3ab8-9dea-e3e5-861e-f6ecaa0b3387/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-0-0-85-220.png/512x512bb.jpg"
 }

@@ -2,7 +2,7 @@
 
 > 美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞。首页轮播/信息流/开屏素材与业务同域同 CDN——DNS 层收益约 25-35%，其余是「加载失败留白」。交易、支付、骑手调度零接触。零证书。
 
-版本 **1.1.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.2.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -25,6 +25,29 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 | Sigmob（北京创智汇聚）（引用组） | A | 启用 | adservice/dc/track.sigmob.cn；anti-AD/AdGuard/hagezi 多源收录；ads 插件 mobile_sdks 组同源含此域。 共 4 域 / 0 规则。 |
 | ToBid 聚合（北京创致 / Sigmob 系）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。 共 2 域 / 0 规则。 |
 | 美数 AdMate（北京美数信息）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 第三方变现 SDK；anti-AD 收录。 共 4 域 / 0 规则。 |
+
+## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
+
+美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。
+
+- 解密主机（`[MITM] hostname`，3 个）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`
+- 路径级规则（`URL-REGEX`，4 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
+
+```text
+# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
+# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT
+# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/loadInfo\?,REJECT-DICT
+# URL-REGEX,^https?://p[0-9]\.meituan\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\.jpg,REJECT
+```
+
+启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③按需取消规则行注释。
+
+> 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。
+
+证据：
+- https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin
+- https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin
+- https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
 
 ## 红线与天花板（如实）
 

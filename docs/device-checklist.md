@@ -1,7 +1,7 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 2.8.5）/ `douyin.plugin`（当前 0.8.5）；`ads.plugin`（当前 2.5.0）见 H 节。
-> 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 需 **3.5.3(1008)+**（`DOMAIN-WILDCARD`）。
+> 适用：`soda.plugin`（当前 2.8.5）/ `douyin.plugin`（当前 0.8.5）；`ads.plugin`（当前 2.7.0）见 H 节。
+> 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 及全部 App 插件门槛降到 **App Store 正式版 3.5.2(996)**（`DOMAIN-WILDCARD` 仅 TF 3.5.3 有，改为默认注释层，不再卡正式版）。
 > 红线重申：本仓插件**只做净化与观测**——不缩短广告、不加速播放、不改写领奖请求、
 > 不做后台自动观看/自动领取。领奖链路（`incentive/done` 等全部 59 头请求）只读不动。
 
@@ -79,17 +79,18 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 5. E 步两条通知行为截图
 6. （做了 F）旁路判定结论一句话
 
-## H. ads.plugin（DNS 层 + DOMAIN-WILDCARD）
+## H. ads.plugin（DNS 层 + DOMAIN-WILDCARD 默认注释层）
 
-- [ ] Loon 版本 ≥ **3.5.3(1008)**；插件页版本为 2.6.0
-      （3.5.3 build 1007–1011 截至 2026-10-27 **仅在 TestFlight 分发**，App Store stable 尚无此能力——
-      这是门槛的真实代价：stable 用户装不了带通配层的 ads 插件版本。）
-- [ ] 规则页能看到 30 条 `DOMAIN-WILDCARD,...`；广告子域（如 `ads.example.com`）在日志/DNS 检查里走 127.0.0.1 或 DNS 拒绝
-- [ ] **通配层独立取证（与 [Host] 区分开）**：挑一个**只命中 glob、不在 [Host] 清单**的域，
+- [ ] Loon 版本 ≥ **3.5.2(996)**（App Store 正式版即可导入）；插件页版本为 2.7.0
+      （此前 2.6.0 把门槛抬到 3.5.3(1008) 会挡住正式版用户；2.7.0 已降回正式版，
+      `DOMAIN-WILDCARD` 通配/家族两层改为**默认注释**，正式版用户保持注释、其余全量生效。）
+- [ ] 规则页默认看不到生效的 `DOMAIN-WILDCARD,...`（都是 `# ` 注释行）；广告子域拦截由 `[Host]` 逐条承担
+- [ ] **仅 3.5.3+（TestFlight build 1008–1011）用户**：逐行去掉通配层行首 `# ` 后，再验通配层独立取证
+      （与 [Host] 区分开）：挑一个**只命中 glob、不在 [Host] 清单**的域，
       Safari 访问 `http://ads.loon-wildcard-probe.com/`，日志应出现
       `Search rule by host:ads.loon-wildcard-probe.com` 且策略判为 REJECT——这才证明
       DOMAIN-WILDCARD 在**插件 [Rule]** 里生效（官方 domain_rule 页只写 build 1008+，未明示插件可用性；
-      日志窗口里 0 命中不能当证据，那些域在更早的 [Host] DNS 阶段已被黑洞）。
+      未取消注释、或 3.5.2 正式版上此项不适用，那些域仍在 [Host] DNS 阶段被黑洞）。
 - [ ] 共享主域本身不受通配层影响：`example.com`、`graph.facebook.com`、`doh.dns.apple.com` 正常解析
 - [ ] **Mintegral / Rayjump（2.4.0 新增）**：装有 Mintegral 聚合的工具/小游戏类 App，开插件后
       该 App 的广告位应无填充。判读方法：Loon 日志过滤 `rayjump`，应出现
@@ -183,3 +184,13 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **mijia**：设备控制（`api.io.mi.com`/xmpush）必须无恙——红线域绝不出现在拦截日志。
 - [ ] **qidian/xianyu/x/instagram**：预期收益低（内联广告），判读以「遥测域消失 + 业务无恙」为准，不以「广告消失」为准。
 - [ ] 默认关的组（watchlist/telemetry/amdc/waimai_ad/d_meituan_net/unionpay_optional 等）试开前，先在日志确认对应域真实出现——没出现就开了也没有收益。
+
+### J2. 可选 MITM 增强层（meituan/xianyu/qidian 文末整段默认注释）
+
+不装证书 = 本层永不生效，上面各项判读不变；启用与否、启用几条完全自愿，随时可回滚（重新注释即回到原状）。
+
+- [ ] **前置**：Loon → 证书管理 → 生成/安装 CA → iOS 设置里「通用→关于→证书信任设置」打开完全信任；无证书时取消注释也无效，先装证书再改规则。
+- [ ] **qidian**：只取消 `[MITM]` 头 + `hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com` + 6 条 `URL-REGEX`（REJECT-DICT）。验证：冷启动开屏广告秒过、书架悬浮广告/每日推荐位消失；正文阅读、听书、评论、支付必须无恙（同主机业务路径不在正则内）。日志应见 `Reject ... by URL-Regex` 且主机仍正常解析。
+- [ ] **meituan**：同法启用 `wmapi/apimobile/p?.meituan.net` 层。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
+- [ ] **xianyu**：启用 `acs.m.goofish.com`/`g-acs.m.goofish.com` 层只拦 `splash.ads`、`idle.ad.expose` 两条路径。验证：开屏广告消失；发布、下单、聊天、扫一扫无恙。**若出现网关异常（登录转圈、接口报错）立即注释回滚**——mtop 网关被解密本身就改变连接形态，个别版本可能敏感，本层对该 App 定位是「实验」。
+- [ ] **共同回滚判据**：银行/支付/门锁等红线域绝不允许进 `[MITM]` hostname；增强层启用后若 App 报「网络异常/证书错误」，说明该 App 实际做了固定或检测，接受现实、整段恢复注释（插件注释已声明此可能）。

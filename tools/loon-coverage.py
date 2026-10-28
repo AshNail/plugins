@@ -154,8 +154,10 @@ CAPABILITIES = [
              "SUFFIX 还能表达 REJECT-DROP 等规则动作"),
     dict(layer="规则层", key="r-keyword", name="`DOMAIN-KEYWORD`", expect="used",
          probe=r"(?m)^DOMAIN-KEYWORD\s*,", href=DOC + "/Rule/domain_rule"),
-    dict(layer="规则层", key="r-wildcard", name="`DOMAIN-WILDCARD`（含 `[0-9]` 字符类）", expect="used",
-         probe=r"(?m)^DOMAIN-WILDCARD\s*,", href=DOC + "/Rule/domain_rule"),
+    dict(layer="规则层", key="r-wildcard", name="`DOMAIN-WILDCARD`（含 `[0-9]` 字符类）", expect="open",
+         probe=r"(?m)^DOMAIN-WILDCARD\s*,", href=DOC + "/Rule/domain_rule",
+         why="语法仅 3.5.3(1008)+ 提供且当前只在 TestFlight；App Store 正式版 3.5.2(996) 对未知规则类型"
+             "的行为未文档化，ads 插件把 41 条通配/家族 glob 默认注释收录，3.5.3+ 用户取消注释即生效"),
     dict(layer="规则层", key="r-url-regex", name="`URL-REGEX`", expect="used",
          probe=r"(?m)^URL-REGEX\s*,", href=DOC + "/Rule/http_rule",
          why="已写 6 条，**全部锚定 `^http://`**（HTTPDNS 配置与明文上报）。"

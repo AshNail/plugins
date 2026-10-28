@@ -2,7 +2,7 @@
   "slug": "mba-dashi",
   "name": "MBA大师 · 去广告",
   "desc": "MBA大师（mbajm）开屏走穿山甲,课程列表插屏走优量汇;讲义/题库内嵌不可分。看广告领课程依赖这些 SDK——启用即断。零证书。",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "date": "2026-10-28",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,MBA,考研",
@@ -15,5 +15,6 @@
     "pangle",
     "gdt"
   ],
-  "groups": []
+  "groups": [],
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/ec/e7/4d/ece74d37-8132-f91f-8d4a-101fd2a3319f/AppIcon-0-0-1x_U007epad-0-11-0-85-220.png/512x512bb.jpg"
 }

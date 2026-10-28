@@ -1,10 +1,10 @@
 #!name=软考通 · 去广告
 #!desc=软考通（ixinz 系）开屏/课程列表插屏走穿山甲+优量汇;题库内容与广告同源不可分。看广告解锁真题依赖这些 SDK——启用即断。零证书。
 #!author=edy
-#!version=1.0.0
+#!version=1.0.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ruankao-tong/README.md
-#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/01/f8/c2/01f8c201-694c-1054-7f89-5663d3a9baaa/AppIcon-0-0-1x_U007ephone-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.1(983)
 #!date=2026-10-28

@@ -2,7 +2,7 @@
 
 > 如实定位:米家 App 首页运营卡片/商城推荐为第一方内嵌(api.io.mi.com 响应体),DNS 不可分。本插件黑洞小米统一广告平台(*.ad.xiaomi.com/o2o/有品推荐)——对 MIUI/澎湃系统投放有效,iOS 米家是否调用该平台未经抓包证实。设备控制/账号/推送域名零接触。零证书。
 
-版本 **1.0.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.1.1** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -17,6 +17,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mijia/mijia.plugi
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | 小米统一广告平台 / MSA 投放 | A | 启用 | ad.xiaomi.com 全域成员(api/cdn/sdkconfig/ssp/test/zeus/new.api/diagnosis/track)+ ad1/ad.intl/api.admob + ad.mi.com + o2o.api（新零售广告）——anti-AD 与 edmon1024 小米专项清单一致收录。 |
+| MIUI/澎湃系统广告与分析面（默认关，仅小米 Android 设备有感知） | A | 默认关闭 | 覆盖率审计（tools/app-coverage-audit.py）从 hagezi-xiaomi/anti-ad/AdGuard 反查出的小米系统面缺口：adv.sec=安全中心推荐位、activity/hot.browser=浏览器运营/热榜广告位、stat.youpin=有品推荐、stat.pandora=应用商店推荐、tracking.intl/rus=国际版遥测、inf/apm-rum/api.collect/cc/ccc/metok/geofence.sys=系统分析与定位采集、xiaomi-dtv.m.cn.miaozhen=秒针广告测量。对 iPhone/iPad 米家用户零效果；小米手机用户试开。安全组件（auth.be/api.sec/mazu/notify/logupdate 族）刻意不列——防诈与推送通道不许碰。 |
 | 小米数据追踪/AB 实验（默认关） | B | 默认关闭 | mistat 与设备端远程配置可能同链——收益=隐私,风险=配置拉取,默认关,抓包确认再开。 |
 
 ## 红线与天花板（如实）
@@ -31,4 +32,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mijia/mijia.plugi
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/mijia.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 14 条，[Rule] 0 条。
+统计：精确/通配黑洞 42 条，[Rule] 0 条。

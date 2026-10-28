@@ -2,7 +2,7 @@
 
 > 依据：官方文档 `https://nsloon.app/docs/`（源仓库 [Loon0x00/LoonManual](https://github.com/Loon0x00/LoonManual) `docs/cn/`，2026-10-27 逐页核对）。
 > 图例：✅ 本仓库已在用 / 🟡 建议你在设备侧开启 / ⚪ 进阶可选 / 🔒 需真机取证后启用 / ❌ 不采纳（带理由）。
-> 适用版本：主配置按当前 stable 功能描述；标注 build 号的是硬门槛（soda/douyin 标注 3.5.1(983)+，gzip 响应解析需 3.5.1(988)+；ads 插件因 `DOMAIN-WILDCARD` 标注 **3.5.3(1008)+**）。
+> 适用版本：主配置按当前 stable 功能描述；标注 build 号的是硬门槛（soda/douyin 标注 3.5.1(983)+，gzip 响应解析需 3.5.1(988)+；ads 与全部 App 插件门槛降到 App Store 正式版 **3.5.2(996)**，`DOMAIN-WILDCARD` 仅 TF 3.5.3(1008) 有、改为默认注释层）。
 
 ## 1. 导入与快捷指令（docs/cn/scheme.md）
 
@@ -56,7 +56,7 @@
 | 组 | 类型 | 本仓库 |
 |---|---|---|
 | 域名 | `DOMAIN` `DOMAIN-SUFFIX` `DOMAIN-KEYWORD` | ✅ KEYWORD 兜底；`DOMAIN` 在 soda/douyin 可选组 |
-| 域名通配 | `DOMAIN-WILDCARD`（Build 1008+，glob：`*` 跨点、`?` 单字符、`[0-9]` 字符类） | ✅ ads 30 条广告子域通配层（`ads.*` / `adserver.*` / `adx-*` / `advert.*` 等）+ **11 条数字分片家族层**（`ads[0-9]-normal*.zijieapi.com` 等），DNS 阶段整族拒绝 |
+| 域名通配 | `DOMAIN-WILDCARD`（Build 1008+，glob：`*` 跨点、`?` 单字符、`[0-9]` 字符类） | ⚠️ 收录但**默认注释**（仅 TF 3.5.3 支持，App Store 3.5.2 解析行为未文档化）：ads 30 条广告子域通配层 + 11 条数字分片家族层以 `# DOMAIN-WILDCARD,...` 存在，3.5.3+ 用户取消注释即 DNS 阶段整族拒绝 |
 | IP | `IP-CIDR` `IP-CIDR6` `GEOIP` `IP-ASN` | ✅ CIDR 系列（可选网关 IP 组）；❌ GEOIP/IP-ASN 大网段（误伤面大） |
 | HTTP | `URL-REGEX` `USER-AGENT` | ⚠️ **写了不等于生效**：`URL-REGEX` 6 条全部锚定 `^http://`（只吃明文）；`USER-AGENT` 4 条写在**没有 `[MITM]` 段**的 ads 插件里，而 UA 是请求头、未解密看不到——能否命中未经验证，已登记 waiver。见 `docs/rule-effectiveness.md` |
 | 端口 | `SRC-PORT` `DEST-PORT`（3.1.7+ 支持区间 `80-443`、`>=443`） | ✅ `DEST-PORT,853`（DoT/DoQ 阻断）；区间语法暂无场景 |
@@ -79,7 +79,7 @@
 - ✅ Rewrite v2 侧同步使用 `reject_dict(200)`：soda 开屏品牌上报与 DSP 展示上报、douyin DSP 展示上报都返回 JSON `{}` + `application/json`（`reject(200)` 的空 Body 是 `text/plain`，`reject(200,"{}")` 仍是文本）；规则层 `REJECT-DICT` 与请求层 `reject_dict` 现在一致；
 - 📈 规则引擎性能（官方实测）：10 万级 DOMAIN 规则 ≤5ms/IP-CIDR6 ≤20ms，LRU 缓存近命中 — **可以放心挂外部规则订阅做增强**：
   🟡 主配置 [Rule] 外挂 `.list`（如 anti-AD / hagezi），`tools/ads-audit.py --sources` 已能评估覆盖互补度。
-- ✅ **`DOMAIN-WILDCARD` 已落地**（3.5.3(1008)+）：ads 插件新增 30 条 `DOMAIN-WILDCARD,<glob>,REJECT`（规则行不带参数，见 §10），用 `*` 跨点语义按广告专用左标签整族拦截动态子域（`ads.*`、`ads-*`、`adserver.*`、`advertising.*`、`advertising-*`、`advert.*`、`adx-*`、`adtrack-*`、`bannerads.*` 等），弥补 `[Host]` 只能枚举固定域名的缺口。build/lint 双重校验：左标签锚定、只允许 `*`/`?`、拒绝 `*`/`*.com`/`ads*`、不命中 `protected-roots.json`、插件头 Build ≥1008；离线审计把生效 glob 计入覆盖率（默认 10 源覆盖 4,279→7,589 域，其中第二轮 14 条 hyphen/长前缀变体新增 135 个）。
+- ⚠️ **`DOMAIN-WILDCARD` 已收录但默认注释**（语法仅 3.5.3(1008)+，当前只在 TestFlight）：ads 插件带 30 条广告子域通配 + 11 条数字分片家族 glob，v2.7.0 起以 `# DOMAIN-WILDCARD,<glob>,REJECT` 注释行收录——插件头保持 App Store 正式版 3.5.2(996)，不让 TestFlight 版本挡住真实用户；装了 3.5.3 的用户逐行去掉 `# ` 即启用。`*` 跨点语义按广告专用左标签整族拦截动态子域（`ads.*`、`ads-*`、`adserver.*`、`advertising.*`、`advert.*`、`adx-*`、`bannerads.*` 等），弥补 `[Host]` 只能枚举固定域名的缺口。build/lint 双重校验照常在注释层上跑：左标签锚定、只允许 `*`/`?`、拒绝 `*`/`*.com`/`ads*`、不命中 `protected-roots.json`；lint 反向锁死「通配必须保持注释、`#!loon_version` 不得超过正式版 996」。
 - ✅ **字符类家族层（第二轮）**：官方规定 `[...]` 是第三类通配符（`node[0-9].example.com`）。ads 插件新增 11 条「数字分片家族」glob，把 `ads3/ads5 × normal/-hl/-lf/-lq/-xh`、`p3/p6/p9-ad-sign.byteimg.com`、`v1/v2/v3-ad.video.yximgs.com`、`pangolin-sdk-toutiao1..5.com`、`dns9..12.quad9.net` 等 **30+ 台已枚举主机折叠成族**，顺带覆盖永远枚举不到的兄弟分片。只放开 `[0-9]`：`[a-z]` / `[!0-9]` 会把匹配扩散到别的品牌主机，而「保护名单不可被通配命中」这条保证必须保住。build 强制「每条家族 glob 至少覆盖 2 台已枚举主机」，凭想象造家族进不来；lint 再用正/反样本锁一次（`ads[0-9]` 命不中 `ads10` / `ads` / `adsxx`）。
 
 ## 5. 代理与策略组（node.md / policy.md / policygroup.md）
@@ -119,6 +119,7 @@
 - ✅ `[Argument]` 类型 `bool`（开关）、`input`（cron 文本）与 `select`（`statusNotify`：notification/silent，`type=string`；候选值经 `script(...,{${statusNotify}})` 以 String 透传）。
 - ✅ 脚本相对路径绑定（`scripts/*.min.js` 与 `.plugin` 同级——这就是 raw 直链部署无需 Pages 的原因）。
 - ✅ **`[MITM]` 支持通配（第二轮落地）**：官方文档写明 `hostname` 支持 `*`、`?`，域名前加 `-` 表示排除。soda/douyin 用一条 `ads?-normal*.zijieapi.com` 覆盖 Pangle 全部分片，而 `[Rule]` 的 `DOMAIN-SUFFIX` 不吃通配、只能逐个列 10 条 QUIC 回退——两边各用自己最强的写法，覆盖关系由 lint 校验（`mitm_covers()` 按 glob 匹配）。
+- ✅ **App 插件的可选 MITM/URL-REGEX 增强层（第八轮，meituan v1.2.0 / xianyu v1.3.0 / qidian v1.1.0）**：这三个 App 未做证书固定，同域广告接口（`splash.ads`、`argus/api/*/adv/*`、`openscreen?ad` 等）黑洞会伤功能，`URL-REGEX` 路径级 reject 是唯一正解——插件文末整段默认注释（`# [MITM]` + `# hostname = %APPEND% …` + `# URL-REGEX,…,REJECT-DICT`），不装证书永不生效、App Store 3.5.2 导入无障碍。lint 三重锁：固定 App（banks/wechat/mijia/x/instagram）JSON 禁止出现 `enhance`；生成物里 `[MITM]`/`hostname =`/`URL-REGEX` 行必须以 `#` 注释态存在；`enhance.url_regex` 只收 `URL-REGEX` 三段式且动作在白名单。Tier C App（不背单词/软考通/MBA大师/智慧房东）逐家核实**无可引用路径级证据**，宁缺毋滥不加层。
 
 ## 8. `[IP Rewrite]`（Build 1007+，插件专属）
 
@@ -139,7 +140,7 @@
 10. [x] Generic 状态看板环境诊断：`$loon` / `$script` / `$environment` / `$config.getConfig()` / `$utils.ungzip` 全部接入，结果页与通知显示 Loon 版本、脚本执行时间、节点、运行模式与 gzip 能力；`test_status.js` 扩到 40 条，覆盖完整、拼写兼容、缺失与能力两种状态。
 11. [x] 构建门槛对齐：确认 3.5.1(988) 才引入脚本 gzip API；插件保持 983 安装门槛，README/插件描述/真机清单统一注明“gzip 清理需 988+，983–987 只记录状态”。
 12. [x] QUIC→TCP 回退落地（v2.8.0 / v0.8.0，常开无开关；v2.8.2 / v0.8.2 扩到全分片族）：soda 17 域、douyin 16 域各写一条 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`；不做全局 `PROTOCOL,QUIC,REJECT`。同时保留 `h2 = true`——**第三轮复核后降级为「未文档化键的零成本冗余」**（官方 MitM 文档只列 `hostname`/`ca-p12`/`ca-passphrase`；HTTP/2 解密是官方产品页宣称的默认能力），不再计入能力点。请求免压缩经真机体积核算后放弃（upsell gzip 后已 183–191 KB）。lint 锁 QUIC 集合、全局 QUIC 禁令、免压缩规则、`h2 = false` 反例与 `families.json` 计数；真机回退耗时与证书固定风险仍按 `docs/device-checklist.md` F 段观察。
-13. [x] `DOMAIN-WILDCARD` 广告子域通配层：30 条 glob 生效，插件门槛抬到 3.5.3(1008)+；build 安全校验 + lint 模式/正负样本锁 + 审计工具覆盖率计入全部落地。
+13. [x] `DOMAIN-WILDCARD` 广告子域通配层：30 条 glob + 11 条家族 glob；v2.7.0 起因正式版（3.5.2/996）不支持而**默认注释**（TF 3.5.3 用户取消注释启用），插件门槛不再抬到 1008；build 安全校验 + lint 模式/正负样本锁 + 反向锁「通配必须注释、loon_version ≤ 996」全部落地。
 14. [x] 编码边界落地（v2.8.1 / v0.8.1）：确认 Loon 脚本层只有 `$utils.ungzip`（gzip），**br / zstd / deflate 无解码器**；br 无魔数（RFC 7932 纯 stream format），只能靠 `content-encoding` 识别。6 个解析 body 的脚本统一加 `ceTag()`，`skip=not-json` / `skip=json-parse` / 两条观察器日志都带 `ce=`；`douyin/observe.js` 非 JSON 时从静默改为打日志。lint 新增 `check_encoding_guard()`（缺 `ceTag()` 或分支漏接即报错），测试新增 `test_encoding_guard.js` 22 条。真遇到 `ce=br` 的正解是把该端点 `Accept-Encoding` **设为** `gzip`（不是删）。
 15. [x] **字符类家族层（第二轮，ads v2.3.0）**：`DOMAIN-WILDCARD` 的 `[0-9]` 把 11 个数字分片家族折叠成 glob，覆盖 30+ 台已枚举主机与未枚举的兄弟分片；build 强制「≥2 台已枚举主机」+ lint 正反样本 + 审计工具 glob 计数（`glob 41`）。
 16. [x] **Pangle 分片族补全（第二轮，soda v2.8.2 / douyin v0.8.2）**：`[MITM]` 单分片 `ads5-normal-hl` 升级为 `ads?-normal*.zijieapi.com` 一条通配，`[Rule]` 逐个列 10 个分片做 QUIC 回退，`BLOCKED_HOSTS` 支持 `?`/`*`。lint 新增 `mitm_covers()`（按 glob 判断 QUIC 域是否被 MITM 覆盖）与「拦截名单 ↔ `[Script]` 正则」正反样本双向锁。

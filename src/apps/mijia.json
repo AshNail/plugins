@@ -2,7 +2,7 @@
   "slug": "mijia",
   "name": "米家 · 去广告（小米广告平台层）",
   "desc": "如实定位:米家 App 首页运营卡片/商城推荐为第一方内嵌(api.io.mi.com 响应体),DNS 不可分。本插件黑洞小米统一广告平台(*.ad.xiaomi.com/o2o/有品推荐)——对 MIUI/澎湃系统投放有效,iOS 米家是否调用该平台未经抓包证实。设备控制/账号/推送域名零接触。零证书。",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "date": "2026-10-28",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,米家,小米",
@@ -22,7 +22,54 @@
         "https://github.com/privacy-protection-tools/anti-AD",
         "https://gist.github.com/edmon1024/9995f04f2bb33b72f7d2cb74c4352732"
       ],
-      "hosts": ["ad.xiaomi.com", "*.ad.xiaomi.com", "ad1.xiaomi.com", "ad.intl.xiaomi.com", "api.admob.xiaomi.com", "o2o.api.xiaomi.com", "ad.mi.com"]
+      "hosts": [
+        "ad.xiaomi.com",
+        "*.ad.xiaomi.com",
+        "ad1.xiaomi.com",
+        "ad.intl.xiaomi.com",
+        "api.admob.xiaomi.com",
+        "o2o.api.xiaomi.com",
+        "ad.mi.com"
+      ]
+    },
+    {
+      "id": "miui_native",
+      "title": "MIUI/澎湃系统广告与分析面（默认关，仅小米 Android 设备有感知）",
+      "tier": "A",
+      "disabled": true,
+      "note": "覆盖率审计（tools/app-coverage-audit.py）从 hagezi-xiaomi/anti-ad/AdGuard 反查出的小米系统面缺口：adv.sec=安全中心推荐位、activity/hot.browser=浏览器运营/热榜广告位、stat.youpin=有品推荐、stat.pandora=应用商店推荐、tracking.intl/rus=国际版遥测、inf/apm-rum/api.collect/cc/ccc/metok/geofence.sys=系统分析与定位采集、xiaomi-dtv.m.cn.miaozhen=秒针广告测量。对 iPhone/iPad 米家用户零效果；小米手机用户试开。安全组件（auth.be/api.sec/mazu/notify/logupdate 族）刻意不列——防诈与推送通道不许碰。",
+      "sources": [
+        "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/native.xiaomi.txt",
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt"
+      ],
+      "hosts": [
+        "adv.sec.miui.com",
+        "adv.sec.intl.miui.com",
+        "activity.browser.intl.miui.com",
+        "hot.browser.intl.miui.com",
+        "stat.youpin.mi.com",
+        "stat.pandora.xiaomi.com",
+        "ad.cdn.pandora.xiaomi.com",
+        "3rdupgrade.pandora.xiaomi.com",
+        "ad.miui.com",
+        "api.ads.xiaomi.com",
+        "ad.eu.xiaomi.com",
+        "ad.india.xiaomi.com",
+        "ad.rus.xiaomi.com",
+        "ad.quickapp.hybrid.xiaomi.com",
+        "tracking.intl.miui.com",
+        "tracking.rus.miui.com",
+        "api.brs.intl.miui.com",
+        "inf.miui.com",
+        "apm-rum.inf.miui.com",
+        "api.collect.data.intl.miui.com",
+        "cc.sys.miui.com",
+        "ccc.sys.miui.com",
+        "metok.sys.miui.com",
+        "geofence.sys.miui.com",
+        "xiaomi-dtv.m.cn.miaozhen.com"
+      ]
     },
     {
       "id": "mistat",
@@ -30,8 +77,22 @@
       "tier": "B",
       "disabled": true,
       "note": "mistat 与设备端远程配置可能同链——收益=隐私,风险=配置拉取,默认关,抓包确认再开。",
-      "sources": ["https://github.com/privacy-protection-tools/anti-AD"],
-      "hosts": ["data.mistat.xiaomi.com", "abtest.mistat.xiaomi.com", "storeconfig.mistat.xiaomi.com", "a.stat.xiaomi.com", "stat.xiaomi.com", "tracking.miui.com", "fcanr.tracking.miui.com"]
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD"
+      ],
+      "hosts": [
+        "data.mistat.xiaomi.com",
+        "data.mistat.india.xiaomi.com",
+        "data.mistat.rus.xiaomi.com",
+        "data.mistat.intl.xiaomi.com",
+        "abtest.mistat.xiaomi.com",
+        "storeconfig.mistat.xiaomi.com",
+        "a.stat.xiaomi.com",
+        "stat.xiaomi.com",
+        "tracking.miui.com",
+        "fcanr.tracking.miui.com"
+      ]
     }
-  ]
+  ],
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e8/a5/cc/e8a5cc32-b075-3ac1-47c8-47025d5e42ac/AppIcon-0-0-1x_U007emarketing-0-8-0-sRGB-0-85-220.png/512x512bb.jpg"
 }

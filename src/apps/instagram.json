@@ -2,7 +2,7 @@
   "slug": "instagram",
   "name": "Instagram · 像素与遥测瘦身",
   "desc": "如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内广告 DNS 层≈0。黑洞 FB 转化像素、网页播放器 VAST 域与已死徽章服务;不碰 graph/gateway/fbcdn 主域。零证书。",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "date": "2026-10-28",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,遥测,Instagram",
@@ -36,15 +36,21 @@
       "title": "netseer IP 关联遥测（默认关,纯隐私收益）",
       "tier": "B",
       "disabled": true,
-      "note": "Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）——按完整后缀 REJECT 专属子域,绝不升级为整域 fbcdn。间接降低广告定向精度,不减少广告数量。",
+      "note": "Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）——按完整后缀 REJECT 专属子域,绝不升级为整域 fbcdn。netseer.com=被 Meta 收购的测量公司本体域（anti-AD/AdGuard/hagezi/StevenBlack 4 源收录,覆盖率审计反查出的缺口）。间接降低广告定向精度,不减少广告数量。",
       "sources": [
         "https://github.com/AdguardTeam/AdguardFilters/issues/217505",
-        "https://github.com/hagezi/dns-blocklists/issues/3010"
+        "https://github.com/hagezi/dns-blocklists/issues/3010",
+        "https://anti-ad.net/domains.txt"
       ],
       "rules": [
         "DOMAIN-SUFFIX,netseer-ipaddr-assoc.xy.fbcdn.net,REJECT",
         "DOMAIN-SUFFIX,netseer-ipaddr-assoc.xz.fbcdn.net,REJECT"
+      ],
+      "hosts": [
+        "netseer.com",
+        "*.netseer.com"
       ]
     }
-  ]
+  ],
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/44/b0/cc/44b0cc3a-e91f-2824-d98f-3e5e095a73f3/Prod-0-0-1x_U007epad-0-0-0-1-0-0-sRGB-85-220.png/512x512bb.jpg"
 }

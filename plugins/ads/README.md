@@ -34,7 +34,7 @@ Loon 导入链接：
 loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin
 ```
 
-要求 **Loon 3.5.3(1008)+**（插件头 `#!loon_version=3.5.3(1008)`；`DOMAIN-WILDCARD` 自 Build 1008 起提供，官方 domain_rule 页标注 build 1008+）。3.5.3 目前经 TestFlight 分发，App Store stable 用户需先加入 TF 升级；低于该版本请先升级 Loon，否则通配规则不会加载。安装后建议重连一次 Loon，让 DNS/DoH 配置生效。
+要求 **Loon 3.5.2(996)+**（当前 App Store 正式版）。插件头 `#!loon_version=3.5.2(996)` 与正式版对齐，**所有真实用户都能直接导入**——不再用 TestFlight 的 3.5.3 卡门槛。核心 `[Host]` 黑洞、`[Rule]` HTTPDNS/端口、`[General]` DoH/DoT 在 3.5.2 完整生效。`DOMAIN-WILDCARD` 通配/家族层（Loon 3.5.3(1008)+，目前仅 TestFlight）默认以注释行收录：App Store 用户保持注释即可（对应的具体广告/DoH 域已由 `[Host]` 逐条覆盖），装了 3.5.3+ 的用户逐行去掉行首 `# ` 即启用整族拦截。安装后建议重连一次 Loon，让 DNS/DoH 配置生效。
 
 ### 真机验证清单
 
@@ -42,7 +42,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 |---|---|---|
 | 核心广告拦截 | 找一个确认使用穿山甲/优量汇/快手/AdMob 广告的 App | 禁用插件后先确认广告会展示，再启用后广告消失 |
 | HTTPDNS 防绕过 | 抓包或在 Loon 日志里筛 `httpdns`、`httpsdns`、`853` | 几乎无明文 HTTPDNS/DoT 请求；广告域名仍被拦 |
-| 广告子域通配 | 在 Loon 日志/DNS 检查里访问 `<广告左标签>.任意域名`（如 `ads.example.com`） | 走 127.0.0.1 或 DNS 拒绝；`example.com`、`adsl.example.com` 正常 |
+| 广告子域通配（仅 3.5.3+ 取消注释后） | 在 Loon 日志/DNS 检查里访问 `<广告左标签>.任意域名`（如 `ads.example.com`） | 走 127.0.0.1 或 DNS 拒绝；`example.com`、`adsl.example.com` 正常；3.5.2 未取消注释时本项不适用 |
 | 公共 DoH/DNS 防泄漏 | 对比插件启用/禁用，看是否还连 Google/Cloudflare/NextDNS 等公共 DoH | 启用时不连被拦的公共 DoH；`doh.dns.apple.com` 正常 |
 | 误伤排查 | 某个 App 登录/正常功能异常 | 先禁用插件复现；再按“风险与误伤”表删对应行 |
 
@@ -64,14 +64,14 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[Host]` HTTPDNS 组 | 72 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 57 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
-| `[Rule]` DOMAIN-WILDCARD 通配层 | 30 条 glob（`ads.*`、`adserver.*`、`advertising.*`、`adx-*`、`advert.*` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域的问题；规则行不带参数 | 是（Loon 1008+） |
+| `[Rule]` DOMAIN-WILDCARD 通配/家族层 | 41 条 glob（30 广告左标签 + 11 数字分片家族：`ads.*`、`adserver.*`、`ads[0-9]-normal*.zijieapi.com` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域；规则行不带参数 | **否**（需 Loon 3.5.3(1008)+，当前仅 TF；默认注释，`[Host]` 已逐条覆盖这批域，取消注释只是把同族动态子域也一并拒绝） |
 | `[General]` | 3 条：公共 DNS + IP 形式 DoH + IP 形式 DoH3 (HTTP/3) | 是 |
 | `[Host]` 归因/统计组 | 2 组、86 条展开规则，默认整组注释 | **否** |
 | `[Rule]` 可选组 | 28 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**18 组、1200 条生效 Host（exact 744 / wildcard 456）、86 条默认注释 Host、43 条生效 Rule（13 条 HTTPDNS/端口 + 30 条 DOMAIN-WILDCARD）、28 条默认注释 Rule、16 条默认注释 IP Rewrite**。
+合计：**18 组、1218 条生效 Host（exact 754 / wildcard 464）、118 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 归因/统计组（默认关闭）
 
@@ -121,13 +121,13 @@ doubleclick.net = 127.0.0.1
 
 Loon 的 `*.example.com` 不保证覆盖 apex，所以广告专域统一写两行；共享域只允许精确广告子域。
 
-### DOMAIN-WILDCARD 通配层
+### DOMAIN-WILDCARD 通配层（默认注释，3.5.3+ 取消注释启用）
 
-`[Host]` 只能枚举已知域名，广告 SDK 常用的随机/多级子域（`ads-xxx.example.com`、`adserver.foo.bar`）枚举不到。插件在 `[Rule]` 里额外生成 30 条：
+`[Host]` 只能枚举已知域名，广告 SDK 常用的随机/多级子域（`ads-xxx.example.com`、`adserver.foo.bar`）枚举不到。插件在 `[Rule]` 里收录 30 条通配 + 11 条数字分片家族 glob。该规则类型仅 Loon 3.5.3(1008)+ 提供（当前只在 TestFlight），App Store 正式版 3.5.2(996) 遇到未知规则类型的行为官方未文档化，所以两层**默认以 `# ` 注释收录**——3.5.2 用户保持注释、其余全部层照常生效；3.5.3+ 用户逐行去掉行首 `# ` 即启用：
 
 ```ini
-DOMAIN-WILDCARD,ads.*,REJECT
-DOMAIN-WILDCARD,adserver.*,REJECT
+# DOMAIN-WILDCARD,ads.*,REJECT
+# DOMAIN-WILDCARD,adserver.*,REJECT
 ```
 
 | glob | 命中示例 | 刻意不命中 |
@@ -372,8 +372,8 @@ npm test
 
 - `general`：`[General]` 原样行；build 只允许 Loon 插件白名单键，`dns-server` 禁止 `system`，`doh-server` 强制 IP 形式。
 - `rules`：`[Rule]` 原样行；build/lint 只允许 REJECT 系列策略。
-- `domain_wildcards`：左标签锚定的 `DOMAIN-WILDCARD` glob；build 生成 `DOMAIN-WILDCARD,<glob>,REJECT`，校验左标签锚定、不允许字符集、不命中 `protected-roots.json`。
-- `family_wildcards`：数字分片家族 glob（含 `[0-9]`）；build 额外要求「至少覆盖 2 台 `[Host]` 已枚举主机」、首标签 3+ 字面量、只允许 `[0-9]`、不命中保护名单，且需要 `#!loon_version` ≥ 1008。
+- `domain_wildcards`：左标签锚定的 `DOMAIN-WILDCARD` glob；build 生成**注释行** `# DOMAIN-WILDCARD,<glob>,REJECT`（3.5.3+ 才支持，默认注释以免挡住正式版），校验左标签锚定、不允许字符集、不命中 `protected-roots.json`。
+- `family_wildcards`：数字分片家族 glob（含 `[0-9]`）；build 额外要求「至少覆盖 2 台 `[Host]` 已枚举主机」、首标签 3+ 字面量、只允许 `[0-9]`、不命中保护名单；同样默认注释输出。
 - `rules_disabled`：默认注释的可选 Rule；build 会加 `# `，不参与匹配。
 - `groups[].disabled`：Host 组默认注释；归因/统计组用它实现“单文件、默认不生效”。
 
@@ -415,7 +415,7 @@ npm test
 Loon 的 `*.example.com` 不保证匹配 `example.com`；广告专域通常两者都要，所以 `=` 简写展开成两行。
 
 **Q：为什么不用 `[Host]` 的 `*.example.com` 代替 `DOMAIN-WILDCARD`？**
-`[Host]` 只能表达“某个具体域名的子域”；`ads.*` 要表达的是“左标签为 ads 的任意域名（任意 TLD、任意层级）”，只有 `DOMAIN-WILDCARD` 的跨点 `*` 能做到。它需要 Loon 3.5.3(1008)+，所以插件头同步抬到 1008。
+`[Host]` 只能表达“某个具体域名的子域”；`ads.*` 要表达的是“左标签为 ads 的任意域名（任意 TLD、任意层级）”，只有 `DOMAIN-WILDCARD` 的跨点 `*` 能做到。它需要 Loon 3.5.3(1008)+，而当前 App Store 正式版是 3.5.2(996)——所以插件头保持 **3.5.2(996)**、通配层默认注释：不让 TestFlight 版本挡住真实用户，装了 3.5.3+ 的用户取消注释即得整族拦截。
 
 **Q：DOMAIN-WILDCARD 会不会误伤共享主域？**
 不会命中保护名单本身：30 条 glob 都以广告专用左标签开头，build/lint 用 `protected-roots.json` 校验；lint 还有正/负样本（如 `ads.*` 不命中 `example.com`、`adsl.example.com`）。若某业务确实把 `ads.` 左标签用于非广告服务，删对应一行即可。
@@ -444,6 +444,8 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 ---
 
 ## 版本
+
+- **2.7.0**（2026-10-28）：**把导入门槛降回 App Store 正式版，不再用 TestFlight 版本挡真实用户**。此前插件头 `#!loon_version=3.5.3(1008)`（为加载 `DOMAIN-WILDCARD` 抬高），而当前 App Store 正式版是 **3.5.2(996)**、3.5.3 build 1007–1011 只在 TestFlight——正式版用户点导入会直接被挡在门外。①插件头降为 **`3.5.2(996)`**：核心 `[Host]` 黑洞、`[Rule]` HTTPDNS/端口/UA、`[General]` DoH/DoT 在 3.5.2 全量生效，人人可导。②`DOMAIN-WILDCARD` 通配层（30）+ 数字分片家族层（11）改为**默认注释行**收录（`# DOMAIN-WILDCARD,<glob>,REJECT`）：3.5.2 用户保持注释即可（这批左标签的已知具体广告/DoH 域已由 `[Host]` 逐条覆盖），装了 3.5.3+ 的用户逐行去掉 `# ` 即启用整族动态子域拦截。③build/lint/coverage 三处联动：`tools/build-ads.py` 去掉「有 glob 就要求 build≥1008」硬门槛、通配一律加 `#`；`tests/lint-plugins.py` 反向锁定「`DOMAIN-WILDCARD` 必须保持注释、`#!loon_version` 不得超过正式版 996」，App 插件同锁；`tools/loon-coverage.py` 把 r-wildcard 期望降为 `open`（注释层不计入生效能力）。④App 插件生成链 `tools/build-apps.py` 明确禁用 `DOMAIN-WILDCARD`（app 插件永远走 `[Host] '*.'` 黑洞），并加正式版 build 上限校验。
 
 - **2.6.0**（2026-10-27）：**用真机日志做反向缺口审计**（第五个分母：设备真实访问过、但不在清单的域名）。两份 iPhone 日志（约 4.5 分钟 × 9 万行 + 3.5 小时）里 878 个去重域名逐一与本仓插件清单（含 `*.` 通配语义）交叉比对，按「归因核实 + 真机请求实锤」补 30 条：**analytics 组（默认注释）+27**——`app-analytics-services.com`（GA 别称，Netify 核实）、`mixpanel.com`、腾讯 Beacon/APM（`rmonitor.qq.com`/`h.trace.qq.com`/`unitelogreport.reader.qq.com`）、美团 `dreport`/`wreport`、JPush 统计族、BOSS 直聘 APM、Firebase logging/crashlytics、微信 `badjs`、起点 `upush`；**httpdns 组（常开）+1**——`amdc.alipay.com.cn`（阿里系调度绕路，真机 ×4）；**retail_ctv_audio（常开）+2**——`ads-api.x.com`（X 广告接口）、`ca.iadsdk.apple.com`（补齐清单内 `iadsdk.apple.com` 的已观测子域）。字节系遥测（`mon`/`log`/`abtest`/`mssdk`/`pitaya`）**刻意不加**：与领奖风控/远程配置同源，误伤代价大于收益。顺带取证两处：`Host Map IP:127.0.0.1` 才是黑洞命中的日志格式（此前误把主配置黑名单的 `Reject domain` 记在本插件头上）；主配置若用域名形式 doh/doq，会与防泄漏组互害（本窗口 `dns.alidns.com` 被黑洞 3360 次），处置见 [`docs/device-checklist.md`](../../docs/device-checklist.md) I 节。
 - **2.5.0**（2026-10-27）：换第四个分母——从「规则有没有生效」到「**路径有没有封死**」，新增 `tools/bypass-audit.py` 与 [`docs/bypass-audit.md`](../../docs/bypass-audit.md)。①**枚举 17 条旁路**（App 可以绕开整个插件的路），四态 `sealed` / `partial` / `open` / `na`，每条写清「怎么绕 / Loon 的手段 / 为什么停在这 / 真机怎么证伪」。当前已封死 6、部分封死 4、**有手段未落地 1**、无解 6。②**唯一「有手段未落地」是 IPv6 / AAAA 旁路**：`[Host]` 1301 条黑洞全部只映射 IPv4，官方 `DNS/hostmap` 支持 `ip-mode:ipv4-only`，但只给了单独使用的示例——若 Loon 一个域名只认最后一条，补 ip-mode 会把黑洞**覆盖掉**，比不补更糟。因此**刻意不落地**，等真机两步验证（先验多行共存、再验 AAAA 是否放行）通过后再批量补。③**本轮真落地：公共解析器 IP 直连阻断组（默认注释）**，补 Google / Cloudflare / Quad9 / AdGuard 四家共 16 个官方 IPv4 + IPv6，**逐条取自官方页面不凭印象**。④lint 新增 `check_bypass_dns_guard()`：本插件自用的 5 个 DNS IP 出现即报错，四家 16 个 IP 缺一即报错。⑤三条结论性无解写进审计（主配置规则优先级 本地>插件>订阅、`bypass-tun`、证书固定）——**知道封不了，也是一种封**。

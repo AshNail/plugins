@@ -13,9 +13,14 @@
   python3 tools/build-apps.py --check  # 字节级漂移门禁（CI / npm run check:apps）
 
 设计约束（与 plugins/ads 相同的纪律，零证书网络层拦截）：
-- 只用 [Rule]（DOMAIN-SUFFIX / DOMAIN-KEYWORD / DOMAIN-WILDCARD）与 [Host] 黑洞两类段；
+- 只用 [Rule]（DOMAIN-SUFFIX / DOMAIN-KEYWORD）与 [Host] 黑洞两类段；
   不生成 [MITM]/[Script]/[Rewrite]——这些插件服务银行与业务敏感 App，零证书是底线。
-- 含 DOMAIN-WILDCARD 的插件，#!loon_version 必须 ≥ 3.5.3(1008)。
+- 例外：未做证书固定的 App 可带 `enhance` 可选增强层——**整段注释**输出
+  （[MITM] hostname + URL-REGEX 路径规则），默认零证书不变，用户装证书后自行取消注释；
+  每条路径规则必须附公开可引用 sources，禁止凭空造路径。
+- 禁用 DOMAIN-WILDCARD：该语法仅 3.5.3(1008) TestFlight 提供，app 插件必须
+  让 App Store 正式版（3.5.2/996）用户可直接导入；通配一律走 [Host] '*.domain'。
+- #!loon_version 不得高于 App Store 正式版 build（APPSTORE_STABLE_BUILD）。
 - 通配 glob 与精确域都不得命中 src/ads/protected-roots.json 里的共享主域。
 - 每个组带 tier（证据分级 A/B/C）与 sources（证据 URL），C 级组默认注释。
 """
@@ -31,12 +36,14 @@ APPS = ROOT / "src/apps"
 ADS_ROOTS = ROOT / "src/ads/protected-roots.json"
 
 HOST_BLACKHOLE = "127.0.0.1"
-WILDCARD_MIN_BUILD = 1008
+# App Store 正式版基线（Loon 3.5.2 build 996，官方文档 server-dns 条目佐证）。
+# 插件头 loon_version 高于此 = 正式版用户无法导入，永久禁止。
+APPSTORE_STABLE_BUILD = 996
 DEFAULT_SYSTEM = "iOS,iPadOS,tvOS,macOS"
 DEFAULT_ICON = "https://cdn.adguard.com/public/Adguard/Common/logo.png"
 DOMAIN_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+$")
 WILDCARD_GLOB_RE = re.compile(r"^[a-z0-9*?\[\]!.-]+$")
-RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD"}
+RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
 ACTIONS = {"REJECT", "REJECT-DROP"}
 KEY_ORDER = ("name", "desc", "author", "version", "homepage", "openUrl", "icon",
              "system", "loon_version", "date", "tag", "type")
@@ -209,9 +216,13 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
 
     has_wildcard = any(r.startswith("DOMAIN-WILDCARD,") for r in rules)
     loon_version = app.get("loonVersion", "3.5.1(983)")
-    if has_wildcard and build_number(loon_version) < WILDCARD_MIN_BUILD:
-        raise BuildError(f"{where}: 使用了 DOMAIN-WILDCARD 但 loonVersion={loon_version!r} "
-                         f"低于 {WILDCARD_MIN_BUILD}")
+    if has_wildcard:
+        raise BuildError(f"{where}: DOMAIN-WILDCARD 语法仅 3.5.3(1008) TestFlight 提供，"
+                         "App Store 正式版（3.5.2/996）无法保证解析——"
+                         "app 插件一律改用 [Host] '*.domain' 通配黑洞")
+    if build_number(loon_version) > APPSTORE_STABLE_BUILD:
+        raise BuildError(f"{where}: loonVersion={loon_version!r} 高于 App Store 正式版 "
+                         f"build {APPSTORE_STABLE_BUILD}，正式版用户将无法导入")
 
     meta = {
         "name": app["name"],
@@ -271,7 +282,67 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     if rules:
         lines += section("Rule", rules, lambda r: r)
     lines += section("Host", hosts, lambda h: h + f" = {HOST_BLACKHOLE}")
+
+    enh = app.get("enhance")
+    if enh:
+        lines += render_enhance(enh, where, roots)
     return "\n".join(lines).rstrip("\n") + "\n"
+
+
+def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
+    """可选 MITM 增强层：整段注释输出。
+
+    只对未做证书固定的 App 有效；启用需要用户先装并信任 Loon 证书，再逐行取消
+    注释。因为默认全注释，插件头仍是纯 rule/host 零证书形态，lint 的段白名单不受
+    影响（注释头不会被解析成 section）。这里的每条 URL-REGEX/脚本都必须来自
+    公开可引用的规则源（enhance.sources），不凭空造路径。
+    """
+    mitm_hosts = enh.get("mitm_hosts", [])
+    url_rules = enh.get("url_regex", [])
+    scripts = enh.get("scripts", [])
+    if not (mitm_hosts or url_rules or scripts):
+        raise BuildError(f"{where}: enhance 存在但三段全空")
+    for h in mitm_hosts:
+        if h.lower() in roots:
+            raise BuildError(f"{where}: enhance MITM 命中共享主域 {h!r}")
+    for r in url_rules:
+        kind = r.split(",", 1)[0]
+        if kind != "URL-REGEX":
+            raise BuildError(f"{where}: enhance 只允许 URL-REGEX，得到 {kind!r}: {r!r}")
+        parts = r.split(",")
+        if len(parts) != 3:
+            raise BuildError(f"{where}: enhance URL-REGEX 需三段（类型,正则,动作）: {r!r}")
+        if parts[2] not in ACTIONS | {"REJECT-DICT", "REJECT-IMG"}:
+            raise BuildError(f"{where}: enhance 动作不在白名单: {r!r}")
+    out = [""]
+    out.append("# " + "=" * 72)
+    out.append("# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）")
+    out.append("# " + "-" * 72)
+    for note in enh.get("intro", "").splitlines():
+        out.append(f"# {note}")
+    out.append("# 启用步骤：①Loon 里装并信任证书 → ②取消 [MITM] 头与其 hostname 行的注释 →")
+    out.append("#           ③按需取消下面 [Rule]/[Script] 行的注释。")
+    out.append("# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，")
+    out.append("# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。")
+    out.append("# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。")
+    for src in enh.get("sources", []):
+        out.append(f"# 证据: {src}")
+    out.append("# " + "=" * 72)
+    out.append("")
+    if mitm_hosts:
+        out.append("# [MITM]")
+        out.append("# " + "-" * 60)
+        out.append("# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。")
+        out.append("# hostname = %APPEND% " + ", ".join(mitm_hosts))
+    if url_rules or scripts:
+        out.append("# [Rule] / [Script]（路径级去广告，需上面 MITM 命中该域才看得到 path）")
+        out.append("# " + "-" * 60)
+        for r in url_rules:
+            out.append(f"# {r}")
+        for s in scripts:
+            out.append(f"# {s}")
+    out.append("")
+    return out
 
 
 def app_files() -> list[pathlib.Path]:
