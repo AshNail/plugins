@@ -60,18 +60,18 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1071 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
-| `[Host]` HTTPDNS 组 | 72 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
+| `[Host]` 核心广告组 | 14 组、1232 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` HTTPDNS 组 | 73 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、京东、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 57 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、AliDNS、DNSPod、360、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
 | `[Rule]` DOMAIN-WILDCARD 通配/家族层 | 41 条 glob（30 广告左标签 + 11 数字分片家族：`ads.*`、`adserver.*`、`ads[0-9]-normal*.zijieapi.com` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域；规则行不带参数 | **否**（需 Loon 3.5.3(1008)+，当前仅 TF；默认注释，`[Host]` 已逐条覆盖这批域，取消注释只是把同族动态子域也一并拒绝） |
 | `[General]` | 3 条：公共 DNS + IP 形式 DoH + IP 形式 DoH3 (HTTP/3) | 是 |
-| `[Host]` 归因/统计组 | 2 组、86 条展开规则，默认整组注释 | **否** |
-| `[Rule]` 可选组 | 28 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
+| `[Host]` 归因/统计组 | 2 组、118 条展开规则，默认整组注释 | **否** |
+| `[Rule]` 可选组 | 44 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ 16 条公共 DNS 解析器 IP 直连阻断（Google/Cloudflare/Quad9/AdGuard 的 IPv4+IPv6，封 DNS 旁路）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**18 组、1218 条生效 Host（exact 754 / wildcard 464）、118 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + STUN）、16 条默认注释 IP Rewrite**。
+合计：**18 组、1362 条生效 Host（exact 837 / wildcard 525）、118 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 归因/统计组（默认关闭）
 
@@ -177,7 +177,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（14 组 / 1071 条展开）
+### 核心广告组（14 组 / 1166 条展开）
 
 | 组 | 代表 |
 |---|---|
@@ -445,6 +445,10 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.7.4**（2026-10-28）：**刷新上游后补 34 个 6 源广告专域**。重跑 10 源审计，从 4933 个 ≥5 源未覆盖候选中只取语义自证的广告交易/网络：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（`company-target.com`）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（`ck` 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（`-om` 投放域）、MSN RTB（`srtb` 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（`gmossp-sp.jp`）、StackAdapt、SmartyAds、Dianomi、TripleLift（`3lift.com`）、ValueClick、District M、BidGear、AdButler（`servedbyadbutler.com`），弹窗组补 PopMyAds。**不补**分析/会话回放（hotjar/sessioncam/quantummetric/siteimprove）、广告验证与反欺诈（confiant/titanhq/fpjs，拦掉反而放大恶意广告风险）、联盟返利（zanox/vcommission）与 6 源随机域（`4jnzhl0d0.com` 等）。生效 Host 1296→1362（exact 837 / wildcard 525），展开 1480；新增项未逐域抓包，异常时按行删除。
+- **2.7.3**（2026-10-28）：**收掉 5 个「7 源但名字不自证」的精确主机**。逐条回到缓存清单看上下文，而不是只看命中数：`bd1.guancha.cn` 在 AdGuard 中文列表里带 `$domain=m.guancha.cn`（只在观察者网 m 站加载的广告脚本）；`ggs.myzaker.com` 是 ZAKER 的广告服务器；`d2.sina.com.cn` 被 EasyList China 标为 `$object,script`（新浪广告脚本/对象）；`cm.baidu.com` 与 `entry.baidu.com` 紧邻 `cpro/cbjs/eclick` 等百度广告域，后者在 EasyList China 精确到 `/rp/home?` 推广入口。5 条全部按精确主机收录（不升通配），生效 Host 1291→1296（exact 803 / wildcard 493），展开 1414。`zhihuifangdong` 因引用 baidu SDK 组同步 +2（94→96 条黑洞）。**仍不补** `kw0xlh4wig.com`（无语义随机域）、`assoc-amazon.com`（联盟返利）、`vnet.cn`（基础网络）与 `smetrics.*` 等分析域。
+- **2.7.2**（2026-10-28）：**修复两个审计源的 404，并按完整 12 源分母再补 33 个长尾广告专域**。①`adguard-cn` / `adguard-mobile` 原来指向已迁移的 `FiltersRegistry` 路径、在线审计直接 skip；改用官方 `filters.adtidy.org` 的 224（中文）/ 11（移动广告）完整列表后，App 覆盖率审计恢复 14 源分母（13 个 App 仍为 0 缺口）。②从恢复后的 12 源分母里补 33 个 ≥7 源广告专域：百度 `ecmb.bdimg.com`（点击监测）；中国媒体 `ykad-data.youku.com`、`de.as.pptv.com`、`adpai.thepaper.cn`；全球交易/SSP `kiosked`、`sitemaji`、`begun`、`tubemogul`、`nanigans`、`inner-active`、`i-mobile`、`celtra`、`brealtime`、`exponential`、`iqzone`、`adhood`、`adtimaserver`、`httpool`、`infolinks`、`buysellads`、`presage`、`disqusads`、`blogads`、`biddingx`、`mixadvert`、`rotaban`、`speee-ad.akamaized.net`；移动广告网络 `youmi`、`fiksu`、`mydas`、`nend`、`i2ad`；弹窗 `buzzonclick`。③**刻意不补**：`assoc-amazon.com`（联盟返利）、`vnet.cn`（基础网络）、`smetrics.*` / `nytimes` / `apple` / `unity3d` 分析域（归统计组）、`nextacdn.top` / `kw0xlh4wig.com` 等无品牌语义随机域。④生效 Host 1230→1291（exact 798 / wildcard 493），展开 1409；新增项未逐域抓包，异常时按行删除。
+- **2.7.1**（2026-10-28）：**按上游清单做一次长尾补洞**（13 个 App 同轮刷新后仍为 0 缺口）。重跑 `tools/ads-audit.py --refresh` 后，从 1861 条未覆盖的广告 token 候选中人工筛出 11 个语义自证、≥5 源收录的广告专用域：中国媒体/SSP/OEM 侧补 `ad-api.cnblogs.com`、`abroad-ad.kingsoft-office-service.com`（WPS）、`dsp.ali213.net`、`pg-ad-b1.nosdn.127.net`、`static-ssp.yidianzixun.com`、`ssp.21ic.com`、`ad.cctv.com`、`ad.gmw.cn`、`bdapi-ads.realmemobile.com`、`bdapi-in-ads.realmemobile.com`，全球侧补 `ad.daum.net`（Kakao/Daum）。**不补** `prebid.org`（行业组织）、`clickdensity.com`/`clicktracks.com`（统计）等只是名字像广告的域；新增项未逐域抓包，异常时按行删除即可。审计工具同轮修了下载重试：上游 adrules 截断响应不再让整次审计崩掉（3 次重试后仍失败才报错）。
 - **2.7.0**（2026-10-28）：**把导入门槛降回 App Store 正式版，不再用 TestFlight 版本挡真实用户**。此前插件头 `#!loon_version=3.5.3(1008)`（为加载 `DOMAIN-WILDCARD` 抬高），而当前 App Store 正式版是 **3.5.2(996)**、3.5.3 build 1007–1011 只在 TestFlight——正式版用户点导入会直接被挡在门外。①插件头降为 **`3.5.2(996)`**：核心 `[Host]` 黑洞、`[Rule]` HTTPDNS/端口/UA、`[General]` DoH/DoT 在 3.5.2 全量生效，人人可导。②`DOMAIN-WILDCARD` 通配层（30）+ 数字分片家族层（11）改为**默认注释行**收录（`# DOMAIN-WILDCARD,<glob>,REJECT`）：3.5.2 用户保持注释即可（这批左标签的已知具体广告/DoH 域已由 `[Host]` 逐条覆盖），装了 3.5.3+ 的用户逐行去掉 `# ` 即启用整族动态子域拦截。③build/lint/coverage 三处联动：`tools/build-ads.py` 去掉「有 glob 就要求 build≥1008」硬门槛、通配一律加 `#`；`tests/lint-plugins.py` 反向锁定「`DOMAIN-WILDCARD` 必须保持注释、`#!loon_version` 不得超过正式版 996」，App 插件同锁；`tools/loon-coverage.py` 把 r-wildcard 期望降为 `open`（注释层不计入生效能力）。④App 插件生成链 `tools/build-apps.py` 明确禁用 `DOMAIN-WILDCARD`（app 插件永远走 `[Host] '*.'` 黑洞），并加正式版 build 上限校验。
 
 - **2.6.0**（2026-10-27）：**用真机日志做反向缺口审计**（第五个分母：设备真实访问过、但不在清单的域名）。两份 iPhone 日志（约 4.5 分钟 × 9 万行 + 3.5 小时）里 878 个去重域名逐一与本仓插件清单（含 `*.` 通配语义）交叉比对，按「归因核实 + 真机请求实锤」补 30 条：**analytics 组（默认注释）+27**——`app-analytics-services.com`（GA 别称，Netify 核实）、`mixpanel.com`、腾讯 Beacon/APM（`rmonitor.qq.com`/`h.trace.qq.com`/`unitelogreport.reader.qq.com`）、美团 `dreport`/`wreport`、JPush 统计族、BOSS 直聘 APM、Firebase logging/crashlytics、微信 `badjs`、起点 `upush`；**httpdns 组（常开）+1**——`amdc.alipay.com.cn`（阿里系调度绕路，真机 ×4）；**retail_ctv_audio（常开）+2**——`ads-api.x.com`（X 广告接口）、`ca.iadsdk.apple.com`（补齐清单内 `iadsdk.apple.com` 的已观测子域）。字节系遥测（`mon`/`log`/`abtest`/`mssdk`/`pitaya`）**刻意不加**：与领奖风控/远程配置同源，误伤代价大于收益。顺带取证两处：`Host Map IP:127.0.0.1` 才是黑洞命中的日志格式（此前误把主配置黑名单的 `Reject domain` 记在本插件头上）；主配置若用域名形式 doh/doq，会与防泄漏组互害（本窗口 `dns.alidns.com` 被黑洞 3360 次），处置见 [`docs/device-checklist.md`](../../docs/device-checklist.md) I 节。

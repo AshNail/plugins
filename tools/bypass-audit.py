@@ -85,6 +85,10 @@ for _rel in (
 ):
     CORPUS[_rel] = read(os.path.join(ROOT, _rel))
 
+# 生效/默认注释的 [Host] 黑洞条数从生成物现读，避免文档里的数字再次过期
+HOST_BLACKHOLES = len(re.findall(r"(?m)^\S+ = 127\.0\.0\.1$", CORPUS["plugins/ads/ads.plugin"]))
+HOST_BLACKHOLES_OPT = len(re.findall(r"(?m)^# .* = 127\.0\.0\.1$", CORPUS["plugins/ads/ads.plugin"]))
+
 
 # ---------------------------------------------------------------------------
 # 旁路清单
@@ -196,7 +200,8 @@ BYPASSES = [
     dict(
         id="ipv6-aaaa",
         name="IPv6 / AAAA 旁路",
-        how="`[Host]` 里 1301 条黑洞**全部只映射 IPv4**（127.0.0.1）。"
+        how=f"`[Host]` 里 {HOST_BLACKHOLES} 条生效黑洞（另有 {HOST_BLACKHOLES_OPT} 条默认注释）"
+            "**全部只映射 IPv4**（127.0.0.1）。"
             "若 Loon 对命中域名仍放行真实 AAAA 记录，App 走 IPv6 直连就绕过了整个黑洞。",
         loon="`[Host]` 的 `ip-mode:ipv4-only` 右值（官方 `DNS/hostmap` 支持 "
              "`ipv4-only`/`dual`/`ipv4-preferred`/`ipv6-preferred`）；"
@@ -207,7 +212,8 @@ BYPASSES = [
                 "**单独使用**的示例，没有给同一域名同时写 `= 127.0.0.1` 与 "
                 "`= ip-mode:ipv4-only` 的示例。若 Loon 一个域名只认最后一条，"
                 "补 ip-mode 会**把黑洞覆盖掉**——比不补更糟（广告全回来且排查方向完全错）。"
-                "在确认「多行共存」之前，不拿 1301 条主力规则去赌。",
+                f"在确认「多行共存」之前，不拿 {HOST_BLACKHOLES} 条生效规则"
+                f"（含默认注释共 {HOST_BLACKHOLES + HOST_BLACKHOLES_OPT} 条）去赌。",
         verify="① 先用一条无关域名验证共存：`probe.example = 127.0.0.1` 与 "
                "`probe.example = ip-mode:ipv4-only` 各写一行，看 A 记录是否仍是 127.0.0.1；"
                "② 再单独确认 `probe.example` 的 AAAA 查询返回空还是真实地址——"
@@ -343,7 +349,7 @@ BYPASSES = [
         evidence=[
             ("plugins/ads/ads.plugin", r"(?m)^\S+ = 127\.0\.0\.1$", 1000),
         ],
-        verify="这条「已封死」依赖的是 DNS 层主力（1301 条黑洞）而不是解密层；"
+        verify=f"这条「已封死」依赖的是 DNS 层主力（{HOST_BLACKHOLES} 条生效黑洞）而不是解密层；"
                "若某天把主力改成规则层或脚本层，这条会立刻降级为 partial。",
     ),
 ]

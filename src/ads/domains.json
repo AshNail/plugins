@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.7.0",
+      "version": "2.7.4",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -308,7 +308,7 @@
         {
           "id": "baidu",
           "title": "百度广告 / 百青藤",
-          "note": "百度联盟、百青藤 SDK、广告点击与素材 CDN。cpro.baidustatic.com 与 bcebos 配置域是共享 CDN 上的精确广告主机。",
+          "note": "百度联盟、百青藤 SDK、广告点击与素材 CDN。cpro.baidustatic.com 与 bcebos 配置域是共享 CDN 上的精确广告主机。2026-10 补 ecmb.bdimg.com（百度广告点击监测，7 源；bdimg 共享图床只列精确主机）。2026-10 再补 cm.baidu.com（广告点击监测）、entry.baidu.com（推广入口，EasyList China 精确到 /rp/home?），均 7 源。",
           "rules": [
             "=mobads.baidu.com",
             "mobads-logs.baidu.com",
@@ -322,7 +322,10 @@
             "union.baidu.com",
             "hao123union.baidu.com",
             "adscdn.baidu.com",
-            "mobads-pre-config.cdn.bcebos.com"
+            "mobads-pre-config.cdn.bcebos.com",
+            "ecmb.bdimg.com",
+            "cm.baidu.com",
+            "entry.baidu.com"
           ]
         },
         {
@@ -338,7 +341,7 @@
         {
           "id": "cn_union",
           "title": "中国广告联盟 / 媒体广告位 / 广告监测",
-          "note": "AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。",
+          "note": "AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。",
           "rules": [
             "=adview.cn",
             "=domob.cn",
@@ -374,6 +377,14 @@
             "=zndsssp.dangbei.net",
             "=ads.music.126.net",
             "=pg-ad-b1.ws.126.net",
+            "pg-ad-b1.nosdn.127.net",
+            "ad-api.cnblogs.com",
+            "abroad-ad.kingsoft-office-service.com",
+            "dsp.ali213.net",
+            "static-ssp.yidianzixun.com",
+            "ssp.21ic.com",
+            "ad.cctv.com",
+            "ad.gmw.cn",
             "=pg-ad-b2.ws.126.net",
             "=yt-adp.ws.126.net",
             "=admusicpic.music.126.net",
@@ -420,7 +431,13 @@
             "ad.boc.cn",
             "jf365.boc.cn",
             "ad.bankcomm.com",
-            "ad.psbc.com"
+            "ad.psbc.com",
+            "ykad-data.youku.com",
+            "de.as.pptv.com",
+            "adpai.thepaper.cn",
+            "bd1.guancha.cn",
+            "ggs.myzaker.com",
+            "d2.sina.com.cn"
           ]
         },
         {
@@ -478,7 +495,7 @@
         {
           "id": "oem",
           "title": "手机厂商广告 SDK（Android）",
-          "note": "小米、华为、OPPO/一加/realme（HeyTap）、vivo 的广告 SDK 与广告日志域。iOS 设备不受影响；Android 设备如发现影响系统更新/云服务，可删掉对应行。hicloud/oppomobile/vivo.com.cn 等共享主域只列广告专用子机。",
+          "note": "小米、华为、OPPO/一加/realme（HeyTap）、vivo 的广告 SDK 与广告日志域。iOS 设备不受影响；Android 设备如发现影响系统更新/云服务，可删掉对应行。hicloud/oppomobile/vivo.com.cn 等共享主域只列广告专用子机。2026-10 补 realme 印度广告 API（bdapi-ads / bdapi-in-ads.realmemobile.com，各 6 源）。",
           "rules": [
             "=ad.xiaomi.com",
             "=ssp.xiaomi.com",
@@ -512,6 +529,8 @@
             "=ad-drcn.media.dbankcloud.cn",
             "=ad-drcn.media.dbankcloud.ru",
             "ads.samsung.com",
+            "bdapi-ads.realmemobile.com",
+            "bdapi-in-ads.realmemobile.com",
             "=union.mi.com",
             "msadsscale.microsoft.com"
           ]
@@ -519,7 +538,7 @@
         {
           "id": "mobile_sdks",
           "title": "全球移动广告 SDK / 聚合平台",
-          "note": "AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。",
+          "note": "AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。",
           "rules": [
             "=applovin.com",
             "=mopub.com",
@@ -579,13 +598,18 @@
             "=adn-plus.com.cn",
             "=rayjump.com",
             "=mtgglobals.com",
-            "=mintegral.net"
+            "=mintegral.net",
+            "=youmi.net",
+            "=fiksu.com",
+            "=mydas.mobi",
+            "=nend.net",
+            "=i2ad.jp"
           ]
         },
         {
           "id": "adtech",
           "title": "全球广告交易 / SSP / DSP / 验证 / 数据",
-          "note": "Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。",
+          "note": "Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。",
           "rules": [
             "=adnxs.com",
             "=adnxs-simple.com",
@@ -839,7 +863,64 @@
             "=voicefive.com",
             "=fwmrm.net",
             "*.v.fwmrm.net",
-            "=serving-sys.com"
+            "=serving-sys.com",
+            "=ad.daum.net",
+            "=kiosked.com",
+            "=sitemaji.com",
+            "=begun.ru",
+            "=tubemogul.com",
+            "=nanigans.com",
+            "=inner-active.mobi",
+            "=i-mobile.co.jp",
+            "=celtra.com",
+            "=brealtime.com",
+            "=exponential.com",
+            "=iqzone.com",
+            "=adhood.com",
+            "=adtimaserver.vn",
+            "=httpool.com",
+            "=infolinks.com",
+            "=buysellads.com",
+            "=presage.io",
+            "=disqusads.com",
+            "=blogads.com",
+            "=biddingx.com",
+            "=mixadvert.com",
+            "=rotaban.ru",
+            "speee-ad.akamaized.net",
+            "=dable.io",
+            "=zemanta.com",
+            "=carbonads.com",
+            "=pagefair.com",
+            "=clickbooth.com",
+            "=company-target.com",
+            "=adviva.net",
+            "=harrenmedianetwork.com",
+            "=clkrev.com",
+            "=trafficshop.com",
+            "=twittad.com",
+            "ck.connatix.com",
+            "=retargeter.com",
+            "=juiceadv.com",
+            "=eqads.com",
+            "=postrelease.com",
+            "=adoric-om.com",
+            "srtb.msn.com",
+            "=themoneytizer.com",
+            "=fout.jp",
+            "=speakol.com",
+            "=microad.jp",
+            "=greystripe.com",
+            "=optimix.asia",
+            "=gmossp-sp.jp",
+            "=stackadapt.com",
+            "=smartyads.com",
+            "=dianomi.com",
+            "=3lift.com",
+            "=valueclick.com",
+            "=districtm.ca",
+            "=bidgear.com",
+            "=servedbyadbutler.com"
           ]
         },
         {
@@ -911,7 +992,7 @@
         {
           "id": "popunder",
           "title": "弹窗 / Popunder / 成人广告网络",
-          "note": "全球 Web 弹窗与成人广告网络，均为广告专用域；不包含任何内容站主域。2026-10 审计补充 BounceAds、PropellerClick、AdXpansion、DoublePimp、HyperBanner。",
+          "note": "全球 Web 弹窗与成人广告网络，均为广告专用域；不包含任何内容站主域。2026-10 审计补充 BounceAds、PropellerClick、AdXpansion、DoublePimp、HyperBanner。2026-10 再补 BuzzOnClick（7 源弹窗网络）与 PopMyAds（6 源）。",
           "rules": [
             "=propellerads.com",
             "=popads.net",
@@ -938,7 +1019,9 @@
             "=adxpansion.com",
             "=doublepimp.com",
             "=hyperbanner.net",
-            "=nappyattack.com"
+            "=nappyattack.com",
+            "=buzzonclick.com",
+            "=popmyads.com"
           ]
         },
         {

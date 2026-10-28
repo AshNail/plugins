@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import http.client
 import json
 import pathlib
 import re
@@ -99,12 +100,12 @@ SOURCES: dict[str, dict] = {
         "note": "AdGuard DNS filter",
     },
     "adguard-cn": {
-        "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_224_Chinese/filter_224_Chinese.txt",
+        "url": "https://filters.adtidy.org/extension/chromium/filters/224.txt",
         "type": "adblock",
         "note": "AdGuard 中文 filter",
     },
     "adguard-mobile": {
-        "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter_11_Mobile.txt",
+        "url": "https://filters.adtidy.org/extension/chromium/filters/11.txt",
         "type": "adblock",
         "note": "AdGuard Mobile Ads filter",
     },
@@ -287,11 +288,20 @@ def fetch_source(name: str, source: dict, refresh: bool, offline: bool) -> set[s
             },
         )
         started = time.time()
-        try:
-            with urllib.request.urlopen(request, timeout=60) as response:
-                raw = response.read()
-        except (urllib.error.URLError, TimeoutError) as exc:
-            raise RuntimeError(f"{name}: download failed: {exc}") from exc
+        last_exc = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(request, timeout=60) as response:
+                    raw = response.read()
+                break
+            except (urllib.error.URLError, TimeoutError,
+                    http.client.IncompleteRead, ConnectionResetError) as exc:
+                last_exc = exc
+                if attempt < 2:
+                    log(f"retry  {name:16} attempt {attempt + 2}/3 after {exc}")
+                    time.sleep(1.5)
+        else:
+            raise RuntimeError(f"{name}: download failed: {last_exc}") from last_exc
         text = raw.decode("utf-8", errors="replace")
         cache.write_text(text, encoding="utf-8")
         log(f"got    {name:16} {len(raw) / 1e6:6.1f} MB in {time.time() - started:.1f}s")

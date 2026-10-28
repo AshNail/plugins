@@ -351,6 +351,17 @@ def main():
 
     note = "缓存快照" if not args.refresh else "上游已刷新"
     by_domain = load_sources(args.refresh, args.offline)
+    if not by_domain:
+        message = (
+            "app-coverage: no source list loaded (cache missing under --offline); "
+            "run without --offline to fetch"
+        )
+        if args.check:
+            print(f"app-coverage skipped: {message}")
+            return
+        if args.write:
+            raise SystemExit(message)
+        aa.log(message)
     results = audit(by_domain, note)
 
     out = ROOT / "docs/app-coverage.md"

@@ -24,7 +24,7 @@
 > | E12 原生 Body 改写短路 | ✅ 进 lint | `response.json.*` / `body.mock` / `body.replace` 命中时同阶段脚本不执行 |
 > | E13 规则参数 | 🐞 第三轮修 bug | 72 条规则删掉 Surge 的 `pre-matching`；Loon 只有 `no-resolve`（§10.1） |
 > | E14 `[Argument]` schema | ✅ 第三轮进 lint | 25 条声明校验控件/类型/默认值，拦截 `type=bool` 这类别名（§10.6） |
-> | E15 `[Host]` 通配右值 | ✅ 语法正交，已在用 | 左值 `*.` 有官方示例（`*.apple.com`），右值 `= IP` 也有官方示例；两者正交，1301 条已在跑（§10.3） |
+> | E15 `[Host]` 通配右值 | ✅ 语法正交，已在用 | 左值 `*.` 有官方示例（`*.apple.com`），右值 `= IP` 也有官方示例；两者正交，第八轮时 1301 条、当前生效条数以 `plugins/ads/ads.plugin` 为准（§10.3） |
 > | E16 压缩协商降级 | ✅ 第四轮落地 | `[Rewrite]` 把 br 降到 gzip，脚本层才解得开（§11.1） |
 > | E17 回写 body 清压缩头 | ✅ 第四轮修 bug | `content-encoding` / `content-length` 指向旧压缩体，必须删（§11.2） |
 > | E18 存储作用域 | 🐞 第五轮修 bug | `$persistentStore.remove(key)` 会清空**全部**键；改 `write(undefined,key)`（§12.1） |

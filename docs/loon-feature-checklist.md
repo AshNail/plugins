@@ -199,6 +199,14 @@
     - **分三层落地**：`jd_ad_exchange` 生效 5 域（dsp-x/ads-union/ccc-x/addata/skdisplay，均 A 级）；`jd_ad_watchlist` 默认关 8 域（x.jd.com 族竞价/曝光/winnotice、sgm-w/jrad/cm 语义待核实）；`jd_telemetry` 默认关 9 域（uranus 埋点、mercury log.gif、knicks 推荐回流、日志族）。零证书；京东含支付/风控，按固定类处理，加入 `APP_NO_ENHANCE_SLUGS` 拒绝 MITM 层。
     - **审计同步**：`app-coverage-audit.py` 增补 `jd` 的 PATTERNS / BRAND_ROOTS / EXCLUDE_ROOTS / ROOT_AD_HINT；`triage_exclude` 台账 5 类（交易风控/推送客服/商品图放行/基础设施/C 级单源）。结果 `jd own=5 A-cand=17 B-cand=13 gaps=0`，全仓 13 个 App 缺口仍为 0。
     - **验证**：`npm run check` 全绿（52 套件 / 1596 断言，lint 0 错误）；`plugins/jd/jd.plugin` 生效 [Host] 5 条、默认关 17 条，README 由生成链产出；`docs/device-checklist.md` J 节升为 13 个并新增京东判读项。
+39. [x] **第十五轮：审计分母修复 + 长尾广告域第二批复核 + 京东证据补强（ads v2.7.4 / jd v1.0.1）**
+    - **审计源复活**：`adguard-cn` / `adguard-mobile` 原指向已迁移的 `FiltersRegistry` 路径，在线审计一直静默 skip。改用官方 `filters.adtidy.org/extension/chromium/filters/224.txt`（中文）与 `11.txt`（移动广告）后，App 覆盖率审计恢复 14 源分母，13 个 App 仍全部 `gaps=0`。
+    - **第二批 33 个 ≥7 源广告专域**：百度点击监测 `ecmb.bdimg.com`；中国媒体 `ykad-data.youku.com`、`de.as.pptv.com`、`adpai.thepaper.cn`；全球交易/SSP 23 个（kiosked/sitemaji/begun/tubemogul/nanigans/inner-active/i-mobile/celtra/brealtime/exponential/iqzone/adhood/adtimaserver/httpool/infolinks/buysellads/presage/disqusads/blogads/biddingx/mixadvert/rotaban/speee-ad）；移动广告网络 5 个（youmi/fiksu/mydas/nend/i2ad）；弹窗 `buzzonclick`。**不补**联盟返利（assoc-amazon）、基础网络（vnet.cn）、分析域（smetrics/nytimes/apple/unity3d）与无品牌语义随机域。生效 Host 1230→1291（exact 798 / wildcard 493），展开 1409。
+    - **2.7.3 精确主机收尾**：复核上游语料后再补 5 个有明确广告语义的主机——百度推广入口 `cm.baidu.com`、`entry.baidu.com`；观察者网广告位 `bd1.guancha.cn`（AdGuard 中文 `$domain=m.guancha.cn`）、ZAKER 广告位 `ggs.myzaker.com`、新浪广告脚本 `d2.sina.com.cn`（EasyList China `$object,script`）。均为精确域名，不做根域展开。生效 Host 1291→1296（exact 798→803 / wildcard 493），展开 1414；`zhihuifangdong` 因引用 baidu SDK 组同步 93→96 条黑洞。
+    - **2.7.4 第三批 34 个 6 源广告专域**：刷新 10 源清单后从 4933 个 ≥5 源候选中只取语义自证者——33 个交易/SSP/DSP/网络（Dable、Zemanta、Carbon Ads、PageFair、Clickbooth、Demandbase、Adviva、Harren、ClickRev、TrafficShop、TwitTad、Connatix `ck`、Retargeter、JuiceADV、EqAds、PostRelease、Adoric `-om`、MSN RTB `srtb`、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP、StackAdapt、SmartyAds、Dianomi、TripleLift、ValueClick、District M、BidGear、AdButler）+ 弹窗组 PopMyAds。**不补**分析/会话回放、广告验证/反欺诈（拦掉可能放大恶意广告风险）、联盟返利与随机域。生效 Host 1296→1362（exact 837 / wildcard 525），展开 1480；核心广告组 1166→1232。
+    - **京东证据补强（v1.0.1）**：`im-x.jd.com/dsp/np?log=` 是公开广告落地链，但多份 wskey 抓取教程显示 `im-x` / `msg.m.jd.com` 同链路携带登录凭证——`im-x` 永久保持默认关，`msg.m.*` 升为「消息/凭证红线」；`sgm-w` 被微信开放平台高风险域名单与 EasyPrivacy 同时收录但语义仍不明确，维持默认关。
+    - **文档漂移归零**：`bypass-audit.py` 改为从生成物动态读取生效/注释黑洞数，`plugins/ads/README.md`、`docs/loon-native-first.md` 的硬编码 1301/1218 全部改为当前值或指向生成物；`npm run check` 全绿（52 套件 / 1596 断言，lint 0 错误，五个审计工具全部 `ok`）。
+    - **CI 复核**：模拟全新 checkout（无 `.cache`）发现 `app-coverage --offline --check` 会把空源集当成文档 stale；改为「无源可载入时明确 skip、`--write` 仍拒绝覆盖」，本地有缓存时继续严格比对。CI 不再因缺缓存误红，但也不假装跑过覆盖审计。
 
 
 ## 10. 明确不采纳清单（持续维护，带理由）
@@ -221,7 +229,7 @@
 | 字节系 HTTPDNS 静态 IP 化 | 火山引擎官方文档：动态接入地址（SDK 定期拉最佳 IP），静态化无意义 |
 | `response.json.add/delete/replace/jq` 迁移已有净化逻辑 | 文档明写「Response Body Rewrite 命中时 Response Script 不执行」= 与脚本二选一，不是加速；且现有净化是字段级 + 正则 prune + 开关分支，原生 KeyPath 表达不了。lint 已加 `REWRITE_BODY_RX` 拦住「两条都想要」的写法 |
 | `response.body.mock` 造「无广告」包络 | 需要完整包络样本，写错就是白屏/NPE；「保留包络、只删字段」这条原则不破 |
-| `[Host]` 同一域名同时写 `= 127.0.0.1` 与 `= ip-mode:ipv4-only` | **暂不落地**：官方 `DNS/hostmap` 只给了 `ip-mode:` 单独使用的示例。若 Loon 一个域名只认最后一条，补 ip-mode 会把 1301 条黑洞覆盖掉——比不补更糟。真机两步验证（多行共存 → AAAA 是否放行）通过后再批量补，见 `docs/bypass-audit.md` 第 4 节 |
+| `[Host]` 同一域名同时写 `= 127.0.0.1` 与 `= ip-mode:ipv4-only` | **暂不落地**：官方 `DNS/hostmap` 只给了 `ip-mode:` 单独使用的示例。若 Loon 一个域名只认最后一条，补 ip-mode 会把全部生效黑洞覆盖掉——比不补更糟。真机两步验证（多行共存 → AAAA 是否放行）通过后再批量补，见 `docs/bypass-audit.md` 第 4 节 |
 | `reject_img` / `reject_array` / `reject_video` | 图位广告走 `[Host]` 黑洞，到不了 MITM；没有「响应必须是数组」的上报端点；视频素材走 CDN 域名拦截。三者都缺场景，等真机抓到具体端点再说 |
 | `[a-z]` / `[!0-9]` 字符类 | 会把匹配扩散到别的品牌主机，让「保护名单不可被通配命中」失效；只放开 `[0-9]` |
 | `network-changed` 脚本 | 一次换网会执行**所有**已启用的 Network Changed 脚本，本仓库能做的只有「弹通知」，属纯打扰 |

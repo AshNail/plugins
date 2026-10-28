@@ -20,7 +20,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihuifangdong/zh
 | 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 50 域 / 0 规则。 |
 | 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 10 域 / 0 规则。 |
 | 快手联盟 / 快手广告（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 16 域 / 0 规则。 |
-| 百度广告 / 百青藤（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 13 域 / 0 规则。 |
+| 百度广告 / 百青藤（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 16 域 / 0 规则。 |
 | 倍孜广告聚合（Beizi）（引用组） | A | 启用 | 证据同 plugins/ads v2.3.1（TopOn 之外的第三方聚合）。 共 2 域 / 0 规则。 |
 
 ## 红线与天花板（如实）
@@ -36,4 +36,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihuifangdong/zh
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/zhihuifangdong.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 93 条，[Rule] 0 条。
+统计：精确/通配黑洞 96 条，[Rule] 0 条。

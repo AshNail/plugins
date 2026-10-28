@@ -19,7 +19,7 @@
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
-| `netseer.com` | 4: adguard-dns,anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
+| `netseer.com` | 5: adguard-dns,adguard-mobile,anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|
@@ -66,6 +66,7 @@
 裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
 - `交易/风控红线` ← `mapi.*`, `janapi.*`, `cactus.*`, `passport.*`
 - `推送/客服红线` ← `jpushjd.*`, `chat1.*`
+- `消息/凭证红线` ← `msg.m.*`
 - `商品图 CDN 放行` ← `img-x.jd.com`, `img2.*`, `*.360buyimg.com`
 - `基础设施红线` ← `dns.*`, `blackhole*`, `h5speed.*`, `gia.*`, `gias.*`, `dgstatic.*`, `wl.jd.com`, `policy.*`, `kepler.*`, `union.jd.com`, `cps.*`, `jrclick.*`
 - `C 级单源不收` ← `u.x.jd.com`, `bdsp.x.jd.com`, `du.jd.com`, `nfa.jd.com`, `c-nfa.jd.com`, `firevent.jd.com`, `stat.m.jd.com`, `ads.union.jd.com`, `jzt.jd.com`
@@ -91,16 +92,16 @@
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `tracking.miui.com` | 10: adaway,adguard-dns,adrules,anti-ad,awa,easyprivacy,hagezi-pro,hagezi-xiaomi,peterlowe,stevenblack | 已收录·默认关 |
+| `adv.sec.intl.miui.com` | 7: adguard-dns,adguard-mobile,anti-ad,awa,hagezi-pro,hagezi-xiaomi,stevenblack | 已收录·默认关 |
 | `logupdate.avlyun.sec.miui.com` | 7: adaway,adguard-dns,anti-ad,awa,hagezi-pro,hagezi-xiaomi,stevenblack | 排除·安全族红线 |
-| `adv.sec.intl.miui.com` | 6: adguard-dns,anti-ad,awa,hagezi-pro,hagezi-xiaomi,stevenblack | 已收录·默认关 |
 | `adv.sec.miui.com` | 6: adguard-dns,adwars,anti-ad,awa,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
+| `api.brs.intl.miui.com` | 6: adguard-dns,adguard-mobile,anti-ad,hagezi-pro,hagezi-xiaomi,stevenblack | 已收录·默认关 |
 | `stat.youpin.mi.com` | 6: adguard-dns,adrules,anti-ad,easyprivacy,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `tracking.intl.miui.com` | 6: adaway,anti-ad,hagezi-pro,hagezi-xiaomi,peterlowe,stevenblack | 已收录·默认关 |
-| `api.brs.intl.miui.com` | 5: adguard-dns,anti-ad,hagezi-pro,hagezi-xiaomi,stevenblack | 已收录·默认关 |
+| `abtest.mistat.xiaomi.com` | 5: adguard-dns,adguard-mobile,adwars,anti-ad,stevenblack | 已收录·默认关 |
+| `activity.browser.intl.miui.com` | 5: adguard-dns,adguard-mobile,anti-ad,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `data.mistat.xiaomi.com` | 5: adguard-dns,adrules,anti-ad,awa,stevenblack | 已收录·默认关 |
 | `tracking.rus.miui.com` | 5: adaway,adrules,anti-ad,awa,stevenblack | 已收录·默认关 |
-| `abtest.mistat.xiaomi.com` | 4: adguard-dns,adwars,anti-ad,stevenblack | 已收录·默认关 |
-| `activity.browser.intl.miui.com` | 4: adguard-dns,anti-ad,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `api.setting.intl.miui.com` | 4: adguard-dns,hagezi-pro,hagezi-xiaomi,stevenblack | 排除·账号/设备业务 API |
 | `auth.be.sec.miui.com` | 4: adguard-dns,adrules,hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
 | `authbe.sec.intl.miui.com` | 4: adguard-dns,hagezi-pro,hagezi-xiaomi,stevenblack | 排除·安全族红线 |
@@ -112,6 +113,7 @@
 | `metok.sys.miui.com` | 4: adguard-dns,adrules,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `stat.xiaomi.com` | 4: hagezi-pro,hagezi-xiaomi,peterlowe,stevenblack | 已收录·默认关 |
 | `api.collect.data.intl.miui.com` | 3: hagezi-pro,hagezi-xiaomi,stevenblack | 已收录·默认关 |
+| `api.newsfeed.intl.miui.com` | 3: adguard-dns,adguard-mobile,anti-ad | 排除·账号/设备业务 API |
 | `api.sec.miui.com` | 3: adguard-dns,hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
 | `api.tw06.xlmc.sec.miui.com` | 3: adrules,adwars,anti-ad | 排除·安全族红线 |
 | `apm-rum.inf.miui.com` | 3: adrules,anti-ad,easyprivacy | 已收录·默认关 |
@@ -188,7 +190,7 @@
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
-| `ads-bidder-api.twitter.com` | 4: adaway,adguard-dns,hagezi-pro,stevenblack | 已收录·默认关 |
+| `ads-bidder-api.twitter.com` | 5: adaway,adguard-dns,adguard-mobile,hagezi-pro,stevenblack | 已收录·默认关 |
 | `analytics.twitter.com` | 3: adaway,anti-ad,stevenblack | 已收录·默认关 |
 | `scribe.twitter.com` | 3: anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
 
@@ -196,7 +198,7 @@
 
 无 A/B 级缺口候选。
 
-## `zhihuifangdong` — 生效黑洞 85 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `zhihuifangdong` — 生效黑洞 88 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
