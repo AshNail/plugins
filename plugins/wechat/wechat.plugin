@@ -1,7 +1,7 @@
 #!name=微信 · 广告素材黑洞
 #!desc=微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。
 #!author=edy
-#!version=1.1.2
+#!version=1.1.3
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/wechat/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/84/6b/3a/846b3ab8-9dea-e3e5-861e-f6ecaa0b3387/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-0-0-85-220.png/512x512bb.jpg
@@ -69,8 +69,9 @@ xn--8rtx55n.cn = 127.0.0.1
 
 # ------------------------------------------------------------
 # 成熟清单收录、真机未证实（默认关）（置信 B）
-# wxsmsdy.video.qq.com / xmaterial.tu.qq.com / zhizi.qq.com / 17g57.com 收录于 anti-AD 与 217heidai，但微信 iOS 是否命中未经真机抓包证实——出现后再开，不默认生效。
+# wxsmsdy.video.qq.com / xmaterial.tu.qq.com / zhizi.qq.com / 17g57.com 收录于 anti-AD 与 217heidai，但微信 iOS 是否命中未经真机抓包证实——出现后再开，不默认生效。*.adinall.com 为 B 级（anti-AD+hagezi）增量：adinall 是营销聚合域，wapx/app-tj 两个具体主机已在 gdt_new 组默认生效，通配留待抓包证实轮换子域后再启用。
 # （默认关闭的组：整组注释，取消注释即启用）
+# *.adinall.com = 127.0.0.1
 # 17g57.com = 127.0.0.1
 # wxsmsdy.video.qq.com = 127.0.0.1
 # xmaterial.tu.qq.com = 127.0.0.1

@@ -47,8 +47,8 @@
 ## 3. DNS 面板与解析（dns.md / hostmap.md）
 
 - ✅ `[Host]` 域名映射（ads 用 127.0.0.1 黑洞）；本仓库构建器速记 `=` → 域 + `*.域`（不是 Loon 语法，由 `tools/build-ads.py` 展开）。
-- ✅ IP 形式 DoH（`https://223.5.5.5/dns-query`）——插件 [General]。
-- 🔒 `h3://223.5.5.5/dns-query`（DoH3，需看 Loon DNS 页是否生效）、`quic://` DoQ。
+- ✅ IP 形式 DoH（`https://223.5.5.5/dns-query`）——插件 [General]。**官方 Plugin 文档列明插件 [General] 可用键**：`bypass-tun` / `include-tun` / `skip-proxy` / `real-ip` / `dns-server` / `doh-server` / `doq-server` / `doh3-server` / `ipv6-vif`（第十二轮复核，此前 raw 模板只列 4 键造成歧义）。
+- ✅ `h3://223.5.5.5/dns-query`（DoH3）已随 ads v2.7.0 声明；真机在 Loon DNS 页确认显示即生效。
 - ⚪ DoT 域名形式 `tls://` 与 IP 形式取舍：插件防泄漏名单已拦公共 DoH 入口域名。
 
 ## 4. 规则类型全集（rule.md + 7 个细分页）
@@ -77,6 +77,7 @@
 - ✅ HTTPDNS 关键词规则已换挡至 `REJECT-DROP`，避免客户端在收到 200 空包后频繁秒级重试产生的重试风暴；
 - ✅ 通用埋点上报特征规则已接入 `REJECT-DICT`（返回 200 + `{}` 空字典），成功欺骗 SDK 判定数据已落库，触发客户端主动执行 `deleteEvents` 清空本地未上传重试队列，彻底避免本地 SQLite 膨胀与射频高频唤醒；
 - ✅ Rewrite v2 侧同步使用 `reject_dict(200)`：soda 开屏品牌上报与 DSP 展示上报、douyin DSP 展示上报都返回 JSON `{}` + `application/json`（`reject(200)` 的空 Body 是 `text/plain`，`reject(200,"{}")` 仍是文本）；规则层 `REJECT-DICT` 与请求层 `reject_dict` 现在一致；
+- ✅ **`REJECT-IMG` 规则动作落地（第九轮，meituan v1.2.1 可选增强层）**：`p[0-9].meituan.net` 的广告图路径从 `REJECT`（404 文本）换成 `REJECT-IMG`（200 + 1px GIF 合法图像）——图片加载器拿到可解码图像后不会进入「破损图→重试/占位」分支，是这族请求最贴近语义的拒绝方式。REJECT 五变体现在 3 用（REJECT / REJECT-DICT / REJECT-DROP）+ 1 注释态（REJECT-IMG，需先启用增强层）+ 1 无端点（REJECT-ARRAY），全部纳入覆盖率审计。
 - 📈 规则引擎性能（官方实测）：10 万级 DOMAIN 规则 ≤5ms/IP-CIDR6 ≤20ms，LRU 缓存近命中 — **可以放心挂外部规则订阅做增强**：
   🟡 主配置 [Rule] 外挂 `.list`（如 anti-AD / hagezi），`tools/ads-audit.py --sources` 已能评估覆盖互补度。
 - ⚠️ **`DOMAIN-WILDCARD` 已收录但默认注释**（语法仅 3.5.3(1008)+，当前只在 TestFlight）：ads 插件带 30 条广告子域通配 + 11 条数字分片家族 glob，v2.7.0 起以 `# DOMAIN-WILDCARD,<glob>,REJECT` 注释行收录——插件头保持 App Store 正式版 3.5.2(996)，不让 TestFlight 版本挡住真实用户；装了 3.5.3 的用户逐行去掉 `# ` 即启用。`*` 跨点语义按广告专用左标签整族拦截动态子域（`ads.*`、`ads-*`、`adserver.*`、`advertising.*`、`advert.*`、`adx-*`、`bannerads.*` 等），弥补 `[Host]` 只能枚举固定域名的缺口。build/lint 双重校验照常在注释层上跑：左标签锚定、只允许 `*`/`?`、拒绝 `*`/`*.com`/`ads*`、不命中 `protected-roots.json`；lint 反向锁死「通配必须保持注释、`#!loon_version` 不得超过正式版 996」。
@@ -157,7 +158,7 @@
 26. [x] **参数 schema 单源（E6）**：`src/args/<family>.json`（+ `common.json` 的看板顺序）→ `tools/gen-args.js` 生成三处：插件 `[Argument]` 段、`src/common/status.js` 的 `SWITCH_LABELS`、README 参数表。`--check` 逐字节比对，接入 lint 与 `npm run check:args`（在 build 前跑，避免自动修复掩盖漂移）；lint 里手写的开关名/默认值/generic 透传清单改为从 schema 派生。`[Script]` 的 `${...}` 绑定保留手写（行为接线），继续由 lint 对账。迁移 golden diff：两插件 43 行 `[Argument]` 零差异；`test_args_schema.js` 37 条断言 ×2。
 27. [x] **存储作用域（第五轮，修 bug，soda v2.8.4 / douyin v0.8.4）**：官方 Script API 5.3 写明 `$persistentStore.remove()` **不接受参数**，语义是「清空全部脚本的持久化数据」。原来 `adElapsedSeconds()` 里写 `$persistentStore.remove(AD_START_KEY)`，等于每量一次广告时长就把 `welfare-seen` / `ad-stats` / 每日提醒标记一起抹掉，且无任何报错。改成 `write(undefined, AD_START_KEY)`；新增 `tests/test_store_scope.js`（12 断言 ×2，断言「别的键必须还在」）与 lint `SAFE_STORE_WIPE_RX`。
 28. [x] **全局直连告警（第五轮）**：`running_model = 0` 时 Loon 不走规则、不进 MITM、不跑脚本，插件完全不生效，但界面只显示「直连」两字。状态页现在点名「运行模式 直连（⚠️ 插件不生效）」并给出处置建议；`"0"` 字符串也覆盖。`test_status.js` 新增 3 条断言。
-29. [x] **能力覆盖率可计算（第五轮）**：`tools/loon-coverage.py` 把 111 条能力落成可执行清单，从插件有效行与脚本源码探测真实用法（注释不算），四档分类。`docs/loon-coverage.md` 为生成物；`npm run check:loon` 同时校验「已用仍可探测」「判死没被用回去」「文档不过期」。当前 57 已用 / 24 可用未用 / 29 判死，利用率 70.4%。
+29. [x] **能力覆盖率可计算（第五轮）**：`tools/loon-coverage.py` 把 117 条能力落成可执行清单，从插件有效行与脚本源码探测真实用法（注释不算），四档分类。`docs/loon-coverage.md` 为生成物；`npm run check:loon` 同时校验「已用仍可探测」「判死没被用回去」「文档不过期」。当前 61 已用 / 27 可用未用 / 28 判死，利用率 69.3%（第九轮把 REJECT 策略变体与 `[IP Rewrite]` 的注释态口径补进表后分母变大，数字低于旧值不是退步，是审计变细）。
 30. [x] **广告面覆盖率可计算（第六轮，ads v2.3.1 → 第七轮 ads v2.4.0）**：换轴——分母从「Loon 有多少功能」改成「广告有多少种」。`tools/ad-surface-audit.py` 定义 19 类广告 / 6 族，逐类声明理论可达档与当前档，并从插件与脚本里探测证据；`--check` 拦五种漂移（声明做了探不到、声明没做却探到、当前档高于上限、承诺提档却写「做不到」、距上限停住却不写理由）。生成的 `docs/ad-type-strategy.md` 给出每类的线上特征、可用层与规则思路、覆盖档、局限，以及六种可复制写法。当前 71%（39/55）；零证书方案的天花板是 42%。同轮补 FreeWheel（`fwmrm.net` / `stickyadstv.com`）、Sizmek（`serving-sys.com`）与倍孜（`beizi.biz` / `adn-plus.com.cn`），视频贴片从「无效」提到「弱效」。
 31. [x] **第七轮：把「下一步」的假承诺撤回（ads v2.4.0）**。第六轮算出「做完下一步可到 90.9%」，第七轮逐条核对后发现**那个数是假的**：11 条「下一步」里只有 3 条是「零风险加域名」，其余 8 条根本不可达——`[Argument]` 管不到 `[Host]`（所以 attribution 无法开关化）、`URL-REGEX` 在 HTTPS 下要 MITM 才看得到路径（所以 beacon 到不了 full）、「最小合法包络」必须改响应体（所以 adconfig 到不了 full）、私有 JSON 提档 = 多适配一个 App（所以 feed/search/upsell 不是代码问题）。
     - **落实**：补 Mintegral 的真实请求域 `rayjump.com`（+ 通配）、`mtgglobals.com`、`mintegral.net`——此前清单里只有品牌域 `mintegral.com`，而 SDK 的广告请求走 rayjump 系，等于没拦。展开 `[Host]` 1295 → 1301 条。**激励/插屏/Banner 仍停在 `strong`**：补完一家不等于补完一类，长尾聚合（AdTiming/Smaato/Ogury）没有可核实的请求域。
@@ -176,6 +177,28 @@
     - **机制**：`--check` 六条断言，核心是「证据探不到」对 `sealed` 是错误、对 `open` 是**正确**——防止把「没做」伪装成「做了」。lint 新增 `check_bypass_dns_guard()`：本插件自用的 5 个 DNS IP 一旦出现在阻断清单就报错；四家解析器的 16 个 IP 缺一即报错。
     - **三条结论性无解**：主配置规则优先级（本地 > 插件 > 订阅，插件读不到）、`bypass-tun`（插件不该接管 TUN 边界）、证书固定（官方 MitM 页只有 `hostname` / `ca-p12` / `ca-passphrase`，没有 `skip-server-cert-verify`）。这三条写进审计而不是硬做——**知道封不了，也是一种封。**
 34. [x] **元数据补齐 `#!openUrl`（第十轮，soda v2.8.5 / douyin v0.8.5 / ads v2.5.0）**：三插件安装详情页「打开链接」直达各自 README（`https://github.com/AshNail/plugins/blob/main/plugins/<family>/README.md`），装完即见使用说明。ads 走生成链：`src/ads/domains.json` 顶层 `openUrl` → `build-ads.py` 渲染 + 继承；lint 把 `openUrl` 列入必带元数据并校验 https；覆盖率工具新增 `m-open-url` 探针（58 已用）。
+35. [x] **第十一轮：REJECT 策略变体入审计 + 注释态口径纠偏（meituan v1.2.1 / 覆盖率 v2）**
+    - **REJECT-IMG 落地**：meituan 增强层广告图路径（`p[0-9].meituan.net/(bizad|wmbanner|brandCpt)/*.jpg`）由 `REJECT` 改 `REJECT-IMG`——图片加载器收到 200 + 1px GIF 会正常解码，绕开「404 → 破损图 → 重试」分支；REJECT 五变体首次齐进覆盖率表（3 用 + 1 注释态 + 1 无端点）。
+    - **`[IP Rewrite]` 口径纠偏**：此前覆盖率标「判死」但第 8 节又写「16 条 HTTPDNS 网关以注释态收录」，两处矛盾。改为「可用未用」并写明唯一落地形态：广告目标 IP 不枚举（死路），HTTPDNS 网关 IP 注释态可选。
+    - **数字**：117 条能力，61 已用 / 27 可用未用 / 28 判死，利用率 69.3%。分母变大导致利用率低于上一版，这是审计变细而非能力退步。
+36. [x] **第十二轮：覆盖率缺口逐条裁决 + 插件能力面文档核实（mijia v1.1.2 / wechat v1.1.3）**
+    - **缺口来自 `docs/app-coverage.md`（非猜测）**：`app-coverage-audit.py --offline` 用缓存的上游清单逐 App 列出「上游有、本地未收」的候选。逐条裁决而非照单全收：
+    - **mijia 收 2 条（B 级，2 源）**：`adx.tv.mi.com`（电视端广告交易）、`adv.l7.34.sec.miui.com`（安全中心广告位），进默认关的 `miui_native` 组。注意后者虽在 `sec.miui.com` 族下，但主机名以 `adv.` 开头；同族的鉴权/风控组件（`auth.be`/`api.sec`/`mazu`/`notify`/`logupdate`）此前已裁决排除——反欺诈与推送是红线，不因「同族」而放宽收录，也不因「同族」而连带排除一条真正的广告位主机。
+    - **wechat 收 1 条（B 级）**：`*.adinall.com` 营销聚合域进默认关 `watchlist`。具体两主机（`wapx` / `app-tj`）已在 `gdt_new` 组默认生效，通配留待抓包证实轮换子域后再启用——通配一次放太多，误伤时无法定位。
+    - **插件能力面官方核实（两个悬而未决的文档疑点）**：① 插件 `[General]` 白名单实测为 `bypass-tun, include-tun, skip-proxy, real-ip, dns-server, doh-server, doq-server, doh3-server, ipv6-vif` 九键——raw 模板只列四键是简写，线上 Plugin 文档才完整；此前对 `doh-server` 是否可用于插件的存疑解除，无需改代码。② 插件 `[Rule]` 策略仅 `DIRECT` / REJECT 族 / `PROXY`，`FINAL` 不支持（与第 10 节既有结论一致）；`REJECT-ARRY` 为官方拼写别名，`REJECT-ARRAY` 亦被接受。
+    - **口径**：本轮只增 3 条默认关候选、零默认开启面变化，改动全部经 `build:apps → build:app-readmes → audit:apps:write → lint` 生成链，README 与 `docs/app-coverage.md` 均为生成物、无手写漂移。
+37. [x] **第十三轮：缺口审计机械化 + 米家广告基础设施补录（mijia v1.1.3）**
+    - **发现**：12 个 App 的 A/B 级上游候选里，唯一还有未裁决项的只有米家（A:35 B:145）。逐条看，其中 5 条是真广告基础设施、其余全是安全/推送/账号云/遥测/业务 API——**缺口数字大，不代表待办多**。
+    - **补录 5 条（均 2 源，默认关 `miui_native`）**：`global-ad-extranet-pri-azams.alb.xiaomi.com`、`global-ad-extranet-pri-azpn.alb.xiaomi.com`、`global-ad-intl-pri-alisgp.alb.xiaomi.com`（跨国广告投放 ALB）、`wtradv.market.xiaomi.com`（应用商店推广位）、`xadx.file.market.xiaomi.com`（小米 ADX 素材）。`miui_native` 27 → 32 域。
+    - **制度化**：App JSON 新增 `triage_exclude` 裁决台账（11 个族、glob 匹配），审计命中的候选在文档里记「排除·<族>」、**不计入缺口**；未命中的仍显示「缺口」。`--check` 继续盯文档漂移，台账格式错误直接报错。结果：12 个 App 的 A/B 缺口全部归零（米家 141 条裁决排除 + 39 条已收录默认关）。
+    - **风险自述**：台账是族级 glob，若未来某条真广告域恰好落在「业务 API」「浏览器」等族内，会被标成排除而不是缺口。缓解：表里仍列出每一行（只是状态不同），且现存的 `adv.*`/`ad.*`/`xadx` 广告位都按条收录、不靠族排除兜底。
+    - **验证**：`npm run audit:apps` 12 行 `gaps=0`；`lint` 0 错误；插件/README/覆盖率文档均由生成链重建。
+38. [x] **第十四轮：新增第 13 个 App 插件「京东」（jd v1.0.0）**
+    - **取证先于规则**：`dsp-x.jd.com/adx/sdk` 是京东官方《京媒 SDK FAQ》写明的正式广告请求地址（`dsp-test-x` 为测试域）；`ccc-x.jd.com/dsp/tp?log=…`、`x.jd.com/dsp/tp?log=…` 是公开可点的广告跳转链——广告交易/点击监测层由官方文档与公开链路双重自证，不靠域名长相猜。
+    - **放行比拦截更重要**：AWAvenue-Ads-Rule issue #197 明确 `mapi.m.jd.com`（购物车/订单/搜索必需）、`janapi.jd.com`（App 数据网关）、`img-x.jd.com` 与 `img2.360buyimg.com`（商品详情页图片 CDN）必须 allowlist；`cactus.jd.com/request_algo` 是 h5st 风控签名接口（公开逆向分析）。这些域在上游黑名单里出现 3-4 次也一律不拦——**上游收录数不是误伤豁免证**。
+    - **分三层落地**：`jd_ad_exchange` 生效 5 域（dsp-x/ads-union/ccc-x/addata/skdisplay，均 A 级）；`jd_ad_watchlist` 默认关 8 域（x.jd.com 族竞价/曝光/winnotice、sgm-w/jrad/cm 语义待核实）；`jd_telemetry` 默认关 9 域（uranus 埋点、mercury log.gif、knicks 推荐回流、日志族）。零证书；京东含支付/风控，按固定类处理，加入 `APP_NO_ENHANCE_SLUGS` 拒绝 MITM 层。
+    - **审计同步**：`app-coverage-audit.py` 增补 `jd` 的 PATTERNS / BRAND_ROOTS / EXCLUDE_ROOTS / ROOT_AD_HINT；`triage_exclude` 台账 5 类（交易风控/推送客服/商品图放行/基础设施/C 级单源）。结果 `jd own=5 A-cand=17 B-cand=13 gaps=0`，全仓 13 个 App 缺口仍为 0。
+    - **验证**：`npm run check` 全绿（52 套件 / 1596 断言，lint 0 错误）；`plugins/jd/jd.plugin` 生效 [Host] 5 条、默认关 17 条，README 由生成链产出；`docs/device-checklist.md` J 节升为 13 个并新增京东判读项。
 
 
 ## 10. 明确不采纳清单（持续维护，带理由）

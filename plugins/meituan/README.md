@@ -2,7 +2,7 @@
 
 > 美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞。首页轮播/信息流/开屏素材与业务同域同 CDN——DNS 层收益约 25-35%，其余是「加载失败留白」。交易、支付、骑手调度零接触。零证书。
 
-版本 **1.2.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.2.1** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -28,7 +28,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
-美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。
+美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。
 
 - 解密主机（`[MITM] hostname`，3 个）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`
 - 路径级规则（`URL-REGEX`，4 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
@@ -37,7 +37,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/loadInfo\?,REJECT-DICT
-# URL-REGEX,^https?://p[0-9]\.meituan\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\.jpg,REJECT
+# URL-REGEX,^https?://p[0-9]\.meituan\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\.jpg,REJECT-IMG
 ```
 
 启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③按需取消规则行注释。

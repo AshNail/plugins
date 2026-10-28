@@ -2090,7 +2090,7 @@ APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9
 APP_SECTIONS = {"Rule", "Host"}
 # 做了证书固定/等效私有加密通道（mmtls）的 App：MITM 不可行甚至触发风控，
 # 它们的 src/apps JSON 永远不许出现 enhance 层（用户裁决：仅非固定 App 加默认关增强层）。
-APP_NO_ENHANCE_SLUGS = {"banks", "wechat", "mijia", "x", "instagram"}
+APP_NO_ENHANCE_SLUGS = {"banks", "wechat", "mijia", "x", "instagram", "jd"}
 
 
 def collect_source_urls(plugin):

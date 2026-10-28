@@ -208,6 +208,22 @@ CAPABILITIES = [
     dict(layer="规则层", key="r-final", name="`FINAL`", expect="na",
          probe=r"(?mi)^FINAL\s*,", href=DOC + "/Rule/final_rule",
          why="插件 `[Rule]` 不支持 `FINAL`，只能在主配置声明"),
+    # REJECT 策略变体（rule 层动作，与复写层 reject_* 函数是两套东西）
+    dict(layer="规则层", key="r-reject", name="`REJECT`（404 + 空 body）", expect="used",
+         probe=r"(?m),(?:REJECT)\s*$", href=DOC + "/Policy/"),
+    dict(layer="规则层", key="r-reject-drop", name="`REJECT-DROP`（丢包防重试风暴）", expect="used",
+         probe=r"(?m),(?:REJECT-DROP)\s*$", href=DOC + "/Policy/",
+         why="HTTPDNS 关键词域命中后 SDK 会对 200 空包秒级重试，丢包静默超时是从根上断重试"),
+    dict(layer="规则层", key="r-reject-dict", name="`REJECT-DICT`（200 + `{}`）", expect="used",
+         probe=r"(?m),(?:REJECT-DICT)\s*$", href=DOC + "/Policy/",
+         why="上报/配置接口按 JSON 解析：返回空对象让 SDK 判定成功并清本地重试队列"),
+    dict(layer="规则层", key="r-reject-img", name="`REJECT-IMG`（200 + 1px GIF）", expect="open",
+         probe=r"(?m),(?:REJECT-IMG)\s*$", href=DOC + "/Policy/",
+         why="meituan v1.2.1 在可选 MITM 增强层里以注释态收录（p[0-9].meituan.net 广告图路径）——"
+             "图片加载器拿到合法图像不会走「破损图→重试」，该层默认关，生效项仍为 0"),
+    dict(layer="规则层", key="r-reject-array", name="`REJECT-ARRAY`（200 + `[]`）", expect="open",
+         probe=r"(?m),(?:REJECT-ARR(?:AY|Y))\s*$", href=DOC + "/Policy/",
+         why="当前可引用的广告端点都回对象包络（`{data:...}`），没有顶层数组端点，无法诚实启用"),
 
     # ---------------- Host / DNS 层 ----------------
     dict(layer="Host 层", key="h-exact", name="`域名 = 固定 IP`", expect="used",
@@ -244,7 +260,7 @@ CAPABILITIES = [
          probe=r"then\s+reject_dict\s*\(", href=DOC + "/Rewrite/rewrite_v2"),
     dict(layer="复写层", key="w-reject-img", name="`reject_img(status)`", expect="reject",
          probe=r"then\s+reject_img\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="广告图走 `[Host]` 黑洞，根本到不了 MITM；这条永远命中不了"),
+         why="图片路径已由规则层 `REJECT-IMG` 覆盖（meituan 增强层）；同一请求再写一条 Rewrite 拒绝只会互相覆盖"),
     dict(layer="复写层", key="w-reject-array", name="`reject_array(status)`", expect="open",
          probe=r"then\s+reject_array\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="当前命中的广告端点都回对象包络（`{data:...}`），没有顶层数组的端点"),
@@ -407,9 +423,10 @@ CAPABILITIES = [
          probe=r"(?m)^\[Host\]", href=DOC + "/Plugin/"),
     dict(layer="插件段落", key="p-arg", name="`[Argument]`", expect="used",
          probe=r"(?m)^\[Argument\]", href=DOC + "/Plugin/"),
-    dict(layer="插件段落", key="p-iprewrite", name="`[IP Rewrite]`", expect="reject",
+    dict(layer="插件段落", key="p-iprewrite", name="`[IP Rewrite]`", expect="open",
          probe=r"(?m)^\[IP Rewrite\]", href=DOC + "/Plugin/",
-         why="只接受精确 IPv4、不支持 CIDR／域名；广告目标 IP 随时变，逐条枚举必然漏"),
+         why="作为广告目标 IP 的拦截手段是死路（IP 随时变）；唯一落地形态是 16 条 HTTPDNS 网关"
+             "单 IPv4 以注释态收录（Build 1007+，默认关），生效项为 0"),
 
     # ---------------- 元数据 ----------------
     dict(layer="元数据", key="m-name", name="`#!name`", expect="used", probe=r"(?m)^#!name\s*=", href=DOC + "/Plugin/"),

@@ -173,7 +173,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       doh-server/doh3-server 为就近 anycast 解析器，或干脆注释掉 doh3 行——插件自用的黑洞/拦截逻辑不依赖它们。
 - [ ] 顺带观察：`DNS failed: Invalid packet length:162` ×2（单发噪声，未复现即不处理）。
 
-## J. 12 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
+## J. 13 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
 
 - [ ] 逐个导入 `plugins/<slug>/<slug>.plugin`，装后完全退出并重开目标 App。
 - [ ] **生效判读**：日志里命中域应显示 `Host Map IP:127.0.0.1`（插件 [Host] 的特征字样，区别于主配置的 `Reject domain ... in DNS phase`）。
@@ -182,8 +182,9 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **banks**：六行各开一次 App，重点验云闪付支付与招商账单——`ads.cup.com.cn` 命中后银联主链路（`wallet.95516.com`）必须无恙；unionpay_optional 组只在无转账需求时试开（重试风暴风险见插件注释）。
 - [ ] **zhihuifangdong**：门锁操作（ttlock）与推送（getui）无恙；开屏/插屏广告加载失败即 pangle/gdt 组命中。
 - [ ] **mijia**：设备控制（`api.io.mi.com`/xmpush）必须无恙——红线域绝不出现在拦截日志。
+- [ ] **jd**：`dsp-x`/`ads-union`/`ccc-x` 命中即广告交易层生效；商品图（`360buyimg`/`img-x`）不得白图，下单/搜索签名（h5st）/登录/客服/推送必须无恙。首页/信息流广告不保证消失（素材与商品同 API 同图床）；`jd_ad_watchlist` 与 `jd_telemetry` 默认关，先在日志确认域名再试开。
 - [ ] **qidian/xianyu/x/instagram**：预期收益低（内联广告），判读以「遥测域消失 + 业务无恙」为准，不以「广告消失」为准。
-- [ ] 默认关的组（watchlist/telemetry/amdc/waimai_ad/d_meituan_net/unionpay_optional 等）试开前，先在日志确认对应域真实出现——没出现就开了也没有收益。
+- [ ] 默认关的组（watchlist/telemetry/amdc/waimai_ad/d_meituan_net/unionpay_optional/jd_ad_watchlist/jd_telemetry 等）试开前，先在日志确认对应域真实出现——没出现就开了也没有收益。
 
 ### J2. 可选 MITM 增强层（meituan/xianyu/qidian 文末整段默认注释）
 
@@ -191,6 +192,6 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 
 - [ ] **前置**：Loon → 证书管理 → 生成/安装 CA → iOS 设置里「通用→关于→证书信任设置」打开完全信任；无证书时取消注释也无效，先装证书再改规则。
 - [ ] **qidian**：只取消 `[MITM]` 头 + `hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com` + 6 条 `URL-REGEX`（REJECT-DICT）。验证：冷启动开屏广告秒过、书架悬浮广告/每日推荐位消失；正文阅读、听书、评论、支付必须无恙（同主机业务路径不在正则内）。日志应见 `Reject ... by URL-Regex` 且主机仍正常解析。
-- [ ] **meituan**：同法启用 `wmapi/apimobile/p?.meituan.net` 层。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
+- [ ] **meituan**：同法启用 `wmapi/apimobile/p?.meituan.net` 层。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；广告图路径命中后应看到 1px 图（`REJECT-IMG` 200 + GIF，不是 404）且商品图正常；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
 - [ ] **xianyu**：启用 `acs.m.goofish.com`/`g-acs.m.goofish.com` 层只拦 `splash.ads`、`idle.ad.expose` 两条路径。验证：开屏广告消失；发布、下单、聊天、扫一扫无恙。**若出现网关异常（登录转圈、接口报错）立即注释回滚**——mtop 网关被解密本身就改变连接形态，个别版本可能敏感，本层对该 App 定位是「实验」。
 - [ ] **共同回滚判据**：银行/支付/门锁等红线域绝不允许进 `[MITM]` hostname；增强层启用后若 App 报「网络异常/证书错误」，说明该 App 实际做了固定或检测，接受现实、整段恢复注释（插件注释已声明此可能）。
