@@ -1,0 +1,60 @@
+{
+  "comment": [
+    "广告 SDK 基础设施库：app 插件通过 adsGroup 引用 src/ads/domains.json 的已审组，",
+    "保证「一个 SDK 只有一份域名真源」；需要补充域时写进引用它的 app json，",
+    "并在 sources 里给出证据，不要在本文件里复制粘贴 ads 组内容。"
+  ],
+  "sdks": {
+    "pangle": {
+      "title": "穿山甲 / Pangle（字节跳动）",
+      "adsGroup": "pangle",
+      "note": "看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。"
+    },
+    "gdt": {
+      "title": "腾讯广告 / 优量汇（GDT）",
+      "adsGroup": "gdt"
+    },
+    "kuaishou": {
+      "title": "快手联盟 / 快手广告",
+      "adsGroup": "kuaishou"
+    },
+    "baidu": {
+      "title": "百度广告 / 百青藤",
+      "adsGroup": "baidu"
+    },
+    "alimama": {
+      "title": "阿里妈妈 / TanX / 阿里广告监测",
+      "adsGroup": "alibaba"
+    },
+    "meta": {
+      "title": "Meta / Audience Network（FAN）",
+      "adsGroup": "meta"
+    },
+    "beizi": {
+      "title": "倍孜广告聚合（Beizi）",
+      "hosts": ["beizi.biz", "adn-plus.com.cn"],
+      "note": "证据同 plugins/ads v2.3.1（TopOn 之外的第三方聚合）。"
+    },
+    "rayjump": {
+      "title": "Mintegral / Rayjump",
+      "hosts": ["net.rayjump.com", "setting.rayjump.com", "cdn-adn-https.rayjump.com", "mintegral.com", "*.mintegral.net", "mtgglobals.com"],
+      "rules": [],
+      "note": "证据同 plugins/ads v2.4.0 真机补齐。analytics.rayjump.com 拦掉会断 Mintegral 统计（正效果）。"
+    },
+    "sigmob": {
+      "title": "Sigmob（北京创智汇聚）",
+      "hosts": ["sigmob.cn", "*.sigmob.cn", "sigmob.com", "*.sigmob.com"],
+      "note": "adservice/dc/track.sigmob.cn；anti-AD/AdGuard/hagezi 多源收录；ads 插件 mobile_sdks 组同源含此域。"
+    },
+    "tobid": {
+      "title": "ToBid 聚合（北京创致 / Sigmob 系）",
+      "hosts": ["tobidad.com", "*.tobidad.com"],
+      "note": "美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。"
+    },
+    "admate": {
+      "title": "美数 AdMate（北京美数信息）",
+      "hosts": ["admate.cn", "admatex.com", "*.admatex.com", "admatex.cn"],
+      "note": "美团官方 SDK 目录实证 iOS 第三方变现 SDK；anti-AD 收录。"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "slug": "xianyu",
+  "name": "闲鱼 · 去广告（能力有限）",
+  "desc": "闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名，九家主流黑名单 goofish 零命中即侧证）。DNS 层只能补阿里广告 SDK 端点 iyes.youku.com + AMDC 调度——这是如实的≈0-5% 收益插件。零证书。",
+  "version": "1.1.0",
+  "date": "2026-10-28",
+  "loonVersion": "3.5.1(983)",
+  "tag": "去广告,闲鱼,阿里",
+  "comment": [
+    "红线：*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能;acs.m.goofish.com 出现在个别模块的 REJECT 里是错误规则,打死整个 App——拒收。",
+    "取证否决：m.goofish.com / awl.goofish.com 实测 NXDOMAIN（不存在）;xianyu.mobi 与 blackmatrix7 的 16 个乱码域是淘宝短链跳转服务（cname.tb.cn），拦=断分享链接;cdn.ynuf.aliapp.org=阿里无线安全 UMID 指纹,禁拦。",
+    "证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。",
+    "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
+  ],
+  "sdks": [
+    "alimama"
+  ],
+  "groups": [
+    {
+      "id": "ali_ad_sdk",
+      "title": "阿里广告 SDK 端点（闲鱼净化模块唯一 REJECT 域）",
+      "tier": "A",
+      "note": "iyes.youku.com=阿里广告 SDK 端点（apiv4-iyes 为其分片,整域+通配）;anti-AD/AdGuard/hagezi/wool XianYu 模块四源收录。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://github.com/fmz200/wool_scripts/tree/main/Surge/module/split/partM",
+        "https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/ChineseFilter/sections/adservers.txt"
+      ],
+      "hosts": [
+        "iyes.youku.com",
+        "*.iyes.youku.com"
+      ]
+    },
+    {
+      "id": "amdc",
+      "title": "淘宝系 AMDC HTTPDNS 调度（默认关）",
+      "tier": "B",
+      "disabled": true,
+      "note": "amdc.m/amdcopen.m.taobao.com=阿里 HTTPDNS 调度;闲鱼净化脚本专改 /amdc/mobileDispatch。拦=广告域解析绕过消失,但阿里系 App 若无回退逻辑可能拖慢建连——默认关,验证后再开。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/GoofishAds.conf"
+      ],
+      "hosts": [
+        "amdc.m.taobao.com",
+        "amdcopen.m.taobao.com"
+      ]
+    }
+  ]
+}

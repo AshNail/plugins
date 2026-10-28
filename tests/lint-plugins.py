@@ -2077,6 +2077,90 @@ def check_ads_family():
         print("ads: generated plugin matches src/ads/domains.json")
 
 
+APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD"}
+APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP"}
+APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+\s*=\s*\d{1,3}(?:\.\d{1,3}){3}$")
+APP_SECTIONS = {"Rule", "Host"}
+
+
+def collect_source_urls(plugin):
+    urls = []
+    for line in plugin.read_text().splitlines():
+        s = line.strip()
+        if s.startswith("# 证据:"):
+            urls.append(s.split("# 证据:", 1)[1].strip())
+    return urls
+
+
+def check_app_plugins():
+    src_dir = ROOT / "src/apps"
+    roots_path = ROOT / "src/ads/protected-roots.json"
+    protected = set(json.loads(roots_path.read_text())["roots"]) if roots_path.exists() else set()
+    apps = sorted(p for p in src_dir.glob("*.json") if not p.name.startswith("_"))
+    if not apps:
+        errors.append("apps: no src/apps/*.json found")
+        return
+    for path in apps:
+        slug = path.stem
+        try:
+            data = json.loads(path.read_text())
+        except Exception as e:
+            errors.append(f"apps/{slug}: bad json: {e}")
+            continue
+        if data.get("slug") != slug:
+            errors.append(f"apps/{slug}: slug field {data.get('slug')!r} != filename stem")
+        plugin = ROOT / "plugins" / slug / f"{slug}.plugin"
+        if not plugin.exists():
+            errors.append(f"apps/{slug}: generated plugin missing: {plugin.relative_to(ROOT)} (run npm run build:apps)")
+            continue
+        meta = parse_meta(plugin)
+        for key in ("name", "desc", "version", "date", "tag", "loon_version", "type"):
+            if not meta.get(key):
+                errors.append(f"apps/{slug}: header missing #{key} in {plugin.relative_to(ROOT)}")
+        if meta.get("type") != "normal":
+            errors.append(f"apps/{slug}: #!type must be normal, got {meta.get('type')!r}")
+        for key in ("homepage", "openUrl", "icon"):
+            val = meta.get(key, "")
+            if val and not val.startswith("https://"):
+                errors.append(f"apps/{slug}: #{key} must be https: {val}")
+        parsed, sections = parse_plugin(plugin)
+        bad = [s for s in sections if s not in APP_SECTIONS]
+        if bad:
+            errors.append(f"apps/{slug}: sections outside Rule/Host: {sorted(set(bad))}")
+        for line in parsed.get("Rule", []):
+            parts = [p.strip() for p in line.split(",")]
+            if parts[0] not in APP_RULE_KINDS:
+                errors.append(f"apps/{slug}: rule kind not whitelisted: {line}")
+            if parts[-1] not in APP_RULE_ACTIONS:
+                errors.append(f"apps/{slug}: rule action not whitelisted: {line}")
+            if parts[0] == "DOMAIN-WILDCARD":
+                m = re.search(r"\((\d+)\)", meta.get("loon_version", ""))
+                if not m or int(m.group(1)) < 1008:
+                    errors.append(f"apps/{slug}: DOMAIN-WILDCARD needs #!loon_version build>=1008, got {meta.get('loon_version')!r}")
+        for line in parsed.get("Host", []):
+            if not APP_HOST_RE.match(line):
+                errors.append(f"apps/{slug}: bad [Host] line: {line}")
+            host = line.split("=")[0].strip().removeprefix("*.")
+            if host in protected:
+                errors.append(f"apps/{slug}: [Host] blackholes a protected root: {host}")
+        for url in collect_source_urls(plugin):
+            if not url.startswith("https://"):
+                errors.append(f"apps/{slug}: evidence url not https: {url}")
+        rd = plugin.parent / "README.md"
+        if not rd.exists():
+            errors.append(f"apps/{slug}: missing plugins/{slug}/README.md")
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / "tools/build-apps.py"), "--check"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout).strip().splitlines()[-6:]
+        errors.append("apps: generated plugins are stale; run `python3 tools/build-apps.py`\n"
+                      + "\n".join("    " + line for line in tail))
+    else:
+        print(f"apps: {len(apps)} app plugins lint-clean and in sync with src/apps/")
+
+
 check_shared_scripts()
 check_switch_labels()
 check_argument_schema()
@@ -2086,6 +2170,7 @@ check_encoding_guard()
 check_script_safety()
 check_bypass_dns_guard()
 check_ads_family()
+check_app_plugins()
 print(f"lint errors: {len(errors)}")
 for err in errors:
     print(" -", err)

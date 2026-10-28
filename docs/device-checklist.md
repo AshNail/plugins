@@ -81,8 +81,15 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 
 ## H. ads.plugin（DNS 层 + DOMAIN-WILDCARD）
 
-- [ ] Loon 版本 ≥ **3.5.3(1008)**；插件页版本为 2.5.0
+- [ ] Loon 版本 ≥ **3.5.3(1008)**；插件页版本为 2.6.0
+      （3.5.3 build 1007–1011 截至 2026-10-27 **仅在 TestFlight 分发**，App Store stable 尚无此能力——
+      这是门槛的真实代价：stable 用户装不了带通配层的 ads 插件版本。）
 - [ ] 规则页能看到 30 条 `DOMAIN-WILDCARD,...`；广告子域（如 `ads.example.com`）在日志/DNS 检查里走 127.0.0.1 或 DNS 拒绝
+- [ ] **通配层独立取证（与 [Host] 区分开）**：挑一个**只命中 glob、不在 [Host] 清单**的域，
+      Safari 访问 `http://ads.loon-wildcard-probe.com/`，日志应出现
+      `Search rule by host:ads.loon-wildcard-probe.com` 且策略判为 REJECT——这才证明
+      DOMAIN-WILDCARD 在**插件 [Rule]** 里生效（官方 domain_rule 页只写 build 1008+，未明示插件可用性；
+      日志窗口里 0 命中不能当证据，那些域在更早的 [Host] DNS 阶段已被黑洞）。
 - [ ] 共享主域本身不受通配层影响：`example.com`、`graph.facebook.com`、`doh.dns.apple.com` 正常解析
 - [ ] **Mintegral / Rayjump（2.4.0 新增）**：装有 Mintegral 聚合的工具/小游戏类 App，开插件后
       该 App 的广告位应无填充。判读方法：Loon 日志过滤 `rayjump`，应出现
@@ -164,3 +171,15 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       **判决：默认配置不动**（目标用户在国内，AliDNS 境内最优）；海外用户按 H 节口径自行替换
       doh-server/doh3-server 为就近 anycast 解析器，或干脆注释掉 doh3 行——插件自用的黑洞/拦截逻辑不依赖它们。
 - [ ] 顺带观察：`DNS failed: Invalid packet length:162` ×2（单发噪声，未复现即不处理）。
+
+## J. 12 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
+
+- [ ] 逐个导入 `plugins/<slug>/<slug>.plugin`，装后完全退出并重开目标 App。
+- [ ] **生效判读**：日志里命中域应显示 `Host Map IP:127.0.0.1`（插件 [Host] 的特征字样，区别于主配置的 `Reject domain ... in DNS phase`）。
+- [ ] **wechat**：朋友圈/视频号广告位应「素材空白、占位保留」；`wxsnsdy*`/`wxsnsad` 出现在日志即素材黑洞命中。微信收发、支付、公众号文章正常。
+- [ ] **meituan**：开插件跑一遍下单+支付+地图+直播——`appsec-mobile`/`api-unionid`/`api-map`/`shark`/`ddplus` 不应出现在任何拦截日志；若 `impdsp`/`mads` 有命中且交易无恙，B 组（waimai_ad/d_meituan_net）可逐条试开。
+- [ ] **banks**：六行各开一次 App，重点验云闪付支付与招商账单——`ads.cup.com.cn` 命中后银联主链路（`wallet.95516.com`）必须无恙；unionpay_optional 组只在无转账需求时试开（重试风暴风险见插件注释）。
+- [ ] **zhihuifangdong**：门锁操作（ttlock）与推送（getui）无恙；开屏/插屏广告加载失败即 pangle/gdt 组命中。
+- [ ] **mijia**：设备控制（`api.io.mi.com`/xmpush）必须无恙——红线域绝不出现在拦截日志。
+- [ ] **qidian/xianyu/x/instagram**：预期收益低（内联广告），判读以「遥测域消失 + 业务无恙」为准，不以「广告消失」为准。
+- [ ] 默认关的组（watchlist/telemetry/amdc/waimai_ad/d_meituan_net/unionpay_optional 等）试开前，先在日志确认对应域真实出现——没出现就开了也没有收益。

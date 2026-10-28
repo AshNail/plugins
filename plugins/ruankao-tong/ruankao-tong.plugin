@@ -1,0 +1,91 @@
+#!name=软考通 · 去广告
+#!desc=软考通（ixinz 系）开屏/课程列表插屏走穿山甲+优量汇;题库内容与广告同源不可分。看广告解锁真题依赖这些 SDK——启用即断。零证书。
+#!author=edy
+#!version=1.0.0
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ruankao-tong/README.md
+#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!system=iOS,iPadOS,tvOS,macOS
+#!loon_version=3.5.1(983)
+#!date=2026-10-28
+#!tag=去广告,软考,考试
+#!type=normal
+
+# ========================================================================
+# 软考通 · 去广告
+# ------------------------------------------------------------------------
+# 红线：www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰。
+# 隐私政策只给 SDK 包名（com.bytedance.sdk.openadsdk / com.qq.e.union）不给域名——域名由两家 SDK 公开集成文档补齐（B 级,但为行业标准基建）。
+# 崩溃 SDK（shenzhou / crash.ixinz）第一方自建,网络层无从区分,不列。
+# 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+# 本文件由 tools/build-apps.py 从 src/apps/ruankao-tong.json 生成，不要手改生成物。
+# ========================================================================
+
+[Host]
+
+# ------------------------------------------------------------
+# 穿山甲 / Pangle（字节跳动）（置信 A）
+# 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。
+*.pangle-ads.com = 127.0.0.1
+*.pangle.io = 127.0.0.1
+*.pangolin-sdk-toutiao-b.com = 127.0.0.1
+*.pangolin-sdk-toutiao.com = 127.0.0.1
+*.pangolin-sdk-toutiao1.com = 127.0.0.1
+*.pangolin-sdk-toutiao2.com = 127.0.0.1
+*.pangolin-sdk-toutiao3.com = 127.0.0.1
+*.pangolin-sdk-toutiao4.com = 127.0.0.1
+*.pangolin-sdk-toutiao5.com = 127.0.0.1
+*.pglstatp-toutiao.com = 127.0.0.1
+*.tiktokpangle-cdn-us.com = 127.0.0.1
+ad.zijieapi.com = 127.0.0.1
+ads3-normal-hl.zijieapi.com = 127.0.0.1
+ads3-normal-lf.zijieapi.com = 127.0.0.1
+ads3-normal-lq.zijieapi.com = 127.0.0.1
+ads3-normal-xh.zijieapi.com = 127.0.0.1
+ads3-normal.zijieapi.com = 127.0.0.1
+ads5-normal-hj.zijieapi.com = 127.0.0.1
+ads5-normal-hl.zijieapi.com = 127.0.0.1
+ads5-normal-lf.zijieapi.com = 127.0.0.1
+ads5-normal-lq.zijieapi.com = 127.0.0.1
+ads5-normal-xh.zijieapi.com = 127.0.0.1
+ads5-normal.zijieapi.com = 127.0.0.1
+dm.isnssdk.com = 127.0.0.1
+dm.pstatp.com = 127.0.0.1
+dm.toutiao.com = 127.0.0.1
+i.isnssdk.com = 127.0.0.1
+i16-tb.isnssdk.com = 127.0.0.1
+ichannel.isnssdk.com = 127.0.0.1
+lianmengapi.snssdk.com = 127.0.0.1
+open.isnssdk.com = 127.0.0.1
+p3-ad-aweme.byteimg.com = 127.0.0.1
+p3-ad-sign.byteimg.com = 127.0.0.1
+p6-ad-sign.byteimg.com = 127.0.0.1
+p9-ad-sign.byteimg.com = 127.0.0.1
+pangle-ads.com = 127.0.0.1
+pangle.io = 127.0.0.1
+pangolin-hl.snssdk.com = 127.0.0.1
+pangolin-lf.snssdk.com = 127.0.0.1
+pangolin-lq.snssdk.com = 127.0.0.1
+pangolin-sdk-toutiao-b.com = 127.0.0.1
+pangolin-sdk-toutiao.com = 127.0.0.1
+pangolin.snssdk.com = 127.0.0.1
+pangolin16.isnssdk.com = 127.0.0.1
+pangolin16.sgsnssdk.com = 127.0.0.1
+pglstatp-toutiao.com = 127.0.0.1
+tiktokpangle-cdn-us.com = 127.0.0.1
+tnc16-alisg.isnssdk.com = 127.0.0.1
+tnc16-useast1a.isnssdk.com = 127.0.0.1
+tnc31-normal-alisg.isnssdk.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 腾讯广告 / 优量汇（GDT）（置信 A）
+*.e.qq.com = 127.0.0.1
+*.gdt.qq.com = 127.0.0.1
+*.gdtimg.com = 127.0.0.1
+*.l.qq.com = 127.0.0.1
+*.ugdtimg.com = 127.0.0.1
+*.ugdturner.com = 127.0.0.1
+adsfile.qq.com = 127.0.0.1
+adslvfile.qq.com = 127.0.0.1
+adsmind.apdcdn.tc.qq.com = 127.0.0.1
+pingtcss.qq.com = 127.0.0.1

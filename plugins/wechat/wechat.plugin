@@ -1,0 +1,83 @@
+#!name=微信 · 广告素材黑洞
+#!desc=微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。
+#!author=edy
+#!version=1.1.0
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/wechat/README.md
+#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!system=iOS,iPadOS,tvOS,macOS
+#!loon_version=3.5.1(983)
+#!date=2026-10-28
+#!tag=去广告,微信,优量汇,广点通
+#!type=normal
+
+# ========================================================================
+# 微信 · 广告素材黑洞
+# ------------------------------------------------------------------------
+# 红线（绝不进任何拦截组）：sns.weixin.qq.com（真机证实 NXDOMAIN，不存在）/ weixin110.qq.com / mp.weixin.qq.com / short/long.push / *.wechat.com 收发与支付 / *.gtimg.com 通用 CDN 整域 / 所有 weixin* 与主域 qq.com。ads.privacy.qq.com 必须放行——广点通隐私/合规入口，拦了反而触发 SDK 异常逻辑（217heidai issue #175 教训）。
+# 能力天花板（如实）：微信广告条目与业务同走 mmtls 同域同加密通道，DNS 层只能黑洞「素材/跟踪主机」——效果是广告图/视频加载失败、位置空白化、占位保留。朋友圈条目移除做不到，任何声称做到的都需要证书+MITM，本插件不做。
+# 域名形态记法：pgdt.gtimg.cn 是「gtimg 通用 CDN 上的 GDT 素材路径」——以 TLD 区分（gtimg.cn≠gtimg.com），精确主机黑洞，不碰 .com 共享域。
+# 素材组（wechat_material）来源：微信反编译与现网 DNS 解析双重证实的 8 个 wxsns*/wxa/wximg/wxsmw 主机，全部精确主机、无通配——这是本插件与通用 ads 插件的差异所在，通用清单不含这些微信进程内专属域。
+# 本插件 [Host]/[Rule] 全设备生效（Loon 无法按 App 限定）：同一 SDK 域跨 App 共享黑洞，「按 App 插件」只是分组开关；配合全局 ads 插件 httpdns 组防绕过。
+# watchlist 组默认关闭：wxsmsdy.video.qq.com / xmaterial.tu.qq.com / zhizi.qq.com 收录于成熟清单但微信 iOS 真机未证实命中，17g57.com 为轮换域——抓包出现后再开，不凭猜测默认生效。
+# 本文件由 tools/build-apps.py 从 src/apps/wechat.json 生成，不要手改生成物。
+# ========================================================================
+
+[Host]
+
+# ------------------------------------------------------------
+# 腾讯广告 / 优量汇（GDT）（置信 A）
+*.e.qq.com = 127.0.0.1
+*.gdt.qq.com = 127.0.0.1
+*.gdtimg.com = 127.0.0.1
+*.l.qq.com = 127.0.0.1
+*.ugdtimg.com = 127.0.0.1
+*.ugdturner.com = 127.0.0.1
+adsfile.qq.com = 127.0.0.1
+adslvfile.qq.com = 127.0.0.1
+adsmind.apdcdn.tc.qq.com = 127.0.0.1
+pingtcss.qq.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 微信进程内广告素材主机（朋友圈/视频号/小程序）（置信 A）
+# wxsnsad/wxsnsdy/wxsnsdythumb/wxsnsdy.tc/wxsnsdy.video=朋友圈与视频号广告图、视频素材域；wxa/wximg/wxsmw=小程序广告组件素材域。全为精确主机，黑洞后素材加载失败、广告位空白。
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+# 证据: https://github.com/217heidai/adblockfilters
+# 证据: https://developers.adnet.qq.com/doc/
+wxa.wxs.qq.com = 127.0.0.1
+wximg.wxs.qq.com = 127.0.0.1
+wxsmw.wxs.qq.com = 127.0.0.1
+wxsnsad.tc.qq.com = 127.0.0.1
+wxsnsdy.tc.qq.com = 127.0.0.1
+wxsnsdy.video.qq.com = 127.0.0.1
+wxsnsdy.wxs.qq.com = 127.0.0.1
+wxsnsdythumb.wxs.qq.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# GDT/优量汇补充端点（微信进程内）（置信 A）
+# pgdt.gtimg.cn=GDT 素材；pgdt.gtimg.com=GDT 素材 .com 形态（与通用 CDN 域 gtimg.com 共存，精确主机不伤共享域）；app-support.qq.com=优量汇「应用代理」下载域（断小程序广告下载链）；qzs.qq.com=GDT 创意组件域；xn--8rtx55n.cn=「我要赚.cn」优量汇电商 CPS 专属域；wapx.adinall.com=adinall 营销聚合。
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+# 证据: https://developers.adnet.qq.com/doc/
+# 证据: https://adguard.com/en/blog/ad-blocking-wechat-miniprograms.html
+app-support.qq.com = 127.0.0.1
+pgdt.gtimg.cn = 127.0.0.1
+pgdt.gtimg.com = 127.0.0.1
+qzs.qq.com = 127.0.0.1
+wapx.adinall.com = 127.0.0.1
+xn--8rtx55n.cn = 127.0.0.1
+
+# ------------------------------------------------------------
+# 成熟清单收录、真机未证实（默认关）（置信 B）
+# wxsmsdy.video.qq.com / xmaterial.tu.qq.com / zhizi.qq.com / 17g57.com 收录于 anti-AD 与 217heidai，但微信 iOS 是否命中未经真机抓包证实——出现后再开，不默认生效。
+# （默认关闭的组：整组注释，取消注释即启用）
+# 17g57.com = 127.0.0.1
+# wxsmsdy.video.qq.com = 127.0.0.1
+# xmaterial.tu.qq.com = 127.0.0.1
+# zhizi.qq.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 微信质量/崩溃统计（默认关）（置信 B）
+# monitor.weixin.qq.com=自家质量统计、badjs.weixinbridge.com=前端错误上报，拦掉只丢崩溃/错误上报，广告无关——默认不开。
+# （默认关闭的组：整组注释，取消注释即启用）
+# badjs.weixinbridge.com = 127.0.0.1
+# monitor.weixin.qq.com = 127.0.0.1

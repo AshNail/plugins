@@ -1,0 +1,20 @@
+{
+  "slug": "ruankao-tong",
+  "name": "软考通 · 去广告",
+  "desc": "软考通（ixinz 系）开屏/课程列表插屏走穿山甲+优量汇;题库内容与广告同源不可分。看广告解锁真题依赖这些 SDK——启用即断。零证书。",
+  "version": "1.0.0",
+  "date": "2026-10-28",
+  "loonVersion": "3.5.1(983)",
+  "tag": "去广告,软考,考试",
+  "comment": [
+    "红线：www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰。",
+    "隐私政策只给 SDK 包名（com.bytedance.sdk.openadsdk / com.qq.e.union）不给域名——域名由两家 SDK 公开集成文档补齐（B 级,但为行业标准基建）。",
+    "崩溃 SDK（shenzhou / crash.ixinz）第一方自建,网络层无从区分,不列。",
+    "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
+  ],
+  "sdks": [
+    "pangle",
+    "gdt"
+  ],
+  "groups": []
+}

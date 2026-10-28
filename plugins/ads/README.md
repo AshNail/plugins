@@ -34,7 +34,7 @@ Loon 导入链接：
 loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin
 ```
 
-要求 **Loon 3.5.3(1008)+**（插件头 `#!loon_version=3.5.3(1008)`；`DOMAIN-WILDCARD` 自 Build 1008 起提供）。低于该版本请先升级 Loon，否则通配规则不会加载。安装后建议重连一次 Loon，让 DNS/DoH 配置生效。
+要求 **Loon 3.5.3(1008)+**（插件头 `#!loon_version=3.5.3(1008)`；`DOMAIN-WILDCARD` 自 Build 1008 起提供，官方 domain_rule 页标注 build 1008+）。3.5.3 目前经 TestFlight 分发，App Store stable 用户需先加入 TF 升级；低于该版本请先升级 Loon，否则通配规则不会加载。安装后建议重连一次 Loon，让 DNS/DoH 配置生效。
 
 ### 真机验证清单
 

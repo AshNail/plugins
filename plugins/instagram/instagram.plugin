@@ -1,0 +1,52 @@
+#!name=Instagram · 像素与遥测瘦身
+#!desc=如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内广告 DNS 层≈0。黑洞 FB 转化像素、网页播放器 VAST 域与已死徽章服务;不碰 graph/gateway/fbcdn 主域。零证书。
+#!author=edy
+#!version=1.0.0
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/instagram/README.md
+#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!system=iOS,iPadOS,tvOS,macOS
+#!loon_version=3.5.1(983)
+#!date=2026-10-28
+#!tag=隐私,遥测,Instagram
+#!type=normal
+
+# ========================================================================
+# Instagram · 像素与遥测瘦身
+# ------------------------------------------------------------------------
+# 红线（绝不进任何组）：gateway.instagram.com / graph.instagram.com / graph.facebook.com / api.facebook.com / edge-mqtt.facebook.com（推送=通知生死线）/ *.fbcdn.net 整域 / *.cdninstagram.com。
+# anti-AD 收录 graph.instagram.com 属误杀高危项——本插件明确不采。
+# an.facebook.com 是少数「真能少看到广告」的域,但只对网页播放器片头 VAST 生效,IG App 内 Reels 广告不走它——如实,不夸大。
+# 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+# 本文件由 tools/build-apps.py 从 src/apps/instagram.json 生成，不要手改生成物。
+# ========================================================================
+
+[Rule]
+
+# ------------------------------------------------------------
+# netseer IP 关联遥测（默认关,纯隐私收益）（置信 B）
+# Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）——按完整后缀 REJECT 专属子域,绝不升级为整域 fbcdn。间接降低广告定向精度,不减少广告数量。
+# 证据: https://github.com/AdguardTeam/AdguardFilters/issues/217505
+# 证据: https://github.com/hagezi/dns-blocklists/issues/3010
+# （默认关闭的组：整组注释，取消注释即启用）
+# DOMAIN-SUFFIX,netseer-ipaddr-assoc.xy.fbcdn.net,REJECT
+# DOMAIN-SUFFIX,netseer-ipaddr-assoc.xz.fbcdn.net,REJECT
+
+[Host]
+
+# ------------------------------------------------------------
+# Meta / Audience Network（FAN）（置信 A）
+*.ads.facebook.com = 127.0.0.1
+*.an.facebook.com = 127.0.0.1
+*.analytics.facebook.com = 127.0.0.1
+*.b-graph.facebook.com = 127.0.0.1
+*.pixel.facebook.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# FB 像素与专属广告端点（A 级）（置信 A）
+# pixel.facebook.com=网页转化像素(Conversions API);an.facebook.com=网页播放器片头广告 VAST 标签;badges.instagram.com=已停用的旧徽章服务。
+# 证据: https://github.com/AdguardTeam/AdGuardSDNSFilter
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+an.facebook.com = 127.0.0.1
+badges.instagram.com = 127.0.0.1
+pixel.facebook.com = 127.0.0.1

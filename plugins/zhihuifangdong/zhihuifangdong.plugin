@@ -1,0 +1,141 @@
+#!name=智慧房东 · 去广告
+#!desc=智慧房东（uni-app 打包+多广告网络聚合）:穿山甲/优量汇/快手联盟/倍孜黑洞,开屏、插屏、信息流广告位加载失败即本插件生效方式。通通锁控门与个推收租提醒零接触。零证书。
+#!author=edy
+#!version=1.0.0
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihuifangdong/README.md
+#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!system=iOS,iPadOS,tvOS,macOS
+#!loon_version=3.5.1(983)
+#!date=2026-10-28
+#!tag=去广告,智慧房东,租房
+#!type=normal
+
+# ========================================================================
+# 智慧房东 · 去广告
+# ------------------------------------------------------------------------
+# 红线（业务核心,绝不出现）：*.ttlock.com / servlet.ttlock.com（通通锁=智能门锁控制,拦了门开不了）/ getui / igexin 系（收租提醒推送）。
+# 官方隐私政策明列:穿山甲(com.bytedance.sdk.openadsdk)/优量汇(com.qq.e)/快手(com.kwad.sdk)/倍孜(com.beizi.ad)/百度联盟/阿里妈妈/uni-AD/易推DSP——广告网络齐全,DNS 层净收益在 17 个目标 App 里最高。
+# App Store 隐私标签含 THIRD_PARTY_ADVERTISING——第三方广告确证存在。
+# 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+# 本文件由 tools/build-apps.py 从 src/apps/zhihuifangdong.json 生成，不要手改生成物。
+# ========================================================================
+
+[Host]
+
+# ------------------------------------------------------------
+# 穿山甲 / Pangle（字节跳动）（置信 A）
+# 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。
+*.pangle-ads.com = 127.0.0.1
+*.pangle.io = 127.0.0.1
+*.pangolin-sdk-toutiao-b.com = 127.0.0.1
+*.pangolin-sdk-toutiao.com = 127.0.0.1
+*.pangolin-sdk-toutiao1.com = 127.0.0.1
+*.pangolin-sdk-toutiao2.com = 127.0.0.1
+*.pangolin-sdk-toutiao3.com = 127.0.0.1
+*.pangolin-sdk-toutiao4.com = 127.0.0.1
+*.pangolin-sdk-toutiao5.com = 127.0.0.1
+*.pglstatp-toutiao.com = 127.0.0.1
+*.tiktokpangle-cdn-us.com = 127.0.0.1
+ad.zijieapi.com = 127.0.0.1
+ads3-normal-hl.zijieapi.com = 127.0.0.1
+ads3-normal-lf.zijieapi.com = 127.0.0.1
+ads3-normal-lq.zijieapi.com = 127.0.0.1
+ads3-normal-xh.zijieapi.com = 127.0.0.1
+ads3-normal.zijieapi.com = 127.0.0.1
+ads5-normal-hj.zijieapi.com = 127.0.0.1
+ads5-normal-hl.zijieapi.com = 127.0.0.1
+ads5-normal-lf.zijieapi.com = 127.0.0.1
+ads5-normal-lq.zijieapi.com = 127.0.0.1
+ads5-normal-xh.zijieapi.com = 127.0.0.1
+ads5-normal.zijieapi.com = 127.0.0.1
+dm.isnssdk.com = 127.0.0.1
+dm.pstatp.com = 127.0.0.1
+dm.toutiao.com = 127.0.0.1
+i.isnssdk.com = 127.0.0.1
+i16-tb.isnssdk.com = 127.0.0.1
+ichannel.isnssdk.com = 127.0.0.1
+lianmengapi.snssdk.com = 127.0.0.1
+open.isnssdk.com = 127.0.0.1
+p3-ad-aweme.byteimg.com = 127.0.0.1
+p3-ad-sign.byteimg.com = 127.0.0.1
+p6-ad-sign.byteimg.com = 127.0.0.1
+p9-ad-sign.byteimg.com = 127.0.0.1
+pangle-ads.com = 127.0.0.1
+pangle.io = 127.0.0.1
+pangolin-hl.snssdk.com = 127.0.0.1
+pangolin-lf.snssdk.com = 127.0.0.1
+pangolin-lq.snssdk.com = 127.0.0.1
+pangolin-sdk-toutiao-b.com = 127.0.0.1
+pangolin-sdk-toutiao.com = 127.0.0.1
+pangolin.snssdk.com = 127.0.0.1
+pangolin16.isnssdk.com = 127.0.0.1
+pangolin16.sgsnssdk.com = 127.0.0.1
+pglstatp-toutiao.com = 127.0.0.1
+tiktokpangle-cdn-us.com = 127.0.0.1
+tnc16-alisg.isnssdk.com = 127.0.0.1
+tnc16-useast1a.isnssdk.com = 127.0.0.1
+tnc31-normal-alisg.isnssdk.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 腾讯广告 / 优量汇（GDT）（置信 A）
+*.e.qq.com = 127.0.0.1
+*.gdt.qq.com = 127.0.0.1
+*.gdtimg.com = 127.0.0.1
+*.l.qq.com = 127.0.0.1
+*.ugdtimg.com = 127.0.0.1
+*.ugdturner.com = 127.0.0.1
+adsfile.qq.com = 127.0.0.1
+adslvfile.qq.com = 127.0.0.1
+adsmind.apdcdn.tc.qq.com = 127.0.0.1
+pingtcss.qq.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 快手联盟 / 快手广告（置信 A）
+*.adkwai.com = 127.0.0.1
+*.adukwai.com = 127.0.0.1
+*.e.kuaishou.cn = 127.0.0.1
+*.e.kuaishou.com = 127.0.0.1
+*.open.kuaishouzt.com = 127.0.0.1
+*.open.kwaizt.com = 127.0.0.1
+ad.a.yximgs.com = 127.0.0.1
+ad.partner.gifshow.com = 127.0.0.1
+ali-ad.a.yximgs.com = 127.0.0.1
+gdfp.gifshow.com = 127.0.0.1
+hw-ot-ad.a.yximgs.com = 127.0.0.1
+js-ad.a.yximgs.com = 127.0.0.1
+tx-ad.a.yximgs.com = 127.0.0.1
+v1-ad.video.yximgs.com = 127.0.0.1
+v2-ad.video.yximgs.com = 127.0.0.1
+v3-ad.video.yximgs.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 百度广告 / 百青藤（置信 A）
+*.cpro.baidu.com = 127.0.0.1
+*.mobads.baidu.com = 127.0.0.1
+*.pos.baidu.com = 127.0.0.1
+adscdn.baidu.com = 127.0.0.1
+cb.baidu.com = 127.0.0.1
+cbjs.baidu.com = 127.0.0.1
+cpro.baidustatic.com = 127.0.0.1
+eclick.baidu.com = 127.0.0.1
+hao123union.baidu.com = 127.0.0.1
+mobads-logs.baidu.com = 127.0.0.1
+mobads-pre-config.cdn.bcebos.com = 127.0.0.1
+nsclick.baidu.com = 127.0.0.1
+union.baidu.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 倍孜广告聚合（Beizi）（置信 A）
+# 证据同 plugins/ads v2.3.1（TopOn 之外的第三方聚合）。
+adn-plus.com.cn = 127.0.0.1
+beizi.biz = 127.0.0.1
+
+# ------------------------------------------------------------
+# uni-AD/DCloud 与易推 DSP（默认关,需真机抓包）（置信 C）
+# ad.dcloud.net.cn/uniad.dcloud.net.cn 为 DCloud uni-AD 公开文档域名,但本 App 真实请求域未经抓包证实;adfunlink/adintl/qttunion 的官网域与投放域未分离——按 AdTiming/Ogury 教训默认关。
+# 证据: https://uniad.dcloud.net.cn/
+# 证据: https://oss.zhihuifangdong.net/zhfd_privacy.html
+# （默认关闭的组：整组注释，取消注释即启用）
+# ad.dcloud.net.cn = 127.0.0.1
+# uniad.dcloud.net.cn = 127.0.0.1

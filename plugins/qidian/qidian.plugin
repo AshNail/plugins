@@ -1,0 +1,122 @@
+#!name=起点读书 · 去广告
+#!desc=起点读书:官方 SDK 清单声明穿山甲+腾讯七巧板(优量汇系)——两组装备黑洞 + 起点自有广告统计端点(adstat.qidian.com/adsite.yuewen.com,官方政策自证)。Argus 广告位(magev6.if.qidian.com/adv)与章节内容同域,零 MITM 不可分。看「福利中心」视频领章节卡依赖 SDK,启用即断。零证书。
+#!author=edy
+#!version=1.0.0
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qidian/README.md
+#!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
+#!system=iOS,iPadOS,tvOS,macOS
+#!loon_version=3.5.1(983)
+#!date=2026-10-28
+#!tag=去广告,起点读书,阅文
+#!type=normal
+
+# ========================================================================
+# 起点读书 · 去广告
+# ------------------------------------------------------------------------
+# 官方声明源:acts.qidian.com/pact/sdk_table.html 列穿山甲(北京巨量引擎)+七巧板通用 SDK(深圳腾讯,程序化广告推送/监测/归因)+腾讯灯塔/Ostar 画像;未声明快手/百青藤/倍孜——未声明的联盟一律不加(纪律同 ads v2.4.0)。
+# 红线（绝不进任何拦截组）：magev6.if.qidian.com（Argus 主 API:章节目录/书架与广告位 adv 同域同主机——黑洞=起点废掉）/ druid.if.qidian.com（章节目录）/ h5.if.qidian.com / cococdn.qidian.com / bookcover.yuewen.com / *.qidianalipay.com（广告图床与书城、充值共用）。
+# adv/getadvlistbatch 路径证据:Yu9191 Rewrite 以 reject-200 拦此路径——路径级拦截需 MITM,超出本插件约束;DNS 层能切的是联盟填充那部分(开屏/插屏/横幅约一半,估计)。
+# 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App' 只是分组开关。配合全局 ads 插件的 httpdns 组使用,否则黑洞可被 HTTPDNS 绕过。
+# 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+# 本文件由 tools/build-apps.py 从 src/apps/qidian.json 生成，不要手改生成物。
+# ========================================================================
+
+[Rule]
+
+# ------------------------------------------------------------
+# 起点/阅文自有广告与统计端点（置信 A）
+# adsite.yuewen.com=官方隐私政策自证「收集设备信息用于广告展示」；adstat.qidian.com=起点 2.5.0 后自有广告统计。qidianad.com=阅文自有广告域(anti-AD 收录,名称+清单双证)。
+# 证据: https://account-protection.originconditions.com/privacy/useragreement/official-app.html
+# 证据: https://acts.qidian.com/pact/sdk_table.html
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+DOMAIN-SUFFIX,adsite.yuewen.com,REJECT
+
+[Host]
+
+# ------------------------------------------------------------
+# 穿山甲 / Pangle（字节跳动）（置信 A）
+# 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。
+*.pangle-ads.com = 127.0.0.1
+*.pangle.io = 127.0.0.1
+*.pangolin-sdk-toutiao-b.com = 127.0.0.1
+*.pangolin-sdk-toutiao.com = 127.0.0.1
+*.pangolin-sdk-toutiao1.com = 127.0.0.1
+*.pangolin-sdk-toutiao2.com = 127.0.0.1
+*.pangolin-sdk-toutiao3.com = 127.0.0.1
+*.pangolin-sdk-toutiao4.com = 127.0.0.1
+*.pangolin-sdk-toutiao5.com = 127.0.0.1
+*.pglstatp-toutiao.com = 127.0.0.1
+*.tiktokpangle-cdn-us.com = 127.0.0.1
+ad.zijieapi.com = 127.0.0.1
+ads3-normal-hl.zijieapi.com = 127.0.0.1
+ads3-normal-lf.zijieapi.com = 127.0.0.1
+ads3-normal-lq.zijieapi.com = 127.0.0.1
+ads3-normal-xh.zijieapi.com = 127.0.0.1
+ads3-normal.zijieapi.com = 127.0.0.1
+ads5-normal-hj.zijieapi.com = 127.0.0.1
+ads5-normal-hl.zijieapi.com = 127.0.0.1
+ads5-normal-lf.zijieapi.com = 127.0.0.1
+ads5-normal-lq.zijieapi.com = 127.0.0.1
+ads5-normal-xh.zijieapi.com = 127.0.0.1
+ads5-normal.zijieapi.com = 127.0.0.1
+dm.isnssdk.com = 127.0.0.1
+dm.pstatp.com = 127.0.0.1
+dm.toutiao.com = 127.0.0.1
+i.isnssdk.com = 127.0.0.1
+i16-tb.isnssdk.com = 127.0.0.1
+ichannel.isnssdk.com = 127.0.0.1
+lianmengapi.snssdk.com = 127.0.0.1
+open.isnssdk.com = 127.0.0.1
+p3-ad-aweme.byteimg.com = 127.0.0.1
+p3-ad-sign.byteimg.com = 127.0.0.1
+p6-ad-sign.byteimg.com = 127.0.0.1
+p9-ad-sign.byteimg.com = 127.0.0.1
+pangle-ads.com = 127.0.0.1
+pangle.io = 127.0.0.1
+pangolin-hl.snssdk.com = 127.0.0.1
+pangolin-lf.snssdk.com = 127.0.0.1
+pangolin-lq.snssdk.com = 127.0.0.1
+pangolin-sdk-toutiao-b.com = 127.0.0.1
+pangolin-sdk-toutiao.com = 127.0.0.1
+pangolin.snssdk.com = 127.0.0.1
+pangolin16.isnssdk.com = 127.0.0.1
+pangolin16.sgsnssdk.com = 127.0.0.1
+pglstatp-toutiao.com = 127.0.0.1
+tiktokpangle-cdn-us.com = 127.0.0.1
+tnc16-alisg.isnssdk.com = 127.0.0.1
+tnc16-useast1a.isnssdk.com = 127.0.0.1
+tnc31-normal-alisg.isnssdk.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 腾讯广告 / 优量汇（GDT）（置信 A）
+*.e.qq.com = 127.0.0.1
+*.gdt.qq.com = 127.0.0.1
+*.gdtimg.com = 127.0.0.1
+*.l.qq.com = 127.0.0.1
+*.ugdtimg.com = 127.0.0.1
+*.ugdturner.com = 127.0.0.1
+adsfile.qq.com = 127.0.0.1
+adslvfile.qq.com = 127.0.0.1
+adsmind.apdcdn.tc.qq.com = 127.0.0.1
+pingtcss.qq.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 起点/阅文自有广告与统计端点（置信 A）
+# adsite.yuewen.com=官方隐私政策自证「收集设备信息用于广告展示」；adstat.qidian.com=起点 2.5.0 后自有广告统计。qidianad.com=阅文自有广告域(anti-AD 收录,名称+清单双证)。
+# 证据: https://account-protection.originconditions.com/privacy/useragreement/official-app.html
+# 证据: https://acts.qidian.com/pact/sdk_table.html
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+adstat.qidian.com = 127.0.0.1
+qidianad.com = 127.0.0.1
+
+# ------------------------------------------------------------
+# 起点自家埋点（B 级,默认关）（置信 B）
+# tongji/dwtrack.qidian.com=站内统计(anti-AD 收录,拦了只断自家分析);o.if.qidian.com=anti-AD 独家拦但 if 命名空间同时承载内容 API,有误伤可能——先真机测试;qdp.qidian.com=起点推送,拦了断通知。log.1ting.com=听书线日志,无清单背书。
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+# （默认关闭的组：整组注释，取消注释即启用）
+# dwtrack.qidian.com = 127.0.0.1
+# log.1ting.com = 127.0.0.1
+# o.if.qidian.com = 127.0.0.1
+# qdp.qidian.com = 127.0.0.1
+# tongji.qidian.com = 127.0.0.1

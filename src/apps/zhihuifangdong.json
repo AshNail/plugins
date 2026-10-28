@@ -1,0 +1,39 @@
+{
+  "slug": "zhihuifangdong",
+  "name": "智慧房东 · 去广告",
+  "desc": "智慧房东（uni-app 打包+多广告网络聚合）:穿山甲/优量汇/快手联盟/倍孜黑洞,开屏、插屏、信息流广告位加载失败即本插件生效方式。通通锁控门与个推收租提醒零接触。零证书。",
+  "version": "1.0.0",
+  "date": "2026-10-28",
+  "loonVersion": "3.5.1(983)",
+  "tag": "去广告,智慧房东,租房",
+  "comment": [
+    "红线（业务核心,绝不出现）：*.ttlock.com / servlet.ttlock.com（通通锁=智能门锁控制,拦了门开不了）/ getui / igexin 系（收租提醒推送）。",
+    "官方隐私政策明列:穿山甲(com.bytedance.sdk.openadsdk)/优量汇(com.qq.e)/快手(com.kwad.sdk)/倍孜(com.beizi.ad)/百度联盟/阿里妈妈/uni-AD/易推DSP——广告网络齐全,DNS 层净收益在 17 个目标 App 里最高。",
+    "App Store 隐私标签含 THIRD_PARTY_ADVERTISING——第三方广告确证存在。",
+    "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
+  ],
+  "sdks": [
+    "pangle",
+    "gdt",
+    "kuaishou",
+    "baidu",
+    "beizi"
+  ],
+  "groups": [
+    {
+      "id": "uniad",
+      "title": "uni-AD/DCloud 与易推 DSP（默认关,需真机抓包）",
+      "tier": "C",
+      "disabled": true,
+      "note": "ad.dcloud.net.cn/uniad.dcloud.net.cn 为 DCloud uni-AD 公开文档域名,但本 App 真实请求域未经抓包证实;adfunlink/adintl/qttunion 的官网域与投放域未分离——按 AdTiming/Ogury 教训默认关。",
+      "sources": [
+        "https://uniad.dcloud.net.cn/",
+        "https://oss.zhihuifangdong.net/zhfd_privacy.html"
+      ],
+      "hosts": [
+        "ad.dcloud.net.cn",
+        "uniad.dcloud.net.cn"
+      ]
+    }
+  ]
+}

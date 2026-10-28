@@ -2,7 +2,7 @@
 
 > 仓库 [`AshNail/plugins`](https://github.com/AshNail/plugins) · soda/douyin 要求 **Loon 3.5.1(983)+**（gzip 响应解析需 **988+**）；`ads.plugin` 因 `DOMAIN-WILDCARD` 要求 **3.5.3(1008)+** · **无需 GitHub Pages**（Loon 以插件 URL 为基准解析同级 `scripts/`）
 
-个人 Loon 插件集合，按「一个 App 一个插件」组织：汽水音乐（soda）、抖音（douyin）、广告平台拦截器（ads）。逆向说明、字段取证、使用边界都在各插件目录的 README 里。
+个人 Loon 插件集合，按「一个 App 一个插件」组织：汽水音乐（soda）、抖音（douyin）、广告平台拦截器（ads），以及 12 个按 App 取证落地的去广告插件（微信、美团、闲鱼、起点读书、银行合集×6 App、米家、智慧房东、X、Instagram、不背单词、软考通、MBA大师）。逆向说明、字段取证、使用边界都在各插件目录的 README 里。
 
 ## 一键导入
 
@@ -15,6 +15,27 @@
 | 汽水音乐 `soda.plugin` | 2.8.5 | 保奖励 + 去广告 + 广告域名拦截 + 开屏请求拦截 + 设置层 + 隐藏【听抖音】+ 每日提醒 + 状态自检看板（含 Loon 环境诊断），全部开关控制 | [![导入 soda](https://img.shields.io/badge/Loon-导入汽水音乐-blue?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin) |
 | 抖音 `douyin.plugin` | 0.8.5 | 福利页精简 + 信息流广告清理 + 商业化弹窗清理 + 开屏请求拦截 + 状态自检看板（含 Loon 环境诊断，2026-10 真实 HAR 取证） | [![导入 douyin](https://img.shields.io/badge/Loon-导入抖音-black?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin) |
 | 广告平台拦截器 `ads.plugin` | 2.6.0 | DNS 层全平台拦截 + DOMAIN-WILDCARD 广告子域通配 + 数字分片家族层 `[0-9]`(1008+) + HTTPDNS 防绕过(REJECT-DROP) + IP Rewrite(Build 1007+) + 公共 DoH/DoT 防泄漏；**零证书、零 MITM/脚本** | [![导入 ads](https://img.shields.io/badge/Loon-导入广告拦截器-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin) |
+
+### App 专属去广告插件（零证书，全部 `[Host]`/`[Rule]`）
+
+每个插件的证据、置信分级（A/B/C）与「能力天花板」如实写在各自 README；与 `ads.plugin` 的域重叠是有意设计（按 App 开关是分组语义）。
+
+| 插件 | 覆盖对象 | 天花板一句话 |
+|---|---|---|
+| [wechat](plugins/wechat/README.md) | 微信进程内 GDT/优量汇 + 8 个朋友圈/视频号素材主机 | 素材空白化、条目不可移除（mmtls 内联） |
+| [meituan](plugins/meituan/README.md) | iOS 官方 SDK 目录实证 ADN（Sigmob/ToBid/美数）+ impdsp/mads + 遥测 | 自建广告与业务同域同 CDN，≈25-35% 可切 |
+| [xianyu](plugins/xianyu/README.md) | iyes.youku.com + AMDC | 广告 100% 内嵌 mtop 网关，≈0-5% 收益 |
+| [qidian](plugins/qidian/README.md) | 起点读书 first-party 广告域 + 遥测 | 推荐位与内容同域（magev6）不可分 |
+| [banks](plugins/banks/README.md) | 招商/银联 6 银行 App 广告端点 | 银行 App 无第三方 ADN，广告≈全内联 |
+| [mijia](plugins/mijia/README.md) | 小米系统广告域（ad.xiaomi.com 族） | 只影响米家 App 内推广位 |
+| [zhihuifangdong](plugins/zhihuifangdong/README.md) | 五家聚合 SDK（穿山甲/优量汇/快手/百度/倍孜） | 开屏/插屏可断；ttlock 设备链路红线 |
+| [x](plugins/x/README.md) | Twitter/X 像素与广告控制台域 | App 内信息流广告内联，DNS 层≈像素 only |
+| [instagram](plugins/instagram/README.md) | FAN/pixel/an 族 | 同上，信息流广告不可分 |
+| [ruankao-tong](plugins/ruankao-tong/README.md) | 广点通（官方协议唯一自证 SDK） | 激励任务依赖，慎用 |
+| [bubei-danci](plugins/bubei-danci/README.md) | 跟踪端点瘦身（官方目录无广告 SDK） | 诚实低收益 |
+| [mba-dashi](plugins/mba-dashi/README.md) | 百度统计族（默认关） | 官方协议无广告 SDK |
+
+导入链接统一格式：`https://raw.githubusercontent.com/AshNail/plugins/main/plugins/<slug>/<slug>.plugin`（各插件 README 内有按钮）。
 
 <details>
 <summary>备用链接（网页按钮没反应时手动复制）</summary>
@@ -63,6 +84,8 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 npm ci
 npm run build       # src/common 家族展开 → src/{soda,douyin}/*.js → plugins/*/scripts/*.min.js
 npm run build:ads   # src/ads/domains.json → plugins/ads/ads.plugin
+npm run build:apps  # src/apps/*.json + _sdk.json → plugins/<slug>/<slug>.plugin（12 个 App 插件）
+npm run build:app-readmes  # src/apps/*.json → plugins/<slug>/README.md
 npm run audit:ads   # 上游清单覆盖率/缺口审计（只读）
 npm run lint        # 结构/正则/脚本引用/安全边界/孤儿脚本/压缩语法/ads 数据一致性 + 四处名单一致
 npm run check       # build + build:ads + lint + coverage + 全部测试（源码+压缩版）
@@ -77,6 +100,7 @@ plugins/<family>/<name>.plugin + scripts/*.min.js   # 部署物（相对路径�
 src/<family>/*.js                                   # 可读源码（common 三件为生成物，勿手改）
 src/common/  block-domains / daily-reminder / welfare-stamp / splash-ad / status + families.json   # soda/douyin 单一来源
 src/ads/     domains.json + protected-roots.json    # ads 单插件数据源
+src/apps/    _sdk.json + <slug>.json                # App 插件数据源（SDK 组引用 ads，域名不复制）
 tests/ tools/{gen-args.js,build.js,build-ads.py,audit.py,ads-audit.py,check-remote.py,publish.py,loon-coverage.py,ad-surface-audit.py,rule-effectiveness.py,bypass-audit.py}
 .github/workflows/check.yml                         # CI：push 自动跑 npm run check
 ```

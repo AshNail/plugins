@@ -1,0 +1,126 @@
+{
+  "slug": "meituan",
+  "name": "美团 · 去广告",
+  "desc": "美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞。首页轮播/信息流/开屏素材与业务同域同 CDN——DNS 层收益约 25-35%，其余是「加载失败留白」。交易、支付、骑手调度零接触。零证书。",
+  "version": "1.1.0",
+  "date": "2026-10-28",
+  "loonVersion": "3.5.1(983)",
+  "tag": "去广告,美团,点评",
+  "comment": [
+    "红线（绝不进任何拦截组）：appsec-mobile.meituan.com（mtgsig 签名+设备指纹上报，拦=触发下单/支付风控，无任何黑名单收录）/ api-unionid.meituan.com（统一账号）/ api-map.meituan.net（地图瓦片）/ shark.dianping.com（Pike 长连通道，核弹模块 S9 也误伤它）/ ddplus(+quic).meituan.net（TitansX/Picasso 动态模板包）/ mrn.meituan.net 与 beauty-*.meituan.net（VOD/直播拉流）/ assistify.meituan.com（零证据，暂判 CORE）/ awp-assets 与 awps-assets（H5 容器与活动混装）/ apimobile.meituan.com / paymp / i.meituan.com。",
+    "拒收条目（取证否决）：meituan.xn / meituan.yoga / meituangov.cn / meituancdn.cc——AliDNS 无解析或非美团主体，来源可疑，写了也不会命中。",
+    "能力天花板（如实）：开屏走 wmapi/mapi 主 API 路径与 s3plus 共享存储，首页轮播走 p*.meituan.net / img.meituan.net 共享图床的 /bizad|/wmbanner|/adunion 路径——DNS 层不可分；成熟方案（blackmatrix7/wool）全部用 Map Local/reject-dict 即直接证据。可 DNS 切断的只有第三方 ADN + impdsp/mads + 遥测。",
+    "iOS 与 Android 差异：官方《接入第三方SDK目录》标注腾讯营销联盟/BeiZi/天璇/快手联盟/酷盈/PolyGamma 仅 Android——本插件 iOS 侧不挂 pangle/gdt/kuaishou 组，避免无收益死规则。",
+    "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）。",
+    "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
+  ],
+  "sdks": [
+    "sigmob",
+    "tobid",
+    "admate"
+  ],
+  "groups": [
+    {
+      "id": "mt_ad_endpoints",
+      "title": "美团自建广告端点（曝光/竞价/聚合入口）",
+      "tier": "A",
+      "note": "impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口。与 ads 插件同域规则重叠属有意（按 App 开关语义）。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://github.com/hagezi/dns-blocklists/issues/9926",
+        "https://fe-config.meituan.com/bm/config/eg2i916cj1ag1gj16j.html"
+      ],
+      "hosts": [
+        "impdsp.meituan.com",
+        "mads.meituan.com"
+      ]
+    },
+    {
+      "id": "splash_material",
+      "title": "开屏素材 CDN（专用子域）",
+      "tier": "A",
+      "note": "pd0-cdn-mcdn.m.meituan.net=开屏素材专用 mcdn(反黑名单收录);s3plus-pre=预发遥测端,生产不调用,黑洞零风险。开屏主路径(wmapi startpicture/s3plus brandcpt)同域不可分,预期只削掉 mcdn 分发的部分。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD"
+      ],
+      "hosts": [
+        "pd0-cdn-mcdn.m.meituan.net",
+        "s3plus-pre.51ping.com"
+      ]
+    },
+    {
+      "id": "telemetry",
+      "title": "美团/点评纯遥测家族（默认关）",
+      "tier": "A",
+      "disabled": true,
+      "note": "CAT 开源 APM(catfront)、dreport/wreport/hreport/report(BI 集群自证)、analytics.meituan.net、data-sdk-uuid-log/metrics-picture/maplocatesdksnapshot 分片、wx-md/cloudidv/orecct/athena——全部多源收录且与下单支付不同集群,拦掉只丢报表。athena=运营配置中心,拦后营销弹窗从「白屏」变「正常消失」。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://tech.meituan.com/2018/11/01/cat-in-depth-java-application-monitoring.html",
+        "https://adguard.com/"
+      ],
+      "hosts": [
+        "analytics.meituan.net",
+        "athena.mymeituan.com",
+        "catfront.dianping.com",
+        "data-sdk-uuid-log.d.meituan.net",
+        "dreport.meituan.net",
+        "*.dreport.meituan.net",
+        "hreport.meituan.com",
+        "logreport-cloudidv-cbr.meituan.com",
+        "maplocatesdksnapshot.d.meituan.net",
+        "metrics-picture.d.meituan.net",
+        "orecct-rs.meituan.com",
+        "r1-online-report.meituan-dianping.net",
+        "report.meituan.com",
+        "reportonline.meituan.com",
+        "wx-md.meituan.com",
+        "wxreport.qcs.meituan.com",
+        "wreport.meituan.net"
+      ]
+    },
+    {
+      "id": "d_meituan_net",
+      "title": "d.meituan.net 数据集群已知子域（默认关，验证后可升通配）",
+      "tier": "B",
+      "disabled": true,
+      "note": "bd0.d 落 data-leopard 集群（CNAME 取证自证上报），S7 用 DOMAIN-SUFFIX,d.meituan.net,REJECT——但整后缀升通配前需实测商品图/地图完整性，这里只列已知子域。",
+      "sources": [
+        "https://github.com/fmz200/wool_scripts",
+        "https://github.com/privacy-protection-tools/anti-AD"
+      ],
+      "hosts": [
+        "bd0.d.meituan.net"
+      ]
+    },
+    {
+      "id": "waimai_ad",
+      "title": "外卖广告独立子域（默认关，单源收录）",
+      "tier": "B",
+      "disabled": true,
+      "note": "adgame.waimai.meituan.com=外卖广告小游戏;ad.e.waimai.sankuai.com=外卖广告请求域（CNAME 与业务 e.waimai.sankuai.com 不同集群,证据成立但仅 wool 单源）。抓包命中后升 A。",
+      "sources": [
+        "https://github.com/fmz200/wool_scripts",
+        "https://github.com/Junyi-99/Shadowrocket-Modules"
+      ],
+      "hosts": [
+        "adgame.waimai.meituan.com",
+        "ad.e.waimai.sankuai.com"
+      ]
+    },
+    {
+      "id": "popunder_config",
+      "title": "优惠券弹窗/红包雨配置网关（默认关）",
+      "tier": "A",
+      "disabled": true,
+      "note": "catdot/catreport.dianping.com=弹窗配置下发。拦掉=弹窗不弹,但每次请求要多等约 60s 超时——副作用可感知,默认关。",
+      "sources": [
+        "https://api.github.com/search/code?q=catdot.dianping.com"
+      ],
+      "hosts": [
+        "catdot.dianping.com",
+        "catreport.dianping.com"
+      ]
+    }
+  ]
+}

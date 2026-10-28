@@ -148,9 +148,10 @@ CAPABILITIES = [
     dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="open",
          probe=r"(?m)^DOMAIN\s*,", href=DOC + "/Rule/domain_rule",
          why="被 `[Host]` 精确映射覆盖（同一批域名），规则层不需要重复一遍"),
-    dict(layer="规则层", key="r-suffix", name="`DOMAIN-SUFFIX`", expect="open",
+    dict(layer="规则层", key="r-suffix", name="`DOMAIN-SUFFIX`", expect="used",
          probe=r"(?m)^DOMAIN-SUFFIX\s*,", href=DOC + "/Rule/domain_rule",
-         why="`[Host]` 已用 `*.` 通配承担同一职责；`DOMAIN-SUFFIX` 不吃通配，表达力更弱"),
+         why="ads 通配层与 app 插件（banks/qidian/x）整域 REJECT 使用；`[Host]` 的 `*.` 只映射 DNS，"
+             "SUFFIX 还能表达 REJECT-DROP 等规则动作"),
     dict(layer="规则层", key="r-keyword", name="`DOMAIN-KEYWORD`", expect="used",
          probe=r"(?m)^DOMAIN-KEYWORD\s*,", href=DOC + "/Rule/domain_rule"),
     dict(layer="规则层", key="r-wildcard", name="`DOMAIN-WILDCARD`（含 `[0-9]` 字符类）", expect="used",

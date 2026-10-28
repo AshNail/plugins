@@ -1,0 +1,34 @@
+{
+  "slug": "bubei-danci",
+  "name": "不背单词 · 跟踪瘦身",
+  "desc": "如实结论:不背单词官方 SDK 目录(learnywhere.cn/lexis/sdklist 渲染取证)没有任何广告联盟——变现是酷币/会员内购,「去广告」对这个 App 实际=去跟踪。本插件只裁埋点组,友盟推送系默认关(拦了断签到提醒)。零证书。",
+  "version": "1.0.0",
+  "date": "2026-10-28",
+  "loonVersion": "3.5.1(983)",
+  "tag": "隐私,不背单词,跟踪",
+  "comment": [
+    "官方 SDK 目录全列:支付宝/微信 OpenSDK/友盟全家桶(统计/U-Push/分享/APM/U-Link 超链/一键登录+三大运营商通道/Agoo 长连接)/华为联运/各家推送/声通评测/爱加密/岳鹰 Crash——无穿山甲/优量汇/快手/百青藤。此前按「小厂爱用联盟」假设给本 App 配 SDK 组是错的,已撤回。",
+    "红线：learnywhere.cn 整主域(API+例句音频)/bbdc.cn/声通 isuntone/Agoo(阿里共享域不碰)/爱加密(拦可能被识别异常环境)/友盟一键登录通道(cmpassport/wosms/e189)。",
+    "U-Link「智能超链」=营销归因(拉新转化),属跟踪面不属广告面;黑名单站外收录,拦了不影响学习功能。"
+  ],
+  "sdks": [],
+  "groups": [
+    {
+      "id": "tracking",
+      "title": "站外埋点",
+      "tier": "B",
+      "note": "ns.360wgjs.com 收录于 anti-AD/PiT 等三家列表;拦后无功能损失。",
+      "sources": ["https://github.com/privacy-protection-tools/anti-AD"],
+      "hosts": ["ns.360wgjs.com"]
+    },
+    {
+      "id": "umeng",
+      "title": "友盟统计/超链（默认关——会连 U-Push 一起断）",
+      "tier": "B",
+      "disabled": true,
+      "note": "umeng.com 族是它的统计+推送+一键登录底座:DOMAIN-SUFFIX 整域拦=签到提醒与号码认证同断。只在「不在乎推送、只要隐私」时开。",
+      "sources": ["https://learnywhere.cn/lexis/sdklist"],
+      "rules": ["DOMAIN-SUFFIX,umeng.com,REJECT"]
+    }
+  ]
+}
