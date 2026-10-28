@@ -87,14 +87,12 @@
 |---|---|---|
 | `dreport.meituan.net` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:13（已裁决排除 141 条；已收录但默认关闭 39 条）
+## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:13（已裁决排除 141 条；已收录但默认关闭 23 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `tracking.miui.com` | 10: adaway,adguard-dns,adrules,anti-ad,awa,easyprivacy,hagezi-pro,hagezi-xiaomi,peterlowe,stevenblack | 已收录·默认关 |
-| `adv.sec.intl.miui.com` | 7: adguard-dns,adguard-mobile,anti-ad,awa,hagezi-pro,hagezi-xiaomi,stevenblack | 已收录·默认关 |
 | `logupdate.avlyun.sec.miui.com` | 7: adaway,adguard-dns,anti-ad,awa,hagezi-pro,hagezi-xiaomi,stevenblack | 排除·安全族红线 |
-| `adv.sec.miui.com` | 6: adguard-dns,adwars,anti-ad,awa,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `api.brs.intl.miui.com` | 6: adguard-dns,adguard-mobile,anti-ad,hagezi-pro,hagezi-xiaomi,stevenblack | 已收录·默认关 |
 | `stat.youpin.mi.com` | 6: adguard-dns,adrules,anti-ad,easyprivacy,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `tracking.intl.miui.com` | 6: adaway,anti-ad,hagezi-pro,hagezi-xiaomi,peterlowe,stevenblack | 已收录·默认关 |
@@ -132,19 +130,10 @@
 |---|---|---|
 | `3rdupgrade.pandora.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `abroad.api.comm.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
-| `ad.cdn.pandora.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `ad.eu.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `ad.india.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `ad.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `ad.quickapp.hybrid.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `ad.rus.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `adv.l7.34.sec.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `adx.tv.mi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `analytics.ff.avast.sec.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
 | `api-rec.stellar.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
 | `api.accelerator.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
 | `api.account.preview.n.xiaomi.net` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
-| `api.ads.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
 | `api.aurogon.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
 | `api.bbs.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
 | `api.browser.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
@@ -155,6 +144,15 @@
 | `api.device.xiaomi.net` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
 | `api.g.micloud.xiaomi.net` | 2: hagezi-pro,hagezi-xiaomi | 排除·推送/云红线 |
 | `api.game.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
+| `api.launcher.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
+| `api.mintbrs.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
+| `api.muc.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
+| `api.sms.intl.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·账号/设备业务 API |
+| `api.xmpush.global.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·推送/云红线 |
+| `api.xmpush.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·推送/云红线 |
+| `apkrep.ff.avast.sec.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
+| `app.chat.xiaomi.net` | 2: adrules,easyprivacy | 排除·推送/云红线 |
+| `app.greengurad.sec.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
 
 裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
 - `安全族红线` ← `*.sec.miui.com`, `*.sec.intl.miui.com`, `sec-*`, `sec.*`, `security.*`, `*avlyun*`, `*avast*`
@@ -179,11 +177,10 @@
 
 无 A/B 级缺口候选。
 
-## `wechat` — 生效黑洞 25 域；缺口候选 A:0 B:0 C:6（已裁决排除 0 条；已收录但默认关闭 2 条）
+## `wechat` — 生效黑洞 25 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|
-| `adinall.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `xmaterial.tu.qq.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
 ## `x` — 生效黑洞 3 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 3 条）

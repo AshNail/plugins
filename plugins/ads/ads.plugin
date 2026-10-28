@@ -1,7 +1,7 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.7.4
+#!version=2.7.7
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
@@ -394,7 +394,7 @@ mmstat.com = 127.0.0.1
 # ============================================================================
 # 中国广告联盟 / 媒体广告位 / 广告监测
 # ----------------------------------------------------------------------------
-# AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。
+# AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。
 # ============================================================================
 adview.cn = 127.0.0.1
 *.adview.cn = 127.0.0.1
@@ -547,6 +547,10 @@ adpai.thepaper.cn = 127.0.0.1
 bd1.guancha.cn = 127.0.0.1
 ggs.myzaker.com = 127.0.0.1
 d2.sina.com.cn = 127.0.0.1
+50bang.org = 127.0.0.1
+*.50bang.org = 127.0.0.1
+adinall.com = 127.0.0.1
+*.adinall.com = 127.0.0.1
 
 # ============================================================================
 # Google Ads / AdMob / Ad Manager
@@ -613,7 +617,7 @@ mcs-va.tiktok.com = 127.0.0.1
 # ============================================================================
 # 手机厂商广告 SDK（Android）
 # ----------------------------------------------------------------------------
-# 小米、华为、OPPO/一加/realme（HeyTap）、vivo 的广告 SDK 与广告日志域。iOS 设备不受影响；Android 设备如发现影响系统更新/云服务，可删掉对应行。hicloud/oppomobile/vivo.com.cn 等共享主域只列广告专用子机。2026-10 补 realme 印度广告 API（bdapi-ads / bdapi-in-ads.realmemobile.com，各 6 源）。
+# 小米、华为、OPPO/一加/realme（HeyTap）、vivo 的广告 SDK 与广告日志域。iOS 设备不受影响；Android 设备如发现影响系统更新/云服务，可删掉对应行。hicloud/oppomobile/vivo.com.cn 等共享主域只列广告专用子机。2026-10 补 realme 印度广告 API（bdapi-ads / bdapi-in-ads.realmemobile.com，各 6 源）。2026-10 再补 20 个小米/MIUI/MiTV 广告主机：ad1.xiaomi.com、ad.mi.com、ad.cdn.pandora.xiaomi.com、ad.quickapp.hybrid.xiaomi.com、adv.sec.miui.com、adv.sec.intl.miui.com、api.admob.xiaomi.com、ads.xiaomi.com、adx.tv.mi.com、staging-adx.tv.mi.com（公开 xiaomi-dns-blocklist 与 MiTV 去开机广告教程），以及 ad.miui.com、ad.eu/rus/india.xiaomi.com、adv.l7.34.sec.miui.com、global-ad-extranet-pri-azams/azpn.alb.xiaomi.com、global-ad-intl-pri-alisgp.alb.xiaomi.com、wtradv.market.xiaomi.com、xadx.file.market.xiaomi.com（hagezi-xiaomi 通配收录，属系统广告位/商店推广/ADX 素材/跨国投放 ALB）。另补 3 个单源但语义明确的厂商广告主机：adx-in.ads.heytapmobile.com（realme/OPPO 印度广告交易，adguard-dns）、ads-drcn.platform.hihonorcloud.com 与 metrics-ad-drcn.dt.hihonorcloud.com（荣耀广告平台/测量，anti-ad）。这些主机不在 14 份通用广告清单里，但语义与公开资料自证，故补入；小米/OPPO/荣耀设备如遇系统功能异常可按行删除。
 # ============================================================================
 ad.xiaomi.com = 127.0.0.1
 *.ad.xiaomi.com = 127.0.0.1
@@ -663,6 +667,42 @@ bdapi-in-ads.realmemobile.com = 127.0.0.1
 union.mi.com = 127.0.0.1
 *.union.mi.com = 127.0.0.1
 msadsscale.microsoft.com = 127.0.0.1
+ad1.xiaomi.com = 127.0.0.1
+ad.mi.com = 127.0.0.1
+ad.cdn.pandora.xiaomi.com = 127.0.0.1
+ad.quickapp.hybrid.xiaomi.com = 127.0.0.1
+adv.sec.miui.com = 127.0.0.1
+*.adv.sec.miui.com = 127.0.0.1
+adv.sec.intl.miui.com = 127.0.0.1
+*.adv.sec.intl.miui.com = 127.0.0.1
+api.admob.xiaomi.com = 127.0.0.1
+ads.xiaomi.com = 127.0.0.1
+*.ads.xiaomi.com = 127.0.0.1
+adx.tv.mi.com = 127.0.0.1
+staging-adx.tv.mi.com = 127.0.0.1
+ad.miui.com = 127.0.0.1
+*.ad.miui.com = 127.0.0.1
+ad.eu.xiaomi.com = 127.0.0.1
+*.ad.eu.xiaomi.com = 127.0.0.1
+ad.rus.xiaomi.com = 127.0.0.1
+*.ad.rus.xiaomi.com = 127.0.0.1
+ad.india.xiaomi.com = 127.0.0.1
+*.ad.india.xiaomi.com = 127.0.0.1
+adv.l7.34.sec.miui.com = 127.0.0.1
+*.adv.l7.34.sec.miui.com = 127.0.0.1
+global-ad-extranet-pri-azams.alb.xiaomi.com = 127.0.0.1
+*.global-ad-extranet-pri-azams.alb.xiaomi.com = 127.0.0.1
+global-ad-extranet-pri-azpn.alb.xiaomi.com = 127.0.0.1
+*.global-ad-extranet-pri-azpn.alb.xiaomi.com = 127.0.0.1
+global-ad-intl-pri-alisgp.alb.xiaomi.com = 127.0.0.1
+*.global-ad-intl-pri-alisgp.alb.xiaomi.com = 127.0.0.1
+wtradv.market.xiaomi.com = 127.0.0.1
+*.wtradv.market.xiaomi.com = 127.0.0.1
+xadx.file.market.xiaomi.com = 127.0.0.1
+*.xadx.file.market.xiaomi.com = 127.0.0.1
+adx-in.ads.heytapmobile.com = 127.0.0.1
+ads-drcn.platform.hihonorcloud.com = 127.0.0.1
+metrics-ad-drcn.dt.hihonorcloud.com = 127.0.0.1
 
 # ============================================================================
 # 全球移动广告 SDK / 聚合平台
@@ -784,7 +824,7 @@ i2ad.jp = 127.0.0.1
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据
 # ----------------------------------------------------------------------------
-# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。
+# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。2026-10 再补 27 个 6 源交易/网络与共享根精确主机：vidcpm、knorex、m32.media、hueadsxml、media6degrees、tribalfusion、simpli.fi、fastclick、ncaudienceexchange、lucidmedia、jumptap、tradeadexchange、industrybrains、pointroll、vdopia、venturead、creativecdn（RTB House）、blogherads、webads.co.nz、pushnami、retagro、h-bid，以及 bat.bing.net（Bing Ads UET）、pix.revjet.com、beap-bc/ganon/3p-udc.yahoo.com（Yahoo 广告交换/数据）；跳过 ns1p.net（无语义）、adlog.com.com（无上下文）与 gmads.net（带 sat1.de 白名单例外）。2026-10 再补 13 个 4–7 源广告专域：TenMax 台湾 RTB/原生广告（tenmax.io）、Bid Run 程序化平台（bid.run）、Geniee SSP 五域（genieessp/genieesspv/gsspat/gsspcln/gssprt）、Speee 广告投放（speee-ad.jp）、EuroAds 丹麦联盟（euroads.dk）、WebAds 欧洲媒体网络（webads.eu）、SelectMedia 视频 SSP（selectmedia.asia）、Seznam SSP（ssp.seznam.cz）、TargetADS 广告验证（targetads.io）；跳过 hottraffic.nl / mediatraffic.com.ua / pabidding.io（公开身份未能核实）与 pebfvv.icu（随机域，生命周期不确定）。
 # ============================================================================
 adnxs.com = 127.0.0.1
 *.adnxs.com = 127.0.0.1
@@ -1398,6 +1438,81 @@ bidgear.com = 127.0.0.1
 *.bidgear.com = 127.0.0.1
 servedbyadbutler.com = 127.0.0.1
 *.servedbyadbutler.com = 127.0.0.1
+vidcpm.com = 127.0.0.1
+*.vidcpm.com = 127.0.0.1
+knorex.com = 127.0.0.1
+*.knorex.com = 127.0.0.1
+m32.media = 127.0.0.1
+*.m32.media = 127.0.0.1
+hueadsxml.com = 127.0.0.1
+*.hueadsxml.com = 127.0.0.1
+media6degrees.com = 127.0.0.1
+*.media6degrees.com = 127.0.0.1
+tribalfusion.com = 127.0.0.1
+*.tribalfusion.com = 127.0.0.1
+simpli.fi = 127.0.0.1
+*.simpli.fi = 127.0.0.1
+fastclick.net = 127.0.0.1
+*.fastclick.net = 127.0.0.1
+ncaudienceexchange.com = 127.0.0.1
+*.ncaudienceexchange.com = 127.0.0.1
+lucidmedia.com = 127.0.0.1
+*.lucidmedia.com = 127.0.0.1
+jumptap.com = 127.0.0.1
+*.jumptap.com = 127.0.0.1
+tradeadexchange.com = 127.0.0.1
+*.tradeadexchange.com = 127.0.0.1
+industrybrains.com = 127.0.0.1
+*.industrybrains.com = 127.0.0.1
+pointroll.com = 127.0.0.1
+*.pointroll.com = 127.0.0.1
+vdopia.com = 127.0.0.1
+*.vdopia.com = 127.0.0.1
+venturead.com = 127.0.0.1
+*.venturead.com = 127.0.0.1
+creativecdn.com = 127.0.0.1
+*.creativecdn.com = 127.0.0.1
+blogherads.com = 127.0.0.1
+*.blogherads.com = 127.0.0.1
+webads.co.nz = 127.0.0.1
+*.webads.co.nz = 127.0.0.1
+pushnami.com = 127.0.0.1
+*.pushnami.com = 127.0.0.1
+retagro.com = 127.0.0.1
+*.retagro.com = 127.0.0.1
+h-bid.com = 127.0.0.1
+*.h-bid.com = 127.0.0.1
+bat.bing.net = 127.0.0.1
+pix.revjet.com = 127.0.0.1
+beap-bc.yahoo.com = 127.0.0.1
+ganon.yahoo.com = 127.0.0.1
+3p-udc.yahoo.com = 127.0.0.1
+tenmax.io = 127.0.0.1
+*.tenmax.io = 127.0.0.1
+bid.run = 127.0.0.1
+*.bid.run = 127.0.0.1
+genieessp.jp = 127.0.0.1
+*.genieessp.jp = 127.0.0.1
+genieesspv.jp = 127.0.0.1
+*.genieesspv.jp = 127.0.0.1
+gsspat.jp = 127.0.0.1
+*.gsspat.jp = 127.0.0.1
+gsspcln.jp = 127.0.0.1
+*.gsspcln.jp = 127.0.0.1
+gssprt.jp = 127.0.0.1
+*.gssprt.jp = 127.0.0.1
+speee-ad.jp = 127.0.0.1
+*.speee-ad.jp = 127.0.0.1
+euroads.dk = 127.0.0.1
+*.euroads.dk = 127.0.0.1
+webads.eu = 127.0.0.1
+*.webads.eu = 127.0.0.1
+selectmedia.asia = 127.0.0.1
+*.selectmedia.asia = 127.0.0.1
+ssp.seznam.cz = 127.0.0.1
+*.ssp.seznam.cz = 127.0.0.1
+targetads.io = 127.0.0.1
+*.targetads.io = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告
@@ -1500,7 +1615,7 @@ ca.iadsdk.apple.com = 127.0.0.1
 # ============================================================================
 # 弹窗 / Popunder / 成人广告网络
 # ----------------------------------------------------------------------------
-# 全球 Web 弹窗与成人广告网络，均为广告专用域；不包含任何内容站主域。2026-10 审计补充 BounceAds、PropellerClick、AdXpansion、DoublePimp、HyperBanner。2026-10 再补 BuzzOnClick（7 源弹窗网络）与 PopMyAds（6 源）。
+# 全球 Web 弹窗与成人广告网络，均为广告专用域；不包含任何内容站主域。2026-10 审计补充 BounceAds、PropellerClick、AdXpansion、DoublePimp、HyperBanner。2026-10 再补 BuzzOnClick（7 源弹窗网络）、PopMyAds（6 源）与 ExoClick 投放域 magsrv.com（6 源）。
 # ============================================================================
 propellerads.com = 127.0.0.1
 *.propellerads.com = 127.0.0.1
@@ -1558,6 +1673,8 @@ buzzonclick.com = 127.0.0.1
 *.buzzonclick.com = 127.0.0.1
 popmyads.com = 127.0.0.1
 *.popmyads.com = 127.0.0.1
+magsrv.com = 127.0.0.1
+*.magsrv.com = 127.0.0.1
 
 # ============================================================================
 # HTTPDNS / 私有 DoH 端点（防绕过）
