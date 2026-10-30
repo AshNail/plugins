@@ -14,10 +14,20 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FAILS = []
+QUIET = False
+APP_SLUGS = {
+    p.stem for p in (ROOT / "src/apps").glob("*.json") if not p.stem.startswith("_")
+}
+
+
+def header(title):
+    if not QUIET:
+        print(title)
 
 
 def ok(msg):
-    print(f"  ✓ {msg}")
+    if not QUIET:
+        print(f"  ✓ {msg}")
 
 
 def bad(msg):
@@ -63,7 +73,7 @@ def script_refs(plugin):
 
 
 def check_refs():
-    print("\n【1】引用完整性（script() → 文件存在；min.js ↔ src 三向对账）")
+    header("\n【1】引用完整性（script() → 文件存在；min.js ↔ src 三向对账）")
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         family = plugin.parent.name
         refs = [p for p, _ in script_refs(plugin)]
@@ -97,18 +107,27 @@ def check_refs():
 
 
 def check_versions():
-    print("\n【2】版本一致性（#!version ↔ 插件 README / 仓库 README）")
+    header("\n【2】版本一致性（#!version ↔ 插件 README / 仓库 README）")
     vers = {}
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         m = re.search(r"^#!version=(.*)$", plugin.read_text(), re.M)
         vers[plugin.name] = (plugin.parent.name, m.group(1).strip() if m else "?")
+    rreadme = (ROOT / "README.md").read_text()
     for name, (family, v) in vers.items():
         ok(f"{name}: v{v}")
         preadme = ROOT / "plugins" / family / "README.md"
+        if family in APP_SLUGS:
+            # App 插件的 README 由 build-apps 生成，首段有唯一显式版本行；
+            # 正文里的上游版本号（如「起点 2.5.0 后」）不能参与比较。
+            m = re.search(r"^版本 \*\*(\d+\.\d+\.\d+)\*\*", preadme.read_text(), re.M) \
+                if preadme.is_file() else None
+            got = m.group(1) if m else "?"
+            if got != v:
+                bad(f"{name}: 插件版本 v{v}，但 plugins/{family}/README.md 版本行是 v{got}")
+            else:
+                ok(f"{name}: plugins/{family}/README.md 与 #!version 同步（v{v}）")
+            continue
         if preadme.is_file():
-            first_ver = re.search(r"#!version|\bv(\d+\.\d+\.\d+)\b", "\n".join(
-                [preadme.read_text().split("\n\n")[0]] +
-                re.findall(r"\bv\d+\.\d+\.\d+\b", preadme.read_text())))
             # ads 的版本记录写作 `**2.0.0**`，soda/douyin 写作 `v2.6.1`；
             # 只匹配这两种明确格式，避免把 Loon 3.5.1 当成插件版本。
             readme_text = preadme.read_text()
@@ -119,14 +138,12 @@ def check_versions():
                 bad(f"{name}: 插件版本 v{v}，但 plugins/{family}/README.md 最新提到 v{newest}")
             else:
                 ok(f"{name}: plugins/{family}/README.md 与 #!version 同步（v{v}）")
-    rreadme = (ROOT / "README.md").read_text()
-    for name, (family, v) in vers.items():
         if v not in rreadme:
             bad(f"{name} v{v} 未进仓库 README")
 
 
 def check_switches():
-    print("\n【3】开关一致性（enable=${X} ↔ [Argument] ↔ 头注释声明）")
+    header("\n【3】开关一致性（enable=${X} ↔ [Argument] ↔ 头注释声明）")
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         text = "\n".join(plugin_lines(plugin))
         used = set(re.findall(r"\$\{(\w+)\}", text))
@@ -155,7 +172,7 @@ def check_switches():
 
 
 def check_leaks():
-    print("\n【4】泄漏扫描（真实 token / 个人路径 / 邮箱）")
+    header("\n【4】泄漏扫描（真实 token / 个人路径 / 邮箱）")
     pat = re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}|/Users/[A-Za-z0-9_]+/|"
                      r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
     hit_paths = []
@@ -174,7 +191,7 @@ def check_leaks():
 
 
 def check_mitm():
-    print("\n【5】[MITM] 覆盖与目的对账")
+    header("\n【5】[MITM] 覆盖与目的对账")
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         if plugin.name == "ads.plugin":
             # 单 ads 插件是零证书设计：lint 明确要求只有
@@ -184,7 +201,11 @@ def check_mitm():
         text = plugin.read_text()
         m = re.search(r"\[MITM\]\s*\n?\s*hostname\s*=\s*([^\n]+)", text)
         if not m:
-            bad(f"{plugin.name}: 无 [MITM] hostname")
+            if plugin.stem in APP_SLUGS:
+                # App 插件默认零证书；可选 MITM 增强层整段注释，不装证书不生效。
+                ok(f"{plugin.name}: 零证书设计，无生效 [MITM]（预期）")
+            else:
+                bad(f"{plugin.name}: 无 [MITM] hostname")
             continue
         hosts = [h.strip().replace("%APPEND%", "").strip()
                  for h in m.group(1).split(",")]
@@ -202,9 +223,11 @@ def check_mitm():
 
 
 def main():
+    global QUIET
     ap = argparse.ArgumentParser()
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
+    QUIET = args.quiet
     check_refs()
     check_versions()
     check_switches()

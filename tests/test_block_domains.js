@@ -41,7 +41,7 @@ for (const family of FAMILIES) {
     check(`${family} body 是 JSON {}`, !!(resp && resp.body === "{}"), JSON.stringify(r.out));
     check(`${family} Content-Type 是 application/json`,
       !!(resp && resp.headers &&
-        /^application\/json/.test(String(resp.headers["Content-Type"] || ""))),
+        String(resp.headers["Content-Type"] || "").startsWith("application/json")),
       JSON.stringify(r.out));
     check(`${family} 日志记录 ${TAG} blocked`,
       r.logs.join(" ").includes(`${TAG} blocked`),

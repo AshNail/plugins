@@ -12,6 +12,15 @@
     "an.facebook.com 是少数「真能少看到广告」的域,但只对网页播放器片头 VAST 生效,IG App 内 Reels 广告不走它——如实,不夸大。",
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
   ],
+  "redlines": [
+    {"domain": "gateway.instagram.com", "kind": "host", "quote": "gateway.instagram.com", "why": "IG 主网关"},
+    {"domain": "graph.instagram.com", "kind": "host", "quote": "graph.instagram.com / graph.facebook.com", "why": "IG Graph API；anti-AD 收录属误杀高危项"},
+    {"domain": "graph.facebook.com", "kind": "host", "quote": "graph.instagram.com / graph.facebook.com", "why": "FB Graph API"},
+    {"domain": "api.facebook.com", "kind": "host", "quote": "api.facebook.com", "why": "FB API"},
+    {"domain": "edge-mqtt.facebook.com", "kind": "host", "quote": "edge-mqtt.facebook.com（推送=通知生死线）", "why": "推送 = 通知生死线"},
+    {"domain": "fbcdn.net", "kind": "family", "quote": "*.fbcdn.net 整域", "why": "FB/IG 共享 CDN 整域"},
+    {"domain": "cdninstagram.com", "kind": "family", "quote": "*.cdninstagram.com", "why": "IG 静态 CDN 整域"}
+  ],
   "sdks": [
     "meta"
   ],

@@ -11,6 +11,10 @@
     "红线：learnywhere.cn 整主域(API+例句音频)/bbdc.cn/声通 isuntone/Agoo(阿里共享域不碰)/爱加密(拦可能被识别异常环境)/友盟一键登录通道(cmpassport/wosms/e189)。",
     "U-Link「智能超链」=营销归因(拉新转化),属跟踪面不属广告面;黑名单站外收录,拦了不影响学习功能。"
   ],
+  "redlines": [
+    {"domain": "learnywhere.cn", "kind": "family", "quote": "learnywhere.cn 整主域(API+例句音频)", "why": "App 主域：API + 例句音频"},
+    {"domain": "bbdc.cn", "kind": "family", "quote": "bbdc.cn", "why": "不背单词主域整族"}
+  ],
   "sdks": [],
   "groups": [
     {

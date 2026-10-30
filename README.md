@@ -12,9 +12,9 @@
 
 | 插件 | 版本 | 一句话用途 | 按钮 |
 |---|---:|---|---|
-| 汽水音乐 `soda.plugin` | 2.8.5 | 保奖励 + 去广告 + 广告域名拦截 + 开屏请求拦截 + 设置层 + 隐藏【听抖音】+ 每日提醒 + 状态自检看板（含 Loon 环境诊断），全部开关控制 | [![导入 soda](https://img.shields.io/badge/Loon-导入汽水音乐-blue?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin) |
+| 汽水音乐 `soda.plugin` | 2.8.6 | 保奖励 + 去广告 + 广告域名拦截 + 开屏请求拦截 + 设置层 + 隐藏【听抖音】+ 每日提醒 + 状态自检看板（含 Loon 环境诊断），全部开关控制；luna 绑定同时覆盖 api.qishui.com 与 beta-luna.douyin.com | [![导入 soda](https://img.shields.io/badge/Loon-导入汽水音乐-blue?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fsoda%2Fsoda.plugin) |
 | 抖音 `douyin.plugin` | 0.8.5 | 福利页精简 + 信息流广告清理 + 商业化弹窗清理 + 开屏请求拦截 + 状态自检看板（含 Loon 环境诊断，2026-10 真实 HAR 取证） | [![导入 douyin](https://img.shields.io/badge/Loon-导入抖音-black?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fdouyin%2Fdouyin.plugin) |
-| 广告平台拦截器 `ads.plugin` | 2.7.7 | DNS 层全平台拦截 + HTTPDNS 防绕过(REJECT-DROP) + 公共 DoH/DoT 防泄漏；DOMAIN-WILDCARD 广告子域通配 + 数字分片家族层 `[0-9]`（需 TF 3.5.3，默认注释、可取消）+ IP Rewrite(Build 1007+, 默认注释)；**App Store 3.5.2 即可全量导入生效**，零证书、零 MITM/脚本 | [![导入 ads](https://img.shields.io/badge/Loon-导入广告拦截器-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin) |
+| 广告平台拦截器 `ads.plugin` | 2.8.0 | DNS 层全平台拦截 + HTTPDNS 防绕过(REJECT-DROP) + 公共 DoH/DoT 防泄漏（海外默认拦、阿里云/DNSPod/360 共 9 条国内入口默认注释，避免打死 Loon 自身加密 DNS）；DOMAIN-WILDCARD 广告子域通配 + 数字分片家族层 `[0-9]`（需 TF 3.5.3，默认注释、可取消）+ IP Rewrite(Build 1007+, 默认注释)；**App Store 3.5.2 即可全量导入生效**，零证书、零 MITM/脚本 | [![导入 ads](https://img.shields.io/badge/Loon-导入广告拦截器-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin) |
 
 ### 13 个 App 专属去广告插件（零证书默认态，`[Host]`/`[Rule]`；3 个非固定 App 另带默认注释的可选 MITM 增强层）
 
@@ -73,8 +73,11 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | douyin | [`plugins/douyin/README.md`](plugins/douyin/README.md) | 全开关表、HAR 取证证据、【听抖音】字段包、证书固定风险 |
 | ads | [`plugins/ads/README.md`](plugins/ads/README.md) | 拦截分层、可选网关 IP 组、主配置加固片段、来源清单、FAQ |
 | 全仓库 | [`docs/ad-type-strategy.md`](docs/ad-type-strategy.md) | **按广告类型分类的去除策略**：19 类广告 × 6 族，每类的线上特征、可用层与规则思路、覆盖档位、局限、**为什么提不了档**，附六种可复制写法 |
-| 全仓库 | [`docs/loon-feature-checklist.md`](docs/loon-feature-checklist.md) | Loon 全功能清单：官方文档 30 页逐页核对（通用链接/General 全键/规则与 REJECT 变体/策略组/脚本五型/IP Rewrite）、真机取证队列、不采纳清单 |
-| 全仓库 | [`docs/loon-coverage.md`](docs/loon-coverage.md) | Loon 能力覆盖与利用率（按功能轴，生成物） |
+| 全仓库 | [`docs/loon-feature-checklist.md`](docs/loon-feature-checklist.md) | Loon 全功能清单：官方文档 26 页逐页核对（通用链接/General 全键/规则与 REJECT 变体/策略组/脚本五型/IP Rewrite）、真机取证队列、不采纳清单 |
+| 全仓库 | [`docs/loon-coverage.md`](docs/loon-coverage.md) | Loon 能力覆盖与利用率（按功能轴，生成物）。五档：已用 / 可用未用 / 判死 / 不适用 / **未文档化**（官方查不到、我们却带着的 token，两边都不计） |
+| 全仓库 | [`docs/loon-max-config.md`](docs/loon-max-config.md) + [`examples/loon.conf`](examples/loon.conf) | **插件外能力台账与可合并基线**：53 条插件外能力（主配置/分发/插件专属）五态判定、10 个默认键的取舍、可选层（QUIC/STUN/LAN/DoQ/代理组/`[Plugin]`/URL Scheme）、插件编排、验证与回滚；`npm run check:config` 双向钉住文档围栏与 `examples/loon.conf`，并复算台账行数与五态计数 |
+| 全仓库 | [`docs/loon-routing-host-asn.md`](docs/loon-routing-host-asn.md) | **分流/Host/ASN 底层手册**：18 类规则的完整语法矩阵与四步匹配顺序、8 类 Host Map 与订阅 DNS 六层回落、官方规则性能表（哪些类型可量化、哪些随数量变慢）、ASN/GEOIP/CIDR 的分工与广告拦截边界、9 处官方未定义的规则/Host 交互；两张矩阵与分流配方由 `npm run check:config` 逐类校验，配套可导入的 `examples/loon-routing.conf` 演示规则命中顺序 |
+| 全仓库 | `npm run tokens`（`tools/loon-token-audit.py` + `src/loon-docs/tokens.json`） | **语法 token 反向对差**：官方文档是中文的，页面里的拉丁 token 基本只来自 ini 代码块与参数表 → 天然形成每段语法词表；**插件有效行 + 文档 ```` ```ini ```` 围栏里**落在词表外、又没登记的 token 直接报错（用户会整段复制文档示例，所以同标准）。当前 4 个登记例外：`[MITM] h2`、`hostname` 行首 `%APPEND%`、`#!version`、`#!openUrl`（例外表与能力表用 `token=` 链接双向对齐）。同一条命令还自证词表地基：官方正文页清单双向相等、每页都进全站池、`%append%`/`pre-matching`/`#!version` 等 5 条「整站查不到」断言的命中数必须为 0。手工在线核对用 `python3 tools/loon-token-audit.py --sitemap` / `--fetch` |
 | 全仓库 | [`docs/rule-effectiveness.md`](docs/rule-effectiveness.md) | **规则有效率审计**：写了 ≠ 生效。逐条判定规则的生效前提（连接层 / 仅明文 / 需解密），存疑规则必须登记 waiver 与真机证伪方法（生成物） |
 | 全仓库 | [`docs/bypass-audit.md`](docs/bypass-audit.md) | **旁路审计**：拦了 ≠ 拦住。枚举 17 条「广告请求绕开整个插件」的路径，四态封死判定 + 为什么停在这 + 真机证伪方法（生成物） |
 | 全仓库 | [`docs/app-coverage.md`](docs/app-coverage.md) | **App 覆盖率审计**：拿 14 家上游黑名单反查 13 个 App 插件的品牌域缺口（A≥3 源/B=2 源），品牌根域白名单防 typosquat 误报；候选≠必拦，逐条定级后才进源，裁决台账记录排除理由（生成物） |
@@ -85,14 +88,36 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 ```bash
 npm ci
+pip install -r requirements-dev.txt   # ruff（仅开发者静态门禁需要）
 npm run build       # src/common 家族展开 → src/{soda,douyin}/*.js → plugins/*/scripts/*.min.js
 npm run build:ads   # src/ads/domains.json → plugins/ads/ads.plugin
 npm run build:apps  # src/apps/*.json + _sdk.json → plugins/<slug>/<slug>.plugin（13 个 App 插件）
 npm run build:app-readmes  # src/apps/*.json → plugins/<slug>/README.md
 npm run audit:ads   # 上游清单覆盖率/缺口审计（只读）
 npm run lint        # 结构/正则/脚本引用/安全边界/孤儿脚本/压缩语法/ads 数据一致性 + 四处名单一致
-npm run check       # build + build:ads + lint + coverage + 全部测试（源码+压缩版）
-npm run coverage    # Loon 能力覆盖/利用率报表（155 条能力，探测真实用法）
+                    # 四条官方语法面门禁：legacy token 0、ip-mode 右值、[MITM] 键面、Scheme 链接语法
+                    # 文档数字门禁：README、plugins/ads/README.md、全功能清单、原生优先说明与真机取证清单里每个「N 条/N 个/N 页/版本号」
+                    #           都当场由 build-ads 与四个审计工具重算一遍，连「门禁管了 N 条」这句也由门禁自己复算；
+                    #           套件数与断言数由 npm test 自证
+                    # 红线交叉门禁：src/apps/*.json 的 redlines 是数据不是散文——两个构建器都不许生效规则命中它，
+                    #           DOMAIN-WILDCARD 与红线的重叠必须在 redline_overlap 里逐条显式承认，漏写或写旧都构建失败，
+                    #           域名类拦截面的四种载体（Host 条目 / 顶层 DOMAIN(-SUFFIX) / AND 复合里嵌套的后缀 / DOMAIN-KEYWORD）
+                    #           都要过同一道判定，lint 另把产物里出现过的规则类型与分类表对差
+                    #           [MITM] 解密面门禁：hostname 名单是红线链上的第四种载体（glob 语义比较）——App 插件里不许默认生效、
+                    #           不许罩住别家 App 的红线，罩自己红线的只准落在声明过的默认注释增强层，且 enhance.mitm_hosts
+                    #           必须与产物渲染的 hostname 集合相等
+                    #           正则面形状门禁：URL-REGEX 与脚本的 ${url} ~= /…/ 是第五种载体，按形状分两类各归各的判定——
+                    #           没有路径段的整主机面必须过红线；按 HTTPS 匹配却描不进本插件生效 hostname 名单的面要逐条认罪
+                    #           主机搬家门禁：luna 绑定必须同时显式写全该 App 取证到的全部 luna 主机
+                    #           （api.qishui.com + beta-luna.douyin.com），且两条都在生效 [MITM] hostname 里——
+                    #           少一个就是「插件在跑、清理不到」的静默失效（2026-10-29 日志：旧单主机绑定只命中 1/881）
+npm run tokens        # 反向对差：插件有效行 + 文档围栏里的 Loon 配置，语法 token 是否都能在官方对应段落查到（例外须登记）
+npm run check:types   # tsc checkJs：生成后的 src/**/*.js（排除 src/common）；Loon 运行时全局声明在 types/loon.d.ts
+npm run check:oxlint  # oxlint correctness + no-undef / no-unused-vars；Loon 全局与 Node 测试环境分域声明
+npm run check:ruff    # ruff E9/F/W605/B006/B023：Python 工具的语法错误、未定义名、死导入/变量、非法转义
+npm run check:config  # examples/loon.conf 严格校验 + 文档围栏逐字同步 + 53 行插件外能力台账复算
+npm run check       # build + build:ads + types + oxlint + ruff + lint + tokens + config + coverage + 全部测试（源码+压缩版）
+npm run coverage    # Loon 能力覆盖/利用率报表（175 条，探测真实用法；69 已用 / 40 可用未用 / 50 判死 / 12 不适用 / 4 未文档化）
 npm test            # 仅测试；26 套件 ×2 = 52 套件 / 1596 断言
 ```
 
@@ -104,7 +129,13 @@ src/<family>/*.js                                   # 可读源码（common 三�
 src/common/  block-domains / daily-reminder / welfare-stamp / splash-ad / status + families.json   # soda/douyin 单一来源
 src/ads/     domains.json + protected-roots.json    # ads 单插件数据源
 src/apps/    _sdk.json + <slug>.json                # App 插件数据源（SDK 组引用 ads，域名不复制）
-tests/ tools/{gen-args.js,build.js,build-ads.py,audit.py,ads-audit.py,check-remote.py,publish.py,loon-coverage.py,ad-surface-audit.py,rule-effectiveness.py,bypass-audit.py}
+tests/ tools/{gen-args.js,build.js,build-ads.py,audit.py,ads-audit.py,check-remote.py,publish.py,loon-coverage.py,loon-token-audit.py,check-loon-config.py,ad-surface-audit.py,rule-effectiveness.py,bypass-audit.py}
+tsconfig.json + types/loon.d.ts                     # checkJs 配置与 Loon 运行时全局声明
+.oxlintrc.json                                      # correctness / no-undef / no-unused-vars 规则面
+pyproject.toml + requirements-dev.txt               # ruff 规则面与版本锁定（只开高信号规则）
+examples/loon.conf                                         # 去广告优先的主配置基线（与 docs/loon-max-config.md 逐字同步）
+examples/loon-routing.conf                                  # direct-only 分流顺序演示（域名 → ASN → GEOIP → FINAL）
+src/loon-docs/ tokens.json                                # 官方正文的拉丁 token 词表（--build/--fetch 生成，CI 离线用）
 .github/workflows/check.yml                         # CI：push 自动跑 npm run check
 ```
 

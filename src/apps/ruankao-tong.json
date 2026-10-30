@@ -12,6 +12,10 @@
     "崩溃 SDK（shenzhou / crash.ixinz）第一方自建,网络层无从区分,不列。",
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
   ],
+  "redlines": [
+    {"domain": "www.ixinz.com", "kind": "host", "quote": "www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰", "why": "课程/题库内容分发"},
+    {"domain": "s2.ixinz.com", "kind": "family", "quote": "www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰", "why": "题库内容分发整族"}
+  ],
   "sdks": [
     "pangle",
     "gdt"

@@ -45,7 +45,6 @@ def collect_files():
     """插件引用的脚本 + 插件本身（未引用的脚本不用上传）。"""
     files = []
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
-        family = plugin.parent.name
         # 去掉注释行（示例里的 scripts/x.min.js 不算）
         text = "\n".join(
             l for l in plugin.read_text().splitlines() if not l.strip().startswith("#")

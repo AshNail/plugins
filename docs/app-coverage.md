@@ -25,7 +25,7 @@
 |---|---|---|
 | `cm.netseer.com` | 2: anti-ad,stevenblack | 已收录·默认关 |
 
-## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:11（已裁决排除 14 条；已收录但默认关闭 16 条）
+## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:12（已裁决排除 14 条；已收录但默认关闭 17 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -51,6 +51,7 @@
 |---|---|---|
 | `blackhole.m.jd.com` | 2: anti-ad,hagezi-pro | 排除·基础设施红线 |
 | `cm.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `dns.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `gia.jd.com` | 2: easyprivacy,hagezi-pro | 排除·基础设施红线 |
 | `gias.jd.com` | 2: adrules,easyprivacy | 排除·基础设施红线 |
 | `h5speed.m.jd.com` | 2: adrules,easyprivacy | 排除·基础设施红线 |
@@ -87,7 +88,7 @@
 |---|---|---|
 | `dreport.meituan.net` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:13（已裁决排除 141 条；已收录但默认关闭 23 条）
+## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:14（已裁决排除 141 条；已收录但默认关闭 23 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -155,8 +156,10 @@
 | `app.greengurad.sec.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
 
 裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
-- `安全族红线` ← `*.sec.miui.com`, `*.sec.intl.miui.com`, `sec-*`, `sec.*`, `security.*`, `*avlyun*`, `*avast*`
-- `推送/云红线` ← `*xmpush*`, `resolver.msg.*`, `*.micloud.*`, `findapi.*`, `statusapi.*`, `*.chat.*`
+- `安全族红线` ← `*.sec.miui.com`, `*.sec.intl.miui.com`, `*avlyun*`, `*avast*`
+- `安全族模式放行（未取证到域名的 catch-all）` ← `sec-*`, `sec.*`, `security.*`
+- `推送/云模式放行（未取证到域名的 catch-all）` ← `findapi.*`, `statusapi.*`
+- `推送/云红线` ← `*xmpush*`, `resolver.msg.*`, `*.micloud.*`, `*.chat.*`
 - `账号/设备业务 API` ← `api*`, `*api.*`
 - `遥测/日志（隐私面，非广告）` ← `*stat*`, `*tracking*`, `*sentry*`, `*bugreport*`, `*events.*`, `*mlog*`, `*mqs-log*`, `*beehive*`
 - `系统服务总线` ← `*.sys.miui.com`

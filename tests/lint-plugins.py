@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Structural lint for the Loon plugins (soda/douyin + the single ads plugin)."""
 import fnmatch
+import importlib.util
 import json
 import pathlib
 import re
 import subprocess
 import sys
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -16,7 +17,7 @@ def escape_regex_slashes(pattern):
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 40, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 38, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 1, 11, "douyin"),
 ]
 
@@ -27,14 +28,14 @@ FAMILY_CHECKS = {
     "soda": {
         "enable": {
             "splashClean": 1,
-            "cleanAds": 9,
+            "cleanAds": 8,
             "killRewardAds": 2,
             "blockAdDomains": 1,
             "settingsClean": 1,
             "hideDouyinEntry": 1,
             "hideDouyinTab": 1,
             "blockSplashAd": 1,
-            "debugLog": 22,
+            "debugLog": 21,
         },
         "mitm": [
             "api.qishui.com",
@@ -53,6 +54,8 @@ FAMILY_CHECKS = {
             "growth": "https://api.qishui.com/luna/growth/activity_entrance",
             "fallback": "https://api.qishui.com/luna/advert/fallback/done/info",
             "feed": "https://api.qishui.com/luna/feed/song-tab",
+            "luna-card": "https://beta-luna.douyin.com/luna/card",
+            "luna-upsell-sort": "https://beta-luna.douyin.com/luna/commerce/v2/upsell_sort_decision?x=1",
             "splash-v2": "https://ad.zijieapi.com/api/ad/v2/ack/splash/report",
         },
     },
@@ -396,6 +399,13 @@ BINDING_SAMPLES = {
             "https://api.qishui.com/luna/growth/activity_entrance",
             "https://api.qishui.com/luna/growth/activity/finish",
             "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
+            "https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve",
+            "https://beta-luna.douyin.com/luna/advert/incentive/config",
+            "https://beta-luna.douyin.com/luna/advert/incentive/retrieve",
+            "https://beta-luna.douyin.com/luna/ads/config",
+            "https://beta-luna.douyin.com/luna/card",
+            "https://beta-luna.douyin.com/luna/feed/song-tab",
+            "https://beta-luna.douyin.com/luna/commerce/v2/upsell_sort_decision?x=1",
             "https://conf.qishui.com/service/settings/v3/?device_id=x",
         ),
     },
@@ -1660,8 +1670,9 @@ def check_ads_family():
     """Validate the single DNS-first ads plugin and its optional layers."""
     protected_path = ROOT / "src/ads/protected-roots.json"
     try:
-        protected = set(json.loads(protected_path.read_text())["roots"])
-    except (OSError, KeyError, json.JSONDecodeError) as exc:
+        # 与两个构建器同一个口径：手写表 ∪ 由 App 红线派生的根。
+        protected = REDLINES_MODULE.protected_roots()
+    except (OSError, KeyError, json.JSONDecodeError, ValueError) as exc:
         errors.append(f"ads: cannot read {protected_path}: {exc}")
         protected = set()
 
@@ -2008,10 +2019,26 @@ def check_ads_family():
         "httpdns.aliyuncs.com",
         "httpdns.qq.com",
         "dns.weixin.qq.com",
-        "resolver.msg.xiaomi.net",
+        "httpdns.baidu.com",
     ):
         if domain not in exact:
             errors.append(f"{ADS_PLUGIN}: HTTPDNS sample missing: {domain}")
+    # 红线冲突候选永久锁定：这几条只能以注释形态存在于 ads，绝不允许激活。
+    # resolver.msg.xiaomi.net 曾经默认生效——它不在 mijia 那句 comment 红线里，而在同一文件的
+    # triage_exclude 台账（推送/云红线 resolver.msg.*）里，第 27 轮只读 comment 的门禁看不见它。
+    for marker in (
+        "# resolver.msg.xiaomi.net = 127.0.0.1",
+        "# dns.jd.com = 127.0.0.1",
+        "# union.jd.com = 127.0.0.1",
+        "# *.union.jd.com = 127.0.0.1",
+    ):
+        if marker not in raw:
+            errors.append(f"{ADS_PLUGIN}: app-redline overlap entry missing: {marker}")
+    for domain in ("resolver.msg.xiaomi.net", "dns.jd.com", "union.jd.com"):
+        if domain in exact:
+            errors.append(f"{ADS_PLUGIN}: 按 App 插件的红线被 ads 激活: {domain}")
+        if any(base != domain and domain.endswith("." + base) for base in wildcard):
+            errors.append(f"{ADS_PLUGIN}: 某条通配把红线 {domain} 捞进生效组")
     # 公共 DoH 断言要感知通配覆盖——`=adguard-dns.com` 形态下
     # family/unfiltered 变体不在 exact 里，但被 *.'d 基域覆盖即算命中。
     def covered(domain: str) -> bool:
@@ -2021,7 +2048,6 @@ def check_ads_family():
 
     for domain in (
         "dns.google",
-        "doh.pub",
         "cloudflare-dns.com",
         "dns.adguard-dns.com",
         "family.adguard-dns.com",
@@ -2029,11 +2055,50 @@ def check_ads_family():
         "security.cloudflare-dns.com",
         "family.cloudflare-dns.com",
         "adblock.doh.mullvad.net",
-        "sm2.doh.pub",
         "doh.dns.sb",
     ):
         if not covered(domain):
             errors.append(f"{ADS_PLUGIN}: public DoH sample missing: {domain}")
+
+    # 国内公共 DoH 默认不得生效。Loon 主配置在国内常用域名形式 doh/doq，
+    # [Host] 会把 Loon 自己的加密 DNS 一起打到 127.0.0.1：2026-10-29 的 23 小时
+    # 真机日志里 dns.alidns.com 17,073 + doh.pub 11,239 = 28,312 次 Host Map，
+    # 连带 5,236 次 DoQ 连接尝试与 10,389 次 DoH 连接失败。插件读不到主配置，
+    # 无法只在 App 流量上生效，因此这 9 条只能留在 doh_public_cn 默认注释组。
+    ads_doh_self_harm = (
+        "dns.alidns.com",
+        "doh.aliyun.com",
+        "doh.pub",
+        "dns.pub",
+        "dot.pub",
+        "sm2.doh.pub",
+        "doh.360.cn",
+        "dot.360.cn",
+        "dot.alidns.com",
+    )
+    for domain in ads_doh_self_harm:
+        if domain in exact or any(domain.endswith("." + base) for base in wildcard):
+            errors.append(
+                f"{ADS_PLUGIN}: 国内公共 DoH 默认生效会打死 Loon 自己的解析链: {domain}"
+            )
+        if f"# {domain} = 127.0.0.1" not in raw:
+            errors.append(
+                f"{ADS_PLUGIN}: 国内公共 DoH 必须以默认注释形态保留: {domain}"
+            )
+    try:
+        ads_source = json.loads(
+            pathlib.Path("src/ads/domains.json").read_text(encoding="utf-8")
+        )["plugins"]["ads"]["groups"]
+        cn_group = next((g for g in ads_source if g.get("id") == "doh_public_cn"), None)
+        if not cn_group or not cn_group.get("disabled"):
+            errors.append("ads: src/ads/domains.json 缺少默认注释组 doh_public_cn")
+        elif set(cn_group.get("rules") or []) != set(ads_doh_self_harm):
+            errors.append(
+                "ads: doh_public_cn 必须恰好包含 9 条国内公共 DoH，"
+                "新增/删除都要同步 lint 的自伤名单"
+            )
+    except (OSError, ValueError, KeyError) as exc:
+        errors.append(f"ads: cannot read doh_public_cn from src/ads/domains.json: {exc}")
 
     # Attribution/analytics are intentionally opt-in comments. They must not
     # leak into the active Host set, or installing the core plugin would break
@@ -2090,6 +2155,609 @@ def check_ads_family():
         print("ads: generated plugin matches src/ads/domains.json")
 
 
+ADS_README = "plugins/ads/README.md"
+# README 把 HTTPDNS 与公共 DoH 单独成行；其余未注释组在文档里合称「核心广告组」。
+ADS_ROLED_GROUPS = ("httpdns", "doh_public")
+ADS_COUNT_UNIT = re.compile(r"(\d+)\s*(?:组|条)")
+
+# 表格行标签 -> 该行「N 组 / N 条」应当出现的数字（顺序敏感）。
+def ads_row_expectations(counts):
+    return {
+        "`[Host]` 核心广告组": [counts["__core_groups"], counts["__core_rules"]],
+        "`[Host]` HTTPDNS 组": [counts["__httpdns_rules"]],
+        "`[Host]` 公共 DoH 组": [counts["__doh_public_rules"]],
+        "`[Rule]`": [counts["rules"]],
+        "`[Rule]` DOMAIN-WILDCARD 通配/家族层": [counts["__glob_total"]],
+        "`[General]`": [counts["general"]],
+        "`[Host]` 默认注释组": [counts["__off_groups"], counts["__off_rules"]],
+        "`[Rule]` 可选组": [
+            counts["rules_disabled"],
+            counts["optional_httpdns_ip"],
+            counts["optional_public_ip"],
+        ],
+        "`[IP Rewrite]` 可选组": [counts["ip_rewrite_disabled"]],
+    }
+
+
+# 括号里的拆分数字后面不跟「组/条」，只能按题注取：和合计行同一套标签锚定语法。
+ADS_ROW_PATTERNS = {
+    "`[Rule]` DOMAIN-WILDCARD 通配/家族层": [
+        (r"（(\d+) 广告左标签 \+ (\d+) 数字分片家族", ("wildcards", "family_wildcards")),
+    ],
+}
+
+# 合计行的每条数字都带一个唯一标签：按标签取值，不按位置数列，改一行不会牵动其他行。
+ADS_SUMMARY_PATTERNS = (
+    (r"(\d+) 组、", ("groups",)),
+    (r"(\d+) 条生效 Host", ("active",)),
+    (r"exact (\d+) / wildcard (\d+)", ("host_exact", "host_wildcard")),
+    (r"(\d+) 条默认注释 Host", ("disabled",)),
+    (r"(\d+) 条生效 Rule", ("rules",)),
+    (r"(\d+) 条默认注释 DOMAIN-WILDCARD", ("__glob_total",)),
+    (r"（(\d+) 通配 \+ (\d+) 家族", ("wildcards", "family_wildcards")),
+    (r"(\d+) 条默认注释可选 Rule", ("rules_disabled",)),
+    (r"(\d+) 条默认注释 IP Rewrite", ("ip_rewrite_disabled",)),
+)
+
+
+def ads_machine_counts():
+    """向 build-ads 要一份机器算出的计数——文档数字唯一的对照源。"""
+    proc = subprocess.run(
+        [sys.executable, "tools/build-ads.py", "--stats-json"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        errors.append("ads: tools/build-ads.py --stats-json failed:\n" + proc.stderr.strip())
+        return None
+    try:
+        counts = json.loads(proc.stdout)["ads"]
+    except (ValueError, KeyError) as exc:
+        errors.append(f"ads: cannot parse --stats-json: {exc}")
+        return None
+    counts["__glob_total"] = counts["wildcards"] + counts["family_wildcards"]
+    core = [g for g in counts["by_group"] if not g["disabled"] and g["id"] not in ADS_ROLED_GROUPS]
+    roled = [g for g in counts["by_group"] if g["id"] in ADS_ROLED_GROUPS]
+    off = [g for g in counts["by_group"] if g["disabled"]]
+    counts["__core_groups"] = len(core)
+    counts["__core_rules"] = sum(g["rules"] for g in core)
+    counts["__roled_total"] = sum(g["rules"] for g in roled)
+    counts["__off_groups"] = len(off)
+    counts["__off_rules"] = sum(g["rules"] for g in off)
+    by_id = {g["id"]: g["rules"] for g in counts["by_group"]}
+    for gid in ADS_ROLED_GROUPS:
+        if gid not in by_id:
+            errors.append(f"ads: src/ads/domains.json 缺少组 {gid}（README 为它单列了一行）")
+        counts[f"__{gid}_rules"] = by_id.get(gid, 0)
+    return counts
+
+
+def ads_section_patterns(counts):
+    """正文（除 `## 版本` 台账外）里的小节标题与要点行中的数字声明。
+
+    锚点写死到具体标题文本，因此可以全文扫；`## 版本` 之后每一行记录的是**当时**的数字，
+    本来就该陈旧，不进门禁。
+    """
+    return (
+        # (锚定正则, 期望数字序列)
+        (r"^### 核心广告组（(\d+) 组 / (\d+) 条展开）$",
+         [counts["__core_groups"], counts["__core_rules"]]),
+        (r"^### HTTPDNS / 公共 DoH（(\d+) 条展开）$", [counts["__roled_total"]]),
+        (r"^### 广告子域通配层（(\d+) 条 \+ (\d+) 条家族层）$",
+         [counts["wildcards"], counts["family_wildcards"]]),
+        (r"^#### 数字分片家族层（(\d+) 条", [counts["family_wildcards"]]),
+        (r"^- HTTPDNS/私有 DoH：", [counts["__httpdns_rules"]]),
+        (r"^- 公共 DoH：", [counts["__doh_public_rules"]]),
+        # 版本台账里每行记录的是「当时」的数字，不往这里加。
+    )
+
+
+def check_readme_numbers():
+    """把 plugins/ads/README.md 里每一个计数声明钉在 build-ads 算出的数字上。
+
+    文档正文也是数据源：加一批域名后忘了改 README 的「1479 条」，读者就会照着错的
+    规模做判断。这里不重新数插件行，只信 tools/build-ads.py --stats-json 一个出口。
+    """
+    counts = ads_machine_counts()
+    if counts is None:
+        return
+    ADS_NUMBER_CACHE.update({k: v for k, v in counts.items() if isinstance(v, int)})
+    path = ROOT / ADS_README
+    if not path.exists():
+        errors.append(f"{ADS_README}: missing")
+        return
+    text = path.read_text(encoding="utf-8")
+
+    checked = 0
+    expectations = ads_row_expectations(counts)
+    seen_labels = set()
+    for num, line in enumerate(text.splitlines(), 1):
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.split("|")]
+        if len(cells) < 3 or cells[1] not in expectations:
+            continue
+        label = cells[1]
+        seen_labels.add(label)
+        got = [int(x) for x in ADS_COUNT_UNIT.findall(cells[2])]
+        want = expectations[label]
+        if got != want:
+            errors.append(
+                f"{ADS_README}:{num}: 表格行 {label} 的数量声明是 {got}，"
+                f"build-ads 机器算出的是 {want} —— 改文档或改数据，别让它们各自漂"
+            )
+        else:
+            checked += 1
+        for pattern, keys in ADS_ROW_PATTERNS.get(label, ()):
+            m = re.search(pattern, cells[2])
+            if not m:
+                errors.append(
+                    f"{ADS_README}:{num}: 表格行 {label} 缺少数值声明 {pattern!r}（对应 {keys}）"
+                )
+                continue
+            got = [int(x) for x in m.groups()]
+            want = [counts[key] for key in keys]
+            if got != want:
+                errors.append(
+                    f"{ADS_README}:{num}: 表格行 {label} 的 {pattern!r} 声明 {got}，"
+                    f"机器算出 {want}"
+                )
+            else:
+                checked += 1
+    for label in expectations:
+        if label not in seen_labels:
+            errors.append(f"{ADS_README}: 缺少数量声明行 {label}（改名要同步门禁）")
+
+    summary = None
+    for num, line in enumerate(text.splitlines(), 1):
+        if line.startswith("合计："):
+            if summary is not None:
+                errors.append(f"{ADS_README}:{num}: 只允许一行「合计：」数量声明")
+                continue
+            summary = (num, line)
+    if summary is None:
+        errors.append(f"{ADS_README}: 找不到「合计：」数量声明行")
+    else:
+        num, line = summary
+        for pattern, keys in ADS_SUMMARY_PATTERNS:
+            m = re.search(pattern, line)
+            if not m:
+                errors.append(
+                    f"{ADS_README}:{num}: 合计行缺少数值声明 {pattern!r}（对应 {keys}）"
+                )
+                continue
+            got = [int(x) for x in m.groups()]
+            want = [counts[key] for key in keys]
+            if got != want:
+                errors.append(
+                    f"{ADS_README}:{num}: 合计行 {pattern!r} 声明 {got}，"
+                    f"机器算出 {want}"
+                )
+            else:
+                checked += 1
+
+    patterns = ads_section_patterns(counts)
+    matched = {pattern: False for pattern, _ in patterns}
+    for num, line in enumerate(text.splitlines(), 1):
+        if line.startswith("## 版本"):
+            break  # 从这里起是版本台账，每一行记的是当时的数字，本来就该陈旧
+        for pattern, want in patterns:
+            m = re.match(pattern, line)
+            if m is None:
+                continue
+            matched[pattern] = True
+            got = [int(x) for x in m.groups()] or [int(x) for x in ADS_COUNT_UNIT.findall(line)]
+            if got != want:
+                errors.append(
+                    f"{ADS_README}:{num}: 「{line[:60]}」声明 {got}，机器算出 {want}"
+                )
+            else:
+                checked += 1
+    for pattern, hit in matched.items():
+        if not hit:
+            errors.append(f"{ADS_README}: 缺少数量声明 {pattern!r}（改名要同步门禁）")
+
+    GATE_CLAIM_COUNTS["ads"] = checked
+    print(
+        f"readme numbers: {checked} count claim(s) in {ADS_README} bound to "
+        f"tools/build-ads.py --stats-json "
+        f"(groups={counts['groups']} active_host={counts['active']} "
+        f"exact={counts['host_exact']} wildcard={counts['host_wildcard']} "
+        f"rules={counts['rules']} glob={counts['__glob_total']} "
+        f"optional_rules={counts['rules_disabled']} "
+        f"optional_ip_rewrite={counts['ip_rewrite_disabled']})"
+    )
+
+
+GATE_CLAIM_COUNTS: dict[str, int] = {}
+# ads 那一份 build-ads 计数也缓存下来给别的文档用（同一进程内，不再多跑一次子进程）。
+ADS_NUMBER_CACHE: dict[str, int] = {}
+NATIVE_FIRST_DOC = "docs/loon-native-first.md"
+NATIVE_FIRST_PATTERNS = (
+    (r"`(\d+) 条生效 Host`", ("active_host",)),
+    (r"(\d+) 个 App 插件", ("app_plugins",)),
+    (r"官方文档 (\d+) 页", ("doc_pages",)),
+    (r"能力表 (\d+) 条", ("cov_rows",)),
+    # 红线名单也是规模数字（tools/build-ads.py --stats-json 的 redline_entries / redline_apps）。
+    (r"(\d+) 条 App 红线", ("redline_entries",)),
+    (r"(\d+) 个 App 的红线", ("redline_apps",)),
+)
+# 真机清单也讲规模：J 段插件数、正文页数、「本仓库当前 ads=x.y.z」这类版本引用、
+# 以及「共 N 个（…）」——声明的个数必须等于括号里真列出的项数（纯文内自证，不需要外部出口）。
+DEVICE_DOC = "docs/device-checklist.md"
+DEVICE_PATTERNS = (
+    (r"## J\. (\d+) 个 App 专属插件", ("app_plugins",)),
+    (r"官方 (\d+) 个正文页", ("doc_pages",)),
+)
+DEVICE_VERSION_RE = re.compile(r"`(ads|soda|douyin)=([\d.]+)`")
+DEVICE_ENUM_RE = re.compile(r"共 (\d+) 个（([^（）]*)）")
+# 门禁自己的「管了 N 条声明」也是数字：文档复述它，就同样钉在本次真实计数上。
+# 数字类陈述一旦被写进文档，它就和 README 的「1476 条生效 Host」是同一类东西——会漂。
+GATE_SELF_REPORTS = (
+    (
+        "tests/README.md",
+        (
+            (r"文档数字门禁：ads README (\d+) 条声明", ("ads",)),
+            (r"真机清单 (\d+) 条声明", ("root",)),
+        ),
+    ),
+    (
+        "docs/loon-feature-checklist.md",
+        (
+            (r"readme numbers: (\d+) count claim\(s\) in plugins/ads/README\.md", ("ads",)),
+            (r"readme numbers: (\d+) claim\(s\) in README\.md", ("root",)),
+            (r"doc links: (\d+) relative link", ("doc_links",)),
+            (r"J section covers all (\d+)/(\d+) app plugins", ("device_covered", "device_total")),
+        ),
+    ),
+)
+
+
+def check_gate_self_report():
+    """文档里「门禁管了 N 条声明」这句话，由门禁当场算出的 N 核对。"""
+    if not GATE_CLAIM_COUNTS:
+        return
+    for rel, patterns in GATE_SELF_REPORTS:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"{rel}: missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for pattern, keys in patterns:
+            if any(key not in GATE_CLAIM_COUNTS for key in keys):
+                continue
+            hits = list(re.finditer(pattern, text))
+            if not hits:
+                errors.append(f"{rel}: 缺少门禁声明 {pattern!r}")
+                continue
+            for hit in hits:
+                got = [int(x) for x in hit.groups()]
+                want = [GATE_CLAIM_COUNTS[key] for key in keys]
+                if got != want:
+                    errors.append(
+                        f"{rel}: 「{hit.group(0)}」声明 {got}，"
+                        f"本次门禁实际核对 {want}（{keys}）"
+                    )
+
+
+ROOT_README = "README.md"
+# 根 README 的每一句「有多少条」都应当能被机器重述。这里的每条数字都不在门禁里手写：
+# 段词表来自 tokens.json，能力表来自 loon-coverage，路径数来自 bypass-audit，
+# 类型数来自 ad-surface-audit，上游家数来自 app-coverage-audit 的 SOURCE_NAMES，
+# 插件/App/增强层数来自 src/apps/*.json。
+COVERAGE_OK_RE = re.compile(
+    r"coverage ok: used=(\d+) open=(\d+) reject=(\d+) na=(\d+) undocumented=(\d+)"
+)
+
+
+def run_audit(args):
+    proc = subprocess.run(
+        [sys.executable] + [str(ROOT / a) if a.endswith(".py") else a for a in args],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    out = proc.stdout + proc.stderr
+    if proc.returncode != 0:
+        errors.append(f"readme numbers: `{' '.join(args)}` failed\n" + "\n".join(out.strip().splitlines()[-4:]))
+        return None
+    return out
+
+
+def bank_app_count():
+    """银行合集里有几款 App：出处是 banks.json 的 desc 首句「覆盖A/B/C…」，不在门禁里写死。"""
+    desc = json.loads((ROOT / "src/apps/banks.json").read_text(encoding="utf-8"))["desc"]
+    head = re.split(r"[:：]", desc, 1)[0]
+    return len([part for part in head.split("/") if part.strip()])
+
+
+def root_machine_numbers():
+    numbers = {}
+    tokens_path = ROOT / "src/loon-docs/tokens.json"
+    if not tokens_path.exists():
+        errors.append(f"readme numbers: missing {tokens_path} —— 先跑 npm run tokens")
+        return None
+    numbers["doc_pages"] = len(json.loads(tokens_path.read_text(encoding="utf-8"))["doc_pages"])
+    numbers["scheme_import_keys"] = len(SCHEME_IMPORT_KEYS)
+
+    out = run_audit(["tools/loon-coverage.py", "--check"])
+    if out is None:
+        return None
+    m = COVERAGE_OK_RE.search(out)
+    if not m:
+        errors.append("readme numbers: loon-coverage 输出里没有可解析的 coverage ok 行")
+        return None
+    used, openc, reject, na, undoc = (int(x) for x in m.groups())
+    numbers.update(
+        cov_rows=used + openc + reject + na + undoc,
+        cov_used=used,
+        cov_open=openc,
+        cov_reject=reject,
+        cov_na=na,
+        cov_undoc=undoc,
+    )
+
+    out = run_audit(["tools/bypass-audit.py", "--check"])
+    if out is None:
+        return None
+    m = re.search(r"bypass ok: (\d+) paths", out)
+    if not m:
+        errors.append("readme numbers: bypass-audit 输出里没有可解析的路径数")
+        return None
+    numbers["bypass_paths"] = int(m.group(1))
+
+    out = run_audit(["tools/ad-surface-audit.py", "--check"])
+    if out is None:
+        return None
+    m = re.search(r"surfaces ok: (\d+) classes", out)
+    if not m:
+        errors.append("readme numbers: ad-surface-audit 输出里没有可解析的类型数")
+        return None
+    numbers["surface_classes"] = int(m.group(1))
+
+    spec = importlib.util.spec_from_file_location(
+        "app_coverage_audit", str(ROOT / "tools/app-coverage-audit.py")
+    )
+    if spec is None or spec.loader is None:
+        errors.append("readme numbers: cannot load tools/app-coverage-audit.py")
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    numbers["upstream_sources"] = len(set(module.SOURCE_NAMES))
+
+    app_jsons = sorted(p for p in (ROOT / "src/apps").glob("*.json") if p.name != "_sdk.json")
+    if not app_jsons:
+        errors.append("readme numbers: src/apps/*.json 一个都没有")
+        return None
+    numbers["app_plugins"] = len(app_jsons)
+    numbers["enhance_plugins"] = sum(
+        1 for p in app_jsons if json.loads(p.read_text(encoding="utf-8")).get("enhance")
+    )
+    banks = [p for p in app_jsons if p.stem == "banks"]
+    numbers["apps"] = numbers["app_plugins"] - len(banks) + (bank_app_count() if banks else 0)
+    return numbers
+
+
+# 每条模式都带一个唯一题注；finditer 全量比对，同一个数字在 README 里出现三次就必须三次一致。
+ROOT_README_PATTERNS = (
+    (r"(\d+) 个 App 插件", ("app_plugins",)),
+    (r"(\d+) 个 App 专属去广告插件", ("app_plugins",)),
+    (r"覆盖 (\d+) 个 App", ("apps",)),
+    (r"(\d+) 个非固定 App", ("enhance_plugins",)),
+    (r"官方文档 (\d+) 页", ("doc_pages",)),
+    (r"(\d+) 类广告", ("surface_classes",)),
+    (r"枚举 (\d+) 条「广告请求绕开整个插件」", ("bypass_paths",)),
+    (r"拿 (\d+) 家上游黑名单", ("upstream_sources",)),
+    (
+        r"报表（(\d+) 条，探测真实用法；(\d+) 已用 / (\d+) 可用未用 / (\d+) 判死 / "
+        r"(\d+) 不适用 / (\d+) 未文档化）",
+        ("cov_rows", "cov_used", "cov_open", "cov_reject", "cov_na", "cov_undoc"),
+    ),
+)
+
+
+CHECKLIST_PATTERNS = (
+    (r"(\d+) 个正文页", ("doc_pages",)),
+    (r"import\?plugin=encode\(url\)` 等 (\d+) 种", ("scheme_import_keys",)),
+)
+
+
+def bind_number_claims(rel, text, patterns, numbers):
+    """按题注锚定把一份文档里的数字声明钉在机器值上；同一模式出现几次就查几次。"""
+    checked = 0
+    for pattern, keys in patterns:
+        hits = list(re.finditer(pattern, text))
+        if not hits:
+            errors.append(f"{rel}: 找不到声明 {pattern!r}（对应 {[numbers[k] for k in keys]}）")
+            continue
+        for hit in hits:
+            got = [int(x) for x in hit.groups()]
+            want = [numbers[key] for key in keys]
+            if got != want:
+                errors.append(
+                    f"{rel}: 「{hit.group(0)[:60]}」声明 {got}，机器算出 {want}（{keys}）"
+                )
+            else:
+                checked += 1
+    return checked
+
+
+def check_root_readme_numbers():
+    """把根 README 与全功能清单的规模声明钉在各审计工具自己的输出上。"""
+    numbers = root_machine_numbers()
+    if numbers is None:
+        return
+    path = ROOT / ROOT_README
+    if not path.exists():
+        errors.append(f"{ROOT_README}: missing")
+        return
+    text = path.read_text(encoding="utf-8")
+    checked = bind_number_claims(ROOT_README, text, ROOT_README_PATTERNS, numbers)
+
+    checklist = ROOT / "docs/loon-feature-checklist.md"
+    if not checklist.exists():
+        errors.append("docs/loon-feature-checklist.md: missing")
+    else:
+        checked += bind_number_claims(
+            "docs/loon-feature-checklist.md",
+            checklist.read_text(encoding="utf-8"),
+            CHECKLIST_PATTERNS,
+            numbers,
+        )
+
+    # §9.7 讲的是「文档数字要钉给机器」，它自己的数字同样得钉——否则这一章本身就成了漏网的那类句子。
+    native = ROOT / NATIVE_FIRST_DOC
+    if not native.exists():
+        errors.append(f"{NATIVE_FIRST_DOC}: missing")
+    elif "active" in ADS_NUMBER_CACHE:
+        merged = dict(numbers)
+        merged["active_host"] = ADS_NUMBER_CACHE["active"]
+        merged["redline_entries"] = ADS_NUMBER_CACHE["redline_entries"]
+        merged["redline_apps"] = ADS_NUMBER_CACHE["redline_apps"]
+        checked += bind_number_claims(
+            NATIVE_FIRST_DOC,
+            native.read_text(encoding="utf-8"),
+            NATIVE_FIRST_PATTERNS,
+            merged,
+        )
+
+    # 真机取证清单：同一个标准。
+    device = ROOT / DEVICE_DOC
+    if not device.exists():
+        errors.append(f"{DEVICE_DOC}: missing")
+    else:
+        dtext = device.read_text(encoding="utf-8")
+        checked += bind_number_claims(DEVICE_DOC, dtext, DEVICE_PATTERNS, numbers)
+        for m in DEVICE_VERSION_RE.finditer(dtext):
+            slug, claimed = m.group(1), m.group(2)
+            path = ROOT / "plugins" / slug / f"{slug}.plugin"
+            if not path.exists():
+                errors.append(f"{DEVICE_DOC}: 引用了不存在的 {slug}.plugin")
+                continue
+            actual = parse_meta(path).get("version")
+            if actual != claimed:
+                errors.append(
+                    f"{DEVICE_DOC}: 「{m.group(0)}」声明 {claimed}，#!version={actual}"
+                )
+            else:
+                checked += 1
+        for m in DEVICE_ENUM_RE.finditer(dtext):
+            want = int(m.group(1))
+            got = len(re.findall(r"`[^`]+`", m.group(2)))
+            if got != want:
+                errors.append(
+                    f"{DEVICE_DOC}: 「{m.group(0)[:40]}…」声明 {want} 个，括号里实际列了 {got} 项"
+                )
+            else:
+                checked += 1
+
+    # 表格里每个插件的版本列必须等于插件自己的 #!version
+    for line in text.splitlines():
+        m = re.match(r"^\|.*?`([a-z0-9_-]+)\.plugin` \| ([\d.]+) \|", line)
+        if not m:
+            continue
+        slug, claimed = m.group(1), m.group(2)
+        plugin_path = ROOT / "plugins" / slug / f"{slug}.plugin"
+        if not plugin_path.exists():
+            errors.append(f"{ROOT_README}: 表格引用了不存在的 {slug}.plugin")
+            continue
+        actual = parse_meta(plugin_path).get("version")
+        if actual != claimed:
+            errors.append(
+                f"{ROOT_README}: 表格 {slug}.plugin 版本声明 {claimed}，"
+                f"#!version={actual}"
+            )
+        else:
+            checked += 1
+
+    GATE_CLAIM_COUNTS["root"] = checked
+    print(
+        f"readme numbers: {checked} claim(s) in README.md, checklist, native-first, device-checklist "
+        f"bound to the auditors "
+        f"(apps={numbers['apps']} app_plugins={numbers['app_plugins']} "
+        f"enhance={numbers['enhance_plugins']} doc_pages={numbers['doc_pages']} "
+        f"classes={numbers['surface_classes']} paths={numbers['bypass_paths']} "
+        f"upstream={numbers['upstream_sources']} "
+        f"coverage={numbers['cov_rows']}={numbers['cov_used']}/"
+        f"{numbers['cov_open']}/{numbers['cov_reject']}/{numbers['cov_na']}/"
+        f"{numbers['cov_undoc']})"
+    )
+
+
+DOC_LINK_GLOBS = ("README.md", "tests/README.md", "docs/*.md", "plugins/*/README.md")
+MD_LINK_RE = re.compile(r"\]\((?!https?://|mailto:|loon://|#)([^)\s]*)\)")
+MD_FENCE_RE = re.compile(r"```.*?```", re.S)
+MD_CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
+
+
+def check_doc_links():
+    """`[文字](相对路径)` 本身就是「这个文件在这儿」的声明——渲染出来就是链接，藏不住。
+
+    反引号与围栏里的路径**故意不查**：`docs/cn/` 指上游手册目录、变异实验的历史文件名也长在
+    散文里，和「本仓库有这个文件」的声明在文本上无法区分（第 47/49 条同一局限）。
+    链接语法自带凭证，所以只查它。
+    """
+    total = 0
+    for pattern in DOC_LINK_GLOBS:
+        for path in sorted(ROOT.glob(pattern)):
+            text = MD_FENCE_RE.sub(" ", path.read_text(encoding="utf-8"))
+            text = MD_CODE_SPAN_RE.sub(" ", text)
+            for m in MD_LINK_RE.finditer(text):
+                target = m.group(1).split("#")[0].split("?")[0]
+                if not target:
+                    continue
+                total += 1
+                if (path.parent / target).exists() or (ROOT / target).exists():
+                    continue
+                errors.append(
+                    f"{path.relative_to(ROOT)}: 链接 ]({m.group(1)}) 指向不存在的文件"
+                )
+    GATE_CLAIM_COUNTS["doc_links"] = total
+    print(f"doc links: {total} relative link(s) resolve (code spans/fences excluded by design)")
+
+
+DEVICE_BOLD_ITEM_RE = re.compile(r"^- \[.\] \*\*([^*]+)\*\*")
+APP_SLUG_TOKEN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def check_device_app_coverage():
+    """真机清单 J 段要逐款覆盖每个 App 插件——加了 App 忘了加判读项，等于那款从没测过。"""
+    path = ROOT / DEVICE_DOC
+    if not path.exists():
+        return
+    lines = path.read_text(encoding="utf-8").splitlines()
+    start = next((i for i, line in enumerate(lines) if line.startswith("## J.")), None)
+    if start is None:
+        errors.append(f"{DEVICE_DOC}: 找不到「## J.」App 插件段")
+        return
+    body = []
+    for line in lines[start + 1:]:
+        if line.startswith("## "):
+            break
+        body.append(line)
+    slugs = {p.stem for p in (ROOT / "src/apps").glob("*.json") if p.stem != "_sdk"}
+    mentioned = set()
+    for line in body:
+        m = DEVICE_BOLD_ITEM_RE.match(line)
+        if not m:
+            continue
+        for token in m.group(1).split("/"):
+            token = token.strip().strip("`").strip()
+            if APP_SLUG_TOKEN_RE.fullmatch(token):
+                mentioned.add(token)
+    missing = sorted(slugs - mentioned)
+    if missing:
+        errors.append(f"{DEVICE_DOC}: J 段缺少这些 App 的真机判读项：{' '.join(missing)}")
+    unknown = sorted(mentioned - slugs)
+    if unknown:
+        errors.append(f"{DEVICE_DOC}: J 段引用了不存在的 App：{' '.join(unknown)}")
+    GATE_CLAIM_COUNTS["device_covered"] = len(mentioned)
+    GATE_CLAIM_COUNTS["device_total"] = len(slugs)
+    if not missing and not unknown:
+        print(f"device checklist: J section covers all {len(mentioned)}/{len(slugs)} app plugins")
+
+
 APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
 APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP"}
 APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+\s*=\s*\d{1,3}(?:\.\d{1,3}){3}$")
@@ -2115,7 +2783,9 @@ def rd_has_section(readme, heading):
 def check_app_plugins():
     src_dir = ROOT / "src/apps"
     roots_path = ROOT / "src/ads/protected-roots.json"
-    protected = set(json.loads(roots_path.read_text())["roots"]) if roots_path.exists() else set()
+    protected = (
+        REDLINES_MODULE.protected_roots() if roots_path.exists() else set()
+    )
     apps = sorted(p for p in src_dir.glob("*.json") if not p.name.startswith("_"))
     if not apps:
         errors.append("apps: no src/apps/*.json found")
@@ -2245,9 +2915,9 @@ def check_app_plugins():
             ]
             raw_lines = raw.splitlines()
 
-            def line_index(text):
+            def line_index(text, lines=raw_lines):
                 try:
-                    return raw_lines.index(text)
+                    return lines.index(text)
                 except ValueError:
                     return -1
 
@@ -2328,6 +2998,688 @@ def check_app_plugins():
         print(f"apps: {len(apps)} app plugins lint-clean and in sync with src/apps/")
 
 
+# 旧版 Rewrite / Script 语法 token：官方定位「仅维护旧配置，不再扩展」，本仓库全部走
+# 3.5.1(978/983)+ 新语法。这里只查小写旧 token——[Rule] 里的 REJECT-DICT 等大写动作不受影响。
+LEGACY_TOKENS = (
+    r"script-path\s*=",
+    r"\bhttp-(?:request|response)\s+\S",
+    r"\bheader-(?:add|del|replace)\b",
+    r"\bresponse-header-(?:add|del|replace)\b",
+    r"\breject-(?:200|img|dict|array)\b",
+    r"\b(?:mock-(?:request|response)-body|request-body-json-\w+|response-body-json-\w+)\b",
+    r"\\x20",
+)
+
+
+def check_no_legacy_syntax():
+    """插件的有效配置行不得出现旧版 Rewrite/Script 语法 token（注释行允许，用于说明来源）。"""
+    hits = 0
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        rel = path.relative_to(ROOT)
+        for num, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if line.lstrip().startswith(("#", ";")):
+                continue
+            for rx in LEGACY_TOKENS:
+                if re.search(rx, line):
+                    errors.append(f"{rel}:{num}: legacy syntax token {rx!r} in active line")
+                    hits += 1
+                    break
+    if not hits:
+        print("legacy syntax: 0 legacy tokens in active plugin lines")
+
+
+IP_MODE_VALUES = ("v4-only", "dual", "prefer-v4", "prefer-v6", "v6-only")
+IP_MODE_RX = re.compile(r"ip-mode[:=]\s*([A-Za-z0-9_-]+)")
+IP_MODE_SCAN = ("docs/*.md", "tools/*.py", "tests/*.py", "plugins/*/*.plugin",
+                "plugins/*/README.md", "src/apps/*.json", "README.md")
+
+
+def check_ip_mode_values():
+    """每个 `ip-mode:` 右值必须是官方取值表里的一个（第十八轮曾把 ipv4-only 等非法值写进探针说明，
+    非法行被 Loon 忽略会让真机验证得到假阳性）。"""
+    bad = 0
+    for pattern in IP_MODE_SCAN:
+        for path in sorted(ROOT.glob(pattern)):
+            rel = path.relative_to(ROOT)
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for num, line in enumerate(text.splitlines(), 1):
+                for value in IP_MODE_RX.findall(line):
+                    if value not in IP_MODE_VALUES:
+                        errors.append(f"{rel}:{num}: illegal ip-mode value {value!r} "
+                                      f"(official: {'/'.join(IP_MODE_VALUES)})")
+                        bad += 1
+    if not bad:
+        print("ip-mode values: every ip-mode right-hand value is an official one")
+
+
+# 官方 MitM 页的参数表只有 hostname / ca-p12 / ca-passphrase 三行；把整站 26 个正文页
+# 全扫一遍，`%APPEND%` 与 `h2` 都查不到（`h2` 只在节点 `alpn=` 与 $httpClient 选项里出现）。
+# 所以插件 [MITM] 段的有效行只允许：官方键 + 下面显式登记的两个未文档化 token。
+# ca-p12 / ca-passphrase 虽然是官方键，但等于把 CA 私钥塞进公开插件，永久禁止。
+MITM_OFFICIAL_KEYS = ("hostname", "ca-p12", "ca-passphrase")
+MITM_FORBIDDEN_KEYS = ("ca-p12", "ca-passphrase")
+MITM_TOLERATED_LINES = ("h2 = true",)          # 未文档化，作「未知键被忽略」的零成本保险
+MITM_TOLERATED_PREFIXES = ("%APPEND%",)        # 未文档化，Surge 的「追加而非覆盖」行首前缀
+
+
+def check_mitm_surface():
+    """每个插件的 [MITM] 段只允许官方三键，且私钥键绝不可出现。
+
+    未文档化 token 必须以「整行相等 / hostname 首项」的形式出现，多一个写法就多改一次
+    这里的常量——想扩散就得先过一遍评审。
+    """
+    sections = 0
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        rel = path.relative_to(ROOT)
+        in_mitm = False
+        for num, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            line = raw.strip()
+            if line.startswith("[") and line.endswith("]"):
+                in_mitm = line.upper() == "[MITM]"
+                continue
+            if not in_mitm or not line or line.startswith(("#", ";")):
+                continue
+            sections += 1
+            if line in MITM_TOLERATED_LINES:
+                continue
+            key = line.split("=", 1)[0].strip()
+            if key not in MITM_OFFICIAL_KEYS:
+                errors.append(f"{rel}:{num}: [MITM] 非官方键 {key!r}"
+                              f"（官方参数表只有 {'/'.join(MITM_OFFICIAL_KEYS)}）")
+                continue
+            if key in MITM_FORBIDDEN_KEYS:
+                errors.append(f"{rel}:{num}: [MITM] {key} 会把 CA 私钥/密码公开")
+                continue
+            value = line.split("=", 1)[1].lstrip()
+            if "%APPEND%" in value:
+                if not value.startswith(MITM_TOLERATED_PREFIXES):
+                    errors.append(f"{rel}:{num}: %APPEND% 只能作为 hostname 的行首前缀")
+                    continue
+                value = value[len("%APPEND%"):].lstrip()
+            for item in [it.strip() for it in value.split(",") if it.strip()]:
+                if not re.fullmatch(r"-?[A-Za-z0-9][A-Za-z0-9.*?_-]*", item):
+                    errors.append(f"{rel}:{num}: [MITM] hostname 项 {item!r} 不是主机名或 glob")
+    if sections:
+        print(f"mitm surface: {sections} active [MITM] line(s), keys ⊆ "
+              f"{'/'.join(MITM_OFFICIAL_KEYS)} + {len(MITM_TOLERATED_LINES)} tolerated token(s)")
+
+
+# 官方 Scheme 页（https://nsloon.app/docs/Scheme/）把 URL Scheme 列成两张表：
+# 「常用操作」6 项 + 「导入资源」7 种资源键，通用链接就是把 `loon://` 整段换成
+# `https://www.nsloon.com/openloon/`。导入地址**必须先 URL 编码**再替换 encode(url)。
+# 分发层此前从没被任何门禁扫过：徽章与安装链接是用户接触插件的第一道门，写错一个
+# slug 就是「点了导入，装进的是别人的插件」。这里的常量就是官方词表——想加一个新
+# 操作或新资源键，必须先改这里，改这里就必须对得上官方那一页。
+UNIVERSAL_PREFIX = "https://www.nsloon.com/openloon/"
+SCHEME_OPS = ("on", "off", "editconfig")
+SCHEME_KV_OPS = {"flowmodel": ("direct", "filter", "proxy"),
+                 "proxymode": ("tun", "mix")}
+SCHEME_IMPORT_KEYS = ("sub", "nodelist", "rules", "plugin", "iconset", "geoip", "parser")
+SCHEME_UPDATE = "update?sub=all"
+PLUGIN_URL_BASE = "https://raw.githubusercontent.com/AshNail/plugins/main/"
+
+SCHEME_RX = re.compile(r"(?:loon://|https://www\.nsloon\.com/openloon/)[A-Za-z0-9:/?=&%_.~+-]*")
+
+# 第二十九轮：红线约束的是「域名类拦截面」，而这种面有四种载体——`[Host]` 条目、
+# `[Rule]` 顶层的 DOMAIN/DOMAIN-SUFFIX、AND 复合里**嵌套**的 DOMAIN-SUFFIX、以及覆盖面
+# 比后缀更宽的 DOMAIN-KEYWORD（关键词命中的是主机名里任意一段，写成 `dns` 就连 `dns.jd.com`
+# 一起捞走）。前两轮的门禁只读第一种和第二种，且用 `split(",")[0]` 取类型，于是 33 条嵌套
+# 规则与 4 条关键词规则从来没有和 109 条红线比过。douyin/soda 由 node 构建器生成，
+# Python 构建器看不见它们的规则行——所以这一层必须在 lint 用**产物**收口。
+_RULELINES_RE = re.compile(r"^\[[A-Za-z]+\]$")
+
+
+def load_redlines():
+    """红线模块是唯一数据出口（构建器与 lint 都读它，不在这里复制第二份判定）。"""
+    spec = importlib.util.spec_from_file_location("redlines", str(ROOT / "tools/redlines.py"))
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load tools/redlines.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+REDLINES_MODULE = load_redlines()
+
+
+def rule_vector_section(text):
+    on = False
+    for line in text.splitlines():
+        s = line.strip()
+        if s == "[Rule]":
+            on = True
+            continue
+        if on and _RULELINES_RE.match(s):
+            break
+        if on and s and not s.startswith(("#", ";", "//")):
+            yield s
+
+
+def host_section_values(path):
+    """产物 [Host] 段的有效左值（注释行不算——保护与红线都只管默认生效的东西）。"""
+    on = False
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        s = line.strip()
+        if s == "[Host]":
+            on = True
+            continue
+        if on and _RULELINES_RE.match(s):
+            break
+        if on and s and not s.startswith(("#", ";", "//")) and "=" in s:
+            yield s.split("=", 1)[0].strip().lower()
+
+
+def covers_protected(host, merged):
+    """这条 [Host] 是否整族/黑洞了某个共享主域保护根（与 build-ads 同一个判据）。"""
+    if host.startswith("*."):
+        base = host[2:]
+        for root in merged:
+            if root == base or root.endswith("." + base):
+                return root
+        return None
+    return host if host in merged else None
+
+
+# 第三十一轮：`[MITM]` 的 hostname 名单是红线的**第四个载体**。它不黑洞主机，所以不受
+# 第 27 轮那条判定管；但「银行/支付/门锁等红线域绝不允许进 [MITM] hostname」这句话一直只
+# 写在真机清单的散文里。解密比拦截更值得警惕（证书固定/风控的 App 一旦进了 hostname，
+# 用户取消注释就是断 App），所以这一层要在产物上算出来，而不是等人记得。
+_SECTION_HEAD = re.compile(r"^#?\s*\[([A-Za-z]+)\]")
+
+
+def mitm_hostname_entries(path):
+    """产出 (是否注释, hostname 项)；`[MITM]` 段头本身可能是注释态（整层默认关）。"""
+    on = False
+    for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        s = raw.strip()
+        m = _SECTION_HEAD.match(s)
+        if m:
+            on = m.group(1) == "MITM"
+            continue
+        if not on or not s:
+            continue
+        body = s.lstrip("#").strip()
+        if not body.startswith("hostname") or "=" not in body:
+            continue
+        for item in body.split("=", 1)[1].replace("%APPEND%", "").split(","):
+            item = item.strip().lower()
+            if item:
+                yield s.startswith("#"), item
+
+
+def check_mitm_reach():
+    """每个插件的 [MITM] hostname 都要和红线比过（注释行也查——它就是给用户取消注释的）。"""
+    module = REDLINES_MODULE
+    entries = module.load_app_redlines()
+    apps = {}
+    for path in sorted((ROOT / "src/apps").glob("*.json")):
+        if path.name.startswith("_"):
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("slug"):
+            apps[data["slug"]] = data
+    reachable = 0
+    bad = 0
+
+    def fail(message):
+        nonlocal bad
+        bad += 1
+        errors.append(message)
+
+    for path in sorted(ROOT.glob("plugins/*/*.plugin")):
+        rel = path.relative_to(ROOT)
+        slug = path.parent.name
+        enhance = ((apps.get(slug) or {}).get("enhance") or {}).get("mitm_hosts") or []
+        declared = {h.lower() for h in enhance}
+        rendered = set()
+        for commented, item in mitm_hostname_entries(path):
+            rendered.add(item)
+            if slug in apps and not commented:
+                fail(
+                    f"{rel}: [MITM] hostname {item!r} 是默认生效的——按 App 插件的增强层"
+                    "整段默认注释是仓库纪律（不装证书 = 永不生效）"
+                )
+            for entry in entries:
+                if not module.mitm_reaches(item, entry):
+                    continue
+                reachable += 1
+                if entry["slug"] != slug:
+                    fail(
+                        f"{rel}: [MITM] hostname {item!r} 罩住 {module.describe(entry)}——"
+                        "别的 App 声明绝不碰的主机，不许出现在本插件的解密名单里"
+                    )
+                elif not declared:
+                    fail(
+                        f"{rel}: [MITM] hostname {item!r} 罩住本 App 自己的红线 {entry['domain']}，"
+                        "而该 App 没有声明 enhance.mitm_hosts——没有增强层就是「这个 App 做了"
+                        "证书固定/风控」的判决，取消注释即断 App（见真机清单的固定 App 红线）"
+                    )
+        if slug in apps and declared != rendered:
+            fail(
+                f"{rel}: enhance.mitm_hosts 与产物 [MITM] hostname 不等——"
+                f"只在源里有 {sorted(declared - rendered)}，只在产物里有 {sorted(rendered - declared)}"
+            )
+    if not bad:
+        print(
+            f"mitm reach: {len(list(ROOT.glob('plugins/*/*.plugin')))} plugin(s) 的 hostname 名单"
+            f"与 {len(entries)} 条红线交叉，罩住红线 {reachable} 处，全部落在「本 App 自己声明的"
+            "默认注释增强层」里"
+        )
+
+
+_SECTION_HEAD = re.compile(r"^#?\s*\[([A-Za-z]+)\]")
+
+
+def section_lines(path, want):
+    """产出 (是否注释, 去掉缩进的原文)；段头本身可以是注释态（`# [MITM]` 整层默认关）。"""
+    on = False
+    for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        s = raw.strip()
+        m = _SECTION_HEAD.match(s)
+        if m:
+            on = m.group(1) == want
+            continue
+        if on and s:
+            yield s.startswith("#"), s
+
+
+FILTER_RX = re.compile(r"~=\s*(/.*?/)\s*then")
+
+
+def regex_host_tail(rx):
+    r"""把 `^https?://<主机正则>/<路径正则>` 拆成（主机段原文, 路径段原文）。
+
+    括号按深度处理，所以 `(?:a|b)/path` 的主机段是整串交替、路径段是 `/path`；
+    括号**内**的 `/`（如 `dsp\/retrieve`）不会提前切断主机段。
+    """
+    rx = rx.replace("\\/", "/")
+    i = rx.find("://")
+    if i < 0:
+        return None, None
+    rest = rx[i + 3 :]
+    seg = ""
+    k = 0
+    depth = 0
+    while k < len(rest):
+        ch = rest[k]
+        if ch == "\\":
+            seg += rest[k : k + 2]
+            k += 2
+            continue
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            if depth == 0:
+                break
+            depth -= 1
+        elif ch == "/" and depth == 0:
+            break
+        seg += ch
+        k += 1
+    return seg, rest[k:]
+
+
+def expand_alt(seg):
+    """把 `(?:a|b|c)`（含可选组 `(?:x|)`）展开成字面候选，逐层直到没有括号。"""
+    out = [seg]
+    for _ in range(12):
+        nxt = []
+        done = True
+        for item in out:
+            # 捕获组 / 非捕获组 + 组后的可选量词：`(g-)?` 与 `(?:a|b)` 都要展开。
+            # 早先只认 `(?:`，普通捕获组整条面会被悄悄跳过（真机日志轮发现的漏判）。
+            m = re.search(r"\(((?:[^()\\]|\\.)*)\)([?*+]|\{\d+(?:,\d*)?\})?", item)
+            if m:
+                done = False
+                inner = m.group(1)
+                if inner.startswith("?:"):
+                    inner = inner[2:]
+                parts = inner.split("|")
+                quant = m.group(2)
+                if quant in ("?", "*", "{0,1}"):
+                    parts = parts + [""]
+                for part in parts:
+                    nxt.append(item[: m.start()] + part + item[m.end() :])
+                continue
+            # 单原子可选：`v?` / `\.?` / `[..]?` → {原子, 空}
+            m = re.search(r"(\\?[A-Za-z0-9_.-]|\[[^\]]*\])\?", item)
+            if m:
+                done = False
+                atom = m.group(1)
+                for part in (atom, ""):
+                    nxt.append(item[: m.start()] + part + item[m.end() :])
+                continue
+            nxt.append(item)
+        out = nxt
+        if done:
+            break
+    return [item for item in out if "(" not in item]
+
+
+def regex_host_glob(seg):
+    r"""主机段正则 → 可与 `[MITM]` hostname 通配比较的形态。
+
+    `*`/`+` 一律折成 `*`（否则 `[0-9-]*` 变成「一个字符 + 任意」会把分片族读窄），
+    `\.` 还原成 `.`，字符类按 Loon hostname 的 `?` 语义保留单字符位。
+    """
+    s = re.sub(r"\[[^\]]*\][*+]", "*", seg)
+    s = re.sub(r"\[[^\]]*\]", "?", s)
+    s = s.replace("\\.", ".").replace("\\", "")
+    s = s.replace(".?", ".").replace("*?", "*")
+    s = re.sub(r"[*+]{2,}", "*", s)
+    s = s.replace("+", "*")
+    return s.lower()
+
+
+# 「生效的正则面罩到了本插件 [MITM] 名单之外的主机」的显式认罪层。
+# 键钉到**具体那一条正则**（插件 / 段 / 原文），不是钉到一个主机形态：认罪的是这条面，
+# 而不是这个域——收窄或删掉它，这条认罪项立刻变成「今天没被任何生效面命中」而报错。
+PANGLE_SHARD_NOTE = (
+    "穿山甲（Pangle）分片主机族：正则写作 `(?:[a-z0-9.-]+\\.)?zijieapi\\.com`，而 Loon 的 "
+    "hostname 是枚举式的（`ads?-normal*.zijieapi.com` 罩不到任意分片）。路径段就是边界——"
+    "不在 `[MITM]` 名单里的主机不解密、这条面不命中，所以最坏是**静默不生效**而不是误伤别家；"
+    "真机若取证到某个分片主机在发开屏请求，正解是把那条主机补进 hostname 名单，不是放宽本项"
+)
+REGEX_SCOPE_EXCEPTIONS = {
+    ("douyin", "Script",
+     r"^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)"):
+        PANGLE_SHARD_NOTE + "（`blockSplashAd` 的开屏族）",
+    ("douyin", "Script",
+     r"^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)"):
+        PANGLE_SHARD_NOTE + "（`debugLog` 观测族，只读日志不改响应，越界面本身无副作用）",
+    ("soda", "Script",
+     r"^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)"):
+        PANGLE_SHARD_NOTE + "（与抖音共用 `src/common/splash-ad.js`，家族差异只有日志前缀）",
+}
+
+
+def regex_host_covered(glob, items):
+    """正则推出的主机形态，能否被 hostname 名单里某一项**当作模式**描出来。
+
+    方向是保守的：只有名单项罩得住这个主机形态才算覆盖。反过来比（拿正则主机当模式去描名单项）
+    会把「正则写 `*.zijieapi.com`、名单里只有一条 `ad.zijieapi.com`」判成已覆盖——那正是这条
+    门禁最不该犯的错，因为它放过的恰好是「没解密却宣称拦得住」。
+    """
+    return any(glob == item or fnmatch.fnmatch(glob, item) for item in items)
+
+
+def check_regex_scopes():
+    """生效的正则匹配面按「罩到主机还是罩到路径」分类——两种各有约束，不许沉默放过。"""
+    module = REDLINES_MODULE
+    entries = module.load_app_redlines()
+    surfaces = https_surfaces = host_wide = exempted = 0
+    used = set()
+    bad = 0
+
+    def fail(message):
+        nonlocal bad
+        bad += 1
+        errors.append(message)
+
+    for path in sorted(ROOT.glob("plugins/*/*.plugin")):
+        rel = path.relative_to(ROOT)
+        slug = path.parent.name
+        mitm = {}
+        for commented, s in section_lines(path, "MITM"):
+            body = s.lstrip("#").strip()
+            if not body.startswith("hostname") or "=" not in body:
+                continue
+            for item in body.split("=", 1)[1].replace("%APPEND%", "").split(","):
+                item = item.strip().lower()
+                if item:
+                    mitm.setdefault(item, commented)
+        active_mitm = [item for item, commented in mitm.items() if not commented]
+        for sect in ("Rule", "Script", "Rewrite"):
+            for commented, s in section_lines(path, sect):
+                if commented:
+                    continue
+                body = s.lstrip("#").strip()
+                if sect == "Rule":
+                    if not body.startswith("URL-REGEX,"):
+                        continue
+                    regexes = [body.split(",", 1)[1].rsplit(",", 1)[0]]
+                else:
+                    regexes = [m.group(1)[1:-1] for m in FILTER_RX.finditer(body)]
+                for rx in regexes:
+                    seg, tail = regex_host_tail(rx)
+                    if seg is None:
+                        continue
+                    if re.match(r"^\[0-9\]\+?\(|^\\\[\[0-9a-fA-F:]", seg):
+                        continue  # IP 字面量（IPv4 的 [0-9] 类、IPv6 的 \[….\.\]）不受 hostname 约束
+                    globs = [regex_host_glob(c) for c in expand_alt(seg)]
+                    if not globs and "." in seg:
+                        fail(
+                            f"{rel}: {sect} 段的正则主机段 {seg[:60]!r} 展开不出任何候选——"
+                            "门禁宁可报错也不许静默跳过一条面（跳过=这条面永远不受检查）"
+                        )
+                        continue
+                    if not any("." in g or "*" in g for g in globs):
+                        continue  # 其余没有主机形态的面，不受 hostname 约束
+                    surfaces += 1
+                    if not rx.lower().startswith("^https"):
+                        continue  # 纯 http:// 不需要解密，本条约束与它无关
+                    https_surfaces += 1
+                    if not (tail or "").strip("/"):
+                        host_wide += 1
+                        for g in globs:
+                            for entry in entries:
+                                if fnmatch.fnmatch(entry["domain"], g):
+                                    fail(
+                                        f"{rel}: {sect} 段的 {rx[:60]!r} 没有路径段=整主机面，"
+                                        f"却罩住 {module.describe(entry)}——域名类拦截面必须过红线判定"
+                                    )
+                    outside = sorted(g for g in globs if not regex_host_covered(g, active_mitm))
+                    if not outside:
+                        continue
+                    key = (slug, sect, rx)
+                    if key in REGEX_SCOPE_EXCEPTIONS:
+                        used.add(key)
+                        exempted += 1
+                        continue
+                    fail(
+                        f"{rel}: {sect} 段按 HTTPS 匹配的正则 {rx[:70]!r} 罩在本插件生效 [MITM] "
+                        f"名单之外（{'、'.join(outside)}）——不装证书这条面永不命中，「已拦截」是假宣告；"
+                        "要么把主机补进 hostname 名单，要么在 REGEX_SCOPE_EXCEPTIONS 里逐条写明理由"
+                    )
+    if not bad:
+        print(
+            f"regex scopes: {surfaces} 条生效正则面（HTTPS 面 {https_surfaces} 条 / 整主机面 {host_wide} 条"
+            f"须过红线判定 / 罩在 [MITM] 之外并已认罪 {exempted} 条）"
+        )
+    for key in sorted(set(REGEX_SCOPE_EXCEPTIONS) - used):
+        fail(
+            f"REGEX_SCOPE_EXCEPTIONS: {key[0]}/{key[1]} 的 {key[2][:50]!r} 今天没有被任何生效面命中——"
+            "越界已经消失，认罪项就该删掉（写旧的例外等于给未来的越界预留后门）"
+        )
+
+
+# 第三十三轮：luna 接口有两个主机，且都还在被真实 App 使用。
+# 2026-10-29 真机日志（Luna 21.4.0，build 100214010，23 小时）里
+# `beta-luna.douyin.com/luna/*` 881 条请求、`api.qishui.com/luna/*` 5 条；
+# 旧版 34 条单主机绑定当天只匹配到 1 条（task/page）。绑定面不是「写了一条
+# 正则」就算数——它必须绑在流量真的会去的那个主机上。抖音插件合法的只绑
+# beta-luna，所以这条奇偶性只对 soda 成立，主机对必须显式登记。
+LUNA_HOST_PARITY = {
+    "soda": ("api.qishui.com", "beta-luna.douyin.com"),
+}
+
+
+def check_luna_host_parity():
+    """每个 luna 绑定必须同时显式写全该 App 的真实主机对，少一个就是静默失效。"""
+    checked = 0
+    bad = 0
+    for slug, hosts in LUNA_HOST_PARITY.items():
+        path = ROOT / "plugins" / slug / f"{slug}.plugin"
+        if not path.exists():
+            errors.append(f"plugins/{slug}/{slug}.plugin: missing (luna host parity)")
+            bad += 1
+            continue
+        tokens = tuple(host.replace(".", r"\.") for host in hosts)
+        for sect in ("Rewrite", "Script"):
+            for commented, s in section_lines(path, sect):
+                if commented:
+                    continue
+                for m in FILTER_RX.finditer(s):
+                    rx = m.group(1)[1:-1]
+                    if "/luna" not in rx.replace("\\/", "/"):
+                        continue
+                    checked += 1
+                    missing = [h for h, t in zip(hosts, tokens) if t not in rx]
+                    if missing:
+                        bad += 1
+                        errors.append(
+                            f"plugins/{slug}/{slug}.plugin: {sect} 段的 luna 绑定只绑了 "
+                            f"{'、'.join(h for h in hosts if h not in missing)}，缺 "
+                            f"{'、'.join(missing)}——真机日志里两个主机都在承接 luna 流量，"
+                            "少绑一个就是「插件在跑、清理不到」的静默失效"
+                        )
+        active = {
+            item for commented, item in mitm_hostname_entries(path) if not commented
+        }
+        missing_mitm = [h for h in hosts if h not in active]
+        if missing_mitm:
+            bad += 1
+            errors.append(
+                f"plugins/{slug}/{slug}.plugin: [MITM] 生效 hostname 缺少 "
+                f"{'、'.join(missing_mitm)}——luna 绑定写全了也解不了密"
+            )
+    if not bad:
+        total_hosts = sum(len(hosts) for hosts in LUNA_HOST_PARITY.values())
+        print(
+            f"luna host parity: {checked} active luna binding(s) all bind "
+            f"{total_hosts} attested host(s) "
+            f"({' + '.join(sorted({h for hosts in LUNA_HOST_PARITY.values() for h in hosts}))})"
+        )
+
+
+def check_rule_vectors():
+    """每个插件的每条生效 [Rule] 都要和红线比过；没登记过的新匹配面不许沉默通过。"""
+    module = REDLINES_MODULE
+    entries = module.load_app_redlines()
+    plugins = sorted(ROOT.glob("plugins/*/*.plugin"))
+    lines = items = nested = hits = 0
+    seen_types = set()
+    for path in plugins:
+        rel = path.relative_to(ROOT)
+        for line in rule_vector_section(path.read_text(encoding="utf-8", errors="ignore")):
+            lines += 1
+            seen_types |= module.rule_type_tokens(line)
+            own = module.rule_match_items(line)
+            items += len(own)
+            if line.upper().startswith(("AND,", "OR,")):
+                nested += len(own)
+            for kind, target, item in module.rule_redline_hits(line, entries):
+                hits += 1
+                errors.append(
+                    f"{rel}: 生效规则 {line[:80]!r} 的 {kind} 匹配项 {target!r} 命中 "
+                    f"{module.describe(item)}——红线只管默认生效的东西，要留就注释掉并写明理由"
+                )
+    unknown = sorted(seen_types - module.RULE_TYPES)
+    for token in unknown:
+        errors.append(
+            f"[Rule] 出现未归类的匹配面 {token!r}：它碰不碰得到红线，"
+            "必须先在 tools/redlines.py 的分类表里写明（域名类=受红线约束，非域名类=记账但仍可比对）"
+        )
+    hand = module.hand_protected_roots()
+    derived = module.redline_roots(entries)
+    merged = module.protected_roots(entries)
+    blocked = 0
+    for path in plugins:
+        rel = path.relative_to(ROOT)
+        for host in host_section_values(path):
+            root = covers_protected(host, merged)
+            if root:
+                blocked += 1
+                errors.append(
+                    f"{rel}: 生效 [Host] {host!r} 整族/黑洞了共享主域 {root!r}"
+                    "（保护名单 = 手写表 ∪ App 红线派生根）"
+                )
+    if not unknown and not hits and not blocked:
+        print(
+            f"rule vectors: {len(plugins)} plugin(s) / {lines} active [Rule] line(s) / "
+            f"{items} domain-scoped match item(s) ({nested} of them nested in composites) / "
+            f"{len(seen_types)} rule type(s) all classified against {len(entries)} red line(s)"
+        )
+        print(
+            f"protected roots: {len(hand)} 手写 + {len(derived - hand)} 由 App 红线派生 "
+            f"= {len(merged)}，0 条生效 [Host] 命中它"
+        )
+
+
+def check_scheme_links():
+    """README/docs 里每条 loon:// 与通用链接都必须落在官方 Scheme 页的语法内，
+    且每个 App 插件自己的 README 必须链接到 **自己** 的 .plugin。"""
+    seen = 0
+    own_links = {}
+    for path in sorted(list(ROOT.glob("README.md")) + list(ROOT.glob("plugins/*/README.md"))
+                       + list(ROOT.glob("docs/*.md"))):
+        rel = path.relative_to(ROOT)
+        for num, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+            for url in SCHEME_RX.findall(line):
+                if url.endswith(("?", "=", "/")) or "encode" in url:
+                    continue                          # 引用官方模板，不是可用链接
+                seen += 1
+                tail = url[len("loon://"):] if url.startswith("loon://") \
+                    else url[len(UNIVERSAL_PREFIX):]
+                head, _, query = tail.partition("?")
+                if head in SCHEME_OPS and not query:
+                    continue
+                if tail == SCHEME_UPDATE:
+                    continue
+                # `flowmodel=` / `proxymode=` 是「操作名自带 = 取值」，没有 `?`
+                op, eq, val = head.partition("=")
+                if eq and op in SCHEME_KV_OPS:
+                    if query:
+                        errors.append(f"{rel}:{num}: `{op}` 的取值直接跟在 `=` 后，不该再带 `?`")
+                    elif val in SCHEME_KV_OPS[op]:
+                        continue
+                    else:
+                        errors.append(f"{rel}:{num}: `{op}` 取值 {val!r} 不在官方表 "
+                                      f"{'/'.join(SCHEME_KV_OPS[op])}")
+                    continue
+                if head != "import":
+                    errors.append(f"{rel}:{num}: Scheme 操作 {head!r} 官方查不到")
+                    continue
+                key, eq, val = query.partition("=")
+                if not eq or key not in SCHEME_IMPORT_KEYS:
+                    errors.append(f"{rel}:{num}: `import?` 资源键 {key!r} 不在官方 7 种里")
+                    continue
+                if not re.fullmatch(r"[A-Za-z0-9._~%-]+", val):
+                    errors.append(f"{rel}:{num}: import?{key} 的地址没有 URL 编码（官方要求先编码）")
+                    continue
+                target = unquote(val)
+                if not target.startswith(("https://", "http://")):
+                    errors.append(f"{rel}:{num}: import?{key} 解码后不是 http(s) 地址 {target!r}")
+                    continue
+                if key == "plugin":
+                    if not target.startswith(PLUGIN_URL_BASE):
+                        errors.append(f"{rel}:{num}: 导入地址不在本仓 raw 前缀下 {target!r}")
+                        continue
+                    m = re.fullmatch(r"plugins/([^/]+)/([^/]+)\.plugin",
+                                     target[len(PLUGIN_URL_BASE):])
+                    if not m or m.group(1) != m.group(2):
+                        errors.append(f"{rel}:{num}: 导入地址不是 <slug>/<slug>.plugin 形态 {target!r}")
+                        continue
+                    slug = m.group(1)
+                    if not (ROOT / "plugins" / slug / f"{slug}.plugin").exists():
+                        errors.append(f"{rel}:{num}: 导入地址指向不存在的插件 {slug!r}")
+                        continue
+                    own_links.setdefault(slug, set()).add(str(rel))
+                    # 表格里「某一行」的徽章必须指向该行自己的 slug
+                    if "|" in line:
+                        row_slugs = set(re.findall(r"`([a-z0-9][a-z0-9-]*)\.plugin`", line))
+                        if row_slugs and row_slugs != {slug}:
+                            errors.append(f"{rel}:{num}: 行内标注 {sorted(row_slugs)} 但链接指向 {slug!r}")
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        slug = path.stem
+        own = f"plugins/{slug}/README.md"
+        if own not in own_links.get(slug, set()):
+            errors.append(f"{own}: 没有一条 `import?plugin=` 链接指向自己的 {slug}.plugin")
+    if seen:
+        print(f"scheme links: {seen} loon:// / openloon link(s) checked against the official "
+              f"Scheme page grammar ({len(own_links)} plugin(s) self-linked)")
+
+
 check_shared_scripts()
 check_switch_labels()
 check_argument_schema()
@@ -2336,8 +3688,21 @@ check_quic_count()
 check_encoding_guard()
 check_script_safety()
 check_bypass_dns_guard()
+check_no_legacy_syntax()
+check_ip_mode_values()
+check_mitm_surface()
+check_mitm_reach()
+check_regex_scopes()
+check_luna_host_parity()
+check_rule_vectors()
 check_ads_family()
+check_readme_numbers()
+check_root_readme_numbers()
+check_doc_links()
+check_device_app_coverage()
+check_gate_self_report()
 check_app_plugins()
+check_scheme_links()
 print(f"lint errors: {len(errors)}")
 for err in errors:
     print(" -", err)

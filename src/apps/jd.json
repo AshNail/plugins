@@ -15,6 +15,146 @@
     "第三方 ADN 未取证：京东 iOS 是否调用穿山甲/优量汇/快手等外部变现 SDK 没有可引用的官方 SDK 目录证据，本插件不挂 SDK 组；若真机抓包发现，直接开 ads.plugin 对应组即可。",
     "本插件 [Host]/[Rule] 全设备生效（Loon 无法按 App 限定）：同一广告/埋点域跨 App 共享黑洞，'按 App 插件'只是分组开关；与全局 ads 插件配合使用。"
   ],
+  "redlines": [
+    {
+      "domain": "mapi.m.jd.com",
+      "kind": "host",
+      "quote": "mapi.m.jd.com / api.m.jd.com（移动 API 网关）",
+      "why": "移动 API 网关"
+    },
+    {
+      "domain": "api.m.jd.com",
+      "kind": "host",
+      "quote": "mapi.m.jd.com / api.m.jd.com（移动 API 网关）",
+      "why": "移动 API 网关"
+    },
+    {
+      "domain": "janapi.jd.com",
+      "kind": "host",
+      "quote": "janapi.jd.com（App 数据请求网关）",
+      "why": "App 数据请求网关"
+    },
+    {
+      "domain": "cactus.jd.com",
+      "kind": "host",
+      "quote": "cactus.jd.com（h5st 风控签名 /request_algo，拦=下单/搜索签名失败）",
+      "why": "h5st 风控签名，拦=下单/搜索签名失败"
+    },
+    {
+      "domain": "passport.jd.com",
+      "kind": "host",
+      "quote": "passport.jd.com（登录）",
+      "why": "登录"
+    },
+    {
+      "domain": "jpushjd.m.jd.com",
+      "kind": "host",
+      "quote": "jpushjd.m.jd.com（推送）",
+      "why": "推送"
+    },
+    {
+      "domain": "msg.m.jd.com",
+      "kind": "host",
+      "quote": "msg.m.jd.com（消息/登录凭证，wskey 抓取教程显示与 im-x 同链路）",
+      "why": "消息/登录凭证"
+    },
+    {
+      "domain": "chat1.jd.com",
+      "kind": "host",
+      "quote": "chat1.jd.com（客服）",
+      "why": "客服"
+    },
+    {
+      "domain": "dns.jd.com",
+      "kind": "host",
+      "quote": "dns.jd.com / blackhole.m.jd.com / h5speed.m.jd.com",
+      "why": "京东自建 HTTPDNS 解析——全局 ads 插件曾默认黑洞它，与本源冲突"
+    },
+    {
+      "domain": "blackhole.m.jd.com",
+      "kind": "host",
+      "quote": "dns.jd.com / blackhole.m.jd.com / h5speed.m.jd.com",
+      "why": "京东监控/容灾上报"
+    },
+    {
+      "domain": "h5speed.m.jd.com",
+      "kind": "host",
+      "quote": "dns.jd.com / blackhole.m.jd.com / h5speed.m.jd.com",
+      "why": "H5 加速"
+    },
+    {
+      "domain": "gia.jd.com",
+      "kind": "family",
+      "ledger": {
+        "label": "基础设施红线",
+        "glob": "gia.*"
+      },
+      "why": "京东全局加速/解析通道（comment 与台账同记 gia(s).jd.com 解析/监控/加速）"
+    },
+    {
+      "domain": "gias.jd.com",
+      "kind": "family",
+      "ledger": {
+        "label": "基础设施红线",
+        "glob": "gias.*"
+      },
+      "why": "gia 的复数变体，同一批加速节点；台账 glob 就是 gias.*"
+    },
+    {
+      "domain": "kepler.jd.com",
+      "kind": "host",
+      "quote": "kepler.jd.com（开普勒 H5 容器）",
+      "why": "开普勒 H5 容器"
+    },
+    {
+      "domain": "dgstatic.jd.com",
+      "kind": "host",
+      "quote": "dgstatic.jd.com（静态资源）",
+      "why": "静态资源"
+    },
+    {
+      "domain": "wl.jd.com",
+      "kind": "host",
+      "quote": "wl.jd.com（物流）",
+      "why": "物流查询"
+    },
+    {
+      "domain": "policy.jd.com",
+      "kind": "host",
+      "quote": "policy.jd.com（规则页）",
+      "why": "规则页"
+    },
+    {
+      "domain": "cps.360buy.com",
+      "kind": "host",
+      "quote": "cps.360buy.com（联盟 CPS 结算）",
+      "why": "联盟 CPS 结算"
+    },
+    {
+      "domain": "jrclick.jd.com",
+      "kind": "host",
+      "quote": "jrclick.jd.com（金融业务点击）",
+      "why": "金融业务点击"
+    },
+    {
+      "domain": "union.jd.com",
+      "kind": "host",
+      "quote": "union.jd.com（联盟站）",
+      "why": "京东联盟站"
+    },
+    {
+      "domain": "360buyimg.com",
+      "kind": "family",
+      "quote": "360buyimg.com / img2.360buyimg.com / img-x.jd.com",
+      "why": "商品图 CDN，黑洞会白图（AWAvenue issue #197 allowlist）"
+    },
+    {
+      "domain": "img-x.jd.com",
+      "kind": "host",
+      "quote": "360buyimg.com / img2.360buyimg.com / img-x.jd.com",
+      "why": "商品详情页图片必需"
+    }
+  ],
   "sdks": [],
   "groups": [
     {
@@ -92,32 +232,63 @@
   "triage_exclude": [
     {
       "label": "交易/风控红线",
-      "globs": ["mapi.*", "janapi.*", "cactus.*", "passport.*"]
+      "globs": [
+        "mapi.*",
+        "janapi.*",
+        "cactus.*",
+        "passport.*"
+      ]
     },
     {
       "label": "推送/客服红线",
-      "globs": ["jpushjd.*", "chat1.*"]
+      "globs": [
+        "jpushjd.*",
+        "chat1.*"
+      ]
     },
     {
       "label": "消息/凭证红线",
-      "globs": ["msg.m.*"]
+      "globs": [
+        "msg.m.*"
+      ]
     },
     {
       "label": "商品图 CDN 放行",
-      "globs": ["img-x.jd.com", "img2.*", "*.360buyimg.com"]
+      "globs": [
+        "img-x.jd.com",
+        "img2.*",
+        "*.360buyimg.com"
+      ]
     },
     {
       "label": "基础设施红线",
       "globs": [
-        "dns.*", "blackhole*", "h5speed.*", "gia.*", "gias.*", "dgstatic.*",
-        "wl.jd.com", "policy.*", "kepler.*", "union.jd.com", "cps.*", "jrclick.*"
+        "dns.*",
+        "blackhole*",
+        "h5speed.*",
+        "gia.*",
+        "gias.*",
+        "dgstatic.*",
+        "wl.jd.com",
+        "policy.*",
+        "kepler.*",
+        "union.jd.com",
+        "cps.*",
+        "jrclick.*"
       ]
     },
     {
       "label": "C 级单源不收",
       "globs": [
-        "u.x.jd.com", "bdsp.x.jd.com", "du.jd.com", "nfa.jd.com", "c-nfa.jd.com",
-        "firevent.jd.com", "stat.m.jd.com", "ads.union.jd.com", "jzt.jd.com"
+        "u.x.jd.com",
+        "bdsp.x.jd.com",
+        "du.jd.com",
+        "nfa.jd.com",
+        "c-nfa.jd.com",
+        "firevent.jd.com",
+        "stat.m.jd.com",
+        "ads.union.jd.com",
+        "jzt.jd.com"
       ]
     }
   ],

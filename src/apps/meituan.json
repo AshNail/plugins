@@ -14,6 +14,17 @@
     "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）。",
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
   ],
+  "redlines": [
+    {"domain": "appsec-mobile.meituan.com", "kind": "host", "quote": "appsec-mobile.meituan.com（mtgsig 签名+设备指纹上报，拦=触发下单/支付风控，无任何黑名单收录）", "why": "mtgsig 签名 + 设备指纹上报，拦=触发下单/支付风控"},
+    {"domain": "api-unionid.meituan.com", "kind": "host", "quote": "api-unionid.meituan.com（统一账号）", "why": "统一账号"},
+    {"domain": "api-map.meituan.net", "kind": "host", "quote": "api-map.meituan.net（地图瓦片）", "why": "地图瓦片"},
+    {"domain": "shark.dianping.com", "kind": "host", "quote": "shark.dianping.com（Pike 长连通道，核弹模块 S9 也误伤它）", "why": "Pike 长连通道"},
+    {"domain": "mrn.meituan.net", "kind": "host", "quote": "mrn.meituan.net 与 beauty-*.meituan.net（VOD/直播拉流）", "why": "VOD/直播拉流"},
+    {"domain": "apimobile.meituan.com", "kind": "host", "quote": "apimobile.meituan.com", "why": "主业务 API"},
+    {"domain": "i.meituan.com", "kind": "host", "quote": "i.meituan.com", "why": "业务入口"},
+    {"domain": "meituan.com", "kind": "family", "quote": "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）", "why": "交易规则依赖深层子域，禁止整域操作"},
+    {"domain": "meituan.net", "kind": "family", "quote": "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）", "why": "同上"}
+  ],
   "sdks": [
     "sigmob",
     "tobid",

@@ -779,7 +779,6 @@ def render_md(rows):
     L.append("")
     L.append("| 层 | 证书 | 能覆盖的类 | 当前覆盖 | 代价 |")
     L.append("|---|---|---|---|---|")
-    l1 = [r for r in rows if any(a[0] in ("[Host]", "[Rule]", "[General]") for a in r["attack"])]
     l2 = [r for r in rows if any(a[0] in ("[Script]", "[Rewrite]") for a in r["attack"])]
     l1_only = [r for r in rows if r["attack"]
                and all(a[0] in ("[Host]", "[Rule]", "[General]") for a in r["attack"])

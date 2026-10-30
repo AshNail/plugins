@@ -147,7 +147,7 @@ def render(app, sdklib, ads_groups):
         "",
         "## 证据与验证",
         "",
-        f"- 每条域名的证据链接写在插件文件注释里（`# 证据:`）；置信 A=多源独立收录，B=1-2 源或集群语义自证（默认关），C=猜测/单源（不收）。",
+        "- 每条域名的证据链接写在插件文件注释里（`# 证据:`）；置信 A=多源独立收录，B=1-2 源或集群语义自证（默认关），C=猜测/单源（不收）。",
         "- 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。",
         f"- 源文件：`src/apps/{slug}.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。",
         "",

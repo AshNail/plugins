@@ -22,6 +22,8 @@
   让 App Store 正式版（3.5.2/996）用户可直接导入；通配一律走 [Host] '*.domain'。
 - #!loon_version 不得高于 App Store 正式版 build（APPSTORE_STABLE_BUILD）。
 - 通配 glob 与精确域都不得命中 src/ads/protected-roots.json 里的共享主域。
+- 默认生效条目不得命中任何 App 在 `redlines` 里声明的生死线（名单与判定见 tools/redlines.py，
+  与 tools/build-ads.py 共用同一条纪律；注释掉的组不参与，因为红线只管默认就会生效的东西）。
 - 每个组带 tier（证据分级 A/B/C）与 sources（证据 URL），C 级组默认注释。
 """
 from __future__ import annotations
@@ -32,6 +34,8 @@ import pathlib
 import re
 import sys
 from urllib.parse import urlsplit
+
+from redlines import describe, load_app_redlines, redline_hit, redline_roots, rule_redline_hits
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 APPS = ROOT / "src/apps"
@@ -60,12 +64,19 @@ def load_json(path: pathlib.Path):
         return json.load(f)
 
 
-def load_roots() -> set[str]:
+def load_roots(redlines: list[dict] | None = None) -> set[str]:
+    """共享主域保护表：手写那份 ∪ 由 App 红线派生的根（与 ads 构建器同一个出口）。
+
+    不派生就会留一个具体的洞：`*.meituan.net`、`*.ttlock.com` 这类整族黑洞既不在手写表里，
+    也没有一条红线恰好等于那个根，于是能通过全部校验——而它把 App 明写「绝不碰」的主机
+    连同子树一起打成 127.0.0.1。
+    """
     data = load_json(ADS_ROOTS)
     roots = set()
     for item in data if isinstance(data, list) else data.get("roots", []):
-        roots.add(item if isinstance(item, str) else item["domain"])
-    return roots
+        roots.add((item if isinstance(item, str) else item["domain"]).lower())
+    entries = app_redlines() if redlines is None else redlines
+    return roots | redline_roots(entries)
 
 
 def build_number(version: str) -> int:
@@ -123,6 +134,47 @@ def validate_rule(raw: str, where: str, roots: set[str]) -> None:
             if target == root or root.endswith("." + target):
                 raise BuildError(f"{where}: DOMAIN-SUFFIX {target!r} would swallow "
                                  f"protected shared root {root!r}")
+
+
+def app_redlines() -> list[dict]:
+    """和 ads 构建器同一份红线数据（tools/redlines.py）；ValueError 升格成 BuildError。"""
+    try:
+        return load_app_redlines()
+    except (ValueError, OSError) as exc:
+        raise BuildError(str(exc)) from exc
+
+
+def check_redline(entry: str, where: str, redlines: list[dict], suffix: bool = False) -> None:
+    """按 App 插件的默认生效条目同样不许命中红线。
+
+    `suffix=True` 对应 DOMAIN-SUFFIX：它吞掉目标及其全部子域，所以红线域等于目标、
+    或落在目标之下，都算命中。[Host] 条目（精确或 `*.`）交给共用的 redline_hit 判定。
+    注释掉的组不参与——和 ads 的默认注释层同一纪律：红线只管「默认就会生效」的东西。
+    """
+    for item in redlines:
+        if suffix:
+            hit = item["domain"] == entry or item["domain"].endswith("." + entry)
+        else:
+            hit = redline_hit(entry, item)
+        if hit:
+            raise BuildError(
+                f"{where}: 生效条目 {entry!r} 命中 {describe(item)}——"
+                "本仓库纪律：任何默认生效的拦截都不许触碰 App 自己划的生死线"
+            )
+
+
+def check_rule_redline(rule: str, where: str, redlines: list[dict]) -> None:
+    """[Rule] 行的红线检查必须走进 AND/OR 复合，并且认得 DOMAIN-KEYWORD。
+
+    第 27 轮这一层写成 `rule.split(",")[0] in ("DOMAIN", "DOMAIN-SUFFIX")`：`AND,((...))`
+    的首 token 是 `AND`，嵌套的 DOMAIN-SUFFIX 一条都没被比过；关键词型则压根不在遍历里，
+    而它的覆盖面比后缀还宽（`dns` 这种关键词会把 `dns.jd.com` 整个捞走）。
+    """
+    for kind, target, item in rule_redline_hits(rule, redlines):
+        raise BuildError(
+            f"{where}: 生效规则 {rule!r} 的 {kind} 匹配项 {target!r} 命中 "
+            f"{describe(item)}——本仓库纪律：任何默认生效的拦截都不许触碰 App 自己划的生死线"
+        )
 
 
 def validate_host(entry: str, where: str, roots: set[str]) -> None:
@@ -206,13 +258,18 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     slug = app["slug"]
     where = f"src/apps/{slug}.json"
     groups = collect_groups(app, sdklib)
+    all_redlines = app_redlines()
     hosts: list[str] = []
     rules: list[str] = []
     for g in groups:
+        gid = g.get("id", "?")
+        redlines = [] if g.get("disabled") else all_redlines
         for h in g["hosts"]:
-            validate_host(h, f"{where}:{g.get('id', '?')}", roots)
+            validate_host(h, f"{where}:{gid}", roots)
+            check_redline(h, f"{where}:{gid}", redlines)
         for r in g["rules"]:
-            validate_rule(r, f"{where}:{g.get('id', '?')}", roots)
+            validate_rule(r, f"{where}:{gid}", roots)
+            check_rule_redline(r, f"{where}:{gid}", redlines)
         hosts += g["hosts"]
         rules += g["rules"]
 

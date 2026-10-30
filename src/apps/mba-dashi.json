@@ -11,6 +11,12 @@
     "两家 SDK（穿山甲/优量汇）由官方隐私政策确认;域名映射为行业标准基建（B 级）。",
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
   ],
+  "redlines": [
+    {"domain": "www.mbajm.com", "kind": "host", "quote": "www.mbajm.com / m.mbajm.com / file.mbajm.com / video.mbajm.com 全是讲义、课程、视频链路,绝不碰", "why": "讲义/课程链路"},
+    {"domain": "m.mbajm.com", "kind": "host", "quote": "www.mbajm.com / m.mbajm.com / file.mbajm.com / video.mbajm.com 全是讲义、课程、视频链路,绝不碰", "why": "课程链路"},
+    {"domain": "file.mbajm.com", "kind": "host", "quote": "www.mbajm.com / m.mbajm.com / file.mbajm.com / video.mbajm.com 全是讲义、课程、视频链路,绝不碰", "why": "讲义文件"},
+    {"domain": "video.mbajm.com", "kind": "host", "quote": "www.mbajm.com / m.mbajm.com / file.mbajm.com / video.mbajm.com 全是讲义、课程、视频链路,绝不碰", "why": "课程视频"}
+  ],
   "sdks": [
     "pangle",
     "gdt"

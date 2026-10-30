@@ -97,9 +97,13 @@ ROOT_AD_HINT = {
 ADBLOCK_RE_EXTRA = re.compile(r"^\|\|([^/*^$]+)\^?", re.IGNORECASE)
 
 
+# 上游黑名单清单（README 里「N 家上游黑名单」的机器出处，lint 直接 import 这个常量核对）。
+SOURCE_NAMES = aa.DEFAULT_SOURCES + ["adguard-cn", "adguard-mobile", "easyprivacy", "hagezi-xiaomi"]
+
+
 def load_sources(refresh: bool, offline: bool):
     by_domain: dict[str, set[str]] = {}
-    for name in aa.DEFAULT_SOURCES + ["adguard-cn", "adguard-mobile", "easyprivacy", "hagezi-xiaomi"]:
+    for name in SOURCE_NAMES:
         try:
             doms = aa.fetch_source(name, aa.SOURCES[name], refresh, offline)
         except Exception as e:
@@ -163,7 +167,9 @@ def aa_globs(glob: str):
     return glob.lower()
 
 
-def covered(d: str, suffixes, keywords, globs, h_exact, h_wild, extra_exact=set()) -> bool:
+def covered(d: str, suffixes, keywords, globs, h_exact, h_wild, extra_exact=None) -> bool:
+    if extra_exact is None:
+        extra_exact = set()
     if d in h_exact or d in extra_exact or d in suffixes:
         return True
     parts = d.split(".")

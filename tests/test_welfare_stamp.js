@@ -3,7 +3,6 @@
 const loadScript = require("./load-script");
 const sodaSanitize = loadScript("sanitize.js", "soda");
 const sodaObserve = loadScript("reward-observe.js", "soda");
-const sodaReminder = loadScript("daily-reminder.js", "soda");
 const douyinTreasure = loadScript("treasure.js", "douyin");
 const douyinObserve = loadScript("observe.js", "douyin");
 const douyinReminder = loadScript("daily-reminder.js", "douyin");

@@ -12,6 +12,134 @@
     "iOS 预期设低:小米厂商广告 SDK 组主要作用于 Android/MIUI;本插件 iOS 净收益以抓包为准,先给开关不给承诺。",
     "覆盖率审计的未裁决候选由 triage_exclude 台账逐族裁决（安全/推送/账号云/遥测/业务 API）——被排除的候选不是待办。"
   ],
+  "redlines": [
+    {
+      "domain": "api.io.mi.com",
+      "kind": "host",
+      "quote": "api.io.mi.com / app.io.mi.com / center.io.mi.com",
+      "why": "IoT 控制主 API（误伤=掉设备）"
+    },
+    {
+      "domain": "app.io.mi.com",
+      "kind": "host",
+      "quote": "api.io.mi.com / app.io.mi.com / center.io.mi.com",
+      "why": "App 主接口"
+    },
+    {
+      "domain": "center.io.mi.com",
+      "kind": "host",
+      "quote": "api.io.mi.com / app.io.mi.com / center.io.mi.com",
+      "why": "设备中心"
+    },
+    {
+      "domain": "token.io.mi.com",
+      "kind": "host",
+      "quote": "token.io.mi.com / ot.io.mi.com / iothub.io.mi.com",
+      "why": "授权令牌"
+    },
+    {
+      "domain": "ot.io.mi.com",
+      "kind": "host",
+      "quote": "token.io.mi.com / ot.io.mi.com / iothub.io.mi.com",
+      "why": "OT 通道"
+    },
+    {
+      "domain": "iothub.io.mi.com",
+      "kind": "host",
+      "quote": "token.io.mi.com / ot.io.mi.com / iothub.io.mi.com",
+      "why": "IoT Hub"
+    },
+    {
+      "domain": "account.xiaomi.com",
+      "kind": "family",
+      "quote": "account.xiaomi.com 系",
+      "why": "小米账号体系"
+    },
+    {
+      "domain": "api.xmpush.xiaomi.com",
+      "kind": "family",
+      "quote": "api.xmpush.xiaomi.com 系（营销推送与设备推送同通道,不可选择性拦截）",
+      "why": "营销推送与设备推送同通道，不可选择性拦截"
+    },
+    {
+      "domain": "miot-spec.org",
+      "kind": "family",
+      "quote": "miot-spec.org",
+      "why": "IoT 规范/属性定义"
+    },
+    {
+      "domain": "api.sec.miui.com",
+      "kind": "host",
+      "ledger": {
+        "label": "安全族红线",
+        "glob": "*.sec.miui.com"
+      },
+      "why": "MIUI 安全服务（手机管家/病毒库）配置接口，台账按 *.sec.miui.com 整族裁决为不拦"
+    },
+    {
+      "domain": "data.sec.intl.miui.com",
+      "kind": "host",
+      "ledger": {
+        "label": "安全族红线",
+        "glob": "*.sec.intl.miui.com"
+      },
+      "why": "国际版安全服务数据通道，与上条同理"
+    },
+    {
+      "domain": "avlyun.sec.miui.com",
+      "kind": "family",
+      "ledger": {
+        "label": "安全族红线",
+        "glob": "*avlyun*"
+      },
+      "why": "安全引擎 AVL（云盾）更新通道；报告里 logupdate./update. 两个已取证子机都落在它下面"
+    },
+    {
+      "domain": "ff.avast.sec.miui.com",
+      "kind": "family",
+      "ledger": {
+        "label": "安全族红线",
+        "glob": "*avast*"
+      },
+      "why": "Avast 引擎数据面；已取证的是 analytics./apkrep. 两个子机，整族不做黑洞"
+    },
+    {
+      "domain": "api.xmpush.global.xiaomi.com",
+      "kind": "host",
+      "ledger": {
+        "label": "推送/云红线",
+        "glob": "*xmpush*"
+      },
+      "why": "国际版 xmpush 主机；comment 那句「api.xmpush.xiaomi.com 系」按台账 glob *xmpush* 展开后也覆盖它"
+    },
+    {
+      "domain": "resolver.msg.xiaomi.net",
+      "kind": "host",
+      "ledger": {
+        "label": "推送/云红线",
+        "glob": "resolver.msg.*"
+      },
+      "why": "MIUI 推送/消息解析通道；台账与 ads 的 httpdns 组长期各说各话，见 plugins/ads 默认注释组"
+    },
+    {
+      "domain": "api.g.micloud.xiaomi.net",
+      "kind": "host",
+      "ledger": {
+        "label": "推送/云红线",
+        "glob": "*.micloud.*"
+      },
+      "why": "小米云端设备同步（micloud）网关"
+    },
+    {
+      "domain": "app.chat.xiaomi.net",
+      "kind": "host",
+      "ledger": {
+        "label": "推送/云红线",
+        "glob": "*.chat.*"
+      },
+      "why": "小米账号聊天/设备共享通道"
+    }
+  ],
   "sdks": [],
   "groups": [
     {
@@ -105,51 +233,110 @@
   "triage_exclude": [
     {
       "label": "安全族红线",
-      "globs": ["*.sec.miui.com", "*.sec.intl.miui.com", "sec-*", "sec.*", "security.*", "*avlyun*", "*avast*"]
+      "globs": [
+        "*.sec.miui.com",
+        "*.sec.intl.miui.com",
+        "*avlyun*",
+        "*avast*"
+      ]
+    },
+    {
+      "label": "安全族模式放行（未取证到域名的 catch-all）",
+      "globs": [
+        "sec-*",
+        "sec.*",
+        "security.*"
+      ]
+    },
+    {
+      "label": "推送/云模式放行（未取证到域名的 catch-all）",
+      "globs": [
+        "findapi.*",
+        "statusapi.*"
+      ]
     },
     {
       "label": "推送/云红线",
-      "globs": ["*xmpush*", "resolver.msg.*", "*.micloud.*", "findapi.*", "statusapi.*", "*.chat.*"]
+      "globs": [
+        "*xmpush*",
+        "resolver.msg.*",
+        "*.micloud.*",
+        "*.chat.*"
+      ]
     },
     {
       "label": "账号/设备业务 API",
-      "globs": ["api*", "*api.*"]
+      "globs": [
+        "api*",
+        "*api.*"
+      ]
     },
     {
       "label": "遥测/日志（隐私面，非广告）",
-      "globs": ["*stat*", "*tracking*", "*sentry*", "*bugreport*", "*events.*", "*mlog*", "*mqs-log*", "*beehive*"]
+      "globs": [
+        "*stat*",
+        "*tracking*",
+        "*sentry*",
+        "*bugreport*",
+        "*events.*",
+        "*mlog*",
+        "*mqs-log*",
+        "*beehive*"
+      ]
     },
     {
       "label": "系统服务总线",
-      "globs": ["*.sys.miui.com"]
+      "globs": [
+        "*.sys.miui.com"
+      ]
     },
     {
       "label": "浏览器业务（广告位已另收）",
-      "globs": ["*browser*"]
+      "globs": [
+        "*browser*"
+      ]
     },
     {
       "label": "应用商店后台/升级（广告位已另收）",
-      "globs": ["*.pandora.xiaomi.com"]
+      "globs": [
+        "*.pandora.xiaomi.com"
+      ]
     },
     {
       "label": "静态资源/下载 CDN",
-      "globs": ["*static*", "*dl.files*"]
+      "globs": [
+        "*static*",
+        "*dl.files*"
+      ]
     },
     {
       "label": "日志数据通道",
-      "globs": ["miui-l7-data-*"]
+      "globs": [
+        "miui-l7-data-*"
+      ]
     },
     {
       "label": "米家业务",
-      "globs": ["*.mihome.xiaomi.net"]
+      "globs": [
+        "*.mihome.xiaomi.net"
+      ]
     },
     {
       "label": "MIUI 业务域",
       "globs": [
-        "app.miui.com", "feedback.miui.com", "hybrid.miui.com", "mcc.miui.com",
-        "rus.miui.com", "india.miui.com", "testit.miui.com", "privacy.miui.com",
-        "search.miui.com", "intl.up.w.xk.miui.com", "gtglobal.intl.miui.com",
-        "preload.xiaomi.com", "*.sms.miui.com"
+        "app.miui.com",
+        "feedback.miui.com",
+        "hybrid.miui.com",
+        "mcc.miui.com",
+        "rus.miui.com",
+        "india.miui.com",
+        "testit.miui.com",
+        "privacy.miui.com",
+        "search.miui.com",
+        "intl.up.w.xk.miui.com",
+        "gtglobal.intl.miui.com",
+        "preload.xiaomi.com",
+        "*.sms.miui.com"
       ]
     }
   ],

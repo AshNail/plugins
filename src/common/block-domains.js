@@ -102,7 +102,7 @@ function hostBlocked(host) {
 }
 
 function hostOf(url) {
-  const m = String(url || "").match(/^https?:\/\/([^\/:?#]+)/i);
+  const m = String(url || "").match(/^https?:\/\/([^/:?#]+)/i);
   return m ? String(m[1]).toLowerCase() : "";
 }
 

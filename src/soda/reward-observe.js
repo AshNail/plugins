@@ -37,7 +37,6 @@ const PREFIX = "[soda-reward]";
 const MAX_BODY = 262144;       // 256KB，超过只记录长度
 const MAX_NODES = 2500;        // 遍历节点上限，避免大 JSON 卡顿
 const MAX_TASKS = 12;
-const MAX_FIELDS = 12;
 const MAX_LOG = 1600;
 
 const RULES = [
@@ -521,36 +520,6 @@ function ceTag(resp) {
     return ";ce=" + ce.replace(/[^a-z0-9,._-]/g, "");
   } catch (e) {
     return "";
-  }
-}
-
-/*
- * 诊断标记：写进响应头，下一次抓包一眼看出脚本跑到哪一步。
- *
- * bodyChanged=true 表示这次 $done 带回了新的 body，而它是**未压缩的
- * UTF-8 字符串**（readBody 已经 ungzip 过）。原响应头里的
- * content-encoding / content-length 就此过期：
- *   · 留着 content-encoding:gzip → 客户端拿明文按 gzip 解，JSON 解析失败；
- *   · 留着 content-length:191234 → 长度对不上，连接挂住或截断。
- * 删掉这两个头交给 Loon 按实际 body 重算，在「Loon 自己重压」和
- * 「Loon 原样转发」两种实现下都成立。
- */
-function markHeaders(reason, bodyChanged) {
-  try {
-    var h = Object.assign({}, ($response && $response.headers) || {});
-    h["X-Soda-Plugin"] = reason;
-    if (bodyChanged) {
-      var drop = [];
-      for (var k in h) {
-        if (!Object.prototype.hasOwnProperty.call(h, k)) continue;
-        var lk = String(k).toLowerCase();
-        if (lk === "content-encoding" || lk === "content-length") drop.push(k);
-      }
-      for (var i = 0; i < drop.length; i++) delete h[drop[i]];
-    }
-    return h;
-  } catch (e) {
-    return null;
   }
 }
 

@@ -203,22 +203,30 @@ BYPASSES = [
         how=f"`[Host]` 里 {HOST_BLACKHOLES} 条生效黑洞（另有 {HOST_BLACKHOLES_OPT} 条默认注释）"
             "**全部只映射 IPv4**（127.0.0.1）。"
             "若 Loon 对命中域名仍放行真实 AAAA 记录，App 走 IPv6 直连就绕过了整个黑洞。",
-        loon="`[Host]` 的 `ip-mode:ipv4-only` 右值（官方 `DNS/hostmap` 支持 "
-             "`ipv4-only`/`dual`/`ipv4-preferred`/`ipv6-preferred`）；"
-             "或主配置 `ipv6-vif = off`（插件能声明，但关的是整个 TUN 的 IPv6）。",
+        loon="两条不依赖多行语义的路线：①`[Host]` 的 `ip-mode:` 右值——官方 `DNS/hostmap` 与"
+             "「通用配置」都给出值表 `v4-only`/`dual`/`prefer-v4`/`prefer-v6`/`v6-only`"
+             "（`v4-only` 明写「不查询 AAAA，并拒绝 IPv6 连接」）；②把同一域名同时写进 `[Rule]` 的"
+             " `DOMAIN-SUFFIX,…,REJECT`——域名规则在解析前就命中，**不看地址族**，AAAA 一样被拒。"
+             "主配置侧还有 `ip-mode = v4-only`（全设备）与 `ipv6-vif = off`（插件可声明但需 Build 1007+，"
+             "且关的是整个 TUN 的 IPv6），两者都不该由插件替用户决定。",
         expect="open",
         evidence=[],
-        blocked="**有手段但刻意不落地**。官方 `DNS/hostmap` 只给了 `ip-mode:` "
-                "**单独使用**的示例，没有给同一域名同时写 `= 127.0.0.1` 与 "
-                "`= ip-mode:ipv4-only` 的示例。若 Loon 一个域名只认最后一条，"
-                "补 ip-mode 会**把黑洞覆盖掉**——比不补更糟（广告全回来且排查方向完全错）。"
+        blocked="**有手段但刻意不落地**。官方 `DNS/hostmap` 只给 `域名 = ip-mode:v4-only` "
+                "**单独使用**的示例，没有给同一域名同时写 `= 127.0.0.1` 与 `= ip-mode:v4-only` "
+                "的多行语义。若 Loon 一个域名只认最后一条，补 ip-mode 会**把黑洞覆盖掉**——"
+                "比不补更糟（广告全回来且排查方向完全错）。"
                 f"在确认「多行共存」之前，不拿 {HOST_BLACKHOLES} 条生效规则"
-                f"（含默认注释共 {HOST_BLACKHOLES + HOST_BLACKHOLES_OPT} 条）去赌。",
+                f"（含默认注释共 {HOST_BLACKHOLES + HOST_BLACKHOLES_OPT} 条）去赌。"
+                "注：第十八轮按官方文档更正了本页此条的值名——原文写的 `ipv4-only`/`ipv4-preferred`/"
+                "`ipv6-preferred` 不是 Loon 的取值（那是别的实现的命名），照旧文档做真机探针，"
+                "Loon 会直接忽略非法行，A 记录「看起来仍生效」纯属假阳性。",
         verify="① 先用一条无关域名验证共存：`probe.example = 127.0.0.1` 与 "
-               "`probe.example = ip-mode:ipv4-only` 各写一行，看 A 记录是否仍是 127.0.0.1；"
+               "`probe.example = ip-mode:v4-only` 各写一行，看 A 记录是否仍是 127.0.0.1；"
                "② 再单独确认 `probe.example` 的 AAAA 查询返回空还是真实地址——"
                "**返回真实地址才说明旁路真的存在**，才值得补。"
-               "两步都为正，再批量生成 ip-mode 行并接进 lint。",
+               "③ 若①失败（多行不共存），改走规则层：给同一条域名补 `DOMAIN-SUFFIX,probe.example,REJECT`，"
+               "确认 v4/v6 都拒——这条不需要多行语义，是唯一可以直接落地的封法。"
+               "三步结论都拿到后，再批量生成并接进 lint。",
     ),
     dict(
         id="hardcoded-ip-sni",

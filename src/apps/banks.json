@@ -13,6 +13,29 @@
     "网上流传的『银行广告域名清单』几乎全不可用——本插件有效规则 4 条,是四大公开列表(anti-AD 11 万域/AdGuard-CN/AW/bm7 Advertising)+官方 SDK 目录交叉验证后的真实上限。",
     "第二轮全网取证复检(2026-10-28)：CT 枚举六大行域空间无独立 ads/stat/log 前缀投放子域;明确禁加——hotpatch.cup.com.cn(云闪付热修复通道,与 ads.95516.com 同 IP 段群)/market.cmbchina.com(招行连隐私政策都托管在此,典型运营混装)/mbs.boc.cn(中行主接口,开屏广告是其 /advertType/ 路径,MITM 不可行则 DNS 无解)/pic1cdn.cmbchina.com(业务图混装);track.bankcomm.com 仅存在性证据(C 级,隐私政策未列广告 SDK),不采。"
   ],
+  "redlines": [
+    {"domain": "cmbchina.com", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "招商银行主域——只允许精确广告子域，不做整族操作"},
+    {"domain": "bankcomm.com", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "交通银行主域"},
+    {"domain": "spdb.com.cn", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "浦发银行主域"},
+    {"domain": "95528.cn", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "农业银行主域"},
+    {"domain": "spdbccc.com.cn", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "浦发信用卡中心（浦大喜奔）主域"},
+    {"domain": "95516.com", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "银联主域"},
+    {"domain": "cup.com.cn", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "银联主域（另一 TLD）"},
+    {"domain": "boc.cn", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "中国银行主域"},
+    {"domain": "abchina.com", "kind": "family", "quote": "*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作", "why": "农业银行主域"},
+    {"domain": "wap.cmpassport.com", "kind": "host", "quote": "wap.cmpassport.com+e.189.cn+ms.zzx9.cn(一键登录)", "why": "运营商一键登录通道"},
+    {"domain": "e.189.cn", "kind": "host", "quote": "wap.cmpassport.com+e.189.cn+ms.zzx9.cn(一键登录)", "why": "电信一键登录通道"},
+    {"domain": "ms.zzx9.cn", "kind": "host", "quote": "wap.cmpassport.com+e.189.cn+ms.zzx9.cn(一键登录)", "why": "联通一键登录通道"},
+    {"domain": "wallet.95516.com", "kind": "host", "quote": "wallet.95516.com+mobilepaybeta.95516.com(付款码/HCE)", "why": "云闪付付款码"},
+    {"domain": "mobilepaybeta.95516.com", "kind": "host", "quote": "wallet.95516.com+mobilepaybeta.95516.com(付款码/HCE)", "why": "HCE 付款码"},
+    {"domain": "cfca.com.cn", "kind": "host", "quote": "cfca.com.cn(数字证书扫码付)", "why": "数字证书扫码付"},
+    {"domain": "cmbc.maam.cc", "kind": "host", "quote": "cmbc.maam.cc(招行行内嵌优量汇测试域,黑洞会触发招行侧异常)", "why": "招行行内嵌优量汇测试域，黑洞会触发招行侧异常"},
+    {"domain": "hotpatch.cup.com.cn", "kind": "host", "quote": "hotpatch.cup.com.cn(云闪付热修复通道,与 ads.95516.com 同 IP 段群)", "why": "云闪付热修复通道"},
+    {"domain": "market.cmbchina.com", "kind": "host", "quote": "market.cmbchina.com(招行连隐私政策都托管在此,典型运营混装)", "why": "招行运营混装域，连隐私政策都托管在此"},
+    {"domain": "mbs.boc.cn", "kind": "host", "quote": "mbs.boc.cn(中行主接口,开屏广告是其 /advertType/ 路径,MITM 不可行则 DNS 无解)", "why": "中行主接口"},
+    {"domain": "pic1cdn.cmbchina.com", "kind": "host", "quote": "pic1cdn.cmbchina.com(业务图混装)", "why": "招行业务图混装 CDN"},
+    {"domain": "track.bankcomm.com", "kind": "host", "quote": "track.bankcomm.com 仅存在性证据(C 级,隐私政策未列广告 SDK),不采", "why": "仅存在性证据，取证否决"}
+  ],
   "sdks": [],
   "groups": [
     {

@@ -1,5 +1,5 @@
 {
-  "note": "共享主域保护名单。禁止对任何 root 及其父域使用 *. 通配；只允许精确广告子域。由 tools/build-ads.py 与 tests/lint-plugins.py 共同读取。",
+  "note": "共享主域保护名单（手写那一层）。禁止对任何 root 及其父域使用 *. 通配，也禁止黑洞 apex；只允许精确广告子域。实际生效的集合是「本表 ∪ 由 src/apps/*.json 的 redlines 派生的可注册根」，派生与并集都在 tools/redlines.py: protected_roots()，由 tools/build-ads.py、tools/build-apps.py 与 tests/lint-plugins.py 共同读取——本表成型时还没有 13 个 App 插件，meituan.net / ttlock.com / cmbchina.com / goofish.com 这些根靠派生层补上，不靠人记得同步。",
   "roots": [
     "qq.com",
     "tencent.com",

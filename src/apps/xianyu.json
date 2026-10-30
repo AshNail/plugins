@@ -13,6 +13,13 @@
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。",
     "第二轮取证复检(2026-10-28)：mma.alimama.com 实测 NXDOMAIN(网传『阿里妈妈端点』不存在,禁凭品牌造域);开屏素材无 alicdn 之外的独立 CDN(墨鱼 GoofishAds.conf 亦无单独素材域);h-adashx.ut.taobao.com=阿里 UT/AdashX 埋点,全阿里系 App 共享,属全局 ads 插件的决策面,不进本按 App 插件。"
   ],
+  "redlines": [
+    {"domain": "goofish.com", "kind": "family", "quote": "*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能", "why": "闲鱼主域整族=核心功能"},
+    {"domain": "idlefish.com", "kind": "family", "quote": "*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能", "why": "闲鱼旧域整族"},
+    {"domain": "acs.m.goofish.com", "kind": "host", "quote": "acs.m.goofish.com 出现在个别模块的 REJECT 里是错误规则,打死整个 App——拒收", "why": "mtop 网关；个别清单的 REJECT 是错误规则"},
+    {"domain": "xianyu.mobi", "kind": "host", "quote": "xianyu.mobi 与 blackmatrix7 的 16 个乱码域是淘宝短链跳转服务（cname.tb.cn），拦=断分享链接", "why": "淘宝短链跳转服务，拦=断分享链接"},
+    {"domain": "cdn.ynuf.aliapp.org", "kind": "host", "quote": "cdn.ynuf.aliapp.org=阿里无线安全 UMID 指纹,禁拦", "why": "阿里无线安全 UMID 指纹"}
+  ],
   "sdks": [
     "alimama"
   ],

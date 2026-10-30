@@ -1,13 +1,13 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.7.7
+#!version=2.8.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.2(996)
-#!date=2026-10-28
+#!date=2026-10-30
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -67,6 +67,9 @@ DEST-PORT,853,REJECT
 # 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，
 # 不命中 a.com、ad.example.com 或 adsl.example.com。
 # 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。
+# 已知与 App 红线重叠（DOMAIN-WILDCARD 无例外语法，只能二选一）：
+#   ads.* 命中 ads.privacy.qq.com（wechat 红线）：广点通隐私/合规入口，微信侧明确「拦了反而触发 SDK 异常逻辑」。DOMAIN-WILDCARD 没有例外语法，这一层默认注释且要 3.5.3+ 手工开启——开启前要么接受这个风险，要么先把本条 glob 删掉。
+# 开启本层前，请先删除命中的那条 glob，或接受上面写明的后果。
 # 默认保持注释：App Store 正式版仍是 3.5.2(996)，低版本遇到未知规则类型
 # 的行为官方未文档化（可能跳过、也可能整段失效），不拿 [Rule] 核心层冒险。
 # 已装 3.5.3+（TF build 1008-1011）的用户：逐行去掉行首 '# ' 即启用本层。
@@ -416,8 +419,6 @@ ad.sina.com.cn = 127.0.0.1
 *.ad.sina.com.cn = 127.0.0.1
 cm.bilibili.com = 127.0.0.1
 *.cm.bilibili.com = 127.0.0.1
-union.jd.com = 127.0.0.1
-*.union.jd.com = 127.0.0.1
 ad.163.com = 127.0.0.1
 union.sogou.com = 127.0.0.1
 pub.funshion.com = 127.0.0.1
@@ -1679,7 +1680,7 @@ magsrv.com = 127.0.0.1
 # ============================================================================
 # HTTPDNS / 私有 DoH 端点（防绕过）
 # ----------------------------------------------------------------------------
-# 覆盖阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、京东、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；极少数没有回退的 App 可能断网，删除对应行即可恢复。
+# 覆盖阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。
 # ============================================================================
 httpdns.aliyuncs.com = 127.0.0.1
 *.httpdns.aliyuncs.com = 127.0.0.1
@@ -1720,7 +1721,6 @@ httpdns.meituan.com = 127.0.0.1
 httpdnsvip.meituan.com = 127.0.0.1
 httpdnsmultiapi.meituan.com = 127.0.0.1
 httpdnsmultiapivip.meituan.com = 127.0.0.1
-dns.jd.com = 127.0.0.1
 dns.weibo.cn = 127.0.0.1
 dns.weixin.qq.com = 127.0.0.1
 dns.weixin.qq.com.cn = 127.0.0.1
@@ -1743,7 +1743,6 @@ httpdns.zybang.com = 127.0.0.1
 httpdns.calorietech.com = 127.0.0.1
 lofter.httpdns.c.163.com = 127.0.0.1
 music.httpdns.c.163.com = 127.0.0.1
-resolver.msg.xiaomi.net = 127.0.0.1
 httpdns.ocloud.heytapmobi.com = 127.0.0.1
 httpdns.push.heytapmobi.com = 127.0.0.1
 httpdns.platform.dbankcloud.cn = 127.0.0.1
@@ -1758,7 +1757,7 @@ amdc.alipay.com.cn = 127.0.0.1
 # ============================================================================
 # 公共 DoH 解析器（DNS 防泄漏）
 # ----------------------------------------------------------------------------
-# 把浏览器/App 自带的公共 DoH/DoT 入口映射到 127.0.0.1，防止它们绕过 Loon DNS 继续解析广告域。除主流厂商外，2026-10-27 补充 Applied Privacy、LibreDNS、Tiar、FFMUC、Digitale Gesellschaft、Hostux、SecureDNS、Crypto.sx、DNSForge、Kommespaeter 等公共加密 DNS。Loon 自身已改用 IP 形式 DoH（见 [General]），不依赖这些域名；如果你的主配置 doh-server 仍使用这里的域名，先改成 IP 形式，或注释掉对应行。doh.dns.apple.com 刻意不拦，避免影响 iOS/macOS 系统解析。
+# 把浏览器/App 自带的公共 DoH/DoT 入口映射到 127.0.0.1，防止它们绕过 Loon DNS 继续解析广告域。默认只保留海外厂商（Google/Cloudflare/Quad9/NextDNS/OpenDNS/AdGuard/Mullvad/ControlD/Brave/dns.sb 等）；阿里云、DNSPod、360 这 9 条国内入口移入下一组默认注释——它们与国内 Loon 主配置的域名形式 DoH/DoQ 高度重叠，默认拦截会把 Loon 自己的加密 DNS 打到 127.0.0.1。doh.dns.apple.com 刻意不拦，避免影响 iOS/macOS 系统解析。
 # ============================================================================
 dns.google = 127.0.0.1
 chrome.cloudflare-dns.com = 127.0.0.1
@@ -1787,14 +1786,6 @@ dns.mullvad.net = 127.0.0.1
 *.doh.mullvad.net = 127.0.0.1
 freedns.controld.com = 127.0.0.1
 doh.brave.com = 127.0.0.1
-dns.alidns.com = 127.0.0.1
-doh.aliyun.com = 127.0.0.1
-doh.pub = 127.0.0.1
-dns.pub = 127.0.0.1
-dot.pub = 127.0.0.1
-sm2.doh.pub = 127.0.0.1
-doh.360.cn = 127.0.0.1
-dot.360.cn = 127.0.0.1
 dns64.dns.google = 127.0.0.1
 8888.google = 127.0.0.1
 doh.dns.sb = 127.0.0.1
@@ -1805,7 +1796,6 @@ doh.controld.com = 127.0.0.1
 dot.quad9.net = 127.0.0.1
 1dot1dot1dot1.cloudflare-dns.com = 127.0.0.1
 dot.mullvad.net = 127.0.0.1
-dot.alidns.com = 127.0.0.1
 doh.applied-privacy.net = 127.0.0.1
 doh.libredns.gr = 127.0.0.1
 doh.tiar.app = 127.0.0.1
@@ -1817,6 +1807,23 @@ doh.securedns.eu = 127.0.0.1
 doh.crypto.sx = 127.0.0.1
 doh.dnsforge.net = 127.0.0.1
 doh.kommespaeter.de = 127.0.0.1
+
+# ============================================================================
+# 国内公共 DoH 解析器（默认注释）
+# ----------------------------------------------------------------------------
+# 阿里云 AliDNS、DNSPod、360 的公共 DoH/DoT 入口，默认整组注释。原因（2026-10-29 23 小时真机日志）：主配置用域名形式 `doq-server = quic://dns.alidns.com:853` / `doh-server = https://doh.pub/dns-query` 时，Loon 自身的解析请求同样被本插件 [Host] 黑洞——`dns.alidns.com` 17,073 次 + `doh.pub` 11,239 次 = 28,312 次（占当窗口全部 Host Map 的 99.2%），连带 5,239 次 DoQ 建立尝试（其中 5,236 次失败）与两条上游合计 10,389 次 DoH 连接失败，整条加密 DNS 链持续重试。插件读不到主配置，无法只在 App 流量上生效；因此默认不拦。开启前必须满足：主配置的 dns-server / doh-server / doq-server 全部使用 IP 形式（如 `https://223.5.5.5/dns-query`、`quic://223.5.5.5:853`），或已删除域名形式的上游；开启后确认 Loon 日志不再出现 `dns.alidns.com Host Map IP:127.0.0.1`。确认后再逐行取消行首的 '# '。
+#
+# ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
+# ============================================================================
+# dns.alidns.com = 127.0.0.1
+# doh.aliyun.com = 127.0.0.1
+# doh.pub = 127.0.0.1
+# dns.pub = 127.0.0.1
+# dot.pub = 127.0.0.1
+# sm2.doh.pub = 127.0.0.1
+# doh.360.cn = 127.0.0.1
+# dot.360.cn = 127.0.0.1
+# dot.alidns.com = 127.0.0.1
 
 # ============================================================================
 # 移动归因 / MMP（可选，默认注释）
@@ -1951,3 +1958,15 @@ doh.kommespaeter.de = 127.0.0.1
 # upush.qidian.com = 127.0.0.1
 # upushv6.qidian.com = 127.0.0.1
 # stats.v2core.com = 127.0.0.1
+
+# ============================================================================
+# 与按 App 插件红线冲突的候选（默认注释）
+# ----------------------------------------------------------------------------
+# tools/build-ads.py 把每个 App 插件 redlines 里声明的域挡在默认生效组之外。这三条是被红线拦下来的候选：dns.jd.com（京东自建 HTTPDNS）、union.jd.com（京东联盟站）、resolver.msg.xiaomi.net（MIUI 推送/消息解析通道）。两面理由都在这里：全局侧希望黑洞它们以逼 App 回退系统 DNS、让广告域 Host 映射生效；按 App 侧这三家各把同名域划为红线（解析/联盟/推送），拦了可能断搜索、下单签名、设备推送。默认注释=保持放行；开启前请确认你能接受对应 App 的那一侧代价。
+#
+# ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
+# ============================================================================
+# resolver.msg.xiaomi.net = 127.0.0.1
+# dns.jd.com = 127.0.0.1
+# union.jd.com = 127.0.0.1
+# *.union.jd.com = 127.0.0.1

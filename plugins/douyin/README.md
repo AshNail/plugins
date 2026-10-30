@@ -362,6 +362,19 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 
 本地回归：`npm run check`（build + lint + coverage + 源码/压缩版测试；26 套 / 798 条断言 × 2 = 1596）。
 
+## 6.3 与汽水插件共存（同一个 `beta-luna.douyin.com`）
+
+抖音和汽水的 luna 流量都走 `beta-luna.douyin.com`，两个插件都会声明这个主机的 `[MITM]`
+和响应绑定。Loon 对同一响应只跑**第一条命中的**响应脚本：两边都开清理时，后命中的那条
+永远不执行，甚至可能拿错脚本处理另一个 App 的响应。2026-10-29 的 23 小时日志里，
+787 条 luna 请求有 43 条同时命中两个插件（取证与回放见 `docs/device-checklist.md` I2 节、
+`docs/loon-native-first.md` §9.14）。
+
+**处置：同时安装两个插件时，清理开关只在一个插件里开。** 要清理抖音，就关掉汽水的
+`cleanAds` / `treasureMinimal` / `cleanUpsell` / `cleanActivity`；要清理汽水，就在抖音这边
+保持对应开关关闭。不要用 `User-Agent` 之类的条件去分流——现有日志没有取证到可靠字段，
+写未经验证的条件只会制造新的假宣告。
+
 ---
 
 ## 7. 版本更新记录

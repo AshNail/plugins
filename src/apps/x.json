@@ -11,6 +11,14 @@
     "AdGuard 官方口径:Twitter/X 广告与内容同服务器,DNS 拦截无法阻止,只能靠浏览器内容规则（MITM 层）——超出本插件约束。",
     "第二轮取证复检(2026-10-28)：iOS 信息流推广与正常内容同走 api.x.com/GraphQL 响应内联,App 内无第三方 ADN(X 自有广告栈);AdguardFilters 一方跟踪清单零 twitter.com 条目;static.ads-twitter.com(X Pixel/Web 埋点)已被现有 DOMAIN-SUFFIX,ads-twitter.com 覆盖,ads-api/ads.x.com 组维持默认关——iOS DNS 层增量见底是已验证结论,不是漏查。"
   ],
+  "redlines": [
+    {"domain": "t.co", "kind": "host", "quote": "t.co", "why": "短链服务"},
+    {"domain": "twimg.com", "kind": "family", "quote": "*.twimg.com", "why": "媒体 CDN 整域"},
+    {"domain": "api.twitter.com", "kind": "host", "quote": "api.twitter.com", "why": "主 API"},
+    {"domain": "x.com", "kind": "host", "quote": "x.com / twitter.com", "why": "主域"},
+    {"domain": "twitter.com", "kind": "host", "quote": "x.com / twitter.com", "why": "主域（旧）"},
+    {"domain": "api-stream.twitter.com", "kind": "host", "quote": "api-stream.twitter.com——全部核心", "why": "流式接口"}
+  ],
   "sdks": [],
   "groups": [
     {

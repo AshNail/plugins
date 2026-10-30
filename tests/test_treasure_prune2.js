@@ -9,7 +9,10 @@ function run(url, body){
   return {done,logs,out:done&&done.body?JSON.parse(done.body):null};
 }
 let pass=0,fail=0;
-function ck(n,c,e){c?(pass++,console.log('  PASS  '+n)):(fail++,console.log('  FAIL  '+n+(e!==undefined?' got='+JSON.stringify(e):'')))}
+function ck(n,c,e){
+  if(c){pass++;console.log('  PASS  '+n);}
+  else{fail++;console.log('  FAIL  '+n+(e!==undefined?' got='+JSON.stringify(e):''));}
+}
 
 console.log('\n== entrance: 金币挂件广告态 ==');
 {

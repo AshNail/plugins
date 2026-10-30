@@ -637,7 +637,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.5）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.6）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -736,7 +736,65 @@ sign_in_done                      → {"err_no":210021,"err_tips":"设备异常�
 
 ---
 
+## 10.6 2026-10-29 真机日志：luna 主机搬家（soda.plugin v2.8.6）
+
+Loon 引擎日志 113 MB / 1,538,207 行，覆盖 2026-10-29 10:39 → 2026-10-30 09:37（约 23 小时），
+汽水音乐 Luna 21.4.0（`version_code=100214010`，iPhone18,4，SG 环境）。
+
+### 1. 旧绑定为什么大面积失效
+
+日志里按主机统计 `Search rule by host:`（每条 = 一次请求）：
+
+```text
+beta-luna.douyin.com/luna/*   784 条
+api.qishui.com/luna/*           3 条（commerce/ecommerce/order_list，非广告端点）
+（两主机另有 99 条非 luna 请求）
+```
+
+旧版 34 条 `^https?://api.qishui.com/luna…` api 单主机 luna 绑定在 beta-luna 的
+784 条 luna 请求上命中 **0**；整个旧插件只靠两条 beta-only 的 task/page 绑定命中 **1** 条。
+v2.8.6 把 34 条前缀统一改成 `^https?://(?:api.qishui.com|beta-luna.douyin.com)/luna`，
+同一份日志回放命中 **149/787**（信息流 105、upsell 38+3、激励 2+2、task/page 1、入口 1，含重叠）。
+剩下 638 条 luna 请求是 `me/`、`media-stats/`、`comments/`、`action/`、`check-update/` 等非广告面，
+**故意不绑**——绑了只是白白多跑脚本。
+
+### 2. 同宿主跨插件竞争（已知边界）
+
+`beta-luna.douyin.com` 同时服务汽水和抖音。日志里 787 条 luna 请求中有 43 条
+同时命中抖音插件的响应绑定；Loon 对同一响应只跑**第一条命中的**响应脚本，
+所以两个插件都开清理时，跑哪条取决于绑定顺序——可能拿汽水脚本处理抖音响应，反之亦然。
+**同时安装两个插件时，清理开关只在一个插件里开**（soda.plugin 的 [Script] 段头也写了这句）。
+没有可靠 UA 条件可写，故不做未经验证的自动分流。
+
+### 3. 顺带核实的全局面
+
+- 28,547 次 `Host Map IP:127.0.0.1`，涉及 13 个主机；
+  其中 17,073 次 `dns.alidns.com` + 11,239 次 `doh.pub` = 28,312 次（99.2%）是
+  `ads.plugin` 的 DoH 防泄漏规则把系统自己的加密 DNS 打进黑洞（见 ads README 的说明）。
+- 9,389 次 `NGQUIC-CLOSE host=127.0.0.1`（6,576@443 + 2,813@853）——
+  被黑洞的 DoH/DoT 走 QUIC 时的必然结果，属于预期噪声。
+- 110 次 `DOMAIN-KEYWORD,httpdns,REJECT-DROP` 命中；13 个被黑洞主机对
+  137 个受保护主域（103 手写 + 34 由 App 红线派生）**0 命中**。
+- 抖音开屏素材域 12 次 `ads5-normal-hl.zijieapi.com` + 2 次 `ad.zijieapi.com` 被黑洞，
+  与 `splash-ad` 的请求拦截互补（一个挡 DNS，一个挡请求）。
+
+---
+
 ## 11. 版本更新记录
+
+### v2.8.6（2026-10-30）luna 主机搬家：响应绑定从单主机改成双主机
+
+- **根因**：2026-10-29 的 23 小时真机日志里，Luna 21.4.0 把 luna 流量全部发到
+  `beta-luna.douyin.com`（784 条），`api.qishui.com` 只有 3 条非广告请求；
+  旧版 34 条 api 单主机绑定在这 784 条上命中 0 条，整个旧插件只靠 1 条 task/page 命中——
+  插件看起来“完全没效果”。
+- **修复**：34 条绑定前缀统一扩成 `(?:api.qishui.com|beta-luna.douyin.com)`，
+  并删掉两条因此变得重复的 beta-only task/page 绑定（[Script] 40 → 38 条）。
+  同一份日志回放，广告相关面从 1/787 提升到 149/787。
+- **新增 lint 门禁 `luna host parity`**：任何生效 luna 绑定少写一个真实主机，
+  或 [MITM] hostname 缺一个，`npm run check` 直接报错——单主机绑定 = 静默失效，不许再进仓库。
+- **已知边界**：`beta-luna.douyin.com` 同时服务抖音，两个插件都开清理时同一响应只会跑
+  第一条命中的脚本；同时安装时清理开关只在一个插件里开。
 
 ### v2.8.5（2026-10-27）插件元数据补齐 `#!openUrl`
 

@@ -1,0 +1,53 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "src/common/**",
+    "plugins/**/scripts/**"
+  ],
+  "env": {
+    "es2021": true
+  },
+  "globals": {
+    "console": "readonly"
+  },
+  "rules": {
+    "no-undef": "error",
+    "no-unused-vars": [
+      "error",
+      {
+        "caughtErrors": "none"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.js"
+      ],
+      "globals": {
+        "$argument": "readonly",
+        "$request": "readonly",
+        "$response": "readonly",
+        "$done": "readonly",
+        "$persistentStore": "readonly",
+        "$notification": "readonly",
+        "$httpClient": "readonly",
+        "$utils": "readonly",
+        "$config": "readonly",
+        "$environment": "readonly",
+        "$script": "readonly",
+        "$loon": "readonly",
+        "$envirnoment": "readonly"
+      }
+    },
+    {
+      "files": [
+        "tests/**/*.js",
+        "tools/**/*.js"
+      ],
+      "env": {
+        "node": true
+      }
+    }
+  ]
+}

@@ -14,7 +14,6 @@ const code = load("sanitize.js", "soda");
 const fs = require("fs");
 const path = require("path");
 const PAGE = fs.readFileSync(path.join(__dirname, "fixtures", "soda_task_page_v2.json"), "utf8");
-const PAGE_OBJ = JSON.parse(PAGE);
 
 const URL_PAGE = "https://beta-luna.douyin.com/luna/treasure/task/page/v2";
 

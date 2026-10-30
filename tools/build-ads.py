@@ -38,6 +38,11 @@ import pathlib
 import re
 import sys
 
+from redlines import describe as describe_redline
+from redlines import expand_rule as shared_expand_rule
+from redlines import load_app_redlines, redline_hit, redline_roots
+from redlines import rule_match_items, rule_redline_hits
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "src/ads/domains.json"
 PROTECTED = ROOT / "src/ads/protected-roots.json"
@@ -123,7 +128,12 @@ def load_json(path: pathlib.Path) -> dict:
         raise BuildError(f"invalid JSON in {path}: {exc}")
 
 
-def load_protected() -> set[str]:
+def load_protected(redlines: list[dict] | None = None) -> set[str]:
+    """手写表 ∪ 由 App 红线派生的根——两个构建器与 lint 都走 tools/redlines.py 这一个出口。
+
+    手写表成型时还没有 13 个 App 插件，`meituan.net`、`ttlock.com`、`cmbchina.com` 这些
+    「某款 App 明写绝不碰」的根都不在里面；靠人记得同步必然再漏一次，所以派生层写进代码。
+    """
     data = load_json(PROTECTED)
     roots = data.get("roots")
     if not isinstance(roots, list) or not roots:
@@ -133,16 +143,47 @@ def load_protected() -> set[str]:
         if not isinstance(root, str) or not DOMAIN_RE.match(root) or root.startswith("*."):
             raise BuildError(f"{PROTECTED}: invalid protected root: {root!r}")
         out.add(root.lower())
-    return out
+    return out | redline_roots(redlines)
 
 
 def expand_rule(rule: str) -> list[str]:
-    if rule.startswith("="):
-        base = rule[1:]
-        if not base:
-            raise BuildError("empty '=' rule")
-        return [base, "*." + base]
-    return [rule]
+    try:
+        return shared_expand_rule(rule)
+    except ValueError as exc:
+        raise BuildError(str(exc)) from exc
+
+
+# 「红线」必须是数据，不是散文：每个 App 插件在自己的 JSON 里结构化声明绝不触碰的域，
+# 全局 ads 插件与按 App 插件的**默认生效条目**都不许命中它。名单和判定住在
+# tools/redlines.py，两个构建器共用同一份纪律；这里只把 ValueError 升格成 BuildError。
+def app_redlines() -> list[dict]:
+    try:
+        return load_app_redlines()
+    except (ValueError, OSError) as exc:
+        raise BuildError(str(exc)) from exc
+
+
+def check_rule_vectors(plugin: dict, rules: list[str], redlines: list[dict]) -> int:
+    """[Rule] 段里的域名类匹配项同样受红线约束——包括 AND 复合里嵌套的那一层。
+
+    第 27 轮只检查了 `[Host]` 条目，`DOMAIN-KEYWORD,httpdns` 这类关键词面从来没被拿去比过红线：
+    关键词的覆盖面比后缀还宽，写成 `dns` 就会默认生效地捞走 `dns.jd.com`。
+    返回检查过的匹配项条数（供 --stats-json 打印，不写进文档当声明）。
+    """
+    items = 0
+    for raw in rules:
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        hits = rule_redline_hits(line, redlines)
+        items += len(rule_match_items(line))
+        for kind, target, item in hits:
+            raise BuildError(
+                f"plugin {plugin['file']}, [Rule]: {kind} 匹配项 {target!r} 命中 "
+                f"{describe_redline(item)}——本仓库纪律：默认生效的域名类拦截不许触碰 App 红线，"
+                "要留就留在默认注释组并写明两面理由"
+            )
+    return items
 
 
 def validate_host_rule(rule: str, where: str, protected: set[str]) -> None:
@@ -206,6 +247,61 @@ def glob_regex(pattern: str) -> re.Pattern[str]:
             parts.append(re.escape(char))
         index += 1
     return re.compile("".join(parts) + r"\Z")
+
+
+def redline_glob_hits(patterns: list[str], redlines: list[dict]) -> list[tuple[str, dict]]:
+    """DOMAIN-WILDCARD 层与 App 红线的重叠：glob 无法带例外，只能如实列出来。"""
+    hits: list[tuple[str, dict]] = []
+    for pattern in patterns:
+        regex = glob_regex(pattern)
+        for entry in redlines:
+            if regex.fullmatch(entry["domain"]):
+                hits.append((pattern, entry))
+    return hits
+
+
+def validate_redline_overlap(plugin: dict, patterns: list[str], redlines: list[dict]) -> list[dict]:
+    """通配层命中红线时，必须在数据里逐条认罪（glob + domain 集合要精确相等）。
+
+    Loon 的 DOMAIN-WILDCARD 没有例外语法，`ads.*` 命中 `ads.privacy.qq.com` 这类
+    「必须放行」的合规入口是无解的取舍。默认注释 + 手工开启的那一层不许藏着这种取舍，
+    所以命中集必须被显式列举：漏一条构建失败，多列一条（红线已不重叠了还挂着）也失败。
+    """
+    where = f"plugin {plugin.get('file', '?')}, redline_overlap"
+    disclosed = plugin.get("redline_overlap") or []
+    if not isinstance(disclosed, list):
+        raise BuildError(f"{where}: must be a list")
+    by_domain = {entry["domain"]: entry for entry in redlines}
+    seen: set[tuple[str, str]] = set()
+    rows: list[dict] = []
+    for item in disclosed:
+        if not isinstance(item, dict):
+            raise BuildError(f"{where}: 条目必须是对象")
+        glob, domain, app, why = (item.get(key) for key in ("glob", "domain", "app", "why"))
+        if glob not in patterns:
+            raise BuildError(f"{where}: {glob!r} 不在 domain_wildcards/family_wildcards 里")
+        entry = by_domain.get(domain)
+        if entry is None:
+            raise BuildError(f"{where}: {domain!r} 不是任何 App 声明的红线域")
+        if entry["slug"] != app:
+            raise BuildError(f"{where}: {domain!r} 属于 {entry['slug']}，不是 {app!r}")
+        if not isinstance(why, str) or not why:
+            raise BuildError(f"{where}: {glob!r}/{domain!r} 缺 why")
+        if (glob, domain) in seen:
+            raise BuildError(f"{where}: 重复条目 {glob!r}/{domain!r}")
+        seen.add((glob, domain))
+        rows.append({"glob": glob, "domain": domain, "app": app, "why": why})
+    actual = {(glob, entry["domain"]) for glob, entry in redline_glob_hits(patterns, redlines)}
+    missing = sorted(actual - seen)
+    extra = sorted(seen - actual)
+    if missing or extra:
+        parts = []
+        if missing:
+            parts.append(f"未认罪的重叠 {missing}")
+        if extra:
+            parts.append(f"已不再重叠却仍挂着的认罪条目 {extra}")
+        raise BuildError(f"{where}: {'；'.join(parts)}——命中集由 glob 与 redlines 实算，不许各自漂")
+    return sorted(rows, key=lambda row: (row["glob"], row["domain"]))
 
 
 def validate_domain_wildcards(plugin: dict, protected: set[str]) -> list[str]:
@@ -470,7 +566,8 @@ def render_plugin(
     if not plugin.get("groups"):
         raise BuildError(f"plugin {plugin['file']}: no groups")
 
-    protected = load_protected()
+    redlines = app_redlines()
+    protected = load_protected(redlines)
     if seen is None:
         seen = {}
     lines: list[str] = []
@@ -506,6 +603,14 @@ def render_plugin(
         "active": 0,
         "disabled": 0,
         "expanded": 0,
+        "host_exact": 0,
+        "host_wildcard": 0,
+        "optional_protocol": 0,
+        "optional_httpdns_ip": 0,
+        "optional_public_ip": 0,
+        "redline_entries": len(redlines),
+        "redline_apps": len({entry["slug"] for entry in redlines}),
+        "by_group": [],
     }
 
     general = plugin.get("general") or []
@@ -522,8 +627,11 @@ def render_plugin(
             lines.append(raw.strip())
 
     rules = plugin.get("rules") or []
+    counts["rule_match_items"] = check_rule_vectors(plugin, rules, redlines)
     wildcards = validate_domain_wildcards(plugin, protected)
     families = validate_family_wildcards(plugin, protected, enumerated_hosts(plugin))
+    overlaps = validate_redline_overlap(plugin, wildcards + families, redlines)
+    counts["redline_overlap"] = len(overlaps)
     if rules or wildcards or families:
         lines.append("")
         lines.append("")
@@ -546,6 +654,16 @@ def render_plugin(
         lines.append("# 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，")
         lines.append("# 不命中 a.com、ad.example.com 或 adsl.example.com。")
         lines.append("# 每条 glob 在 build 与 lint 阶段都校验不命中 protected-roots.json。")
+        if overlaps:
+            lines.append(
+                "# 已知与 App 红线重叠（DOMAIN-WILDCARD 无例外语法，只能二选一）："
+            )
+            for row in overlaps:
+                lines.append(
+                    f"#   {row['glob']} 命中 {row['domain']}"
+                    f"（{row['app']} 红线）：{row['why']}"
+                )
+            lines.append("# 开启本层前，请先删除命中的那条 glob，或接受上面写明的后果。")
         lines.append("# 默认保持注释：App Store 正式版仍是 3.5.2(996)，低版本遇到未知规则类型")
         lines.append("# 的行为官方未文档化（可能跳过、也可能整段失效），不拿 [Rule] 核心层冒险。")
         lines.append("# 已装 3.5.3+（TF build 1008-1011）的用户：逐行去掉行首 '# ' 即启用本层。")
@@ -579,18 +697,40 @@ def render_plugin(
         lines.append("# " + "-" * 76)
         lines.append("# 逐行取消行首的 '# ' 后生效；这些规则不参与上面的计数。")
         lines.append("# " + "=" * 76)
-        for raw in rules_disabled:
-            if not isinstance(raw, str) or not raw.strip():
-                raise BuildError(
-                    f"plugin {plugin['file']}: empty rules_disabled line"
-                )
-            raw = raw.strip()
+        clean_rules = [raw.strip() for raw in rules_disabled]
+        for raw in clean_rules:
+            if not raw:
+                raise BuildError(f"plugin {plugin['file']}: empty rules_disabled line")
+        # 可选层在 README 里按「HTTPDNS 网关 IP / 公共 DNS 解析器 IP / STUN」三档拆分。
+        # 题注约定：含「可选：」的注释开启一个新块，其下的「# —— 子题注 ——」只做补充。
+        # 归属看当前块，不看单条 IP 长什么样——两档都是 IP-CIDR，机器分不出来。
+        block = ""
+        for raw in clean_rules:
+            if raw.startswith("#"):
+                if "可选：" in raw:
+                    block = raw
+                else:
+                    block += " " + raw
+                continue
+            validate_rule_line(raw, f"plugin {plugin['file']}, [Rule] optional")
+            counts["rules_disabled"] += 1
+            if raw.startswith("PROTOCOL,"):
+                counts["optional_protocol"] += 1
+            elif "HTTPDNS" in block:
+                counts["optional_httpdns_ip"] += 1
+            else:
+                counts["optional_public_ip"] += 1
+        if counts["rules_disabled"] != (
+            counts["optional_protocol"]
+            + counts["optional_httpdns_ip"]
+            + counts["optional_public_ip"]
+        ):
+            raise BuildError(f"plugin {plugin['file']}: optional [Rule] buckets do not sum")
+        for raw in clean_rules:
             if raw.startswith("#"):
                 lines.append(raw)
             else:
-                validate_rule_line(raw, f"plugin {plugin['file']}, [Rule] optional")
                 lines.append("# " + raw)
-                counts["rules_disabled"] += 1
 
     ip_rewrite = plugin.get("ip_rewrite") or []
     ip_rewrite_disabled = plugin.get("ip_rewrite_disabled") or []
@@ -669,10 +809,27 @@ def render_plugin(
                 group_rules.append(rule)
 
         counts["groups"] += 1
+        if not disabled:
+            for rule in group_rules:
+                for entry in redlines:
+                    if redline_hit(rule, entry):
+                        raise BuildError(
+                            f"plugin {plugin['file']}, group {gid}: 生效规则 {rule!r} 命中 "
+                            f"{describe_redline(entry)}。全局插件不许拦按 App 插件自己划的生死线："
+                            "要么删掉这条，要么把它放进默认注释组并写明两面理由。"
+                        )
+        counts["by_group"].append(
+            {"id": gid, "title": title, "disabled": disabled, "rules": len(group_rules)}
+        )
         if disabled:
             counts["disabled"] += len(group_rules)
         else:
             counts["active"] += len(group_rules)
+            for rule in group_rules:
+                if rule.startswith("*."):
+                    counts["host_wildcard"] += 1
+                else:
+                    counts["host_exact"] += 1
         counts["expanded"] += len(group_rules)
 
         for rule in group_rules:
@@ -767,6 +924,11 @@ def main() -> int:
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--check", action="store_true", help="verify the generated plugin is current")
     group.add_argument("--stats", action="store_true", help="print rule counts")
+    group.add_argument(
+        "--stats-json",
+        action="store_true",
+        help="print rule counts as JSON (single source for the README number gate)",
+    )
     args = parser.parse_args()
 
     try:
@@ -777,6 +939,9 @@ def main() -> int:
 
     if args.check:
         return check_outputs(outputs)
+    if args.stats_json:
+        print(json.dumps(stats, ensure_ascii=False))
+        return 0
     if args.stats:
         for name, counts in stats.items():
             print(

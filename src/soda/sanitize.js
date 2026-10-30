@@ -37,15 +37,15 @@ const RULES = [
     match: /\/luna\/advert\/incentive\/config/,
     kill: ["advertSources", "feedAdvertConfig", "vids"],
     falsy: ["preload"],
-    forceOk: true,
-    extendExpiry: true
+    forceOk: FORCE_OK,
+    extendExpiry: EXTEND_EXPIRY
   },
   {
     id: "incentive-retrieve",
     match: /\/luna\/advert\/incentive\/retrieve/,
     kill: ["adInfosMap", "adInfos"],
-    forceOk: true,
-    extendExpiry: true
+    forceOk: FORCE_OK,
+    extendExpiry: EXTEND_EXPIRY
   },
   {
     id: "splash-brand",
@@ -59,7 +59,7 @@ const RULES = [
            "splash", "brand", "ads", "splashActiveData", "jumpBtnInfo",
            "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache"],
     killArrayData: true,
-    forceOk: true
+    forceOk: FORCE_OK
   },
   {
     id: "ads-config",
@@ -74,7 +74,7 @@ const RULES = [
            "adnGroupConfig", "splashDspConfig", "preloadDspConfig",
            "splashMannorConfig", "adIgnorePlayerStatusConfig"],
     falsy: ["preload", "enableAds", "enableAd"],
-    extendExpiry: true
+    extendExpiry: EXTEND_EXPIRY
   },
   {
     id: "ads",
@@ -92,7 +92,7 @@ const RULES = [
            "splashMannorConfig", "adIgnorePlayerStatusConfig",
            "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache"],
     killArrayData: true,
-    forceOk: true
+    forceOk: FORCE_OK
   },
   {
     id: "upsell",

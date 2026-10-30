@@ -12,6 +12,10 @@
     "App Store 隐私标签含 THIRD_PARTY_ADVERTISING——第三方广告确证存在。",
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
   ],
+  "redlines": [
+    {"domain": "ttlock.com", "kind": "family", "quote": "*.ttlock.com / servlet.ttlock.com（通通锁=智能门锁控制,拦了门开不了）", "why": "通通锁=智能门锁控制，拦了门开不了"},
+    {"domain": "servlet.ttlock.com", "kind": "host", "quote": "*.ttlock.com / servlet.ttlock.com（通通锁=智能门锁控制,拦了门开不了）", "why": "门锁控制接口"}
+  ],
   "sdks": [
     "pangle",
     "gdt",
