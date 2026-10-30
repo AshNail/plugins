@@ -60,24 +60,26 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1347 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
-| `[Host]` HTTPDNS 组 | 71 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
+| `[Host]` 核心广告组 | 14 组、1378 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` HTTPDNS 组 | 73 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 48 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等海外厂商 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
 | `[Rule]` DOMAIN-WILDCARD 通配/家族层 | 41 条 glob（30 广告左标签 + 11 数字分片家族：`ads.*`、`adserver.*`、`ads[0-9]-normal*.zijieapi.com` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域；规则行不带参数 | **否**（需 Loon 3.5.3(1008)+，当前仅 TF；默认注释，`[Host]` 已逐条覆盖这批域，取消注释只是把同族动态子域也一并拒绝） |
 | `[General]` | 3 条：公共 DNS + IP 形式 DoH + IP 形式 DoH3 (HTTP/3) | 是 |
-| `[Host]` 默认注释组 | 4 组、131 条展开规则，默认整组注释（归因、统计、国内公共 DoH，以及命中按 App 插件红线的候选） | **否** |
+| `[Host]` 默认注释组 | 6 组、166 条展开规则，默认整组注释（归因、统计、国内公共 DoH、微博/平台观察组，以及命中按 App 插件红线的候选） | **否** |
 | `[Rule]` 可选组 | 44 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ 16 条公共 DNS 解析器 IP 直连阻断（Google/Cloudflare/Quad9/AdGuard 的 IPv4+IPv6，封 DNS 旁路）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**20 组、1466 条生效 Host（exact 891 / wildcard 575）、131 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
+合计：**22 组、1499 条生效 Host（exact 921 / wildcard 578）、166 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 默认注释组（可选开启）
 
 - 国内公共 DoH 组：`dns.alidns.com`、`doh.aliyun.com`、`dot.alidns.com`（阿里云）、`doh.pub`、`dns.pub`、`dot.pub`、`sm2.doh.pub`（DNSPod）、`doh.360.cn`、`dot.360.cn`（360），共 9 条。**不能默认拦**：国内 Loon 主配置常用域名形式 `doh-server` / `doq-server`，`[Host]` 会把 Loon 自己的加密 DNS 一起打到 `127.0.0.1`（真机证据见下）。开启前把主配置 dns/doh/doq 全改成 IP 形式。
 - 归因组：AppsFlyer、Adjust、Kochava、Singular、Tenjin、AppMetrica、mParticle、Amplitude、Flurry。
 - 统计组：Google Analytics/Firebase、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Yandex、Pinterest、LinkedIn、Yahoo 等。
+- 微博 B 级观察组：`bootpreload.uve.weibo.com`、`fastimage.uve.weibo.com`、`click.uve.weibo.com`、`wbapp.uve.weibo.com`、`dp.im.weibo.cn`、`ad.weibo.com`、`adstrategy.biz.weibo.com`、`biz.weibo.com.cn`、`alitui.weibo.com.cn`，共 9 条，各 2 家公开清单可证，低于默认生效层的 ≥3 源门槛。`widget.weibo.com` 因 anti-AD `@@` 白名单、`uve.weibo.com` 因 RuCu6 插件显式 `DIRECT`，整域不收录。
+- 平台观察组：`sdkconfig.video.qq.com`、`sdkapp.mobile.sina.cn`、`rs.sinajs.cn`（3 源但域名兼作 SDK 配置/共享静态资源，语义存疑）与 `ad.qq.com`、`ad.kuwo.cn`、`ad.qingting.fm`、`ad.csdn.net`（1–2 源，证据不足），共 7 条。`ads.95516.com` 因云闪付重试风暴与 anti-AD `@@` 例外记录不收录。
 - 红线冲突候选组：`dns.jd.com`（京东自建 HTTPDNS）与 `=union.jd.com`（京东联盟 CPS 站，展开含 `*.union.jd.com`）。这两条不进默认生效组的原因是 `src/apps/jd.json` 的「红线（绝不进任何拦截组）」原文逐字写着它们，而 `tools/build-ads.py` 会拒绝任何默认生效条目命中任一 App 声明的红线（判定见 `tools/redlines.py`）。两面理由都留着：拦 `dns.jd.com` 可防京东绕过 Loon 直接解析广告域（成熟清单的常规做法），但没有真机取证证明它无回退时会断解析；拦 `union.jd.com` 去不掉 App 内广告，只会断联盟取链后台。
 
 默认注释的原因：安装归因、渠道 ROI、Firebase/GA 报表、友盟/TalkingData 统计会失效。需要时二选一：
@@ -179,7 +181,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（14 组 / 1347 条展开）
+### 核心广告组（14 组 / 1378 条展开）
 
 | 组 | 代表 |
 |---|---|
@@ -188,7 +190,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 | 快手联盟 | `*.adkwai.com`、`*.adukwai.com`、`*.open.kwaizt.com`、`*.e.kuaishou.com` |
 | 百度 / 百青藤 | `*.mobads.baidu.com`、`*.pos.baidu.com`、`cpro.baidustatic.com` |
 | 阿里妈妈 / TanX | `*.tanx.com`、`*.alimama.com`、`*.mmstat.com` |
-| 中国联盟/媒体/监测 | `*.miaozhen.com`、`*.admaster.com.cn`、`*.mediav.com`、`*.adsame.com`、`union.360.cn`、`ads.sohu.com` |
+| 中国联盟/媒体/监测 | `*.miaozhen.com`、`*.admaster.com.cn`、`*.mediav.com`、`*.adsame.com`、`union.360.cn`、`ads.sohu.com`、`adcdn.tencentmusic.com`、`adse.ximalaya.com`、`ads-img-qc.xhscdn.com`、`optimus-ads.amap.com` |
 | Google Ads | `*.doubleclick.net`、`*.googlesyndication.com`、`*.admob.com`、`imasdk.googleapis.com` |
 | Meta / FAN | `*.an.facebook.com`、`*.b-graph.facebook.com`、`pixel.facebook.com` |
 | TikTok Ads | `ads.tiktok.com`、`business-api.tiktok.com`、`analytics.tiktok.com` |
@@ -198,9 +200,9 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 | 手机厂商广告 SDK | 小米、华为、OPPO/HeyTap、vivo（Android；iOS 不受影响） |
 | 弹窗/Popunder | PropellerAds、PopAds、PopCash、ExoClick、JuicyAds、TrafficJunky、Adsterra、HilltopAds、Clickadu、SpyLog 等 |
 
-### HTTPDNS / 公共 DoH（119 条展开）
+### HTTPDNS / 公共 DoH（121 条展开）
 
-- HTTPDNS/私有 DoH：`*.httpdns.aliyuncs.com`（含阿里《启动接入点》`resolvers-*` 域名兜底）、`httpdns.aliyuncs.com`、`httpdns.qq.com`、`httpdns.baidu.com`、`httpdns.volcengineapi.com`、`httpdns.pro`、`dns.weixin.qq.com` 等 71 条。`dns.jd.com` 与 `resolver.msg.xiaomi.net` 不在这里——它们分别是 `src/apps/jd.json`（京东自建 HTTPDNS）与 `src/apps/mijia.json`（MIUI 推送/消息解析）声明的红线域，见上面「默认注释组（可选开启）」。
+- HTTPDNS/私有 DoH：`*.httpdns.aliyuncs.com`（含阿里《启动接入点》`resolvers-*` 域名兜底）、`httpdns.aliyuncs.com`、`httpdns.qq.com`、`httpdns.baidu.com`、`httpdns.volcengineapi.com`、`httpdns.pro`、`dns.weixin.qq.com` 等 73 条。`dns.jd.com` 与 `resolver.msg.xiaomi.net` 不在这里——它们分别是 `src/apps/jd.json`（京东自建 HTTPDNS）与 `src/apps/mijia.json`（MIUI 推送/消息解析）声明的红线域，见上面「默认注释组（可选开启）」。
 - 公共 DoH：`dns.google`（+`dns64.dns.google`/`8888.google`）、`*.cloudflare-dns.com`（覆盖 security/family/dns64 等全部变体）+ `one.one.one.one` + `1dot1dot1dot1.cloudflare-dns.com`、Quad9 全变体（`dns[.9-12].quad9.net`+`dot.quad9.net`）、`dns[1-3].nextdns.io`+`doh.nextdns.io`、`doh.opendns.com`、AdGuard 新旧域（`=adguard-dns.com` → `adguard-dns.com`+`*.adguard-dns.com` 覆盖 dns/family/unfiltered 变体 + 旧 `dns.adguard.com`）、`doh.cleanbrowsing.org`、Mullvad DoT 族（`dns.mullvad.net`+`*.doh.mullvad.net`+`dot.mullvad.net`）、ControlD（`freedns.controld.com`+`dns.controld.com`+`doh.controld.com`）、`doh.brave.com`、dns.sb（`doh.dns.sb`/`dot.sb`）、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 共 48 条。阿里云/DNSPod/360 的国内入口见「默认注释组」——它们默认生效会把 Loon 自己的 DoH 打到 127.0.0.1。
 - 刻意不拦 `doh.dns.apple.com`，避免影响 iOS/macOS 系统解析。
 
@@ -451,6 +453,9 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.8.3**（2026-10-30）：**全网公开清单交叉核对：16 个国内平台广告专域 + Google 中国 2 域生效，12 个埋点端点进默认关统计组；功能混装与低源候选单独观察**。把 anti-AD、AWAvenue、AdRules、HaGeZi PRO、fmz200 五份缓存清单按**精确域名**（不再用子串，`mobilead.kuwo.cn` 不会再把 `ad.kuwo.cn` 算成命中）逐个计数，只收 ≥3 源且语义自证的条目。进 cn_union：腾讯音乐 `adcdn/adclick/adexpo.tencentmusic.com`（音频广告素材/点击/曝光）、腾讯视频 `adstextview.qq.com`、喜马拉雅 `adse.ximalaya.com`/`adse.wsa.ximalaya.com`、酷狗 `adsfile.bssdlbig.kugou.com`/`ads.service.kugou.com`、小红书 `ads-img-qc`/`ads-video-qc`/`ads-video-al.xhscdn.com`、新浪 `adbox.sina.com.cn`、搜狐 `go.sohu.com`、中华网 `union.china.com.cn`、高德 `optimus-ads.amap.com`、蜻蜓 `ad-cdn.qingting.fm`；进 google：`=googleadsserving.cn`、`=doubleclick-cn.net`。进默认关统计组：新浪 `sbeacon.sina.com.cn`、搜狐 `track/aty.sohu.com`、阿里 `adashbc/adashxgc.ut.taobao.com`、腾讯 `stat.y.qq.com`/`monitor.music.qq.com`、火山 `mssdk.volces.com`、高德 `logs/dualstack-logs.amap.com`、酷狗 `log.web.kugou.com`、阿里云 `log.aliyuncs.com`。新组 `platform_watchlist`（默认注释）收 7 条：`sdkconfig.video.qq.com`、`sdkapp.mobile.sina.cn`、`rs.sinajs.cn` 三条虽 3 源但兼作 SDK 配置/共享静态资源，语义存疑；`ad.qq.com`（2 源）、`ad.kuwo.cn`（1 源）、`ad.qingting.fm`（2 源）、`ad.csdn.net`（1 源）证据不足。拒收：`ads.95516.com`（banks 插件已记录 REJECT 后 `analytics.95516.com` 重试风暴 + anti-AD `@@` 例外，且属银联主域红线）、`report.meituan.com`（已由美团 1.2.4 telemetry 组覆盖）、`log.snssdk.com`（仅 2 源）。生效 Host 1479→1499（exact 903→921 / wildcard 576→578）、默认注释 147→166、核心广告组 1358→1378、组数 21→22；HTTPDNS 73、公共 DoH 48 不变。
+- **2.8.2**（2026-10-30）：**公开仓库交叉核对：微博 4 个多源广告主机 + 猫眼/收钱吧 2 个广告专域 + 2 个 dig 解析端点落地；白名单/单源/支付域拒收**。逐条比对 fmz200 `weibo.plugin`/`Block_HTTPDNS.plugin`/`WeChatMiniAds.plugin`、RuCu6 微博插件与 blackmatrix7 AdvertisingScript：`sdkapp.uve.weibo.com`、`adimg.uve.weibo.com`、`biz.weibo.com`、`alitui.weibo.com` 均 ≥3 家公开清单可证且语义自证（微博 SDK 广告配置/广告图床/开屏/阿里妈妈推广位），`ad.maoyan.com`（猫眼广告专域）、`ads-shopping.shouqianba.com`（收钱吧小程序广告域）各 ≥3 源，一并进 cn_union 生效组；`datacollection.uve.weibo.com` 进统计组默认注释；`dig.bdurl.net`、`dig.zjurl.cn` 两个不含 `httpdns` 关键词的百度/字节解析端点补进 HTTPDNS 组。另把 9 个各 2 源的微博广告主机放进新组 `weibo_watchlist`（默认注释，不把两源候选当默认生效）。拒收并留档：`uve.weibo.com` 整域（RuCu6 插件显式 `DIRECT`，整域会误伤正常接口）、`widget.weibo.com`（anti-AD 有 `@@` 白名单）、`q2cdn.com`（仅 fmz200 单源）、`paydns.wechatpay.cn`（支付域）。生效 Host 1471→1479（exact 895→903 / wildcard 576）、默认注释 137→147、核心广告组 1352→1358、HTTPDNS 组 71→73、组数 20→21。同步美团 1.2.4：补 blackmatrix7 的 `img.meituan.net/(adunion|display|dpmobile|midas)/` 广告图路径，复用已有 MITM 主机，第三条默认注释 REJECT-IMG。
+- **2.8.1**（2026-10-30）：**用两个公开频道的数据做一轮「只收多源可证」的补漏：7 个广告/归因/统计域落地，3 类高风险候选拒收**。对「广告必须死」公开频道（GitCube / Aa28413761）的镜像规则与服务端配置共 190 个域逐一比对，78 个未被本插件覆盖；按「≥3 家公开清单可证 + 语义自证」只收 7 个：`=appsflyersdk.com`（AppsFlyer SDK 请求/深链域，归因组默认注释）、`=shuzilm.cn` 与 `=yandexmetrica.com`（统计组默认注释）、`adapi.izuiyou.com`、`ems.youku.com`、`=ubixioe.com`（cn_union；ubixioe 为第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue）、`ws.tapjoyads.com`（mobile_sdks；已有 `tapjoyads.com` 精确主机覆盖不到该子域）。拒收并写明理由：`v.smtcdns.com` 实为腾讯视频 CDN（`moviets`/`vlive` 播放），`wxs.qq.com` 是微信核心静态域，`janapi/dns.jd.com` 是京东明文红线；`asiad.byteactivity`、`lf-ad-ies.bytecdn.cn`、`mon.toutiacloud.com` 仅频道单源、公开清单零命中，留待真机抓包。生效 Host 1466→1471（exact 891→895 / wildcard 575→576）、默认注释 131→137、核心广告组 1347→1352、组数仍 20。同步的 App 插件：闲鱼 1.5.0（4 条默认注释的 mtop 广告模块 REJECT-DICT）、美团 1.2.3（2 条默认注释的开屏图 REJECT-IMG + 2 个 MITM 主机）、京东 1.0.2 / 微信 1.1.4（仅记录拒收，零证书红线不变）。
 - **2.8.0**（2026-10-30）：**公共 DoH 防泄漏改成「海外默认拦、国内默认注释」——插件第一次主动撤回自伤默认**。2026-10-29 的 23 小时真机日志里，主配置 `doq-server = quic://dns.alidns.com:853` + `doh-server = https://doh.pub/dns-query`，本插件 `[Host]` 把这两个域名一起黑洞：`dns.alidns.com` 17,073 次 + `doh.pub` 11,239 次 = **28,312 次，占当窗口全部 28,547 次 Host Map 的 99.2%**，并连带 5,239 次 `quic://dns.alidns.com:853` 建立尝试（5,236 次连接失败）、两条上游共 10,389 次 DoH 连接失败、9,389 次 `NGQUIC-CLOSE`（6,576@443 + 2,813@853）。插件读不到主配置，无法只拦 App 而放过 Loon 自身；在国内用户常配的域名形式加密 DNS 下，默认拦等于把用户的解析链打瘫。处置：阿里云/DNSPod/360 共 9 条移入新组 `doh_public_cn` 默认注释，海外 48 条仍默认生效。生效 Host 1475→1466（exact 900→891 / wildcard 575）、默认注释 122→131、组 19→20；公共 DoH 组 57→48。`tests/lint-plugins.py` 新增自伤门禁：这 9 条只要出现在生效 Host、缺少注释形态，或 `doh_public_cn` 不等于这 9 条，`npm run check` 立即失败。开启本组前必须把主配置 dns/doh/doq 全改 IP 形式（上方「DNS 防泄漏」段给出可复制配置）。
 - **2.7.8**（2026-10-29）：**把「App 红线」从散文变成数据，红线数据立刻反咬本插件两口**。`src/apps/*.json` 新增 `redlines` 字段（99 条，覆盖 13 个 App；每条带 `kind`/`quote`/`why`，`quote` 必须是同一文件 comment 里的原文片段且域名是独立 token——凭品牌名造域进不了名单）。判定与名单住在 `tools/redlines.py`，`tools/build-ads.py` 与 `tools/build-apps.py` 共用：**任何默认生效的拦截条目命中任一 App 红线即构建失败**（注释掉的组不参与，红线只管默认就会生效的东西）。门禁首跑抓到两处自相矛盾：ads 在 httpdns 组默认黑洞 `dns.jd.com`、在 cn_union 组默认黑洞 `=union.jd.com`，而 `src/apps/jd.json` 的「红线（绝不进任何拦截组）」原文逐字写着它们——两条移入新组「与按 App 插件红线冲突的候选」（默认注释，两面理由都印在组注释里）。再加 `redline_overlap` 认罪层：通配 `ads.*` 会命中微信要求放行的 `ads.privacy.qq.com`，DOMAIN-WILDCARD 没有例外语法，于是命中集与认罪清单必须逐条相等，漏报或多报都构建失败，插件里也会把这条取舍打在段首注释。生效 Host 1479→1476（exact 901 / wildcard 575）、默认注释 118→121、展开 1597 不变；核心广告组 1349→1347、HTTPDNS 组 73→72。
 - **2.7.7**（2026-10-28）：**按公开资料补 23 个小米/MIUI/MiTV 与 OPPO/荣耀广告主机**。前 20 个小米主机不在 14 份通用广告清单里，由公开 `xiaomi-dns-blocklist`、`hagezi-xiaomi` 与 MiTV 去开机广告教程逐条列出：`ad1.xiaomi.com`、`ad.mi.com`、`ad.cdn.pandora.xiaomi.com`（电视广告 CDN）、`ad.quickapp.hybrid.xiaomi.com`、`adv.sec.miui.com`/`adv.sec.intl.miui.com`（含 `*.` 子域）、`api.admob.xiaomi.com`、`ads.xiaomi.com`（含 `*.`）、`adx.tv.mi.com`/`staging-adx.tv.mi.com`（MiTV 广告交易）、`ad.miui.com`、`ad.eu/rus/india.xiaomi.com`、`adv.l7.34.sec.miui.com`、`global-ad-extranet-pri-azams/azpn.alb.xiaomi.com`、`global-ad-intl-pri-alisgp.alb.xiaomi.com`、`wtradv.market.xiaomi.com`、`xadx.file.market.xiaomi.com`（hagezi-xiaomi 通配收录的系统广告位/商店推广/ADX 素材/跨国投放 ALB）；再补 3 个单源但语义明确的厂商主机：`adx-in.ads.heytapmobile.com`（realme/OPPO 印度广告交易）、`ads-drcn.platform.hihonorcloud.com` 与 `metrics-ad-drcn.dt.hihonorcloud.com`（荣耀广告平台/测量）；另补中国程序化广告平台聚告 AdinALL（`adinall.com`，公开官网与第三方共享清单可核实）。生效 Host 1441→1479（exact 903 / wildcard 576），展开 1597；核心广告组 1311→1349。

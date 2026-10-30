@@ -14,7 +14,10 @@
 
 设计约束（与 plugins/ads 相同的纪律，零证书网络层拦截）：
 - 只用 [Rule]（DOMAIN-SUFFIX / DOMAIN-KEYWORD）与 [Host] 黑洞两类段；
-  不生成 [MITM]/[Script]/[Rewrite]——这些插件服务银行与业务敏感 App，零证书是底线。
+  不生成拦截/改写型配置（[MITM]/[Rewrite]/request·response 型 [Script]）——
+  这些插件服务银行与业务敏感 App，零证书是底线。
+- 唯一脚本例外：app.get("crons") 声明的 [Script] cron 型本地通知——Loon 定时器
+  本地触发、只发 $notification 附 App 内路由深链，零 MITM、零网络请求；
 - 例外：未做证书固定的 App 可带 `enhance` 可选增强层——**整段注释**输出
   （[MITM] hostname + URL-REGEX 路径规则），默认零证书不变，用户装证书后自行取消注释；
   每条路径规则必须附公开可引用 sources，禁止凭空造路径。
@@ -254,9 +257,92 @@ def dedup(seq: list[str]) -> list[str]:
     return out
 
 
+CRON_ID_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+CRON_FIELD_RE = re.compile(r"^(?:\*|[0-9*/-]+(?:/[0-9]+)*)$")
+
+
+def validate_crons(app: dict, where: str) -> None:
+    """cron 提醒层：app 插件唯一允许的脚本形态（零 MITM · 零证书 · 纯本地通知）。
+
+    与整条「零脚本拦截」纪律的关系：cron 型 [Script] 不监听/不改写/不请求任何
+    流量，网络层形状与「零脚本」等价，因此允许；request/response/generic 型
+    一律禁止（那是 MITM 领地，app 插件不进）。源码缺失在构建期直接报错，
+    避免「插件的 [Script] 指向一个并不存在的部署件」这种静默断链。
+    """
+    crons = app.get("crons")
+    if crons is None:
+        return
+    if not isinstance(crons, list) or not crons:
+        raise BuildError(f"{where}: crons 必须是非空数组（不需要提醒层就删掉该键）")
+    src_dir = ROOT / "src" / app["slug"]
+    for i, c in enumerate(crons):
+        at = f"{where}: crons[{i}]"
+        if not isinstance(c, dict):
+            raise BuildError(f"{at}: 必须是对象")
+        for key in ("id", "script", "cron", "tag"):
+            if not c.get(key):
+                raise BuildError(f"{at}: missing {key}")
+        for key in ("id", "script"):
+            if not CRON_ID_RE.match(c[key]):
+                raise BuildError(f"{at}: {key}={c[key]!r} 必须匹配 {CRON_ID_RE.pattern}")
+        fields = str(c["cron"]).split()
+        if len(fields) != 5 or not all(CRON_FIELD_RE.match(f) for f in fields):
+            raise BuildError(f"{at}: cron 必须是 5 段 cron 表达式: {c.get('cron')!r}")
+        if "," in c["tag"]:
+            raise BuildError(f"{at}: tag 不得含逗号（Loon 脚本属性分隔符）")
+        if "\n" in str(c.get("note", "")):
+            raise BuildError(f"{at}: note 必须单行（渲染为注释）")
+        if not (src_dir / f"{c['script']}.js").is_file():
+            raise BuildError(
+                f"{at}: 缺少脚本源 src/{app['slug']}/{c['script']}.js"
+                "（node tools/build.js 会把 src/<slug>/*.js 压缩到 plugins/<slug>/scripts/）"
+            )
+    if len({c["id"] for c in crons}) != len(crons):
+        raise BuildError(f"{where}: crons[].id 重复")
+    if len({c["script"] for c in crons}) != len(crons):
+        raise BuildError(f"{where}: crons[].script 重复")
+
+
+def render_crons(app: dict) -> list[str]:
+    """渲染 [Script] 提醒层：行形状钉死为 `cron … then script("scripts/x.min.js") with timeout=60, tag="…"`。
+
+    lint（tests/lint-plugins.py 的 APP_CRON_LINE_RE）对生成物逐行按同一形状复审，
+    并与 src/apps/<slug>.json 的 crons[] 对账——任何手改生成物都会在双闸处现形。
+    """
+    crons = app.get("crons") or []
+    if not crons:
+        return []
+    slug = app["slug"]
+    lines = [
+        "",
+        "# " + "=" * 72,
+        "# 提醒脚本层 · cron 本地通知（零 MITM · 零证书 · 不监听/不改写/不请求流量）",
+        "# " + "-" * 72,
+        "# 本插件拦截面全部走 [Host]/[Rule]；[Script] 只允许 cron 类型：Loon 定时器每天",
+        "# 本地触发一次，脚本只发一条 $notification，点通知按 openUrl 直达 App 内路由。",
+        "# 明确不做：不代打卡、不代领取——签到/领取端点全部要求 App 进程内 encryptSign",
+        "# 侧的请求签名（见上方红线注释），脚本层不存在该签名输入（伪造领取=IVT）。",
+        f"# 脚本源 src/{slug}/<name>.js（可读）→ 部署件 plugins/{slug}/scripts/<name>.min.js",
+        "# （node tools/build.js 压缩）；改时间/文案改 src/apps 的 crons 后重新生成。",
+        "",
+        "[Script]",
+        "",
+    ]
+    for c in crons:
+        if c.get("note"):
+            lines.append(f'# {c["id"]}: {c["note"]}')
+        lines.append(
+            f'cron {c["cron"]} then script("scripts/{c["script"]}.min.js") '
+            f'with timeout=60, tag="{c["tag"]}"'
+        )
+        lines.append("")
+    return lines
+
+
 def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     slug = app["slug"]
     where = f"src/apps/{slug}.json"
+    validate_crons(app, where)
     groups = collect_groups(app, sdklib)
     all_redlines = app_redlines()
     hosts: list[str] = []
@@ -341,6 +427,7 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     if rules:
         lines += section("Rule", rules, lambda r: r)
     lines += section("Host", hosts, lambda h: h + f" = {HOST_BLACKHOLE}")
+    lines += render_crons(app)
 
     enh = app.get("enhance")
     if enh:

@@ -2,8 +2,8 @@
   "slug": "wechat",
   "name": "微信 · 广告素材黑洞",
   "desc": "微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。",
-  "version": "1.1.3",
-  "date": "2026-10-28",
+  "version": "1.1.4",
+  "date": "2026-10-30",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,微信,优量汇,广点通",
   "comment": [
@@ -12,7 +12,8 @@
     "域名形态记法：pgdt.gtimg.cn 是「gtimg 通用 CDN 上的 GDT 素材路径」——以 TLD 区分（gtimg.cn≠gtimg.com），精确主机黑洞，不碰 .com 共享域。",
     "素材组（wechat_material）来源：微信反编译与现网 DNS 解析双重证实的 8 个 wxsns*/wxa/wximg/wxsmw 主机，全部精确主机、无通配——这是本插件与通用 ads 插件的差异所在，通用清单不含这些微信进程内专属域。",
     "本插件 [Host]/[Rule] 全设备生效（Loon 无法按 App 限定）：同一 SDK 域跨 App 共享黑洞，「按 App 插件」只是分组开关；配合全局 ads 插件 httpdns 组防绕过。",
-    "watchlist 组默认关闭：wxsmsdy.video.qq.com / xmaterial.tu.qq.com / zhizi.qq.com 收录于成熟清单但微信 iOS 真机未证实命中，17g57.com 为轮换域——抓包出现后再开，不凭猜测默认生效。"
+    "watchlist 组默认关闭：wxsmsdy.video.qq.com / xmaterial.tu.qq.com / zhizi.qq.com 收录于成熟清单但微信 iOS 真机未证实命中，17g57.com 为轮换域——抓包出现后再开，不凭猜测默认生效。",
+    "频道情报核对（2026-10-30）：「广告必须死」公开频道（GitCube / Aa28413761）清单含 wxs.qq.com 整域与 mp.weixin.qq.com 路径改写。前者是微信核心静态资源域（本插件素材组只精确到 wxsnsdy/wxa/wximg/wxsmw 等子主机，不碰整域），后者是公众号正文域且已列红线；路径改写需 MITM 微信核心链路，按证书固定类 App 红线零证书（lint APP_NO_ENHANCE_SLUGS 锁定），两条均拒收。频道里的 badjs.weixinbridge.com 已在 telemetry 默认关组，无需重复。"
   ],
   "redlines": [
     {"domain": "sns.weixin.qq.com", "kind": "host", "quote": "sns.weixin.qq.com（真机证实 NXDOMAIN，不存在）", "why": "真机证实 NXDOMAIN，不存在"},

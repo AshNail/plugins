@@ -1,5 +1,5 @@
 {
-  "version": "2.8.0",
+  "version": "2.8.3",
   "updated": "2026-10-30",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.0",
+      "version": "2.8.3",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -24,6 +24,9 @@
         "和 soda/douyin 冲突：本插件会同时拦掉激励广告（穿山甲/优量汇/快手联盟），保奖励模式会失效。刷奖励时请禁用本插件。",
         "归因/统计组默认以注释生成；需要时在 src/ads/domains.json 把对应组 disabled 改为 false 后重新 build。",
         "为保持零证书，单插件不包含 FAN 共享域 MITM/Rewrite 增强；不拦 graph.facebook.com/www.facebook.com，但 b-graph.facebook.com 等广告测量子域仍生效，异常时按 README 风险表删除。",
+        "2026-10-30 频道交叉核对：「广告必须死」两个公开频道（GitCube / Aa28413761）的镜像规则与服务端配置共 190 个域逐一比对，只吸收 7 个多源广告域（appsflyersdk、shuzilm、yandexmetrica、adapi.izuiyou、ws.tapjoyads、ems.youku、ubixioe）；v.smtcdns.com 实为腾讯视频 CDN、wxs.qq.com 是微信核心静态域、janapi/dns.jd.com 是京东红线，均拒收；asiad.byteactivity、lf-ad-ies.bytecdn.cn、mon.toutiacloud.com 仅频道单源、公开清单零命中，留待真机抓包，不凭频道名默认生效。",
+        "2026-10-30 第十轮公开仓库交叉核对：fmz200/blackmatrix7/RuCu6 微博与 HTTPDNS 插件逐条比对，只收微博 4 个 ≥3 源广告主机（sdkapp/adimg.uve、biz、alitui）、猫眼/收钱吧 2 个 ≥3 源广告专域与 2 个 ≥2 源 dig 解析端点（bdurl/zjurl）；微博 9 个 2 源候选单独放进默认注释的观察组。微博主域 uve.weibo.com 有插件显式 DIRECT、widget.weibo.com 有 anti-AD 白名单，均不整域/不收录；q2cdn、paydns.wechatpay 单源或支付域拒收。",
+        "2026-10-30 第十一轮全网公开清单交叉核对：anti-AD/AWAvenue/AdRules/HaGeZi PRO/fmz200 五份缓存清单按精确域名逐个计数，补 16 个 ≥3 源国内广告专域（腾讯音乐 adcdn/adclick/adexpo、腾讯视频 adstextview、喜马拉雅 adse/adse.wsa、酷狗 adsfile/ads.service、小红书 ads-img-qc/ads-video-qc/ads-video-al、新浪 adbox、搜狐 go、中华网 union、高德 optimus-ads、蜻蜓 ad-cdn）与 Google 中国 ads serving 2 域；12 个 ≥3 源埋点/日志进默认关统计组。ad.kuwo/ad.qingting/ad.csdn/ad.qq 等 1-2 源候选与 sdkconfig.video.qq.com、sdkapp.mobile.sina.cn、rs.sinajs.cn 三个功能混装域放进默认关观察组；ads.95516.com 已有云闪付重试风暴与 anti-AD @@ 例外记录，report.meituan.com 已由美团插件覆盖，均不重复收录。",
         "本文件由 tools/build-ads.py 从 src/ads/domains.json 生成，不要手改生成物。"
       ],
       "general": [
@@ -341,7 +344,7 @@
         {
           "id": "cn_union",
           "title": "中国广告联盟 / 媒体广告位 / 广告监测",
-          "note": "AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。",
+          "note": "AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。2026-10-30 频道补充：ems.youku.com（优酷广告端点，4 源）、adapi.izuiyou.com（皮皮搞笑广告 API，5 源）、ubixioe.com（第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue #33），均精确域或整域广告专域。2026-10-30 公开仓库补充：sdkapp.uve.weibo.com / adimg.uve.weibo.com / biz.weibo.com / alitui.weibo.com（微博 SDK 广告配置、广告图床、开屏广告与阿里妈妈推广位，分别 3/3/3/3+ 源）；均为精确主机，刻意不写 =uve.weibo.com——RuCu6 微博插件对该域显式 DIRECT，整域会误伤正常接口。同日再补 ad.maoyan.com（猫眼广告专域，AWAvenue 精确 + hagezi 通配 + fmz200/blackmatrix7 主机规则）与 ads-shopping.shouqianba.com（收钱吧小程序广告域，anti-AD + AWAvenue + hagezi），两者均为广告专用子域。2026-10-30 第十一轮按精确域比对五份公开清单，再补 16 个 ≥3 源国内媒体/工具广告专域：腾讯音乐 adcdn/adclick/adexpo（音频广告素材、点击、曝光）、腾讯视频 adstextview（广告文本位）、喜马拉雅 adse/adse.wsa（音频广告服务）、酷狗 adsfile.bssdlbig/ads.service（广告文件与投放服务）、小红书 ads-img-qc/ads-video-qc/ads-video-al（广告图/视频 CDN）、新浪 adbox（广告位）、搜狐 go（广告跳转）、中华网 union（广告联盟）、高德 optimus-ads（地图广告引擎）、蜻蜓 ad-cdn（音频广告 CDN）。全部精确主机；媒体主域仍不整域封禁。",
           "rules": [
             "=adview.cn",
             "=domob.cn",
@@ -394,6 +397,9 @@
             "=ipm.atm.youku.com",
             "=apiv4-iyes.youku.com",
             "=ad-feedback.youku.com",
+            "ems.youku.com",
+            "adapi.izuiyou.com",
+            "=ubixioe.com",
             "=ad.iot.360.cn",
             "=ad.jia.360.cn",
             "=ad.life.360.cn",
@@ -421,6 +427,10 @@
             "appcloud2.zhihu.com",
             "adx.weibo.com",
             "wax.weibo.com",
+            "sdkapp.uve.weibo.com",
+            "adimg.uve.weibo.com",
+            "biz.weibo.com",
+            "alitui.weibo.com",
             "sax.sina.com.cn",
             "saxn.sina.com.cn",
             "cpu.baidu.com",
@@ -438,13 +448,65 @@
             "ggs.myzaker.com",
             "d2.sina.com.cn",
             "=50bang.org",
-            "=adinall.com"
+            "=adinall.com",
+            "ad.maoyan.com",
+            "ads-shopping.shouqianba.com",
+            "adcdn.tencentmusic.com",
+            "adclick.tencentmusic.com",
+            "adexpo.tencentmusic.com",
+            "adstextview.qq.com",
+            "adse.ximalaya.com",
+            "adse.wsa.ximalaya.com",
+            "adsfile.bssdlbig.kugou.com",
+            "ads.service.kugou.com",
+            "ads-img-qc.xhscdn.com",
+            "ads-video-qc.xhscdn.com",
+            "ads-video-al.xhscdn.com",
+            "adbox.sina.com.cn",
+            "go.sohu.com",
+            "union.china.com.cn",
+            "optimus-ads.amap.com",
+            "ad-cdn.qingting.fm"
+          ]
+        },
+        {
+          "id": "weibo_watchlist",
+          "title": "微博 B 级广告候选（默认关）",
+          "tier": "B",
+          "disabled": true,
+          "note": "以下 9 个微博广告主机均为 2 家公开清单可证（anti-AD + AWAvenue/AdGuard/fmz200），低于默认生效层的 ≥3 源门槛，故整组默认注释：bootpreload=开屏预加载、fastimage=广告图、click=广告点击、wbapp=广告 SDK、dp.im=私信广告、ad.weibo.com=广告入口、adstrategy.biz=广告策略、biz.weibo.com.cn/alitui.weibo.com.cn=国内变体。刻意不收录 widget.weibo.com（anti-AD 有 @@ 白名单）与 uve.weibo.com 整域（RuCu6 插件显式 DIRECT）。逐条取消注释前先确认对应功能无异常。",
+          "rules": [
+            "bootpreload.uve.weibo.com",
+            "fastimage.uve.weibo.com",
+            "click.uve.weibo.com",
+            "wbapp.uve.weibo.com",
+            "dp.im.weibo.cn",
+            "ad.weibo.com",
+            "adstrategy.biz.weibo.com",
+            "biz.weibo.com.cn",
+            "alitui.weibo.com.cn"
+          ]
+        },
+        {
+          "id": "platform_watchlist",
+          "title": "国内平台广告候选：语义存疑 / 证据不足（默认关）",
+          "tier": "B",
+          "disabled": true,
+          "note": "两类默认注释候选，逐条取消前先确认对应功能无异常。语义存疑（3 源但域名不专属于广告，可能共用配置/静态资源）：sdkconfig.video.qq.com=腾讯视频 SDK 配置端（拦后可能影响播放器远程配置）、sdkapp.mobile.sina.cn=新浪移动 SDK 配置端（第三方 App 的微博登录/分享可能共用）、rs.sinajs.cn=新浪共享静态资源主机（页面 JS 可能同源）。证据不足（1-2 源，低于默认生效层 ≥3 源门槛）：ad.qq.com=腾讯广告主门户/落地页（2 源）、ad.kuwo.cn=酷狗广告域（1 源；同族 mobilead.kuwo.cn 已在生效组）、ad.qingting.fm=蜻蜓广告域（2 源；ad-cdn 已生效）、ad.csdn.net=CSDN 广告域（1 源）。ads.95516.com 不放进来：banks 插件已记录 REJECT 后 analytics.95516.com 重试风暴与 anti-AD @@ 例外，且属银联主域红线。",
+          "rules": [
+            "sdkconfig.video.qq.com",
+            "sdkapp.mobile.sina.cn",
+            "rs.sinajs.cn",
+            "ad.qq.com",
+            "ad.kuwo.cn",
+            "ad.qingting.fm",
+            "ad.csdn.net"
           ]
         },
         {
           "id": "google",
           "title": "Google Ads / AdMob / Ad Manager",
-          "note": "DoubleClick、AdSense、AdX、AdMob、IMA SDK。google.com 是共享域，只列广告专用主机；GA/Firebase 归入 measurement 插件。",
+          "note": "DoubleClick、AdSense、AdX、AdMob、IMA SDK。google.com 是共享域，只列广告专用主机；GA/Firebase 归入 measurement 插件。2026-10-30 第十一轮补入 Google 中国投放链路 googleadsserving.cn（3 源）与 doubleclick-cn.net（4 源），均为广告专用域、可整域拦截。",
           "rules": [
             "=doubleclick.net",
             "=googlesyndication.com",
@@ -452,6 +514,8 @@
             "=googletagservices.com",
             "=admob.com",
             "=2mdn.net",
+            "=googleadsserving.cn",
+            "=doubleclick-cn.net",
             "adservice.google.com",
             "pagead.l.google.com",
             "partnerad.l.google.com",
@@ -562,7 +626,7 @@
         {
           "id": "mobile_sdks",
           "title": "全球移动广告 SDK / 聚合平台",
-          "note": "AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。",
+          "note": "AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。2026-10-30 频道补充 ws.tapjoyads.com（Tapjoy 广告 WebSocket/测量端点，4 源；已有 tapjoyads.com 精确主机覆盖不到该子域）。",
           "rules": [
             "=applovin.com",
             "=mopub.com",
@@ -593,6 +657,7 @@
             "applvn.com",
             "inmobicdn.net",
             "tapjoyads.com",
+            "ws.tapjoyads.com",
             "startapp.com",
             "mobfox.com",
             "mobclix.com",
@@ -1092,7 +1157,7 @@
         {
           "id": "httpdns",
           "title": "HTTPDNS / 私有 DoH 端点（防绕过）",
-          "note": "覆盖阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。",
+          "note": "覆盖阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。",
           "rules": [
             "httpdns.aliyuncs.com",
             "*.httpdns.aliyuncs.com",
@@ -1117,6 +1182,7 @@
             "httpdns.browser.miui.com",
             "httpdns.gslb.yy.com",
             "httpdns.volcengineapi.com",
+            "dig.zjurl.cn",
             "httpdns.yunxindns.com",
             "httpdns.kwd.inkuai.com",
             "doh.iqiyi.com",
@@ -1127,6 +1193,7 @@
             "httpdns.baidu.com",
             "httpsdns.baidu.com",
             "httpdns.n.shifen.com",
+            "dig.bdurl.net",
             "httpdns.alicdn.com",
             "httpdns-sc.aliyuncs.com",
             "httpdns.meituan.com",
@@ -1241,9 +1308,10 @@
         {
           "id": "attribution",
           "title": "移动归因 / MMP（可选，默认注释）",
-          "note": "AppsFlyer、Adjust、Kochava、Singular、Tenjin、AppMetrica、mParticle、Amplitude、Flurry。会断安装归因、渠道 ROI 与部分深链；默认注释，不影响核心广告拦截。branch.io 是深度链接基础设施，明确不拦。需要时在 src/ads/domains.json 把 disabled 改为 false 后重新 build。",
+          "note": "AppsFlyer、Adjust、Kochava、Singular、Tenjin、AppMetrica、mParticle、Amplitude、Flurry。会断安装归因、渠道 ROI 与部分深链；默认注释，不影响核心广告拦截。branch.io 是深度链接基础设施，明确不拦。2026-10-30 频道补充 appsflyersdk.com（AppsFlyer SDK 请求/深链域，与主品牌域不同后缀，7 源）。需要时在 src/ads/domains.json 把 disabled 改为 false 后重新 build。",
           "rules": [
             "=appsflyer.com",
+            "=appsflyersdk.com",
             "=adjust.com",
             "=kochava.com",
             "=singular.net",
@@ -1260,7 +1328,7 @@
         {
           "id": "analytics",
           "title": "应用 / Web 统计（可选，默认注释）",
-          "note": "Google Analytics/Firebase（含 app-measurement / app-analytics-services / firebaselogging / crashlytics）、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Mixpanel、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats，以及 2026-10-27 真机日志实锤的 腾讯 Beacon/APM（rmonitor / h.trace / unitelogreport）、美团 dreport/wreport、JPush 统计、BOSS 直聘 APM、微信 badjs、起点 upush 等。默认注释；会让统计报表与部分实验/远程配置失效。",
+          "note": "Google Analytics/Firebase（含 app-measurement / app-analytics-services / firebaselogging / crashlytics）、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Mixpanel、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats，以及 2026-10-27 真机日志实锤的 腾讯 Beacon/APM（rmonitor / h.trace / unitelogreport）、美团 dreport/wreport、JPush 统计、BOSS 直聘 APM、微信 badjs、起点 upush 等。2026-10-30 频道补充 yandexmetrica.com（Yandex Metrica，5 源）与 shuzilm.cn（数字联盟设备指纹，5 源）。2026-10-30 公开仓库补充 datacollection.uve.weibo.com（微博用户数据采集，anti-AD + fmz200 两源）。2026-10-30 第十一轮补 12 个 ≥3 源国内埋点/日志端点：sbeacon.sina（新浪 Beacon）、track/aty.sohu（搜狐曝光与统计）、adashbc/adashxgc.ut.taobao（阿里 UT/AdashX 分片）、stat.y.qq 与 monitor.music.qq（腾讯/QQ 音乐统计）、mssdk.volces（火山引擎 SDK 监控）、logs/dualstack-logs.amap 与 optimus-ads 同族的日志端、log.web.kugou（酷狗日志）、log.aliyuncs（阿里云 SLB 日志）。默认注释；会让统计报表与部分实验/远程配置失效。",
           "rules": [
             "=google-analytics.com",
             "=app-measurement.com",
@@ -1275,6 +1343,8 @@
             "analytics.google.com",
             "hm.baidu.com",
             "mc.yandex.ru",
+            "=yandexmetrica.com",
+            "=shuzilm.cn",
             "beacon.sina.com.cn",
             "tracking.miui.com",
             "log.pinterest.com",
@@ -1332,9 +1402,22 @@
             "firebaselogging-pa.googleapis.com",
             "crashlyticsreports-pa.googleapis.com",
             "badjs.weixinbridge.com",
+            "datacollection.uve.weibo.com",
             "upush.qidian.com",
             "upushv6.qidian.com",
-            "stats.v2core.com"
+            "stats.v2core.com",
+            "sbeacon.sina.com.cn",
+            "track.sohu.com",
+            "aty.sohu.com",
+            "adashbc.ut.taobao.com",
+            "adashxgc.ut.taobao.com",
+            "stat.y.qq.com",
+            "monitor.music.qq.com",
+            "mssdk.volces.com",
+            "logs.amap.com",
+            "log.web.kugou.com",
+            "log.aliyuncs.com",
+            "dualstack-logs.amap.com"
           ],
           "disabled": true
         },

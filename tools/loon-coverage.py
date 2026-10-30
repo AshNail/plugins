@@ -292,7 +292,7 @@ CAPABILITIES = [
              "「不查询 AAAA，并拒绝 IPv6 连接」——它唯一的广告相关收益是给黑洞域名补一条 v6 封口，"
              "正对 `docs/bypass-audit.md` 第 11 条 AAAA 旁路。但官方只给了 `ip-mode:` 单独使用的示例，"
              "同一域名多行（`= 127.0.0.1` + `= ip-mode:v4-only`）是否共存未文档化，"
-             "因此与那条一起停在「未落地」，先做真机三步验证，不拿 1479 条生效黑洞去赌"),
+             "因此与那条一起停在「未落地」，先做真机三步验证，不拿 1499 条生效黑洞去赌"),
     dict(layer="Host 层", key="h-ssid", name="`ssid:名称 = ...`", expect="reject",
          probe=r"(?m)^ssid\s*:", href=DOC + "/DNS/hostmap",
          why="「只在某个 Wi-Fi 下改解析」不是去广告需求"),

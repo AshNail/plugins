@@ -2,8 +2,8 @@
   "slug": "jd",
   "name": "京东 · 去广告（自建广告交易层）",
   "desc": "京东 App：可 DNS 切断的是自建广告交易/点击监测域（生效：dsp-x 京媒 SDK、ads-union、ccc-x、addata、skdisplay；默认关：x.jd.com 族、埋点日志族）。首页/搜索信息流广告与商品同 API、同图床（mapi.m.jd.com、img*.360buyimg.com、img-x.jd.com），DNS 不可分；交易/风控/登录/推送/客服零接触。零证书，不提供 MITM 层。",
-  "version": "1.0.1",
-  "date": "2026-10-28",
+  "version": "1.0.2",
+  "date": "2026-10-30",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,京东,JD",
   "comment": [
@@ -13,6 +13,7 @@
     "能力天花板（如实）：京东 App 的开屏/信息流广告素材由主 API 下发并复用商品图 CDN，DNS 层无法按域剥离；可切断的是广告交易与点击/曝光监测域名、埋点日志域名，收益以抓包为准，不承诺「广告全消失」。",
     "证书与 MITM：京东含支付/风控（h5st）且本插件未做抓包取证，按证书固定类 App 处理，不提供可选 MITM 增强层；需要路径级去广告请另用主配置，并自行承担风控风险。",
     "第三方 ADN 未取证：京东 iOS 是否调用穿山甲/优量汇/快手等外部变现 SDK 没有可引用的官方 SDK 目录证据，本插件不挂 SDK 组；若真机抓包发现，直接开 ads.plugin 对应组即可。",
+    "频道情报核对（2026-10-30）：「广告必须死」公开频道（GitCube / Aa28413761）给出 m.360buyimg.com/mobilecms/s1125x2436_jfs* 开屏图 REJECT-IMG 方案，需 MITM 图片 CDN；京东属证书固定类 App、本插件红线零证书（lint APP_NO_ENHANCE_SLUGS 锁定），故拒收。频道清单中的 janapi/dns.jd.com 也命中本插件明文红线，同样拒收。确需路径级开屏去图只能在主配置自行 MITM，并自担 h5st 风控风险。",
     "本插件 [Host]/[Rule] 全设备生效（Loon 无法按 App 限定）：同一广告/埋点域跨 App 共享黑洞，'按 App 插件'只是分组开关；与全局 ads 插件配合使用。"
   ],
   "redlines": [

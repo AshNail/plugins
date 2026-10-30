@@ -1,13 +1,13 @@
 #!name=美团 · 去广告
 #!desc=美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞。首页轮播/信息流/开屏素材与业务同域同 CDN——DNS 层收益约 25-35%，其余是「加载失败留白」。交易、支付、骑手调度零接触。零证书。
 #!author=edy
-#!version=1.2.2
+#!version=1.2.4
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/meituan/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/de/7e/9e/de7e9e88-fb46-d039-d61b-cb349ea8f05f/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.1(983)
-#!date=2026-10-28
+#!date=2026-10-30
 #!tag=去广告,美团,点评
 #!type=normal
 
@@ -20,6 +20,8 @@
 # iOS 与 Android 差异：官方《接入第三方SDK目录》标注腾讯营销联盟/BeiZi/天璇/快手联盟/酷盈/PolyGamma 仅 Android——本插件 iOS 侧不挂 pangle/gdt/kuaishou 组，避免无收益死规则。
 # 只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）。
 # 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+# 频道补充(2026-10-30)：吸收『广告必须死』频道 2024-10 模块里本仓库未覆盖的两条广告图片路径——flowplus.meituan.net 的 linglong 素材与 img.meituan.net/bizad/bizad_brandCpt_ 品牌 CPT 图，均用 REJECT-IMG 放进可选增强层，默认注释。s3plus 的 blk_conf JSON 与 brandcpt-vedio/waimai-alita zip 不收：s3plus 是共享存储，扩大 MITM 面换不来确定的广告收益，且本仓库已有 p*.meituan.net 的开屏/轮播路径覆盖。
+# 公开仓库补充(2026-10-30)：blackmatrix7 AdvertisingScript 的 img.meituan.net/(adunion|display|dpmobile|midas)/ 图片路径已有 MITM 主机、无需新增解密域，补为第三条默认注释 REJECT-IMG；与 bizad 路径同属共享图床的广告目录段，只按路径拦、不整域。
 # 本文件由 tools/build-apps.py 从 src/apps/meituan.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -117,7 +119,7 @@ s3plus-pre.51ping.com = 127.0.0.1
 # ========================================================================
 # 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
 # ------------------------------------------------------------------------
-# 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。
+# 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。2026-10-30 再补频道 2024-10 的两条图片路径（flowplus linglong / img.meituan.net bizad）与 blackmatrix7 的 img.meituan.net 广告目录路径（adunion/display/dpmobile/midas），同样默认注释；flowplus 与 img.meituan.net 都是共享素材主机，启用后这两台的图片流量都会进 MITM（只有广告路径被 REJECT-IMG 拒绝），介意解密面就只开 wmapi/apimobile 的 JSON 规则或跳过本层。
 # 启用步骤：①Loon 里装并信任证书 →
 #           ②取消 [MITM] 头与其 hostname 行的注释 →
 #           ③取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
@@ -127,12 +129,14 @@ s3plus-pre.51ping.com = 127.0.0.1
 # 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin
 # 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin
 # 证据: https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
+# 证据: https://t.me/GitCube
+# 证据: https://t.me/Aa28413761
 # ========================================================================
 
 # [MITM]
 # ------------------------------------------------------------
 # hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
-# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net
+# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net, flowplus.meituan.net, img.meituan.net
 #
 # [Rule]
 # ------------------------------------------------------------
@@ -142,8 +146,13 @@ s3plus-pre.51ping.com = 127.0.0.1
 # 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。
 # AND,((DOMAIN-SUFFIX,wmapi.meituan.com),(PROTOCOL,QUIC)),REJECT
 # AND,((DOMAIN-SUFFIX,apimobile.meituan.com),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,flowplus.meituan.net),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,img.meituan.net),(PROTOCOL,QUIC)),REJECT
 # 通配主机无法用 DOMAIN-SUFFIX 表达，QUIC 回退需另行处理: p?.meituan.net
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/loadInfo\?,REJECT-DICT
 # URL-REGEX,^https?://p[0-9]\.meituan\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\.jpg,REJECT-IMG
+# URL-REGEX,^https?://flowplus\.meituan\.net/v1/mss_[^/]+/linglong/[^/]+\.jpg,REJECT-IMG
+# URL-REGEX,^https?://img\.meituan\.net/bizad/bizad_brandCpt_[^/]+\.jpg,REJECT-IMG
+# URL-REGEX,^https?://img\.meituan\.net/(adunion|display|dpmobile|midas)/[A-Za-z0-9_-]+\.(?:gif|jpg|jpg\.webp)$,REJECT-IMG

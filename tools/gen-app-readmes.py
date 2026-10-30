@@ -26,10 +26,15 @@ def render(app, sdklib, ads_groups):
         f"(https://www.nsloon.com/openloon/import?plugin={quote(url, safe='')})"
     )
     enh = app.get("enhance") or {}
+    crons = app.get("crons") or []
     tier_line = (
         "零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）"
-        if enh else
-        "零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）"
+        if enh
+        else (
+            "零 MITM · 零证书（拦截面 `[Host]`/`[Rule]` + cron 提醒脚本层，见下）"
+            if crons
+            else "零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）"
+        )
     )
     lines = [
         f"# {name}",
@@ -72,6 +77,22 @@ def render(app, sdklib, ads_groups):
         title = meta.get("title", sid)
         note = meta.get("note", "域名真源见 ads 组/SDK 库")
         lines.append(f"| {title}（引用组） | A | 启用 | {note} 共 {n_h} 域 / {n_r} 规则。 |")
+    if crons:
+        lines += [
+            "",
+            "## 提醒脚本（cron · 零 MITM · 零证书）",
+            "",
+            "| 脚本 | 触发 | 行为 |",
+            "|---|---|---|",
+        ]
+        for c in crons:
+            lines.append(f"| `{c.get('script')}` | cron `{c.get('cron')}` | {c.get('note', '')} |")
+        lines += [
+            "",
+            "> 只发一条本地通知并携带 App 内路由（点通知直达）；不发起任何网络请求、不代打卡、不代领取。",
+            "> 签到/领取端点全部要求 App 进程内 encryptSign 的请求签名，插件侧不存在该签名输入。",
+            f"> 改提醒时间/文案：改 `src/apps/{slug}.json` 的 `crons[]` 后 `npm run build:apps`（脚本源 `src/{slug}/<name>.js` 由 `npm run build` 压缩）。",
+        ]
     if enh:
         n_regex = len(enh.get("url_regex", []))
         n_json = len(enh.get("rewrite_json", []))

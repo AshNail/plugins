@@ -473,7 +473,14 @@ SAFE_SCRIPT_FORBIDDEN = (
 )
 SAFE_DONE_RX = re.compile(r"\$done\s*\(")
 SAFE_NOTIFY_RX = re.compile(r"\$notification\s*(?:\.|\[)\s*[\"']?post")
-SAFE_NOTIFY_ALLOWED = {"status.js", "daily-reminder.js"}
+SAFE_NOTIFY_ALLOWED = {
+    "status.js",
+    "daily-reminder.js",
+    # qidian 提醒层（src/apps/qidian.json crons）：cron 本地通知专用脚本，
+    # 与 daily-reminder 同性质——只发通知附 App 内路由，零网络请求。
+    "sign-reminder.js",
+    "welfare-reminder.js",
+}
 
 # 官方 Script API 5.3：`$persistentStore.remove()` **不接受参数**，语义是
 # 「清空通过脚本存储 API 保存的全部数据」。传 key 进去不会只删那一项——
@@ -1579,7 +1586,7 @@ def check_script_safety():
         if SAFE_NOTIFY_RX.search(text) and source_name not in SAFE_NOTIFY_ALLOWED:
             errors.append(
                 f"{rel}: $notification.post is only allowed in "
-                "status.js / daily-reminder.js"
+                "status.js / daily-reminder.js / qidian sign·welfare-reminder.js"
             )
             problems += 1
     print(
@@ -2747,7 +2754,14 @@ def check_device_app_coverage():
 APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
 APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP"}
 APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+\s*=\s*\d{1,3}(?:\.\d{1,3}){3}$")
-APP_SECTIONS = {"Rule", "Host"}
+APP_SECTIONS = {"Rule", "Host", "Script"}
+
+# app 插件 [Script] 的唯一合法形态（build-apps.py render_crons 钉死的生成形状）：
+# cron 本地通知——零 MITM、零网络请求；request/response/generic 型一律不许出现。
+APP_CRON_LINE_RE = re.compile(
+    r'^cron (?P<expr>\S+ \S+ \S+ \S+ \S+) then script\("(?P<script>scripts/[^"]+\.min\.js)"\) '
+    r'with timeout=60, tag="(?P<tag>[^"]+)"$'
+)
 # 做了证书固定/等效私有加密通道（mmtls）的 App：MITM 不可行甚至触发风控，
 # 它们的 src/apps JSON 永远不许出现 enhance 层（用户裁决：仅非固定 App 加默认关增强层）。
 APP_NO_ENHANCE_SLUGS = {"banks", "wechat", "mijia", "x", "instagram", "jd"}
@@ -2809,7 +2823,51 @@ def check_app_plugins():
         parsed, sections = parse_plugin(plugin)
         bad = [s for s in sections if s not in APP_SECTIONS]
         if bad:
-            errors.append(f"apps/{slug}: sections outside Rule/Host: {sorted(set(bad))}")
+            errors.append(f"apps/{slug}: sections outside Rule/Host/Script: {sorted(set(bad))}")
+        crons = data.get("crons") or []
+        script_lines = parsed.get("Script", [])
+        if crons:
+            if "Script" not in sections:
+                errors.append(
+                    f"apps/{slug}: src/apps/{slug}.json declares crons but "
+                    "plugin has no [Script] section (stale build; run npm run build:apps)"
+                )
+            if len(script_lines) != len(crons):
+                errors.append(
+                    f"apps/{slug}: [Script] has {len(script_lines)} effective line(s) "
+                    f"but src crons={len(crons)} (rebuild to resync)"
+                )
+            for c, line in zip(crons, script_lines):
+                m = APP_CRON_LINE_RE.match(line)
+                if not m:
+                    errors.append(
+                        f"apps/{slug}: [Script] line not in pinned cron shape "
+                        f'(cron <expr> then script("scripts/<name>.min.js") with timeout=60, tag="<tag>"): {line}'
+                    )
+                    continue
+                want_script = f"scripts/{c.get('script')}.min.js"
+                if m.group("script") != want_script:
+                    errors.append(
+                        f"apps/{slug}: cron script {m.group('script')!r} != crons[].script {want_script!r}"
+                    )
+                if m.group("expr") != c.get("cron"):
+                    errors.append(
+                        f"apps/{slug}: cron expr {m.group('expr')!r} != crons[].cron {c.get('cron')!r}"
+                    )
+                if m.group("tag") != c.get("tag"):
+                    errors.append(
+                        f"apps/{slug}: cron tag {m.group('tag')!r} != crons[].tag {c.get('tag')!r}"
+                    )
+                dist = ROOT / "plugins" / slug / "scripts" / f"{c.get('script')}.min.js"
+                if not dist.exists():
+                    errors.append(
+                        f"apps/{slug}: missing {dist.relative_to(ROOT)} (run npm run build)"
+                    )
+        elif script_lines:
+            errors.append(
+                f"apps/{slug}: [Script] section without crons in src/apps/{slug}.json "
+                "(拦截/改写型脚本不入 app 插件)"
+            )
         for line in parsed.get("Rule", []):
             parts = [p.strip() for p in line.split(",")]
             if parts[0] not in APP_RULE_KINDS:

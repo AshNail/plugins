@@ -2,7 +2,7 @@
 
 > 美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞。首页轮播/信息流/开屏素材与业务同域同 CDN——DNS 层收益约 25-35%，其余是「加载失败留白」。交易、支付、骑手调度零接触。零证书。
 
-版本 **1.2.2** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.2.4** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -28,18 +28,21 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
-美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。
+美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。2026-10-30 再补频道 2024-10 的两条图片路径（flowplus linglong / img.meituan.net bizad）与 blackmatrix7 的 img.meituan.net 广告目录路径（adunion/display/dpmobile/midas），同样默认注释；flowplus 与 img.meituan.net 都是共享素材主机，启用后这两台的图片流量都会进 MITM（只有广告路径被 REJECT-IMG 拒绝），介意解密面就只开 wmapi/apimobile 的 JSON 规则或跳过本层。
 
-- 解密主机（`[MITM] hostname`，3 个）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`
-- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，2 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 会静默失效；启用本层时应连同这些行一起取消注释。
+- 解密主机（`[MITM] hostname`，5 个）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`, `flowplus.meituan.net`, `img.meituan.net`
+- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，4 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 会静默失效；启用本层时应连同这些行一起取消注释。
 - 通配主机（`p?.meituan.net`）无法用 `DOMAIN-SUFFIX` 表达 QUIC 回退，启用该层的这一域时需另行处理。
-- 路径级规则（`URL-REGEX`，4 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
+- 路径级规则（`URL-REGEX`，7 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 
 ```text
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/loadInfo\?,REJECT-DICT
 # URL-REGEX,^https?://p[0-9]\.meituan\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\.jpg,REJECT-IMG
+# URL-REGEX,^https?://flowplus\.meituan\.net/v1/mss_[^/]+/linglong/[^/]+\.jpg,REJECT-IMG
+# URL-REGEX,^https?://img\.meituan\.net/bizad/bizad_brandCpt_[^/]+\.jpg,REJECT-IMG
+# URL-REGEX,^https?://img\.meituan\.net/(adunion|display|dpmobile|midas)/[A-Za-z0-9_-]+\.(?:gif|jpg|jpg\.webp)$,REJECT-IMG
 ```
 
 启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，否则规则会落在上一段的末尾而不生效）。
@@ -50,6 +53,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 - https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin
 - https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin
 - https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
+- https://t.me/GitCube
+- https://t.me/Aa28413761
 
 ## 红线与天花板（如实）
 
@@ -59,6 +64,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 - iOS 与 Android 差异：官方《接入第三方SDK目录》标注腾讯营销联盟/BeiZi/天璇/快手联盟/酷盈/PolyGamma 仅 Android——本插件 iOS 侧不挂 pangle/gdt/kuaishou 组，避免无收益死规则。
 - 只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）。
 - 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+- 频道补充(2026-10-30)：吸收『广告必须死』频道 2024-10 模块里本仓库未覆盖的两条广告图片路径——flowplus.meituan.net 的 linglong 素材与 img.meituan.net/bizad/bizad_brandCpt_ 品牌 CPT 图，均用 REJECT-IMG 放进可选增强层，默认注释。s3plus 的 blk_conf JSON 与 brandcpt-vedio/waimai-alita zip 不收：s3plus 是共享存储，扩大 MITM 面换不来确定的广告收益，且本仓库已有 p*.meituan.net 的开屏/轮播路径覆盖。
+- 公开仓库补充(2026-10-30)：blackmatrix7 AdvertisingScript 的 img.meituan.net/(adunion|display|dpmobile|midas)/ 图片路径已有 MITM 主机、无需新增解密域，补为第三条默认注释 REJECT-IMG；与 bizad 路径同属共享图床的广告目录段，只按路径拦、不整域。
 
 ## 证据与验证
 

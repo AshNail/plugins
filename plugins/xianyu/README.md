@@ -2,7 +2,7 @@
 
 > 闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名，九家主流黑名单 goofish 零命中即侧证）。DNS 层只能补阿里广告 SDK 端点 iyes.youku.com、淘宝客 Tunion 归因接口与 AMDC 调度——零证书收益≈0-5%；信息流同域广告需可选 MITM 层用 Loon 原生 response.json.jq 删字段，默认注释。
 
-版本 **1.4.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.5.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -23,15 +23,19 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
-闲鱼 iOS 未做证书固定：开屏/曝光计数是 mtop 主网关 acs.m.goofish.com 的路径名（splash.ads / idle.ad.expose），信息流广告则在同域 API 的 JSON 字段里（nextfresh 分区 / item.recommend 的 bizType=mamaAD）。黑洞整网关=废掉 App，正解是 MITM 后按路径 reject，或用 Loon 原生 response.json.jq 只删广告字段、保留 mtop 包络。下列 jq 来自 ddgksf2013 GoofishAds 与 fmz200 blockAds 两个公开模块（后者已在用同域 http-response-jq），默认整段注释；建议逐条启用、真机确认后再加下一条。fmz200 的 circle.visited（最近访问）与 fun.follow.often.visit（常访问）更像功能/历史而非广告，刻意不收。
+闲鱼 iOS 未做证书固定：开屏/曝光计数是 mtop 主网关 acs.m.goofish.com 的路径名（splash.ads / idle.ad.expose），信息流广告则在同域 API 的 JSON 字段里（nextfresh 分区 / item.recommend 的 bizType=mamaAD）。黑洞整网关=废掉 App，正解是 MITM 后按路径 reject，或用 Loon 原生 response.json.jq 只删广告字段、保留 mtop 包络。下列 jq 来自 ddgksf2013 GoofishAds 与 fmz200 blockAds 两个公开模块（后者已在用同域 http-response-jq），默认整段注释；建议逐条启用、真机确认后再加下一条。fmz200 的 circle.visited（最近访问）与 fun.follow.often.visit（常访问）更像功能/历史而非广告，刻意不收。2026-10-30 再补频道 2024-10 插件的 4 个模块级 reject-dict（home.whale.modulet / item.resell.recommendorhotcate / topic.banner / idlehome.idle.coin.nextfresh），它们不是整域 REJECT，不触发本插件 acs.m.goofish.com 红线；2024 路径未复测，放在最后供逐条验证。
 
 - 解密主机（`[MITM] hostname`，2 个）：`acs.m.goofish.com`, `g-acs.m.goofish.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，2 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 与 `response.json.jq` 都会静默失效；启用本层时应连同这些行一起取消注释。
-- 路径级规则（`URL-REGEX`，2 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
+- 路径级规则（`URL-REGEX`，6 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 
 ```text
 # URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop.*splash\.ads,REJECT-DICT
 # URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop\.idle\.ad\.expose,REJECT-DICT
+# URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop\.taobao\.idle\.home\.whale\.modulet(?:/|\?|$),REJECT-DICT
+# URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop\.taobao\.idle\.item\.resell\.recommendorhotcate(?:/|\?|$),REJECT-DICT
+# URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop\.taobao\.idle\.topic\.banner(?:/|\?|$),REJECT-DICT
+# URL-REGEX,^https?://(g-)?acs\.m\.goofish\.com/gw/mtop\.taobao\.idlehome\.idle\.coin\.nextfresh(?:/|\?|$),REJECT-DICT
 ```
 
 - 响应 JSON 改写（`response.json.jq`，15 条，注释态）：MITM 解密后按公开模块的 jq 只删广告字段/节点、保留 mtop 包络；与 Response Script 二选一（本层不含脚本）。建议逐条启用、真机确认后再加下一条。
@@ -76,6 +80,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 证据：
 - https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf
 - https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
+- https://t.me/GitCube
+- https://t.me/Aa28413761
 
 ## 红线与天花板（如实）
 
@@ -84,6 +90,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 - 证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。
 - 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
 - 第二轮取证复检(2026-10-28)：mma.alimama.com 实测 NXDOMAIN(网传『阿里妈妈端点』不存在,禁凭品牌造域);开屏素材无 alicdn 之外的独立 CDN(墨鱼 GoofishAds.conf 亦无单独素材域);h-adashx.ut.taobao.com=阿里 UT/AdashX 埋点,全阿里系 App 共享,属全局 ads 插件的决策面,不进本按 App 插件。
+- 频道补充(2026-10-30)：吸收『广告必须死』频道 2024-10 闲鱼插件里本仓库未覆盖的 4 个模块——首页顶部标签 home.whale.modulet、这些宝贝超好卖 item.resell.recommendorhotcate、我的页 topic.banner、闲鱼币推荐 idlehome.idle.coin.nextfresh，统一用 URL-REGEX + REJECT-DICT（200 + 空字典）放进可选增强层，默认整段注释；2024 路径未在 2026 复测，逐条开、出现白屏就回滚。频道同插件里的 splash.ads / item.recommend / user.strategy.list / 搜索系路径本仓库已有更细的 jq 版本，不重复收录。
 
 ## 证据与验证
 

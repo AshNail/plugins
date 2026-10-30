@@ -1,8 +1,8 @@
 # 起点读书 · 去广告
 
-> 起点读书:官方 SDK 清单声明穿山甲+腾讯七巧板(优量汇系)——两组装备黑洞 + 起点自有广告统计端点(adstat.qidian.com/adsite.yuewen.com,官方政策自证)。Argus 广告位(magev6.if.qidian.com/adv)与章节内容同域,零 MITM 不可分。看「福利中心」视频领章节卡依赖 SDK,启用即断。零证书。
+> 起点读书:官方 SDK 清单声明穿山甲+腾讯七巧板(优量汇系)——两组装备黑洞 + 起点自有广告统计端点(adstat.qidian.com/adsite.yuewen.com,官方政策自证)。Argus 广告位(magev6.if.qidian.com/adv)与章节内容同域,零 MITM 不可分。看「福利中心」视频领章节卡依赖 SDK,启用即断。v1.3.0 加提醒层:cron 本地通知(每日签到/任务),点通知直达 App 内路由,零 MITM · 零证书 · 零请求。
 
-版本 **1.2.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.3.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -20,6 +20,17 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 | 起点自家埋点（B 级,默认关） | B | 默认关闭 | tongji/dwtrack.qidian.com=站内统计(anti-AD 收录,拦了只断自家分析);o.if.qidian.com=anti-AD 独家拦但 if 命名空间同时承载内容 API,有误伤可能——先真机测试;qdp.qidian.com=起点推送,拦了断通知。log.1ting.com=听书线日志,无清单背书。 |
 | 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 50 域 / 0 规则。 |
 | 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 10 域 / 0 规则。 |
+
+## 提醒脚本（cron · 零 MITM · 零证书）
+
+| 脚本 | 触发 | 行为 |
+|---|---|---|
+| `sign-reminder` | cron `0 9 * * *` | 每天 09:00 发一条本地通知，点通知直达签到页 QDReader://usercenter/sign，人手在 App 内完成签到。不代签——/argus/api/v1/checkin/* 全部要求 App 进程内 encryptSign 签名；会员可直接开启 App 自带「会员自动签到」。深链路由以真机验证为准，若未直达改用 QDReader://app/openSignIn。 |
+| `welfare-reminder` | cron `0 21 * * *` | 每天 21:00 提醒任务/福利中心 QDReader://usercenter/task：真实阅读/观看之后人手领取；领取层(/pickup/risk)按服务端账本校验，插件不碰。 |
+
+> 只发一条本地通知并携带 App 内路由（点通知直达）；不发起任何网络请求、不代打卡、不代领取。
+> 签到/领取端点全部要求 App 进程内 encryptSign 的请求签名，插件侧不存在该签名输入。
+> 改提醒时间/文案：改 `src/apps/qidian.json` 的 `crons[]` 后 `npm run build:apps`（脚本源 `src/qidian/<name>.js` 由 `npm run build` 压缩）。
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
@@ -55,6 +66,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 - 红线（绝不进任何拦截组）：magev6.if.qidian.com（Argus 主 API:章节目录/书架与广告位 adv 同域同主机——黑洞=起点废掉）/ mage.if.qidian.com（同 Argus 接口的旧版主机——enhance 的 URL-REGEX 写作 magev?6? 即旧版也在承载正文/书架，黑洞同样废掉 App）/ druid.if.qidian.com（章节目录）/ h5.if.qidian.com / cococdn.qidian.com / bookcover.yuewen.com / *.qidianalipay.com（广告图床与书城、充值共用）。
 - adv/getadvlistbatch 路径证据:Yu9191 Rewrite 以 reject-200 拦此路径;app2smile/blackmatrix7/fmz200 三源同族路径规则——起点 iOS 未做证书固定,路径级拦截可行,已按纪律放进文末 enhance 层（默认注释，装证书后自行取消注释）。
 - 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+- 提醒层(v1.3.0):[Script] 只放 cron 型本地通知——签到提醒走 QDReader://usercenter/sign、任务提醒走 QDReader://usercenter/task,点通知直达路由;全程零 MITM、零网络请求。不代签不代领:/argus/api/v1/checkin/* 与领取层(/pickup/risk 等)全部要求 App 进程内 encryptSign 签名,外部签名机=伪造领取=IVT。二进制证据:会员自动签到是 App 自带特权(QDCheckInInfoModelV2.btnMemberAutoCheckInTxt + QDMemberAutoCheckInSuccessNotification + /checkin/autocheckin),会员在 App 签到面板开启即可;App 另有本地提醒(QDSignNotificationManager/bookshelf_sign_notification),本层增量是 Loon 侧闹钟+一键直达。
 
 ## 证据与验证
 
