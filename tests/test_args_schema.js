@@ -56,7 +56,8 @@ if (schemas) {
     ["cleanActivity", "活动入口清理"],
     ["debugLog", "只读日志"],
     ["logTaskTitles", "日志带标题"],
-    ["dailyReminder", "每日提醒"]
+    ["dailyReminder", "每日提醒"],
+    ["skipUpdateCheck", "版本检查静音"]
   ];
   const labels = args.labelEntries(schemas);
   check("SWITCH_LABELS order/content is pinned", JSON.stringify(labels) === JSON.stringify(expectedLabels),
@@ -72,6 +73,8 @@ if (schemas) {
       blockAdDomains: false,
       settingsClean: false,
       dailyReminder: false,
+      skipUpdateCheck: false,
+      blockSplashAd: true,
       statusNotify: "notification"
     },
     douyin: {
@@ -81,7 +84,7 @@ if (schemas) {
       cleanUpsell: false,
       cleanActivity: false,
       blockAdDomains: false,
-      blockSplashAd: false,
+      blockSplashAd: true,
       dailyReminder: false,
       statusNotify: "notification"
     }

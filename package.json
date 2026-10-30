@@ -17,7 +17,7 @@
     "check:types": "tsc -p tsconfig.json",
     "check:oxlint": "oxlint --deny-warnings src tests tools",
     "check:ruff": "ruff check tools tests",
-    "check:config": "python3 tools/check-loon-config.py",
+    "check:config": "python3 tools/check-loon-config.py && python3 tools/make-private-config.py --self-test",
     "bypass": "python3 tools/bypass-audit.py",
     "bypass:write": "python3 tools/bypass-audit.py --write",
     "check:bypass": "python3 tools/bypass-audit.py --check",

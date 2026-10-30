@@ -55,6 +55,15 @@
       "readme": "`conf.qishui.com` 设置层脚本"
     },
     {
+      "name": "skipUpdateCheck",
+      "type": "switch",
+      "default": false,
+      "tag": "版本检查静音（实验）",
+      "desc": "把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。只动这一个键，其余字段与包络原样；解析失败原样放行（最坏情况 = 提示还在）。",
+      "label": "版本检查静音",
+      "readme": "`luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示；只动这一个键、解析失败原样放行（取证依据 `STNetProto.CheckUpdateRequest`／`CheckUpdateResponseInfo`／`has_update` 字符串簇 + 真机日志）"
+    },
+    {
       "name": "hideDouyinEntry",
       "type": "switch",
       "default": false,
@@ -66,7 +75,7 @@
     {
       "name": "blockSplashAd",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "拦截开屏广告请求",
       "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
       "label": "开屏请求拦截",

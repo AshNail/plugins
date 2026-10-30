@@ -23,7 +23,7 @@ npm run check:oxlint # oxlint correctness + no-undef / no-unused-vars；Loon 全
 npm run check:ruff  # ruff E9/F/W605/B006/B023：Python 工具语法错误、未定义名、死导入/变量、非法转义
 npm run lint        # 插件结构、正则、脚本引用、脚本安全边界、压缩脚本语法
                     # 四条官方语法面门禁：legacy token / ip-mode 右值 / [MITM] 键面 / Scheme 链接
-                    # 文档数字门禁：ads README 25 条声明 + 首页/清单/原生优先/真机清单 36 条声明钉在 build-ads 与四个审计工具上
+                    # 文档数字门禁：ads README 25 条声明 + 规模页/清单/原生优先/真机清单 31 条声明钉在 build-ads 与四个审计工具上
                     #           这两个「N 条」本身也由门禁复算核对
                     # 文档存在性门禁：Markdown 相对链接必须解析（围栏/行内代码不查，见理由）；
                     #           真机清单 J 段必须逐款覆盖 src/apps/*.json 的每一款 App
@@ -68,7 +68,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 
 `tests/fixtures/` 里放的是**真实抓包样本**（2026-10-20 HAR）：`douyin_treasure_page.json`（抖音福利页原始响应）、`soda_incentive_done.json`（汽水发奖请求/响应），用于防止“按想象改字段”。
 
-**测试数字门禁**：下面这张「断言分布」表与根 README 的「N 套件 ×2 = M 套件 / K 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与首页那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 52 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
+**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1646 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
 
 ## 断言分布
 
@@ -99,9 +99,10 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_welfare_stamp.js` | 10 | 打卡副作用：胜出脚本写 `soda-/douyin-welfare-seen`、`dailyReminder=off` 不写、cron 读取后抑制或触发通知、treasure→reminder 端到端 |
 | `test_store_scope.js` | 12 | 存储作用域：删一个键不能动别的键（`welfare-seen` / `ad-stats` 必须存活），禁止 `$persistentStore.remove()`，删除走 `write(undefined,key)` |
 | `test_encoding_guard.js` | 30 | 编码诊断：六个解析 body 的脚本在 `content-encoding: br` 时输出 `ce=br`，`gzip`/`identity`/无头不加噪声，头名大小写与 `gzip, br` 逗号列表，正常 JSON 不被诊断干扰 |
-| `test_args_schema.js` | 37 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
+| `test_check_update.js` | 23 | 版本检查静音：只把 `has_update` / `hasUpdate` 置 false、包络与同形键零接触、无键/非 JSON 原样透传、gzip 解出后同样生效、回写时清掉过期的 `content-encoding` / `content-length` |
+| `test_args_schema.js` | 39 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
 
-合计 **798** 条断言；源码与压缩版各一遍，共 **1596** 条。
+合计 **823** 条断言；源码与压缩版各一遍，共 **1646** 条。
 
 ## 抖音插件（douyin.plugin）
 

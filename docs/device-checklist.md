@@ -1,6 +1,6 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 2.8.6）/ `douyin.plugin`（当前 0.8.5）；`ads.plugin`（当前 2.8.0）见 H 节。
+> 适用：`soda.plugin`（当前 2.8.7）/ `douyin.plugin`（当前 0.8.6）；`ads.plugin`（当前 2.8.0）见 H 节。
 > 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 及全部 App 插件门槛降到 **App Store 正式版 3.5.2(996)**（`DOMAIN-WILDCARD` 仅 TF 3.5.3 有，改为默认注释层，不再卡正式版）。
 > 红线重申：本仓插件**只做净化与观测**——不缩短广告、不加速播放、不改写领奖请求、
 > 不做后台自动观看/自动领取。领奖链路（`incentive/done` 等全部 59 头请求）只读不动。
@@ -17,7 +17,7 @@
 - [ ] **排障首查项（本轮文档对差新增）**：某条 `[Host]` 黑洞不生效时，先看订阅是否下发 `[Host]` / `[DNS]` 段——官方《节点订阅》页明写「订阅 Host Map 加载后合并到当前 Host Map，并**优先于主配置**」。顺序口径：Rewrite/规则是「本地 > 插件 > 订阅」，Host Map 里订阅压过主配置，插件 [Host] 与订阅 Host Map 的相对顺序**官方未写**，遇到同名映射冲突属未定义行为，只能真机证实（先换订阅、再怀疑正则）。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.0`、`soda=2.8.6`、`douyin=0.8.5`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.0`、`soda=2.8.7`、`douyin=0.8.6`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 

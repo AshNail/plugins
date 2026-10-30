@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""Validate examples/loon.conf, the max-config ledger, and the routing manual.
+"""Validate examples/loon.conf, configs/loon.conf, the max-config ledger, and
+the routing manual.
 
-This is intentionally stricter than Loon itself in three places:
-  * DoH/DoH3/DoQ upstreams must be IP-form (the ads plugin blackholes the
-    domain form, see plugins/ads/README.md 2.8.0);
-  * ca-p12 / ca-passphrase are rejected in a public example;
-  * logical rules must use the documented AND,((...),(...)),POLICY shape.
+This is intentionally stricter than Loon itself in four places:
+  * DoH/DoH3/DoQ upstreams may use a domain only when no active plugin [Host]
+    maps that domain (or a covering wildcard) to 127.0.0.1/0.0.0.0.  This is
+    the real failure mode behind the 2026-10-29 blackhole, not "domain form is
+    always wrong": ads 2.8.0 moved the domestic public DoH entries to a
+    commented optional group;
+  * the public config must not contain an active [Remote Proxy]/[Proxy] node
+    or ca-p12/ca-passphrase;
+  * logical rules must use the documented AND,((...),(...)),POLICY shape;
+  * every in-repo plugin must be auto-loaded by configs/loon.conf.
 
 It also binds docs/loon-max-config.md to the example file and to the ledger
 counts, and docs/loon-routing-host-asn.md to an exhaustive rule-type and
@@ -14,6 +20,7 @@ describe.
 """
 from __future__ import annotations
 
+import functools
 import ipaddress
 import pathlib
 import re
@@ -22,9 +29,11 @@ from urllib.parse import urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EXAMPLE = ROOT / "examples/loon.conf"
+PUBLIC_CONFIG = ROOT / "configs/loon.conf"
 ROUTING_EXAMPLE = ROOT / "examples/loon-routing.conf"
 DOC = ROOT / "docs/loon-max-config.md"
 DEEP_DIVE = ROOT / "docs/loon-routing-host-asn.md"
+OUR_PLUGIN_BASE = "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/"
 
 GENERAL_KEYS = {
     "include-tun", "bypass-tun", "skip-proxy", "dns-server", "doh-server",
@@ -33,12 +42,16 @@ GENERAL_KEYS = {
     "proxy-test-url", "internet-test-url", "test-timeout", "resource-parser",
     "ssid-trigger", "interface-mode", "real-ip", "disable-udp-ports",
     "disable-stun", "udp-fallback-mode", "geoip-url", "ipasn-url",
-    "domain-reject-mode", "dns-reject-mode",
+    "domain-reject-mode", "dns-reject-mode", "sni-sniffing",
 }
 DEPRECATED_GENERAL = {
     "ipv6", "switch-node-after-failure-times", "force-http-engine-hosts",
     "skip-first-packet",
 }
+# Present in the current app-exported profile but not in the official General
+# parameter table. Keep it explicit instead of silently treating it as official.
+UNDOCUMENTED_GENERAL = {"sni-sniffing"}
+PLUGIN_KEYS = {"tag", "proxy", "enabled", "enable", "pin"}
 ENUMS = {
     "ip-mode": {"v4-only", "dual", "prefer-v4", "prefer-v6", "v6-only"},
     "ipv6-vif": {"off", "auto", "always"},
@@ -64,6 +77,13 @@ POLICIES = {
 }
 PROTOCOLS = {"HTTP", "HTTPS", "TCP", "QUIC", "STUN", "UDP"}
 SURGE_ONLY = ("pre-matching", "extended-matching")
+# Official example.conf reserved/documentation ranges. The public config claimed
+# to carry the full set but had dropped these; keep them pinned so prose cannot
+# drift away from the file again.
+OFFICIAL_RESERVED_RANGES = {
+    "192.0.0.0/24", "192.0.2.0/24", "192.88.99.0/24",
+    "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24",
+}
 HOST_MAP_TYPES = {
     "ipv4", "ipv6", "alias", "server", "ssid", "ip-mode", "ip-to-ip",
     "use-in-proxy",
@@ -144,6 +164,40 @@ def check_dns_token(token: str, key: str, where: str, allow_system: bool = False
         err(f"{where}: {key} 端口非法: {token}")
 
 
+@functools.lru_cache(maxsize=1)
+def plugin_host_blackholes() -> tuple[frozenset[str], frozenset[str]]:
+    """Active plugin [Host] -> 127.0.0.1/0.0.0.0, as exact and wildcard suffixes."""
+    exact: set[str] = set()
+    wildcard: set[str] = set()
+    for plugin in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        section = None
+        for raw in plugin.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = raw.strip()
+            if line.startswith("[") and line.endswith("]"):
+                section = line[1:-1].strip()
+                continue
+            if section != "Host" or not line or line.startswith("#") or "=" not in line:
+                continue
+            left, right = line.split("=", 1)
+            target = right.split(",", 1)[0].strip()
+            if target not in ("127.0.0.1", "0.0.0.0"):
+                continue
+            host = left.strip().lower().rstrip(".")
+            if host.startswith("*."):
+                wildcard.add(host[2:])
+            else:
+                exact.add(host)
+    return frozenset(exact), frozenset(wildcard)
+
+
+def plugin_blackholes(host: str) -> bool:
+    host = host.lower().rstrip(".")
+    exact, wildcard = plugin_host_blackholes()
+    if host in exact:
+        return True
+    return any(host == suffix or host.endswith("." + suffix) for suffix in wildcard)
+
+
 def check_dns_url(token: str, scheme: str, where: str) -> None:
     if scheme == "https":
         ok = token.startswith("https://")
@@ -155,8 +209,14 @@ def check_dns_url(token: str, scheme: str, where: str) -> None:
         err(f"{where}: 需要 {scheme}:// 开头: {token}")
         return
     parsed = urlsplit(token)
-    if not parsed.hostname or not is_ip(parsed.hostname):
-        err(f"{where}: {scheme} 上游必须是 IP 形式（域名形式会被 ads 插件黑洞）: {token}")
+    if not parsed.hostname:
+        err(f"{where}: {scheme} 上游缺少主机名: {token}")
+        return
+    if not is_ip(parsed.hostname) and plugin_blackholes(parsed.hostname):
+        err(
+            f"{where}: {scheme} 上游域名被当前生效的插件 [Host] 黑洞: "
+            f"{parsed.hostname}（改 IP 形式或关闭对应插件的可选 DoH 组）"
+        )
         return
     if parsed.port is not None and not (1 <= parsed.port <= 65535):
         err(f"{where}: 端口非法: {token}")
@@ -189,9 +249,12 @@ def check_general(key: str, value: str, where: str) -> None:
     if key not in GENERAL_KEYS:
         err(f"{where}: 未知 [General] 键 {key}")
         return
+    if key in UNDOCUMENTED_GENERAL:
+        warn(f"{where}: {key} 不在官方《通用配置》参数表；本次按 App 导出值保留，不作为官方依据")
     if key in ENUMS:
+        allowed = {item.lower(): item for item in ENUMS[key]}
         for item in split_csv(value):
-            if item not in ENUMS[key]:
+            if item.lower() not in allowed:
                 err(f"{where}: {key} 取值 {item!r} 不在 {sorted(ENUMS[key])} 内")
     if key in ("allow-wifi-access", "disable-stun"):
         if value not in ("true", "false"):
@@ -253,7 +316,9 @@ def check_general(key: str, value: str, where: str) -> None:
             err(f"{where}: ssid-trigger 形态应为 \"SSID\":策略,...: {value}")
     if key == "real-ip":
         for token in split_csv(value):
-            if not re.fullmatch(r"(\*\.)?[A-Za-z0-9.*_-]+\.[A-Za-z]{2,}", token):
+            # `stun.*` is used in the current profile to cover STUN hosts in any
+            # TLD; the wildcard TLD is intentional, not a typo.
+            if not re.fullmatch(r"(\*\.)?[A-Za-z0-9.*_-]+\.(?:[A-Za-z]{2,}|\*)", token):
                 err(f"{where}: real-ip 非法域名: {token}")
 
 
@@ -566,13 +631,17 @@ def check_host_line(line: str, where: str, context: str = "config") -> set[str]:
     return kinds
 
 
-def validate_example(text: str, label: str = "examples/loon.conf") -> dict:
+def validate_example(text: str, label: str = "examples/loon.conf", public: bool = False) -> dict:
     items = parse_sections(text, label)
     seen_general = set()
+    general_values: dict[str, str] = {}
     seen_sections = set()
     group_names: set[str] = set()
     rule_active = []
-    stats = {"general": 0, "optional": 0, "rules": 0}
+    plugin_urls: list[str] = []
+    ours: set[str] = set()
+    mitm_hostname = False
+    stats = {"general": 0, "optional": 0, "rules": 0, "plugins": 0}
     for section, num, line in items:
         if line is None:
             seen_sections.add(section)
@@ -588,6 +657,7 @@ def validate_example(text: str, label: str = "examples/loon.conf") -> dict:
             if key in seen_general:
                 err(f"{where}: [General] 重复键 {key}")
             seen_general.add(key)
+            general_values[key] = value
             check_general(key, value, where)
             stats["general"] += 1
         elif section == "Host":
@@ -604,15 +674,58 @@ def validate_example(text: str, label: str = "examples/loon.conf") -> dict:
                 err(f"{where}: {key} 不在官方 MitM 三参数表内")
             elif key != "hostname":
                 err(f"{where}: [MITM] 未知键 {key}")
+            else:
+                mitm_hostname = True
         elif section == "Plugin":
-            if not line.startswith(("http://", "https://")):
+            parts = split_top_level(line)
+            url = parts[0].strip()
+            if not url.startswith(("http://", "https://")):
                 err(f"{where}: [Plugin] 行必须是 URL,...: {line[:80]}")
-            if not re.search(r"(?:^|,)enable=(?:true|false)(?:,|$)", line):
-                warn(f"{where}: [Plugin] 行建议显式 enable=true/false")
+                continue
+            if public and not url.startswith("https://"):
+                err(f"{where}: 公开配置的插件 URL 必须是 https: {url[:80]}")
+            opts: dict[str, str] = {}
+            for opt in parts[1:]:
+                key, sep, value = opt.partition("=")
+                key, value = key.strip(), value.strip()
+                if not sep or not key or not value:
+                    err(f"{where}: [Plugin] 选项必须是 key=value: {opt!r}")
+                    continue
+                if key not in PLUGIN_KEYS:
+                    err(f"{where}: [Plugin] 未知选项 {key!r}（允许 {sorted(PLUGIN_KEYS)}）")
+                    continue
+                if key in opts:
+                    err(f"{where}: [Plugin] 重复选项 {key}")
+                opts[key] = value
+            if "enabled" in opts and "enable" in opts:
+                err(f"{where}: [Plugin] enabled/enable 只能写一个")
+            if not ({"enabled", "enable"} & opts.keys()):
+                if public:
+                    err(f"{where}: [Plugin] 必须显式 enabled=true/false")
+                else:
+                    warn(f"{where}: [Plugin] 行建议显式 enable=true/false")
+            for key in ("enabled", "enable", "pin"):
+                if key in opts and opts[key] not in ("true", "false"):
+                    err(f"{where}: [Plugin] {key} 必须是 true/false: {opts[key]}")
+            if "proxy" in opts:
+                check_policy(opts["proxy"], where, group_names)
+            if url in plugin_urls:
+                err(f"{where}: [Plugin] 重复登记 {url}")
+            plugin_urls.append(url)
+            stats["plugins"] += 1
+            if url.startswith(OUR_PLUGIN_BASE):
+                rel = url[len(OUR_PLUGIN_BASE):]
+                m = re.fullmatch(r"([^/]+)/([^/]+)\.plugin", rel)
+                if m and m.group(1) == m.group(2):
+                    ours.add(m.group(1))
+                else:
+                    err(f"{where}: 本仓插件 URL 必须是 plugins/<slug>/<slug>.plugin: {url}")
         elif section in ("Proxy Group",):
             name = line.split("=", 1)[0].strip()
             if name:
                 group_names.add(name)
+        elif section in ("Proxy", "Remote Proxy") and public:
+            err(f"{where}: 公开配置禁止写入节点/订阅（[{section}] 有效行）")
     if "FINAL" not in [l.split(",")[0].upper() for _, l in rule_active]:
         err(f"{label}: [Rule] 缺少 FINAL")
     elif rule_active and rule_active[-1][1].split(",")[0].upper() != "FINAL":
@@ -621,11 +734,34 @@ def validate_example(text: str, label: str = "examples/loon.conf") -> dict:
     if final_count != 1:
         err(f"{label}: FINAL 只能有一条，当前 {final_count}")
     required = {"General", "Rule"}
+    if public:
+        required |= {"Proxy Group", "Plugin", "MITM"}
     missing = required - seen_sections
     if missing:
         err(f"{label}: 缺少段 {sorted(missing)}")
+    if public:
+        if len(text.encode("utf-8")) >= 1_000_000:
+            err(f"{label}: 超过 Loon 配置导入 1 MB 上限（{len(text.encode('utf-8'))} bytes）")
+        for key in ("bypass-tun", "skip-proxy"):
+            missing = sorted(OFFICIAL_RESERVED_RANGES - set(split_csv(general_values.get(key, ""))))
+            if missing:
+                err(f"{label}: {key} 缺少官方 example.conf 的保留网段 {missing}")
+        if "*.icloud.com" not in split_csv(general_values.get("real-ip", "")):
+            err(f"{label}: real-ip 缺少官方示例的 *.icloud.com")
+        if stats["plugins"] < 40:
+            err(f"{label}: 公开全功能配置应自动加载至少 40 个插件，当前 {stats['plugins']}")
+        if stats["rules"] < 400:
+            err(f"{label}: 公开全功能配置应包含完整分流规则（>=400），当前 {stats['rules']}")
+        if not mitm_hostname:
+            err(f"{label}: 公开配置缺少 [MITM] hostname 排除表")
+        repo_plugins = {p.stem for p in (ROOT / "plugins").glob("*/*.plugin")}
+        missing_plugins = sorted(repo_plugins - ours)
+        if missing_plugins:
+            err(f"{label}: 本仓插件未被自动加载: {missing_plugins}")
     stats["general_keys"] = len(seen_general)
     stats["sections"] = len(seen_sections)
+    stats["ours"] = len(ours)
+    stats["plugin_urls"] = len(plugin_urls)
     return stats
 
 
@@ -820,6 +956,13 @@ def check_routing_example() -> tuple[int, int] | None:
 def main() -> int:
     text = EXAMPLE.read_text(encoding="utf-8")
     stats = validate_example(text)
+    if not PUBLIC_CONFIG.exists():
+        err(f"missing {PUBLIC_CONFIG.relative_to(ROOT)}")
+        public_stats = None
+    else:
+        public_stats = validate_example(
+            PUBLIC_CONFIG.read_text(encoding="utf-8"), "configs/loon.conf", public=True
+        )
     ledger = check_doc(text)
     routing = check_deep_dive()
     routing_example = check_routing_example()
@@ -848,6 +991,13 @@ def main() -> int:
         f"sections={stats['sections']} general={stats['general_keys']} "
         f"rules={stats['rules']} base-config matches examples/loon.conf"
     )
+    if public_stats:
+        print(
+            "public config ok: "
+            f"plugins={public_stats['plugins']} (in-repo={public_stats['ours']}) "
+            f"rules={public_stats['rules']} sections={public_stats['sections']} "
+            f"general={public_stats['general_keys']} no nodes/CA"
+        )
     return 0
 
 

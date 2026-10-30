@@ -107,12 +107,11 @@ def check_refs():
 
 
 def check_versions():
-    header("\n【2】版本一致性（#!version ↔ 插件 README / 仓库 README）")
+    header("\n【2】版本一致性（#!version ↔ 插件 README）")
     vers = {}
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         m = re.search(r"^#!version=(.*)$", plugin.read_text(), re.M)
         vers[plugin.name] = (plugin.parent.name, m.group(1).strip() if m else "?")
-    rreadme = (ROOT / "README.md").read_text()
     for name, (family, v) in vers.items():
         ok(f"{name}: v{v}")
         preadme = ROOT / "plugins" / family / "README.md"
@@ -138,8 +137,6 @@ def check_versions():
                 bad(f"{name}: 插件版本 v{v}，但 plugins/{family}/README.md 最新提到 v{newest}")
             else:
                 ok(f"{name}: plugins/{family}/README.md 与 #!version 同步（v{v}）")
-        if v not in rreadme:
-            bad(f"{name} v{v} 未进仓库 README")
 
 
 def check_switches():

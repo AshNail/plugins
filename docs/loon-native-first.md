@@ -2,7 +2,7 @@
 
 > **一句话结论**：本仓库把「能开关的」做到了极致，但 Loon 有近一半能力**天生不能开关**——它们只能用构建期/发行期手段启用。缺的不是功能，是**开关模型**。
 >
-> 依据：`docs/loon-feature-checklist.md`（官方文档逐页核对）、两份外部去广告指南、iRingo / Biliverse / DualSubs 三个线上插件工程的实际产物、本仓库 52 套件 / 1596 断言现状。
+> 依据：`docs/loon-feature-checklist.md`（官方文档逐页核对）、两份外部去广告指南、iRingo / Biliverse / DualSubs 三个线上插件工程的实际产物、本仓库 54 套件 / 1646 断言现状。
 > 适用门槛：soda/douyin 3.5.1(983)+（gzip 清理 988+）、ads 3.5.3(1008)+。
 > 证据标注：**【文档】**= Loon 官方手册明示；**【实证】**= 第三方线上 Loon 插件正在使用；**【未收录】**= 第三方在用但官方手册未收录——**可以保留，但不能当能力点宣称**；**【待证】**= 假设，需真机。
 
@@ -298,7 +298,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | E8a | `[MITM] h2 = true` | lint 锁定；状态看板不再显示“未知协议” |
 | E8b | 状态看板「静态层：QUIC 回退 N 域」 | `families.json.quicCount` + lint 对账 + `test_status` 4 条断言 |
 | E5 | lint 跨层命中矩阵 | 注入 `DOMAIN,api.qishui.com,REJECT` / 终止型 Rewrite 均能报错 |
-| E6 | `src/args/*.json` 单源生成 `[Argument]` / `SWITCH_LABELS` / README 表 | `gen-args --check` 漂移门禁 + `test_args_schema` 37 断言 ×2 |
+| E6 | `src/args/*.json` 单源生成 `[Argument]` / `SWITCH_LABELS` / README 表 | `gen-args --check` 漂移门禁 + `test_args_schema` 39 断言 ×2 |
 | 清理 | 删除两插件注释里的 `[Rule]` 严格模式 | 常量面 -10 行，不再有“手改配置”的分叉 |
 
 ### 待真机（不改代码，只观察）
@@ -466,7 +466,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 ### 9.7 文档里的数字也是数据源（第二十四轮补上门禁）
 
 一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`1466 条生效 Host`、`13 个 App 插件`、
-`官方文档 26 页`、`1596 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
+`官方文档 26 页`、`1646 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
 **风险面的规模**来用：加一批域名忘了改文档，读者就照着虚高（或虚低）的数字判断该不该装。
 
 第二十四轮起，每个数字都有一个**唯一的机器出口**，文档只是它的一种显示方式：
@@ -474,7 +474,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 | 文档里的声明 | 机器出口 |
 |---|---|
 | `plugins/ads/README.md` 的分组条数、生效/注释 Host、exact/wildcard、通配与家族拆分、可选 Rule 的 27/16/1 | `tools/build-ads.py --stats-json` |
-| 根 README 的正文页数、能力表 175 条与五档分布、旁路路径数、广告类型数、上游黑名单家数、App 插件数 / 覆盖 App 数 / 增强层个数、表格版本列 | `tokens.json`、`loon-coverage --check`、`bypass-audit --check`、`ad-surface-audit --check`、`app-coverage-audit.SOURCE_NAMES`、`src/apps/*.json`、各插件 `#!version` |
+| 规模页 `docs/repo-metrics.md` 的正文页数、能力表 175 条与五档分布、旁路路径数、广告类型数、上游黑名单家数、App 插件数 / 覆盖 App 数 / 增强层个数 | `tokens.json`、`loon-coverage --check`、`bypass-audit --check`、`ad-surface-audit --check`、`app-coverage-audit.SOURCE_NAMES`、`src/apps/*.json` |
 | 「N 套件 ×2 = M 套件 / K 断言」与 `tests/README.md` 的断言分布表 | `tests/run-all.py` 本次实跑的 per-suite 计数 |
 | 本节自己的 `1466 条生效 Host`、`13 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
 | 文档里复述的「门禁管了 N 条声明」与 `readme numbers: N …` 成功行 | 同一次 lint 真实核对成功的条数 |

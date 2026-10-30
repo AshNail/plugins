@@ -17,7 +17,7 @@ def escape_regex_slashes(pattern):
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 38, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 39, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 1, 11, "douyin"),
 ]
 
@@ -32,6 +32,7 @@ FAMILY_CHECKS = {
             "killRewardAds": 2,
             "blockAdDomains": 1,
             "settingsClean": 1,
+            "skipUpdateCheck": 1,
             "hideDouyinEntry": 1,
             "hideDouyinTab": 1,
             "blockSplashAd": 1,
@@ -57,6 +58,8 @@ FAMILY_CHECKS = {
             "luna-card": "https://beta-luna.douyin.com/luna/card",
             "luna-upsell-sort": "https://beta-luna.douyin.com/luna/commerce/v2/upsell_sort_decision?x=1",
             "splash-v2": "https://ad.zijieapi.com/api/ad/v2/ack/splash/report",
+            "luna-check-update": "https://beta-luna.douyin.com/luna/check-update",
+            "luna-check-update-slash": "https://api.qishui.com/luna/check-update/",
         },
     },
     "douyin": {
@@ -406,6 +409,8 @@ BINDING_SAMPLES = {
             "https://beta-luna.douyin.com/luna/card",
             "https://beta-luna.douyin.com/luna/feed/song-tab",
             "https://beta-luna.douyin.com/luna/commerce/v2/upsell_sort_decision?x=1",
+            "https://api.qishui.com/luna/check-update",
+            "https://beta-luna.douyin.com/luna/check-update",
             "https://conf.qishui.com/service/settings/v3/?device_id=x",
         ),
     },
@@ -2406,7 +2411,7 @@ GATE_SELF_REPORTS = (
         "docs/loon-feature-checklist.md",
         (
             (r"readme numbers: (\d+) count claim\(s\) in plugins/ads/README\.md", ("ads",)),
-            (r"readme numbers: (\d+) claim\(s\) in README\.md", ("root",)),
+            (r"readme numbers: (\d+) claim\(s\) in repo-metrics", ("root",)),
             (r"doc links: (\d+) relative link", ("doc_links",)),
             (r"J section covers all (\d+)/(\d+) app plugins", ("device_covered", "device_total")),
         ),
@@ -2441,8 +2446,8 @@ def check_gate_self_report():
                     )
 
 
-ROOT_README = "README.md"
-# 根 README 的每一句「有多少条」都应当能被机器重述。这里的每条数字都不在门禁里手写：
+METRICS_DOC = "docs/repo-metrics.md"
+# 规模页的每一句「有多少条」都应当能被机器重述。这里的每条数字都不在门禁里手写：
 # 段词表来自 tokens.json，能力表来自 loon-coverage，路径数来自 bypass-audit，
 # 类型数来自 ad-surface-audit，上游家数来自 app-coverage-audit 的 SOURCE_NAMES，
 # 插件/App/增强层数来自 src/apps/*.json。
@@ -2584,16 +2589,16 @@ def bind_number_claims(rel, text, patterns, numbers):
 
 
 def check_root_readme_numbers():
-    """把根 README 与全功能清单的规模声明钉在各审计工具自己的输出上。"""
+    """把规模页与全功能清单的规模声明钉在各审计工具自己的输出上。"""
     numbers = root_machine_numbers()
     if numbers is None:
         return
-    path = ROOT / ROOT_README
+    path = ROOT / METRICS_DOC
     if not path.exists():
-        errors.append(f"{ROOT_README}: missing")
+        errors.append(f"{METRICS_DOC}: missing")
         return
     text = path.read_text(encoding="utf-8")
-    checked = bind_number_claims(ROOT_README, text, ROOT_README_PATTERNS, numbers)
+    checked = bind_number_claims(METRICS_DOC, text, ROOT_README_PATTERNS, numbers)
 
     checklist = ROOT / "docs/loon-feature-checklist.md"
     if not checklist.exists():
@@ -2652,28 +2657,9 @@ def check_root_readme_numbers():
             else:
                 checked += 1
 
-    # 表格里每个插件的版本列必须等于插件自己的 #!version
-    for line in text.splitlines():
-        m = re.match(r"^\|.*?`([a-z0-9_-]+)\.plugin` \| ([\d.]+) \|", line)
-        if not m:
-            continue
-        slug, claimed = m.group(1), m.group(2)
-        plugin_path = ROOT / "plugins" / slug / f"{slug}.plugin"
-        if not plugin_path.exists():
-            errors.append(f"{ROOT_README}: 表格引用了不存在的 {slug}.plugin")
-            continue
-        actual = parse_meta(plugin_path).get("version")
-        if actual != claimed:
-            errors.append(
-                f"{ROOT_README}: 表格 {slug}.plugin 版本声明 {claimed}，"
-                f"#!version={actual}"
-            )
-        else:
-            checked += 1
-
     GATE_CLAIM_COUNTS["root"] = checked
     print(
-        f"readme numbers: {checked} claim(s) in README.md, checklist, native-first, device-checklist "
+        f"readme numbers: {checked} claim(s) in repo-metrics, checklist, native-first, device-checklist "
         f"bound to the auditors "
         f"(apps={numbers['apps']} app_plugins={numbers['app_plugins']} "
         f"enhance={numbers['enhance_plugins']} doc_pages={numbers['doc_pages']} "

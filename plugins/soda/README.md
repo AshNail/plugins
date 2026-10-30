@@ -301,8 +301,9 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | `killRewardAds` | 关 | 清空激励广告素材与预拉取 + 兜底发奖凭证；开了领奖会变 `amount=-1` |
 | `blockAdDomains` | 关 | `block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名 |
 | `settingsClean` | 关 | `conf.qishui.com` 设置层脚本 |
+| `skipUpdateCheck` | 关 | `luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示；只动这一个键、解析失败原样放行（取证依据 `STNetProto.CheckUpdateRequest`／`CheckUpdateResponseInfo`／`has_update` 字符串簇 + 真机日志） |
 | `hideDouyinEntry` | 关 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开） |
-| `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
+| `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常） |
 | `debugLog` | 关 | 只读观测脚本（记录响应，不修改内容） |
 | `logTaskTitles` | 关 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志 |
 | `splashClean` | 开 | 开屏品牌广告清理 |
@@ -451,7 +452,7 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\
 
 注意不是 Surge 的 `url reject`。`reject_dict(status)` 的状态码范围是 100–599；HTTPS 命中需要该域名在 `[MITM]` 中。
 
-### 5.4 请求侧减负：开屏广告请求拦截
+### 5.4 请求侧减负：开屏广告请求拦截（默认开）
 
 `blockSplashAd` 使用 `http-request` 脚本（与 douyin 共用 `src/common/splash-ad.js`，家族差异只有日志前缀），在请求发出前返回 200 + JSON `{}`，走穿山甲（CSJ）开屏素材获取与登记端点的请求不会真正出网。绑定覆盖：
 
@@ -637,7 +638,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.6）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.7）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -780,7 +781,78 @@ v2.8.6 把 34 条前缀统一改成 `^https?://(?:api.qishui.com|beta-luna.douyi
 
 ---
 
+## 10.7 2026-10-30 版本检查静音 `skipUpdateCheck` + 开屏请求拦截默认开（v2.8.7）
+
+### 1. 取证链（20.5.0 主二进制，按地址序的字符串簇）
+
+`luna/check-update` 与它的请求/响应模型在同一簇里，形态一目了然：
+
+```text
+luna/check-update                ← 端点
+STNetProto.CheckUpdateRequest    ← 请求模型（Swift）
+_TtC10STNetProto18CheckUpdateRequest
+（嵌套类型名表）CheckUpdateRequest / Scene / Params / CodingKeys /
+                 CheckUpdateResponseInfo / CheckMediaResult
+（响应侧同簇字段）media_result / shark_expired_at / has_update
+```
+
+真机佐证（§10.6）：`check-update/` 在 2026-10-29 的 23 小时日志里属于 638 条非广告
+luna 请求——端点真实在跑，由 `api.qishui.com` + `beta-luna.douyin.com` 双主机承载。
+
+**四个同形键，全部不是版本检查，已排除绑定**：
+
+| 字符串 | 实际归属 |
+|---|---|
+| `check_update_info` | gecko bytesync 通道 |
+| `check_update_result` | 贴纸/特效平台（`/effect/api/panel/*` 同簇） |
+| `force_update` | `BDPSensitiveWordsService` 敏感词库资源 |
+| `force_update_ts_ms` | 听歌房（ListenTogether）同步协议字段 |
+
+### 2. 设计与边界
+
+- `check-update` 是**只读查询**，不参与任何支付/权益/结算。脚本只把响应里的
+  `has_update` 置 false（「要不要提示更新」的判定分支），包络与其它字段零接触。
+- `CheckUpdateResponseInfo` 的完整 Codable 键表静态未挖全，所以走防御式形态：
+  非 JSON / 解析失败 / 无 `has_update` 键 → **一个字节不动，原样放行**；
+  最坏情况 = 「发现新版本」提示还在。诊断标记 `X-Soda-Plugin: soda-check-update;…`
+  每个 pass-through 分支都带 `skip=` 与（必要时）`ce=`。
+- 不用 `reject_dict(200)`：丢包络会让 App 解码失败重试（§2 的结论）。
+- `skipUpdateCheck` 默认**关**，先当实验开关；等 `debugLog` 抓到一次真实响应后
+  再考虑收紧字段路径。
+
+### 3. 默认态调整
+
+- `blockSplashAd`（拦穿山甲开屏请求家族）双家族一起默认开：与 `splashClean`
+  构成开屏双层（请求侧 + 响应侧），脚本对激励广告与发奖回调零接触。
+  抖音插件同开关同开源自 schema 强制的「共享开关跨家族语义一致」规则。
+- `rewardSafe` / `splashClean` 老默认不变；`skipUpdateCheck` 新开关默认关。
+
+### 4. 门禁联动
+
+- lint：soda 绑定面 38 → **39**；新增 `enable=${skipUpdateCheck}` 计数 1 与
+  `luna-check-update`（双主机正反样本）两个命中样本；`luna host parity` 37 条
+  生效 luna 绑定全双主机。
+- schema 套件：`skipUpdateCheck` 进 `SWITCH_LABELS` 钉死清单；两家族
+  `blockSplashAd:true` / 汽水 `skipUpdateCheck:false` 进「关键默认值」钉死清单。
+- 新测试 `tests/test_check_update.js`（23 断言 × src/dist 双跑）：置 false 的
+  深层命中与包络保留、同形键不误伤、not-json/no-key/gzip 三条放行路径、
+  过期压缩头清理、`ENABLED`/`DRY_RUN` 常量存在性。
+
+---
+
 ## 11. 版本更新记录
+
+### v2.8.7（2026-10-30）版本检查静音 + 开屏请求拦截默认开
+
+- **新增 `skipUpdateCheck`（默认关，实验）**：`luna/check-update` 响应的
+  `has_update` → `false`，静音「发现新版本」提示。只动这一个键、解析失败原样
+  放行（取证：`STNetProto.CheckUpdateRequest` / `CheckUpdateResponseInfo` /
+  `has_update` 字符串簇 + §10.6 真机日志；四个同形键已排除，见 §10.7）。
+- **`blockSplashAd` 默认值 `false → true`（soda + douyin 双家族）**：
+  开屏请求拦截 + 开屏品牌清理构成开屏双层默认开；与激励广告/发奖零接触。
+- **lint**：绑定面 38→39、`skipUpdateCheck` enable 计数、`luna-check-update`
+  样本；schema 套件钉死新默认值（跨家族一致性按旧规则跑通）。
+- **新测试** `tests/test_check_update.js`（23 断言，src/dist 双跑）。
 
 ### v2.8.6（2026-10-30）luna 主机搬家：响应绑定从单主机改成双主机
 

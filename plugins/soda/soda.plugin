@@ -1,7 +1,7 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
+#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音 / 版本检查静音（实验）。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=2.8.6
+#!version=2.8.7
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
@@ -21,17 +21,24 @@
 # 校验 [Script]/[MITM]/源码三处一致。
 #
 # 开关：
-#   rewardSafe     保奖励模式（默认开）
-#   cleanAds       去广告脚本（默认关：广告配置/信息流/福利页广告任务）
-#   blockAdDomains 广告域名拦截（默认关：MITM + http-request 脚本）
-#   settingsClean  设置层净化（默认关，实验）
-#   debugLog       只读日志（默认关）
-#   splashClean    清开屏品牌广告（默认开）
-#   hideDouyinTab  隐藏福利页【听抖音】tab/任务（默认关）
-#   statusNotify   状态自检按钮的通知模式（notification/silent）
+#   rewardSafe      保奖励模式（默认开）
+#   cleanAds        去广告脚本（默认关：广告配置/信息流/福利页广告任务）
+#   killRewardAds   断激励素材（默认关：领奖会变 amount=-1）
+#   blockAdDomains  广告域名拦截（默认关：MITM + http-request 脚本）
+#   settingsClean   设置层净化（默认关，实验）
+#   skipUpdateCheck 版本检查静音（默认关，实验：只动 luna/check-update 的 has_update）
+#   hideDouyinEntry 隐藏设置层【听抖音】入口（默认关，可与保奖励同开）
+#   blockSplashAd   拦截穿山甲开屏请求（默认开：不碰激励广告与发奖）
+#   debugLog        只读日志（默认关）
+#   logTaskTitles   日志带任务标题（默认关）
+#   splashClean     清开屏品牌广告（默认开）
+#   hideDouyinTab   隐藏福利页【听抖音】tab/任务（默认关）
+#   dailyReminder   每日领取提醒（默认关；reminderCron 是它的提醒时间）
+#   statusNotify    状态自检按钮的通知模式（notification/silent）
 #
 # 推荐组合：
-#   正常领奖励：rewardSafe=true，其余默认
+#   正常领奖励：rewardSafe=true，其余默认（blockSplashAd + splashClean 开屏双层已默认开）
+#   版本提示静音：默认态基础上打开 skipUpdateCheck
 #   排障：      保奖励基础上打开 debugLog
 #   去广告：    rewardSafe=false, cleanAds=true, splashClean=true
 #   强力去广告：rewardSafe=false, cleanAds=true, blockAdDomains=true
@@ -83,8 +90,9 @@ cleanAds = switch,false,tag=去广告脚本,desc=清理广告位、信息流和�
 killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于“广告完全不发”，领奖会变成 amount=-1，请谨慎。
 blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。
 settingsClean = switch,false,tag=设置层净化（实验）,desc=清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。
+skipUpdateCheck = switch,false,tag=版本检查静音（实验）,desc=把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。只动这一个键，其余字段与包络原样；解析失败原样放行（最坏情况 = 提示还在）。
 hideDouyinEntry = switch,false,tag=隐藏【听抖音】入口,desc=把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）。
-blockSplashAd = switch,false,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
+blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
 debugLog = switch,false,tag=只读日志,desc=记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。
 logTaskTitles = switch,false,tag=日志带任务标题,desc=只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口；默认关闭以免把文案写进日志。
 splashClean = switch,true,tag=清开屏品牌广告,desc=清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
@@ -226,6 +234,17 @@ response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// t
 # ---- 【听抖音】入口：关掉 anchor_luna_to_douyin*（不动广告配置，可与保奖励同开） ----
 response if ${url} ~= /^https?:\/\/conf\.qishui\.com\/service\/settings\/v3\// then script("scripts/settings.min.js", {${rewardSafe}, ${settingsClean}, ${hideDouyinEntry}}) with debug=${debugLog}, enable=${hideDouyinEntry}, requires_body=true, timeout=10, tag="隐藏【听抖音】入口"
 
+# ---- 版本检查静音（实验）：skipUpdateCheck 开关 ----
+# 取证（20.5.0 主二进制字符串簇）：luna/check-update ↔ STNetProto.CheckUpdateRequest /
+# _TtC10STNetProto18CheckUpdateRequest，嵌套类型 CheckUpdateResponseInfo /
+# CheckMediaResult，响应侧字段 media_result / shark_expired_at / has_update。
+# 真机佐证：README 10.6 的 23 小时日志里 check-update/ 是 638 条非广告 luna 请求之一。
+# 只把 has_update 置 false（「要不要提示更新」的判定分支），不碰包络与其它字段；
+# 解析失败原样放行——最坏情况 = 提示还在。二进制另有 check_update_info（gecko
+# bytesync）/ check_update_result（贴纸特效平台）/ force_update（敏感词库）/
+# force_update_ts_ms（听歌房）四个同形键，均不是版本检查，不许绑。
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/check-update(?:\/|\?|$)/ then script("scripts/check-update.min.js", {${debugLog}}) with debug=${debugLog}, enable=${skipUpdateCheck}, requires_body=true, timeout=10, tag="版本检查静音（实验）：只动 has_update"
+
 # ---- 开屏广告请求拦截：splash/ 与 vN/(ack/)splash/ 全家族，不碰激励广告 ----
 request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with debug=${debugLog}, enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
 
@@ -253,7 +272,7 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/(?:beta-luna\.douyin\.com|api\.qishui\.com)\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=10, tag="福利页打卡：两域名兜底"
 cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
-generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${splashClean}, ${cleanAds}, ${killRewardAds}, ${blockAdDomains}, ${blockSplashAd}, ${settingsClean}, ${hideDouyinEntry}, ${hideDouyinTab}, ${debugLog}, ${logTaskTitles}, ${dailyReminder}, ${reminderCron}}) with debug=${debugLog}, tag="插件状态自检", img_url="checkmark.seal", timeout=10
+generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${splashClean}, ${cleanAds}, ${killRewardAds}, ${blockAdDomains}, ${blockSplashAd}, ${settingsClean}, ${skipUpdateCheck}, ${hideDouyinEntry}, ${hideDouyinTab}, ${debugLog}, ${logTaskTitles}, ${dailyReminder}, ${reminderCron}}) with debug=${debugLog}, tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================

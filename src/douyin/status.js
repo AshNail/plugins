@@ -57,6 +57,7 @@ var SWITCH_LABELS = [
   ["debugLog", "只读日志"],
   ["logTaskTitles", "日志带标题"],
   ["dailyReminder", "每日提醒"],
+  ["skipUpdateCheck", "版本检查静音"],
 ];
 /* <<< GENERATED SWITCH_LABELS */
 

@@ -22,7 +22,7 @@
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
-| `blockSplashAd` | 关 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
+| `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
 | `dailyReminder` | 关 | 每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领） |
 | `reminderCron` | `30 20 * * *` | 提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30 |
@@ -200,7 +200,7 @@ POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 tim
 合规可行的只有两种：要么**广告完全不看**（本插件 `cleanFeedAds` / `killRewardAds` / `blockAdDomains` 走的路，此时也不能领对应奖励），
 要么**完整看完**再领。本插件的原则是：前者可以，后者不造假。
 
-### 3.4 开屏广告请求拦截（`blockSplashAd`，默认关）
+### 3.4 开屏广告请求拦截（`blockSplashAd`，默认开）
 
 开屏广告和激励广告都走穿山甲（CSJ），但路径分开。`blockSplashAd` 在 `http-request` 阶段只拦开屏素材获取与登记：
 
@@ -378,6 +378,12 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 ---
 
 ## 7. 版本更新记录
+
+### v0.8.6（2026-10-30）开屏请求拦截默认开
+
+- **默认值**：`blockSplashAd` 从默认关改为默认开。开关只拦穿山甲开屏素材获取与登记（`api/ad/splash/`、`api/ad/vN/splash/`、`api/ad/vN/(ack/)splash/`），返回 200 + JSON `{}`；`inspire`、`inspire_preload` 与发奖回调不在匹配范围，激励与奖励不受影响。
+- **跨家族一致**：`blockSplashAd` 是 soda/douyin 共享开关，schema 门禁要求同名开关的类型、默认值与 label 完全一致；汽水 v2.8.7 同步默认开，形成「请求侧拦截 + 响应侧 `splashClean`」双层。
+- **回滚**：若开启后 App 启动异常，把插件参数里的 `blockSplashAd` 改回关即可；该域名族需要 `[MITM]` 才能解密（本插件已声明）。
 
 ### v0.8.5（2026-10-27）插件元数据补齐 `#!openUrl`
 

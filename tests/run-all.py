@@ -16,6 +16,7 @@ SUITES = [
     "test_soda_upsell_v2.js",
     "test_treasure_prune2.js",
     "test_settings.js",
+    "test_check_update.js",
     "test_feed_flags.js",
     "test_feed_expand.js",
     "test_reward_observe.js",
@@ -90,23 +91,22 @@ if failed:
     sys.exit(1)
 
 # 测试自己跑出来的数字是「套件数 / 断言数」唯一的机器出处，所以文档里的这些声明由这里核对：
-# ①根 README 的「N 套件 ×2 = M 套件 / K 断言」；②tests/README.md 的断言分布表逐行 + 合计。
+# ①tests/README.md 的「N 套件 ×2 = M 套件 / K 断言」；②同页断言分布表逐行 + 合计。
 # 靠人记得回来改文档 = 这些数字一定会漂；跑测试的那一步顺手把它们钉住，漂了当场红。
 
 
 def check_doc_claims():
     problems = []
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    claim = re.search(r"(\d+) 套件 ×2 = (\d+) 套件 / (\d+) 断言", readme)
+    suite_docs = (ROOT / "tests/README.md").read_text(encoding="utf-8")
+    claim = re.search(r"(\d+) 套件 ×2 = (\d+) 套件 / (\d+) 断言", suite_docs)
     if claim is None:
-        problems.append("README.md 缺少「N 套件 ×2 = M 套件 / K 断言」声明")
+        problems.append("tests/README.md 缺少「N 套件 ×2 = M 套件 / K 断言」声明")
     else:
         want = [len(SUITES), len(SUITES) * 2, total]
         got = [int(x) for x in claim.groups()]
         if got != want:
-            problems.append(f"README.md 声明 {got}，本次实跑 {want}")
+            problems.append(f"tests/README.md 声明 {got}，本次实跑 {want}")
 
-    suite_docs = (ROOT / "tests/README.md").read_text(encoding="utf-8")
     rows = dict(
         (m.group(1), int(m.group(2)))
         for m in re.finditer(r"^\| `(test_[A-Za-z0-9_]+\.js)` \| (\d+) \|", suite_docs, re.M)
@@ -177,7 +177,7 @@ for problem in problems:
 if problems:
     sys.exit(1)
 print(
-    f"readme numbers: suite/assertion claims in README.md, tests/README.md, "
+    f"readme numbers: suite/assertion claims in tests/README.md, "
     f"docs/loon-native-first.md match this run ({len(SUITES)} × {len(script_sets)} = {len(SUITES) * len(script_sets)} "
     f"suites, {total} assertions)"
 )

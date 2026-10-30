@@ -66,7 +66,7 @@
     {
       "name": "blockSplashAd",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "拦截开屏广告请求",
       "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
       "label": "开屏请求拦截",
