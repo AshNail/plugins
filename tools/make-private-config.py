@@ -56,6 +56,12 @@ SECTION_ALIASES = {
 }
 # The public baseline deliberately keeps DoQ off; see configs/loon.conf.
 GENERAL_DROP = {"doq-server"}
+# TV 精简档：只保留零 MITM/零脚本的 Host/Rule 层；插件数量少但都能独立工作。
+TV_PLUGIN_URLS = (
+    "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/ads/ads.plugin",
+    "https://kelee.one/Tool/Loon/Lpx/BlockAdvertisers.lpx",
+    "https://kelee.one/Tool/Loon/Lpx/Block_HTTPDNS.lpx",
+)
 ADVANCED_RULE_TYPES = (
     "AND", "OR", "NOT", "PROTOCOL", "SRC-PORT", "DEST-PORT", "IP-ASN",
     "DOMAIN-WILDCARD", "URL-REGEX", "USER-AGENT", "PROCESS-NAME",
@@ -237,6 +243,16 @@ def merge_hosts(
     }
 
 
+def filter_plugins(public_text: str, platform: str) -> str:
+    if platform != "tvos":
+        return public_text
+    kept = [
+        line for line in active_lines(public_text)
+        if line.split(",", 1)[0].strip() in TV_PLUGIN_URLS
+    ]
+    return "\n".join(kept)
+
+
 def merge_plugins(public_text: str, lcf_text: str, keep_lcf_plugins: bool) -> tuple[str, dict]:
     content = public_text.strip("\n")
     urls = {line.split(",", 1)[0].strip() for line in active_lines(public_text)}
@@ -273,6 +289,7 @@ def validate_private(
     remote_proxy: list[str],
     plugins: list[str],
     ca_lines: list[str],
+    allow_no_ca: bool = False,
 ) -> dict[str, int]:
     group_names = {line.split("=", 1)[0].strip() for line in groups if "=" in line}
     if not group_names:
@@ -295,7 +312,7 @@ def validate_private(
             fail(f"规则指向未声明的策略 {policy!r}")
     if not plugins:
         fail("[Plugin] 为空")
-    if not ca_lines:
+    if not ca_lines and not allow_no_ca:
         print("WARN no ca-p12/ca-passphrase in the .lcf; MITM plugins need a certificate", file=sys.stderr)
     return {
         "groups": len(group_names),
@@ -361,9 +378,15 @@ def build(
     lcf: dict[str, str],
     keep_lcf_plugins: bool = False,
     keep_host_resolvers: bool = False,
+    platform: str = "all",
+    no_mitm: bool = False,
 ) -> tuple[str, dict]:
+    if platform == "tvos":
+        keep_lcf_plugins = False
+        no_mitm = True
     public_rule = active_lines(public.get("Rule", ""))
-    public_plugin = active_lines(public.get("Plugin", ""))
+    public_plugin_text = filter_plugins(public.get("Plugin", ""), platform)
+    public_plugin = active_lines(public_plugin_text)
     lcf_proxy = active_lines(lcf.get("Proxy", ""))
     lcf_remote = active_lines(lcf.get("Remote Proxy", ""))
     lcf_groups = active_lines(lcf.get("Proxy Group", ""))
@@ -423,7 +446,7 @@ def build(
         )
 
     plugin_text, plugin_stats = merge_plugins(
-        public.get("Plugin", ""), lcf.get("Plugin", ""), keep_lcf_plugins
+        public_plugin_text, lcf.get("Plugin", ""), keep_lcf_plugins
     )
     if plugin_stats["skipped"]:
         print(
@@ -438,16 +461,33 @@ def build(
             file=sys.stderr,
         )
 
-    public_mitm = active_lines(public.get("MITM", ""))
-    hostname = next((line for line in public_mitm if key_of(line) == "hostname"), None)
-    if hostname is None:
-        fail("configs/loon.conf has no [MITM] hostname")
-    lcf_host = next((line for line in lcf_mitm if key_of(line) == "hostname"), None)
-    merged_host, host_count, host_dropped = merge_hostname(hostname, lcf_host)
+    if no_mitm:
+        merged_host, host_count, host_dropped = "", 0, 0
+    else:
+        public_mitm = active_lines(public.get("MITM", ""))
+        hostname = next((line for line in public_mitm if key_of(line) == "hostname"), None)
+        if hostname is None:
+            fail("configs/loon.conf has no [MITM] hostname")
+        lcf_host = next((line for line in lcf_mitm if key_of(line) == "hostname"), None)
+        merged_host, host_count, host_dropped = merge_hostname(hostname, lcf_host)
 
-    stats = validate_private(public_rule, lcf_groups, lcf_remote, public_plugin, ca_lines)
+    stats = validate_private(
+        public_rule,
+        lcf_groups,
+        lcf_remote,
+        public_plugin,
+        [] if no_mitm else ca_lines,
+        allow_no_ca=no_mitm,
+    )
     remote_script = active_lines(lcf.get("Remote Script", ""))
     ip_rewrite = active_lines(lcf.get("IP Rewrite", ""))
+    if no_mitm and (remote_script or ip_rewrite):
+        print(
+            "WARN 零 MITM 精简档丢弃 [Remote Script]/[IP Rewrite]",
+            file=sys.stderr,
+        )
+        remote_script = []
+        ip_rewrite = []
     remote_filter = active_lines(lcf.get("Remote Filter", ""))
     remote_rule = active_lines(lcf.get("Remote Rule", ""))
     if remote_script:
@@ -482,16 +522,21 @@ def build(
         "remote_rule": len(remote_rule),
         "mitm_hosts": host_count,
         "host_dropped": host_dropped,
+        "platform": platform,
+        "mitm": not no_mitm,
     })
 
     group_desc = ",".join(f"{name} {count}" for name, count in sorted(summary["group_types"].items())) or "无"
     parts: list[str] = []
     parts.append(
         "# ============================================================================\n"
-        "# Loon 私有全功能配置（本机生成）\n"
+        "# Loon 私有配置（本机生成）\n"
         "# ----------------------------------------------------------------------------\n"
         "# 来源：configs/loon.conf + 本地 Loon 导出的 .lcf。\n"
-        "# 本文件含你的订阅链接与 CA 私钥/口令：不要提交、不要上传、不要分享。\n"
+        f"# 平台档：{platform}；MITM：{'关闭（零证书）' if no_mitm else '开启'}。\n"
+        "# 本文件含你的订阅链接"
+        + ("" if no_mitm else "与 CA 私钥/口令")
+        + "：不要提交、不要上传、不要分享。\n"
         f"# 生成日期：{date.today().isoformat()}；文件权限：0600。\n"
         f"# 插件 {summary['plugins']['total']} 个；规则 {summary['rule_total']} 条；"
         f"策略组 {summary['groups']} 个（{group_desc}）。\n"
@@ -519,10 +564,14 @@ def build(
     )
     parts.append("[Rule]\n" + public.get("Rule", "").strip("\n"))
 
-    rewrite = public.get("Rewrite", "").strip("\n")
-    script = public.get("Script", "").strip("\n")
+    if no_mitm:
+        rewrite = "# 零 MITM：不启用 Rewrite（HTTPS 路径改写需要证书解密）"
+        script = "# 零 MITM：不启用 Script"
+    else:
+        rewrite = public.get("Rewrite", "").strip("\n")
+        script = public.get("Script", "").strip("\n")
     for name, content in (("Rewrite", rewrite), ("Script", script)):
-        extra = active_lines(lcf.get(name, ""))
+        extra = [] if no_mitm else active_lines(lcf.get(name, ""))
         block = f"[{name}]\n{content}"
         if extra:
             block += "\n\n# 以下来自 .lcf\n" + "\n".join(extra)
@@ -544,16 +593,17 @@ def build(
             + "\n".join(ip_rewrite)
         )
 
-    mitm = [
-        "[MITM]",
-        "# 私有配置：CA 来自 .lcf；不要分享此段。",
-        *ca_lines,
-        "# hostname 合并 .lcf 原有主机与公开排除表：保留银行/支付/微信/QQ 钱包等",
-        "# 证书固定域的排除，去掉整段 -*.apple.com 以便 iRingo 工作，仅排除 push/apns。",
-        f"# hostname 条目 {host_count} 个（.lcf 中被公开排除表拦下 {host_dropped} 个）",
-        f"hostname = {merged_host}",
-    ]
-    parts.append("\n".join(mitm))
+    if not no_mitm:
+        mitm = [
+            "[MITM]",
+            "# 私有配置：CA 来自 .lcf；不要分享此段。",
+            *ca_lines,
+            "# hostname 合并 .lcf 原有主机与公开排除表：保留银行/支付/微信/QQ 钱包等",
+            "# 证书固定域的排除，去掉整段 -*.apple.com 以便 iRingo 工作，仅排除 push/apns。",
+            f"# hostname 条目 {host_count} 个（.lcf 中被公开排除表拦下 {host_dropped} 个）",
+            f"hostname = {merged_host}",
+        ]
+        parts.append("\n".join(mitm))
     parts.append("[Plugin]\n" + plugin_text.strip("\n"))
     return "\n\n".join(part.rstrip() for part in parts) + "\n", summary
 
@@ -594,7 +644,10 @@ def self_test() -> int:
         "General": "ip-mode = v4-only\nreal-ip = *.icloud.com\n",
         "Host": "example.com = 192.0.2.1\n",
         "Rule": "DOMAIN,a.example,DIRECT\nFINAL,DIRECT\n",
-        "Plugin": "https://example.com/a.plugin,enabled=true\n",
+        "Plugin": (
+            "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/ads/ads.plugin,enabled=true\n"
+            "https://example.com/a.plugin,enabled=true\n"
+        ),
         "MITM": "hostname = -*.push.apple.com,example.com\n",
     }
     lcf = {
@@ -627,6 +680,7 @@ def self_test() -> int:
         body, summary = build(public, lcf)
         body_keep, _ = build(public, lcf, keep_lcf_plugins=True)
         body_resolvers, _ = build(public, lcf, keep_host_resolvers=True)
+        body_tv, summary_tv = build(public, lcf, platform="tvos")
     output = captured.getvalue()
 
     _expect("ssid-trigger" in body, "extra General key not preserved")
@@ -643,6 +697,10 @@ def self_test() -> int:
         summary["host"]["dropped_resolvers"] == ["q.example"],
         "dropped server resolver count",
     )
+    _expect("[MITM]" not in body_tv, "TV profile must omit MITM")
+    _expect("ads.plugin" in body_tv and "a.plugin" not in body_tv, "TV plugin allowlist")
+    _expect(summary_tv["mitm_hosts"] == 0 and summary_tv["ca"] == 0, "TV zero CA/MITM")
+    _expect("零 MITM：不启用 Rewrite" in body_tv, "TV profile must not carry main Rewrite")
     _expect("[Remote Script]" in body and "remote.js" in body, "Remote Script not preserved")
     _expect("[IP Rewrite]" in body, "IP Rewrite not preserved")
     hostname_line = next(line for line in body.splitlines() if line.startswith("hostname = "))
@@ -676,6 +734,10 @@ def main() -> int:
                         help="保留 .lcf 中不在公开清单里的插件行（可能含失效/未审计插件）")
     parser.add_argument("--keep-host-resolvers", action="store_true",
                         help="保留 .lcf [Host] 的 server: 明文解析映射（可能压过插件广告黑洞）")
+    parser.add_argument("--platform", choices=("all", "tvos"), default="all",
+                        help="all=全量；tvos=零 MITM/脚本的 TV 精简档（ads + 2 个规则插件）")
+    parser.add_argument("--no-mitm", action="store_true",
+                        help="不输出 [MITM]/CA，并丢弃 [Remote Script]/[IP Rewrite]")
     parser.add_argument("--self-test", action="store_true", help="用内存样本自检合并逻辑，不读写文件")
     args = parser.parse_args()
 
@@ -712,10 +774,13 @@ def main() -> int:
         lcf_sections,
         args.keep_lcf_plugins,
         args.keep_host_resolvers,
+        args.platform,
+        args.no_mitm,
     )
     if args.dry_run:
         print(f"dry-run: would write {out} (no file written)")
         print(
+            f"platform={summary['platform']} mitm={summary['mitm']} "
             f"plugins={summary['plugins']['total']} "
             f"rules={summary['rule_total']} "
             f"groups={summary['groups']} "
@@ -738,6 +803,7 @@ def main() -> int:
 
     print(f"private config written: {out}")
     print(
+        f"platform={summary['platform']} mitm={summary['mitm']} "
         f"plugins={summary['plugins']['total']} "
         f"rules={summary['rule_total']} "
         f"groups={summary['groups']} "

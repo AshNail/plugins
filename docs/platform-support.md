@@ -55,7 +55,18 @@
 
 ### Apple TV
 
-TV 端建议用**零 MITM、零脚本**的网络层精简档，而不是原样导入 41 个：
+TV 端建议用**零 MITM、零脚本**的网络层精简档，而不是原样导入 41 个。
+生成命令（用你自己的 `.lcf` 备份；输出含订阅/节点，权限 0600，不要入库）：
+
+```bash
+python3 tools/make-private-config.py \
+  --lcf ~/Loon-backups/<时间>/Loon.lcf \
+  --platform tvos \
+  --out ~/Downloads/Loon.tv-private.lcf
+```
+
+`--platform tvos` 会自动过滤到下面 3 个插件、删除 `[MITM]`/CA、
+清空主配置 `[Rewrite]`/`[Script]`，并保留规则、策略组、订阅与节点。
 
 | 顺序 | 插件 | 作用 | 备注 |
 |---|---|---|---|
