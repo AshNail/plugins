@@ -62,6 +62,12 @@ TV_PLUGIN_URLS = (
     "https://kelee.one/Tool/Loon/Lpx/BlockAdvertisers.lpx",
     "https://kelee.one/Tool/Loon/Lpx/Block_HTTPDNS.lpx",
 )
+# ws.wenn.in 的 6 条 Loon 规则镜像在 2026-11-01 全部 404；改回上游 blackmatrix7。
+REMOTE_RULE_REWRITES = {
+    f"https://ws.wenn.in/main/Mirror/rules/loon-{cat}.list":
+    f"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Loon/{cat}/{cat}.list"
+    for cat in ("China", "Global", "Advertising", "Privacy", "Hijacking", "Epic")
+}
 ADVANCED_RULE_TYPES = (
     "AND", "OR", "NOT", "PROTOCOL", "SRC-PORT", "DEST-PORT", "IP-ASN",
     "DOMAIN-WILDCARD", "URL-REGEX", "USER-AGENT", "PROCESS-NAME",
@@ -494,6 +500,21 @@ def build(
         ip_rewrite = []
     remote_filter = active_lines(lcf.get("Remote Filter", ""))
     remote_rule = active_lines(lcf.get("Remote Rule", ""))
+    remote_rule_rewritten = 0
+    rewritten_rules: list[str] = []
+    for line in remote_rule:
+        url, sep, rest = line.partition(",")
+        replacement = REMOTE_RULE_REWRITES.get(url.strip())
+        if replacement:
+            line = replacement + sep + rest
+            remote_rule_rewritten += 1
+        rewritten_rules.append(line)
+    remote_rule = rewritten_rules
+    if remote_rule_rewritten:
+        print(
+            f"WARN .lcf [Remote Rule] 改写 {remote_rule_rewritten} 条 404 镜像为 blackmatrix7 上游",
+            file=sys.stderr,
+        )
     if remote_script:
         print(
             f"WARN 保留 {len(remote_script)} 条 [Remote Script]；远程脚本不经本仓审计",
@@ -524,6 +545,7 @@ def build(
         "ip_rewrite": len(ip_rewrite),
         "remote_filter": len(remote_filter),
         "remote_rule": len(remote_rule),
+        "remote_rule_rewritten": remote_rule_rewritten,
         "mitm_hosts": host_count,
         "host_dropped": host_dropped,
         "platform": platform,
@@ -627,7 +649,8 @@ def print_report(summary: dict) -> None:
         f"advanced: host_maps={summary['host_total']} ({kind_desc}) "
         f"host_resolvers_dropped={len(summary['host']['dropped_resolvers'])} "
         f"remote_script={summary['remote_script']} ip_rewrite={summary['ip_rewrite']} "
-        f"remote_filter={summary['remote_filter']} remote_rule={summary['remote_rule']}"
+        f"remote_filter={summary['remote_filter']} remote_rule={summary['remote_rule']} "
+        f"remote_rule_rewritten={summary['remote_rule_rewritten']}"
     )
     print(
         f"advanced: general_from_lcf={len(summary['general']['extras'])} "
@@ -676,6 +699,9 @@ def self_test() -> int:
             "ca-p12 = SECRETCA\nca-passphrase = SECRETPASS\n"
         ),
         "Remote Script": "https://example.com/remote.js, tag=remote\n",
+        "Remote Rule": (
+            "https://ws.wenn.in/main/Mirror/rules/loon-China.list, policy=DIRECT\n"
+        ),
         "IP Rewrite": "203.0.113.9 drop\n",
         "Plugin": "https://private.example/extra.plugin,enabled=true\n",
     }
@@ -706,6 +732,12 @@ def self_test() -> int:
     _expect(summary_tv["mitm_hosts"] == 0 and summary_tv["ca"] == 0, "TV zero CA/MITM")
     _expect("零 MITM：不启用 Rewrite" in body_tv, "TV profile must not carry main Rewrite")
     _expect("[Remote Script]" in body and "remote.js" in body, "Remote Script not preserved")
+    _expect(
+        "blackmatrix7/ios_rule_script/master/rule/Loon/China/China.list" in body
+        and "ws.wenn.in/main/Mirror/rules/loon-China.list" not in body,
+        "dead remote rule must be rewritten to upstream",
+    )
+    _expect(summary["remote_rule_rewritten"] == 1, "remote rule rewrite count")
     _expect("[IP Rewrite]" in body, "IP Rewrite not preserved")
     hostname_line = next(line for line in body.splitlines() if line.startswith("hostname = "))
     hostname_entries = hostname_line.split("=", 1)[1].split(",")
