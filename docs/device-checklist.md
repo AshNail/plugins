@@ -15,6 +15,7 @@
       - `https://raw.githubusercontent.com/AshNail/plugins/main/plugins/soda/soda.plugin`
       - `https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plugin`
 - [ ] **排障首查项（本轮文档对差新增）**：某条 `[Host]` 黑洞不生效时，先看订阅是否下发 `[Host]` / `[DNS]` 段——官方《节点订阅》页明写「订阅 Host Map 加载后合并到当前 Host Map，并**优先于主配置**」。顺序口径：Rewrite/规则是「本地 > 插件 > 订阅」，Host Map 里订阅压过主配置，插件 [Host] 与订阅 Host Map 的相对顺序**官方未写**，遇到同名映射冲突属未定义行为，只能真机证实（先换订阅、再怀疑正则）。
+- [x] **主配置通配 Host 压过插件精确黑洞（2026-11-01 macOS 实测）**：主配置写 `*.qq.com = server:119.29.29.29` 等 17 条 `server:` 通配映射时，插件里的 `wxa.wxs.qq.com = 127.0.0.1` 不生效——`curl` 仍拿到真实服务器 302/404/403；删除这 17 条后，同一批主机全部变成 5s 超时黑洞，`wxsnsdy.wxs.qq.com` 直接 `127.0.0.1`。结论：**Host 不是「越精确越优先」**，主配置宽通配会赢；主配置 `[Host]` 应保持精简，指定解析器用 DoH 形态并只写单域，不要写宽带 `server:` 通配。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
       ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.4`、`soda=2.9.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；

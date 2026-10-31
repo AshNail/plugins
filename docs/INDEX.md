@@ -36,6 +36,7 @@
 | 文档 | 用途 |
 |---|---|
 | [真机验证清单](device-checklist.md) | 重装/更新后按单走的分段验证 |
+| [多端支持矩阵](platform-support.md) | iOS / iPadOS / macOS / tvOS 的插件声明、推荐子集与已知问题 |
 | [听抖音字段工具包](listen-douyin-field-kit.md) | 【听抖音】入口字段定位与回传流程 |
 | [测试套件说明](../tests/README.md) | Node 回归套件、断言分布、lint 与配置门禁 |
 

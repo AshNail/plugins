@@ -249,6 +249,12 @@ proxy-origin.example.com = 192.0.2.30,use-in-proxy=true
 - 订阅文件可以整段下发 `[DNS]`/`[Host]`/`[Proxy]`；订阅 Host Map 会合并到当前 Host Map，
   并**优先于主配置**。排查「插件 Host 不生效」时，先看订阅是否覆盖了同名域。
 - 订阅 Host Map 的域名键支持 `*` 和 `?` 通配符（`Node/subscription` 页）。
+- **主配置自己的宽通配也会压过插件精确项（2026-11-01 macOS 实测）**：主配置写
+  `*.qq.com = server:119.29.29.29` 时，插件的 `wxa.wxs.qq.com = 127.0.0.1` 不生效，
+  请求仍连真实广告服务器；删掉 17 条 `server:` 通配后黑洞恢复。Host 的优先级不是
+  「越精确越优先」，主配置的宽带映射会赢。主配置 `[Host]` 保持精简；确需指定解析器时
+  只写单域，并用 DoH 形态 `example.com = server:https://223.5.5.5/dns-query`，不要写
+  `*.qq.com` 这类 `server:` 通配。
 - 解析订阅节点的服务器域名时，官方给出的选择顺序是：
   1. 订阅文件 `[Host]` 的固定 IP/别名/指定 DNS/IP 栈；
   2. 主配置 `[Host]`；

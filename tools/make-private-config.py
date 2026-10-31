@@ -191,7 +191,16 @@ def merge_general(public_text: str, lcf_text: str) -> tuple[str, dict]:
     }
 
 
-def merge_hosts(public_text: str, lcf_text: str) -> tuple[str, dict]:
+def host_resolver_targets(line: str) -> list[str]:
+    if "=" not in line:
+        return []
+    right = line.split("=", 1)[1]
+    return [part.strip() for part in right.split(",") if part.strip().lower().startswith("server:")]
+
+
+def merge_hosts(
+    public_text: str, lcf_text: str, keep_resolvers: bool = False
+) -> tuple[str, dict]:
     content = public_text.strip("\n")
     seen = {
         line.split("=", 1)[0].strip().lower()
@@ -200,12 +209,19 @@ def merge_hosts(public_text: str, lcf_text: str) -> tuple[str, dict]:
     }
     extras: list[str] = []
     conflicts: list[str] = []
+    dropped_resolvers: list[str] = []
     for line in active_lines(lcf_text):
         if "=" not in line:
             continue
         key = line.split("=", 1)[0].strip().lower()
         if key in seen:
             conflicts.append(key)
+            continue
+        if host_resolver_targets(line) and not keep_resolvers:
+            # 主配置通配 Host 会压过插件里更精确的 = 127.0.0.1 广告黑洞
+            # （实测 *.qq.com = server:... 令微信广告主机仍连真实服务器），
+            # 且 server: 明文解析会把 DoH 降级成 UDP 53。
+            dropped_resolvers.append(key)
             continue
         seen.add(key)
         extras.append(line)
@@ -214,7 +230,11 @@ def merge_hosts(public_text: str, lcf_text: str) -> tuple[str, dict]:
             "\n\n# 以下 [Host] 映射来自 .lcf；本地 Host 优先于插件，"
             "广告拦截异常时先查这里\n" + "\n".join(extras)
         )
-    return content, {"injected": len(extras), "conflicts": conflicts}
+    return content, {
+        "injected": len(extras),
+        "conflicts": conflicts,
+        "dropped_resolvers": dropped_resolvers,
+    }
 
 
 def merge_plugins(public_text: str, lcf_text: str, keep_lcf_plugins: bool) -> tuple[str, dict]:
@@ -336,7 +356,12 @@ def host_kind_counts(lines: list[str]) -> dict[str, int]:
     return counts
 
 
-def build(public: dict[str, str], lcf: dict[str, str], keep_lcf_plugins: bool = False) -> tuple[str, dict]:
+def build(
+    public: dict[str, str],
+    lcf: dict[str, str],
+    keep_lcf_plugins: bool = False,
+    keep_host_resolvers: bool = False,
+) -> tuple[str, dict]:
     public_rule = active_lines(public.get("Rule", ""))
     public_plugin = active_lines(public.get("Plugin", ""))
     lcf_proxy = active_lines(lcf.get("Proxy", ""))
@@ -373,7 +398,17 @@ def build(public: dict[str, str], lcf: dict[str, str], keep_lcf_plugins: bool = 
             file=sys.stderr,
         )
 
-    host_text, host_stats = merge_hosts(public.get("Host", ""), lcf.get("Host", ""))
+    host_text, host_stats = merge_hosts(
+        public.get("Host", ""), lcf.get("Host", ""), keep_host_resolvers
+    )
+    if host_stats["dropped_resolvers"]:
+        print(
+            "WARN .lcf [Host] 丢弃 "
+            f"{len(host_stats['dropped_resolvers'])} 条 server: 解析映射"
+            "（主配置通配会压过插件 = 127.0.0.1 黑洞，且明文 53 降级 DoH）；"
+            "需要时加 --keep-host-resolvers",
+            file=sys.stderr,
+        )
     if host_stats["injected"]:
         print(
             f"WARN .lcf [Host] 注入 {host_stats['injected']} 条映射；"
@@ -461,7 +496,8 @@ def build(public: dict[str, str], lcf: dict[str, str], keep_lcf_plugins: bool = 
         f"# 插件 {summary['plugins']['total']} 个；规则 {summary['rule_total']} 条；"
         f"策略组 {summary['groups']} 个（{group_desc}）。\n"
         f"# Host 映射 {summary['host_total']} 条；远程脚本 {summary['remote_script']} 条；"
-        f"IP Rewrite {summary['ip_rewrite']} 条。\n"
+        f"IP Rewrite {summary['ip_rewrite']} 条；"
+        f"丢弃 server: 解析映射 {len(summary['host']['dropped_resolvers'])} 条。\n"
         f"# .lcf 中未注入的规则 {summary['lcf_only_rules']} 条、插件 "
         f"{summary['plugins']['skipped']} 个（公开清单为准）。\n"
         "# 导入：Loon → 配置 → 导入；或把文件放到「文件」App 后用 Loon 打开。\n"
@@ -535,6 +571,7 @@ def print_report(summary: dict) -> None:
     )
     print(
         f"advanced: host_maps={summary['host_total']} ({kind_desc}) "
+        f"host_resolvers_dropped={len(summary['host']['dropped_resolvers'])} "
         f"remote_script={summary['remote_script']} ip_rewrite={summary['ip_rewrite']} "
         f"remote_filter={summary['remote_filter']} remote_rule={summary['remote_rule']}"
     )
@@ -568,7 +605,11 @@ def self_test() -> int:
             "dns-server = 8.8.8.8\n"
             "doq-server = quic://1.1.1.1:853\n"
         ),
-        "Host": "cdn.example.com = 203.0.113.10\nexample.com = 203.0.113.11\n",
+        "Host": (
+            "cdn.example.com = 203.0.113.10\n"
+            "example.com = 203.0.113.11\n"
+            "q.example = server:8.8.8.8\n"
+        ),
         "Proxy": "N1 = Shadowsocks,node.example.com,443,aes-128-gcm,\"pass\"\n",
         "Remote Proxy": "Sub = https://sub.example/secret-token,enabled=true\n",
         "Proxy Group": "Proxy = select,DIRECT\nAuto = url-test,DIRECT\n",
@@ -585,6 +626,7 @@ def self_test() -> int:
     with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
         body, summary = build(public, lcf)
         body_keep, _ = build(public, lcf, keep_lcf_plugins=True)
+        body_resolvers, _ = build(public, lcf, keep_host_resolvers=True)
     output = captured.getvalue()
 
     _expect("ssid-trigger" in body, "extra General key not preserved")
@@ -595,6 +637,12 @@ def self_test() -> int:
     _expect("cdn.example.com = 203.0.113.10" in body, "lcf Host map not injected")
     _expect("example.com = 192.0.2.1" in body, "public Host map missing")
     _expect("example.com = 203.0.113.11" not in body, "conflicting Host map must be dropped")
+    _expect("q.example = server:8.8.8.8" not in body, "server resolver must be dropped")
+    _expect("q.example = server:8.8.8.8" in body_resolvers, "keep flag must preserve resolver")
+    _expect(
+        summary["host"]["dropped_resolvers"] == ["q.example"],
+        "dropped server resolver count",
+    )
     _expect("[Remote Script]" in body and "remote.js" in body, "Remote Script not preserved")
     _expect("[IP Rewrite]" in body, "IP Rewrite not preserved")
     hostname_line = next(line for line in body.splitlines() if line.startswith("hostname = "))
@@ -613,7 +661,7 @@ def self_test() -> int:
 
     print(
         "private config self-test ok: general/host/remote-script/ip-rewrite preserved, "
-        "doq-server dropped, secrets not printed"
+        "doq-server and server: host resolvers dropped, secrets not printed"
     )
     return 0
 
@@ -626,6 +674,8 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="只构建并打印高级功能摘要，不写文件")
     parser.add_argument("--keep-lcf-plugins", action="store_true",
                         help="保留 .lcf 中不在公开清单里的插件行（可能含失效/未审计插件）")
+    parser.add_argument("--keep-host-resolvers", action="store_true",
+                        help="保留 .lcf [Host] 的 server: 明文解析映射（可能压过插件广告黑洞）")
     parser.add_argument("--self-test", action="store_true", help="用内存样本自检合并逻辑，不读写文件")
     args = parser.parse_args()
 
@@ -657,7 +707,12 @@ def main() -> int:
     if "General" not in public_sections or "Rule" not in public_sections:
         fail("configs/loon.conf 缺少 [General]/[Rule]")
 
-    body, summary = build(public_sections, lcf_sections, args.keep_lcf_plugins)
+    body, summary = build(
+        public_sections,
+        lcf_sections,
+        args.keep_lcf_plugins,
+        args.keep_host_resolvers,
+    )
     if args.dry_run:
         print(f"dry-run: would write {out} (no file written)")
         print(

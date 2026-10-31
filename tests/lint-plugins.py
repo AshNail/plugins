@@ -120,6 +120,7 @@ ADS_META_KEYS = (
     "date",
     "tag",
 )
+SYSTEM_TOKENS = {"ios", "ipados", "macos", "tvos", "watchos"}
 ADS_GENERAL_KEYS = {
     "bypass-tun",
     "include-tun",
@@ -1312,6 +1313,13 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
         errors.append(f"{fp}: #!icon must be an https URL, got {meta['icon'][:60]}")
     if "openUrl" in meta and not meta["openUrl"].startswith("https://"):
         errors.append(f"{fp}: #!openUrl must be an https URL, got {meta['openUrl'][:60]}")
+    for token in (meta.get("system") or "").split(","):
+        token = token.strip()
+        if token and token.lower() not in SYSTEM_TOKENS:
+            errors.append(
+                f"{fp}: unknown #!system token {token!r}; "
+                f"allowed: {', '.join(sorted(SYSTEM_TOKENS))}（空值表示全部）"
+            )
     print(f"  meta: {meta.get('name', '?')} v{meta.get('version', '?')} icon={meta.get('icon', '-')[:60]}")
 
     schema = load_args_schema(family)
