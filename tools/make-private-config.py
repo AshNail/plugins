@@ -62,6 +62,12 @@ TV_PLUGIN_URLS = (
     "https://kelee.one/Tool/Loon/Lpx/BlockAdvertisers.lpx",
     "https://kelee.one/Tool/Loon/Lpx/Block_HTTPDNS.lpx",
 )
+# Mac 没有对应 App 或作者明确不支持 macOS 的插件，留在公开配置给 iOS/iPad/TV。
+MAC_PLUGIN_EXCLUDES = (
+    "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/soda/soda.plugin",
+    "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plugin",
+    "https://github.com/Biliverse/ADBlock/releases/latest/download/BiliBili.ADBlock.plugin",
+)
 # ws.wenn.in 的 6 条 Loon 规则镜像在 2026-11-01 全部 404；改回上游 blackmatrix7。
 REMOTE_RULE_REWRITES = {
     f"https://ws.wenn.in/main/Mirror/rules/loon-{cat}.list":
@@ -254,13 +260,20 @@ def merge_hosts(
 
 
 def filter_plugins(public_text: str, platform: str) -> str:
-    if platform != "tvos":
-        return public_text
-    kept = [
-        line for line in active_lines(public_text)
-        if line.split(",", 1)[0].strip() in TV_PLUGIN_URLS
-    ]
-    return "\n".join(kept)
+    if platform == "tvos":
+        kept = [
+            line for line in active_lines(public_text)
+            if line.split(",", 1)[0].strip() in TV_PLUGIN_URLS
+        ]
+        return "\n".join(kept)
+    if platform == "macos":
+        excluded = set(MAC_PLUGIN_EXCLUDES)
+        kept = [
+            line for line in active_lines(public_text)
+            if line.split(",", 1)[0].strip() not in excluded
+        ]
+        return "\n".join(kept)
+    return public_text
 
 
 def merge_plugins(public_text: str, lcf_text: str, keep_lcf_plugins: bool) -> tuple[str, dict]:
@@ -673,6 +686,7 @@ def self_test() -> int:
         "Rule": "DOMAIN,a.example,DIRECT\nFINAL,DIRECT\n",
         "Plugin": (
             "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/ads/ads.plugin,enabled=true\n"
+            "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/soda/soda.plugin,enabled=true\n"
             "https://example.com/a.plugin,enabled=true\n"
         ),
         "MITM": "hostname = -*.push.apple.com,example.com\n",
@@ -711,6 +725,7 @@ def self_test() -> int:
         body_keep, _ = build(public, lcf, keep_lcf_plugins=True)
         body_resolvers, _ = build(public, lcf, keep_host_resolvers=True)
         body_tv, summary_tv = build(public, lcf, platform="tvos")
+        body_macos, _ = build(public, lcf, platform="macos")
     output = captured.getvalue()
 
     _expect("ssid-trigger" in body, "extra General key not preserved")
@@ -731,6 +746,12 @@ def self_test() -> int:
     _expect("ads.plugin" in body_tv and "a.plugin" not in body_tv, "TV plugin allowlist")
     _expect(summary_tv["mitm_hosts"] == 0 and summary_tv["ca"] == 0, "TV zero CA/MITM")
     _expect("零 MITM：不启用 Rewrite" in body_tv, "TV profile must not carry main Rewrite")
+    _expect(
+        "soda.plugin" not in body_macos
+        and "ads.plugin" in body_macos
+        and "a.plugin" in body_macos,
+        "macOS profile must drop iOS-only plugins only",
+    )
     _expect("[Remote Script]" in body and "remote.js" in body, "Remote Script not preserved")
     _expect(
         "blackmatrix7/ios_rule_script/master/rule/Loon/China/China.list" in body
@@ -770,8 +791,8 @@ def main() -> int:
                         help="保留 .lcf 中不在公开清单里的插件行（可能含失效/未审计插件）")
     parser.add_argument("--keep-host-resolvers", action="store_true",
                         help="保留 .lcf [Host] 的 server: 明文解析映射（可能压过插件广告黑洞）")
-    parser.add_argument("--platform", choices=("all", "tvos"), default="all",
-                        help="all=全量；tvos=零 MITM/脚本的 TV 精简档（ads + 2 个规则插件）")
+    parser.add_argument("--platform", choices=("all", "macos", "tvos"), default="all",
+                        help="all=全量；macos=排除 iOS 专属插件；tvos=零 MITM/脚本的 TV 精简档")
     parser.add_argument("--no-mitm", action="store_true",
                         help="不输出 [MITM]/CA，并丢弃 [Remote Script]/[IP Rewrite]")
     parser.add_argument("--self-test", action="store_true", help="用内存样本自检合并逻辑，不读写文件")

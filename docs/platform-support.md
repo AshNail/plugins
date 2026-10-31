@@ -48,7 +48,9 @@
 
 ### macOS
 
-- 保持 41 个插件行；按声明实际生效 38 个（soda、douyin、BiliBili ADBlock 不声明 macOS）。
+- Mac 私有档已收敛到 **38 个**（移除 soda、douyin、BiliBili ADBlock：macOS 无对应 App
+  或作者不支持）；公开配置仍保留 41 个给 iOS/iPad/TV。Loon 的 `#!system` 检查
+  不再产生这 3 个平台告警。
 - BiliBili 的 Redirect / Global / Enhanced 声明了 macOS；ADBlock 没有。不要因为
   「B 站 Mac 版也能看」就擅自给 ADBlock 补 macOS——脚本按 iOS 页面结构写的。
 - **主配置 `[Host]` 不要写 `*.qq.com = server:...` 这类宽通配解析映射。**
@@ -102,7 +104,7 @@ python3 tools/make-private-config.py \
 
 | 平台 | 已验证 | 待真机 |
 |---|---|---|
-| macOS | Host 黑洞恢复（微信广告主机 5s 黑洞、正常域 200）、DoH 未被明文映射降级、公开配置 41 插件基线 | 长周期广告/支付/登录回归 |
+| macOS | Host 黑洞恢复（微信广告主机 5s 黑洞、正常域 200）、DoH 未被明文映射降级、私有档 38 插件全部可用 | 长周期广告/支付/登录回归 |
 | iPhone | — | 41 插件导入、soda/douyin 开屏与领奖、CA 信任、TLS 证书错误 |
 | iPad | — | soda/douyin 元数据补齐后是否加载、B 站 ADBlock、分屏/兼容模式 |
 | Apple TV | — | 三插件精简档导入、DNS 广告拦截、无 MITM 证书问题 |
