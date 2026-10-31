@@ -9,6 +9,7 @@
 | [项目 README](../README.md) | 项目结构、Loon 段落映射、插件目录、构建与验证入口 |
 | [Loon 原生优先](loon-native-first.md) | 为什么优先 `[Host]`/`[Rule]`，脚本与 MITM 的边界 |
 | [Loon 全功能清单](loon-feature-checklist.md) | 以 Loon 官方能力为索引的仓库落地清单 |
+| [高级功能矩阵](advanced-features.md) | Mac 高级功能逐项结论、STUN/网关/插件版本兼容与回滚 |
 | [最大化配置](loon-max-config.md) | `configs/loon.conf` 的基线围栏与插件外能力台账 |
 | [分流 / Host / ASN](loon-routing-host-asn.md) | 规则顺序、Host Map、ASN 与代理组配方 |
 
