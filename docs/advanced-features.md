@@ -48,6 +48,11 @@
    App 或作者明确不支持），Loon 插件页不再出现「不支持的操作系统」；
    公开配置仍保留 41 个供 iOS/iPad/TV，`make-private-config.py --platform macos`
    可复现。`--platform tvos` 仍是 3 个零 MITM 插件。
+7. **插件新版 Rewrite/Script 已生效**：Mac 0.5.0(1011) 实测插件缓存里的
+   `request if ${url} ... then reject(...)` 会执行。kelee 淘宝
+   `mtop.taobao.idle.home.welcome` 返回合成 404、`film.life.popup.get` 返回
+   合成 200 `{}`，同域对照路径真实 200；MITM 280 / Rewrite 282 / Script 250
+   均由仪表确认加载。早先 Mac 1009 的插件新 Rewrite 不执行问题在 1011 已修复。
 
 ## 3. Mac 0.x 插件版本兼容
 
