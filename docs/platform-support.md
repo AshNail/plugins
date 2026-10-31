@@ -16,7 +16,9 @@
   - **7 个部分声明**：见下表。
 - macOS 按声明应加载 **38 个**（soda、douyin、BiliBili ADBlock 不声明 macOS）；
   iOS 41 个；iPadOS 在补齐 soda/douyin 的 `iPadOS` 声明后 41 个；
-  tvOS 若原样导入也是 41 个，但其中大量 App 插件对 TV 无消费方，建议用 §2 的 Apple TV 精简档。
+  tvOS 按声明只有 **34 个**（soda、douyin、BiliBili ADBlock、iRingo 三件套、YouTube
+  均未声明 tvOS）；即便 Loon 全部加载，其中大量 App 插件对 TV 无消费方，
+  建议用 §2 的 Apple TV 精简档。
 
 ## 1. 部分平台声明
 

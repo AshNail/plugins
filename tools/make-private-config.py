@@ -223,10 +223,14 @@ def merge_hosts(
         if key in seen:
             conflicts.append(key)
             continue
-        if host_resolver_targets(line) and not keep_resolvers:
-            # 主配置通配 Host 会压过插件里更精确的 = 127.0.0.1 广告黑洞
-            # （实测 *.qq.com = server:... 令微信广告主机仍连真实服务器），
-            # 且 server: 明文解析会把 DoH 降级成 UDP 53。
+        if (
+            host_resolver_targets(line)
+            and not keep_resolvers
+            and ("*" in key or "?" in key)
+        ):
+            # 通配 Host 会压过插件里更精确的 = 127.0.0.1 广告黑洞
+            # （实测 *.qq.com = server:... 令微信广告主机仍连真实服务器）；
+            # 单域解析器不影响其他主机，保留给用户自己的节点 DNS 配置。
             dropped_resolvers.append(key)
             continue
         seen.add(key)
@@ -427,7 +431,7 @@ def build(
     if host_stats["dropped_resolvers"]:
         print(
             "WARN .lcf [Host] 丢弃 "
-            f"{len(host_stats['dropped_resolvers'])} 条 server: 解析映射"
+            f"{len(host_stats['dropped_resolvers'])} 条通配 server: 解析映射"
             "（主配置通配会压过插件 = 127.0.0.1 黑洞，且明文 53 降级 DoH）；"
             "需要时加 --keep-host-resolvers",
             file=sys.stderr,
@@ -542,7 +546,7 @@ def build(
         f"策略组 {summary['groups']} 个（{group_desc}）。\n"
         f"# Host 映射 {summary['host_total']} 条；远程脚本 {summary['remote_script']} 条；"
         f"IP Rewrite {summary['ip_rewrite']} 条；"
-        f"丢弃 server: 解析映射 {len(summary['host']['dropped_resolvers'])} 条。\n"
+        f"丢弃通配 server: 解析映射 {len(summary['host']['dropped_resolvers'])} 条。\n"
         f"# .lcf 中未注入的规则 {summary['lcf_only_rules']} 条、插件 "
         f"{summary['plugins']['skipped']} 个（公开清单为准）。\n"
         "# 导入：Loon → 配置 → 导入；或把文件放到「文件」App 后用 Loon 打开。\n"
@@ -661,7 +665,7 @@ def self_test() -> int:
         "Host": (
             "cdn.example.com = 203.0.113.10\n"
             "example.com = 203.0.113.11\n"
-            "q.example = server:8.8.8.8\n"
+            "*.q.example = server:8.8.8.8\n"
         ),
         "Proxy": "N1 = Shadowsocks,node.example.com,443,aes-128-gcm,\"pass\"\n",
         "Remote Proxy": "Sub = https://sub.example/secret-token,enabled=true\n",
@@ -691,10 +695,10 @@ def self_test() -> int:
     _expect("cdn.example.com = 203.0.113.10" in body, "lcf Host map not injected")
     _expect("example.com = 192.0.2.1" in body, "public Host map missing")
     _expect("example.com = 203.0.113.11" not in body, "conflicting Host map must be dropped")
-    _expect("q.example = server:8.8.8.8" not in body, "server resolver must be dropped")
-    _expect("q.example = server:8.8.8.8" in body_resolvers, "keep flag must preserve resolver")
+    _expect("*.q.example = server:8.8.8.8" not in body, "wildcard server resolver must be dropped")
+    _expect("*.q.example = server:8.8.8.8" in body_resolvers, "keep flag must preserve resolver")
     _expect(
-        summary["host"]["dropped_resolvers"] == ["q.example"],
+        summary["host"]["dropped_resolvers"] == ["*.q.example"],
         "dropped server resolver count",
     )
     _expect("[MITM]" not in body_tv, "TV profile must omit MITM")
