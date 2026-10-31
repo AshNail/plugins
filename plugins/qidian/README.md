@@ -1,8 +1,8 @@
 # 起点读书 · 去广告
 
-> 起点读书:官方 SDK 清单声明穿山甲+腾讯七巧板(优量汇系)——两组装备黑洞 + 起点自有广告统计端点(adstat.qidian.com/adsite.yuewen.com,官方政策自证)。Argus 广告位(magev6.if.qidian.com/adv)与章节内容同域,零 MITM 不可分。看「福利中心」视频领章节卡依赖 SDK,启用即断。v1.3.0 加提醒层:cron 本地通知(每日签到/任务),点通知直达 App 内路由,零 MITM · 零证书 · 零请求。
+> 起点读书:官方 SDK 清单声明穿山甲+腾讯七巧板(优量汇系)——两组装备黑洞 + 起点自有广告统计端点(adstat.qidian.com/adsite.yuewen.com,官方政策自证)。Argus 广告位(magev6.if.qidian.com/adv)与章节内容同域,零 MITM 不可分。看「福利中心」视频领章节卡依赖 SDK,启用即断。v1.3.0 加提醒层:cron 本地通知(每日签到/任务),点通知直达 App 内路由,零 MITM · 零证书 · 零请求。v1.3.1 加热源层:阅读时高负载的腾讯侧纯上报域(YW 日志族含 TTS 听书报/合规监控/Beacon/RQD/Bugly APM)整组黑洞——全部来自二进制字面上报 URL,与正文 API 零共域;热主链(仿真翻页/自动阅读/P2P)是 App 内行为,设备侧关闭 + 本组减上报双管齐下。
 
-版本 **1.3.0** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.3.1** ｜ 最低 Loon **3.5.1(983)** ｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -17,7 +17,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | 起点/阅文自有广告与统计端点 | A | 启用 | adsite.yuewen.com=官方隐私政策自证「收集设备信息用于广告展示」；adstat.qidian.com=起点 2.5.0 后自有广告统计。qidianad.com=阅文自有广告域(anti-AD 收录,名称+清单双证)。 |
-| 起点自家埋点（B 级,默认关） | B | 默认关闭 | tongji/dwtrack.qidian.com=站内统计(anti-AD 收录,拦了只断自家分析);o.if.qidian.com=anti-AD 独家拦但 if 命名空间同时承载内容 API,有误伤可能——先真机测试;qdp.qidian.com=起点推送,拦了断通知。log.1ting.com=听书线日志,无清单背书。 |
+| 阅读热源·腾讯侧纯上报域 | A | 启用 | REA 热源考古(QDReader 5.9.468 字面 URL),四段家系全收纯上报/遥测端点:腾讯系(YW 日志 unitelogreport/ptunitelogreport/applog/ywlog/path.book/ptbooksp0309/sparta、合规 compliance.tdos=PMonitor、Beacon otheve/oth.eve.mdt/oth.str.mdt/ios.rqd、Bugly 两后缀整族(rmonitor 双域)+buglycloud.sgp(精确补条——后缀 bugly.tencent.com 罩不住最左位标签的 sgp 三级子域,循环验证抓出的真实覆盖洞)、h.trace/kv、htrace.wetvinfo=Beacon 海外通道);阅文系(ys.yuewen.com=听书 TTS 报);起点系(monitor.if.qidian.com=NetMonitor R1/R2、path.qidian.com=qdclientlogreportV2——二进制同段四上报链收齐);生态 SDK 网关(腾讯 AMS 广告日志 zhiyan.tencent-cloud.net/collect、liteav 上传统计 vodreport.qcloud.com、极光 stats.jpush.cn+ipv6 双域+status-ipv6、极验 monitor.geetest.com/monitor/send、移动一键登录 log2.cmpassport.com:9443、天翼 EAccount collect.ux.21cn.com、支付宝 SDK 日志 loggw-exsdk.alipay.com/loggw/logUpload.do)。全部无推送/无正文/无支付交易 API;anti-AD 收录 applog.reader/otheve.beacon/oth.eve.mdt/bugly.qq.com/unitelogreport/h.trace/stats.jpush.cn 七域,其余以二进制字面 URL 为证;upushtest/buglycloud.test 测试环境不收。MDSE P2P 归属 tpdlproxy::MultiDataSourceEngine 且零字面信令域,直连不可拦;readpage 心跳走 magev6 正文红线,不可拦。 |
+| 起点自家埋点（B 级,默认关） | B | 默认关闭 | tongji/dwtrack.qidian.com=站内统计(anti-AD 收录,拦了只断自家分析);o.if.qidian.com=anti-AD 独家拦但 if 命名空间同时承载内容 API,有误伤可能——先真机测试;qdp.qidian.com=起点推送,拦了断通知。log.1ting.com=听书线日志,无清单背书。5.9.468 二进制复核:tongji/dwtrack/o.if/qdp/log.1ting 全部零命中(anti-AD 年代证据列示);monitor.if.qidian.com 与 path.qidian.com 为本版字面自家监控上报(纯上报无功能损害),已按热源组纪律移入 heat_reporting 默认生效;qdp 与 upush.qidian.com/upushv6.qidian.com 为本版字面推送网关(V5/submit+bindingAliasV2 token 绑定与阅文富媒体推送)——推送域拦了断服务端推送,进本组默认关;upushtest 为测试环境不收。 |
 | 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 50 域 / 0 规则。 |
 | 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 10 域 / 0 规则。 |
 
@@ -67,6 +68,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 - adv/getadvlistbatch 路径证据:Yu9191 Rewrite 以 reject-200 拦此路径;app2smile/blackmatrix7/fmz200 三源同族路径规则——起点 iOS 未做证书固定,路径级拦截可行,已按纪律放进文末 enhance 层（默认注释，装证书后自行取消注释）。
 - 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
 - 提醒层(v1.3.0):[Script] 只放 cron 型本地通知——签到提醒走 QDReader://usercenter/sign、任务提醒走 QDReader://usercenter/task,点通知直达路由;全程零 MITM、零网络请求。不代签不代领:/argus/api/v1/checkin/* 与领取层(/pickup/risk 等)全部要求 App 进程内 encryptSign 签名,外部签名机=伪造领取=IVT。二进制证据:会员自动签到是 App 自带特权(QDCheckInInfoModelV2.btnMemberAutoCheckInTxt + QDMemberAutoCheckInSuccessNotification + /checkin/autocheckin),会员在 App 签到面板开启即可;App 另有本地提醒(QDSignNotificationManager/bookshelf_sign_notification),本层增量是 Loon 侧闹钟+一键直达。
+- 热源层(v1.3.1):QDReader 5.9.468 二进制考古结论——看小说发热主链是 App 内行为(仿真翻页 curl 合成/自动阅读不休/阅读时长双路上报且每请求 argus 重签/MDSE P2P 边下边传/日志洪水),Loon 只能斩高频上报连接;App 内行为靠设置关闭(仿真翻页→普通翻页,关自动阅读/边听边看,福利任务充电时做)。本组 29 hosts+2 rules 按四段家系收纯上报遥测:腾讯系(YW 日志五分流 unitelogreport/ptunitelogreport/applog/ywlog/path.book+ptbooksp0309+sparta html5、合规监控 compliance.tdos.qq.com(PMonitor.Config.Report)、Beacon 三通道(otheve.beacon.qq.com/analytics/v2_upload+oth.eve.mdt+oth.str.mdt)+海外通道 htrace.wetvinfo、ios.rqd.qq.com/analytics/rqdsync、Bugly 两后缀整族(bugly.qq.com/bugly.tencent.com,包 pro/cloud/ios.bugly.tencent/s)、monitor(rmonitor+t.rmonitor)+KV(h.trace/kv)+AMS 广告日志(ap-guangzhou.log.zhiyan.tencent-cloud.net/collect,com.tencent.AMSLogsReporter)+liteav 上传统计(vodreport.qcloud.com/ugcupload_new));阅文系(ys.yuewen.com/s/tts-report/log 听书报);起点系(monitor.if.qidian.com=NetMonitor network_convert_time R1/R2、path.qidian.com/qdclientlogreportV2——与 ptbooksp0309/path.book 四链同段补齐);生态 SDK 网关(极光 stats.jpush.cn/v3/report+ipv6 双域与 status-ipv6 体检、极验 monitor.geetest.com/monitor/send、移动一键登录 log2.cmpassport.com:9443/log/logReport、天翼 EAccount collect.ux.21cn.com、支付宝 SDK loggw-exsdk.alipay.com/loggw/logUpload.do)。红线零共域:正文/任务/领取 API 全在 magev6/mage/druid.if 与 h5.if 族,不在本组任一主机;jpush user/config 与 qdp/upush 属推送通道进 B 级默认关;upushtest/buglycloud.test 测试环境不收;sdkreport.e.qq.com 已被 gdt 组 *.e.qq.com 覆盖。深挖钉死:MDSE 引擎=tpdlproxy::MultiDataSourceEngine,零字面信令域→P2P 直连;fockrt.yuewen.com=com.yuewen.fockrt.files 阅文 fock 加密/签名文件服务已登红线绝不拦。readpage 心跳周期云端下发需运行时确认;全局 ads 插件 analytics 组(默认注释)有同族先例,本组是 qidian 热源裁量的默认生效增量。
 
 ## 证据与验证
 
@@ -74,4 +76,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/qidian.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 67 条，[Rule] 1 条。
+统计：精确/通配黑洞 98 条，[Rule] 3 条。
