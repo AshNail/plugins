@@ -92,6 +92,11 @@ def strip_js_comments(text):
 
 PLUGIN_CFG = {k: strip_hash_comments(v) for k, v in PLUGINS.items()}
 SRC_CODE = {k: strip_js_comments(v) for k, v in SRC.items()}
+CONFIG_CFG = {
+    "configs/loon.conf": strip_hash_comments(
+        read(os.path.join(ROOT, "configs", "loon.conf"))
+    )
+}
 CFG_ALL = "\n".join(PLUGIN_CFG.values())
 SRC_ALL = "\n".join(SRC_CODE.values())
 RAW_ALL = "\n".join(PLUGINS.values()) + "\n" + "\n".join(SRC.values())
@@ -133,11 +138,11 @@ CAPABILITIES = [
          probe=r"(?m)^\s*hostname\s*=.*[*?]",
          href=DOC + "/MitM/",
          why="Pangle 分片族用一条 `ads?-normal*.zijieapi.com` 覆盖 10 台主机"),
-    dict(layer="传输层", key="mitm-exclude", name="`[MITM]` 排除 `-域名`", expect="reject",
+    dict(layer="传输层", key="mitm-exclude", name="`[MITM]` 排除 `-域名`", expect="used",
          probe=r"(?m)^\s*hostname\s*=.*(?:=\s*|,\s*)-[A-Za-z0-9]",
          href=DOC + "/MitM/",
-         why="现有 MITM 名单是精确主机或窄通配（soda/douyin），没有需要排除的敏感兄弟域；"
-             "排除语法本身可用，但当前没有场景"),
+         why="`configs/loon.conf` 公开 MITM 已是纯排除表（银行/支付/微信/push 等 55 条）；"
+             "`check-loon-config.py` 强制公开配置 0 正包含，且支付/微信排除必须存在"),
     dict(layer="传输层", key="mitm-append", name="`hostname = %APPEND% …`（官方查不到该 token）",
          expect="undocumented",
          token="lint:MITM.hostname-prefix",
@@ -752,7 +757,8 @@ def evaluate():
         # `#!` 元数据行本身以 # 开头，会被 strip_hash_comments 当注释删掉，
         # 所以这一层必须在原始文本上匹配。
         corpus = ((PLUGINS if cap["layer"] == "元数据" else PLUGIN_CFG).items())
-        for name, text in list(corpus) + list(SRC_CODE.items()):
+        extra = CONFIG_CFG.items() if cap["key"] == "mitm-exclude" else ()
+        for name, text in list(corpus) + list(extra) + list(SRC_CODE.items()):
             if rx.search(text):
                 hits.append(name)
         actual = "used" if hits else "open"

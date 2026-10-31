@@ -137,7 +137,7 @@
 5. [x] Generic 手动交互按钮落地：`status.min.js` 支持在 Loon 界面一键触发状态健康检查与统计看板。
 6. [x] `[Argument]` `select` 下拉类型应用：`statusNotify`（notification/silent）控制 Generic 自检按钮的通知行为；大型「模式预设」仍不采纳——`enable=` 与静态 `[Rule]` 无法由 select 推导，预设会与独立开关形成双重事实源。
 7. [x] 开屏请求拦截跨家族统一：`splash-ad.js` 迁入 `src/common` 单一来源，douyin 新增 `blockSplashAd`；lint 对两家族做 3 hit / 3 miss 边界锁定（`inspire` / `inspire_preload` / `marketing/done` 绝不拦）。
-8. [x] Generic 自检升级为开关看板：全部 `[Argument]` 经对象参数透传，结果页汇总开关并检测冲突（`killRewardAds` / `rewardSafe+cleanAds` / `rewardSafe+settingsClean` / `rewardSafe+blockAdDomains` / `treasureMinimal+killRewardAds`）；lint 锁定绑定必须透传全部开关。
+8. [x] Generic 自检升级为开关看板：全部 `[Argument]` 经对象参数透传，结果页汇总开关并检测冲突（`killRewardAds` / `rewardSafe+settingsClean` / `treasureMinimal` / `treasureMinimal+killRewardAds`）；`rewardSafe+cleanAds` 与 `rewardSafe+blockAdDomains` 自 2026-10-31 起为安全组合，不再报警。lint 锁定绑定必须透传全部开关。
 9. [x] 响应脚本首条命中治理：`settingsClean+hideDouyinEntry` 参数对齐、`hideDouyinTab` 独立绑定、打卡副作用内置于 sanitize/reward-observe/treasure/observe、welfare-stamp 仅兜底；lint 新增绑定矩阵（soda 29 样本 / douyin 16 样本）与允许清单，测试新增 `test_welfare_stamp.js` 10 条断言。
 10. [x] Generic 状态看板环境诊断：`$loon` / `$script` / `$environment` / `$config.getConfig()` / `$utils.ungzip` 全部接入，结果页与通知显示 Loon 版本、脚本执行时间、节点、运行模式与 gzip 能力；`test_status.js` 扩到 40 条，覆盖完整、拼写兼容、缺失与能力两种状态。
 11. [x] 构建门槛对齐：确认 3.5.1(988) 才引入脚本 gzip API；插件保持 983 安装门槛，README/插件描述/真机清单统一注明“gzip 清理需 988+，983–987 只记录状态”。
@@ -516,12 +516,19 @@
 | `advertising.apple.com` | Apple 广告业务门户，不是广告投放/素材域；仅 2 源命中，拦它不影响 App 内广告 |
 | `ipv6-vif = off`（插件可声明，1007+） | 关掉的是整个 TUN 的 IPv6，副作用远超广告范围 |
 
+69. [x] **第四十五轮：真机 HAR/日志复盘——去广告与领福利由互斥改为按路径共存**
+    - **证据**：2026-10-30/31 两份 Loon 日志 + 413 号 HAR。日志里 `douyin` 同时开了 `killRewardAds` / `cleanUpsell` / `cleanActivity` / `blockAdDomains`，`soda` 开了 `cleanAds` / `settingsClean` / `blockAdDomains`；HAR 里 `ad.zijieapi.com/api/ad/v1/inspire*` 全部 status 0、`sign_in_done` 返回 `210021 设备异常`。根因不是脚本没跑，而是 `ads.plugin` 的 `[Host] ad.zijieapi.com = 127.0.0.1` 在 DNS 阶段把激励广告与发奖链路一起打死。
+    - **按路径拆分**：`ads.plugin` 2.8.4 把 `ad.zijieapi.com` 移出 Host 黑洞；`block-domains.js` 新增 `REWARD_PATH_RX`，`inspire` / `inspire_preload` / `incentive/marketing/done` 在任何被拦主机上永远放行，其余路径照拦。`rewardSafe` 不再让整段拦截失效。
+    - **默认改为去广告+保奖励**：抖音 0.9.0 默认 `treasureMinimal=false`（保留签到/翻卡/红包雨/宝箱/攒时长，`cleanUpsell` 摘掉看广告/逛街任务）、`cleanFeedAds/cleanUpsell/cleanActivity/blockAdDomains/splashClean` 开；汽水 2.9.0 默认 `cleanAds/blockAdDomains` 开、`rewardSafe` 保持开。汽水 `sanitize` 在 `rewardSafe=true` 时只清理安全规则（开屏/信息流/弹窗/福利页广告与逛街任务），放行 `ads-config` / `ads` / `incentive-*`。抖音新增 `splashClean`，清 `splash/brand/retrieve` 品牌开屏，与 `blockSplashAd` 组成请求+响应双层。
+    - **边界**：`210021` 仍是服务端风控；不看满 30 秒直接领奖仍是广告欺诈，不做。HAR 未看到 `X-Soda-Plugin` 的实验结论记为「Loon 抓包可能记录脚本前响应，不能只凭该头判断」，真机以 App 行为与脚本日志为准。
+    - **口径**：测试 27 套件 ×2 = 54、1760 断言（src 880）；`test_args_schema` 40 断言、17 个 label；ads 生效 Host 1499→1498（exact 921→920 / wildcard 578 不变）。四道受管声明：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 30 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run lint` 0 errors、`tests/run-all.py` 54/1760 全绿。
+
 ## 11. 与本仓库的接口速查
 
 | 想做 | 工具 |
 |---|---|
 | 评估现有拦截覆盖率 | `npm run audit:ads` |
 | 重建 ads 插件 | `npm run build:ads`（改 `src/ads/domains.json`，勿手改生成物） |
-| 全量门禁 | `npm run check`（build + lint + coverage + 54 套件/1646 断言） |
+| 全量门禁 | `npm run check`（build + lint + coverage + 54 套件/1760 断言） |
 | 远端一致性 | `python3 tools/check-remote.py`（`--list` 看四段清单） |
 | 一键发布 | `python3 tools/publish.py --with-source --yes` |

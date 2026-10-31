@@ -230,6 +230,34 @@ console.log("\n== 6. cleanUpsell：演出（汽水音乐节）detail_list 清空
     JSON.stringify(o));
 }
 
+console.log("\n== 6b. splashClean：清 luna 品牌开屏响应 ==");
+{
+  const SPLASH_BRAND = "https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve";
+  const body = {
+    status_code: 0,
+    ad_launch_list: [{ launch_id: "splash.mp4", duration: 3 }],
+    ad_launch: { launch_id: "x" },
+    ad_infos: [{ launch_id: "y" }],
+    splash: { active: true },
+    jump_btn_info: { text: "跳过" },
+    shake_info: { enable: true },
+    keep_me: { value: 1 },
+    status_info: { status_msg: "success" }
+  };
+  const r = run(SPLASH_BRAND, body, { splashClean: true });
+  const o = parse(r.out);
+  check("ad_launch_list -> []", o && Array.isArray(o.ad_launch_list) && o.ad_launch_list.length === 0,
+    JSON.stringify(o));
+  check("ad_launch -> {}", o && Object.keys(o.ad_launch).length === 0, JSON.stringify(o));
+  check("ad_infos -> []", o && Array.isArray(o.ad_infos) && o.ad_infos.length === 0, JSON.stringify(o));
+  check("splash -> {}", o && Object.keys(o.splash).length === 0, JSON.stringify(o));
+  check("jump_btn_info -> {}", o && Object.keys(o.jump_btn_info).length === 0, JSON.stringify(o));
+  check("非广告字段保留", o && o.keep_me && o.keep_me.value === 1, JSON.stringify(o));
+  check("包络保留", o && o.status_code === 0 && o.status_info.status_msg === "success");
+  const off = run(SPLASH_BRAND, body, { splashClean: false });
+  check("splashClean=false 放行", !(off.out && off.out.body), JSON.stringify(off.out));
+}
+
 console.log("\n== 7. 开关全关：原样放行 ==");
 {
   const r = run(INCENTIVE_CONFIG, { status_code: 0, preload: true }, {});

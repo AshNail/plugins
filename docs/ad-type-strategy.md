@@ -69,15 +69,16 @@
 
 #### 1. 开屏广告
 
-**特征**　冷启动 0~5 秒的整屏位。两条来源：联盟 SDK 开屏（穿山甲 `ad.zijieapi.com`、优量汇 `gdt.qq.com`）与自家广告中台（业务域，如 `api.qishui.com/luna/advert/splash/brand/retrieve`）。响应里带素材 URL、曝光上报地址、倒计时与摇一摇参数。
+**特征**　冷启动 0~5 秒的整屏位。两条来源：联盟 SDK 开屏（穿山甲 `ads[0-9]-normal*.zijieapi.com`、优量汇 `gdt.qq.com`）与自家广告中台（业务域，如 `api.qishui.com/luna/advert/splash/brand/retrieve`）。响应里带素材 URL、曝光上报地址、倒计时与摇一摇参数。注意 `ad.zijieapi.com` 同时承载激励广告与发奖回调，不能整域黑洞。
 
 **典型**　抖音 / 小红书 / 知乎 / 微博 / 工具类　·　**协议形态**　半标准
 
 | 层 | 规则思路 | 买到了什么 |
 |---|---|---|
-| `[Host]` | ad.zijieapi.com = 127.0.0.1 | SDK 拿不到填充，直接走「无广告」分支，最彻底 |
+| `[Host]` | ads5-normal-hl.zijieapi.com = 127.0.0.1 | SDK 拿不到填充，直接走「无广告」分支，最彻底 |
 | `[Rule]` | DOMAIN-WILDCARD,ads[0-9]-normal*.zijieapi.com,REJECT（TF 3.5.3+，默认注释） | 兜住 SDK 的数字分片族，一条顶十几条 |
-| `[Script]` | response if ${url} ~= /\/splash\/brand\/retrieve/ then script(sanitize) | 业务域开屏只能剥响应，删掉 brand 对象 |
+| `[Script]` | request if ${url} ~= /api\/ad\/(?:splash\/\|v[0-9]+\/(?:ack\/)?splash\/)/ then script(splash-ad) | 开屏素材请求直接回 200 + {} |
+| `[Script]` | response if ${url} ~= /\/splash\/brand\/retrieve/ then script(sanitize/clean) | 业务域开屏剥响应，删掉 brand 对象 |
 | `[Rewrite]` | request ... then reject_dict(200) | 上报接口回 `{}`，避免 SDK 因上报失败重试 |
 
 **覆盖**　上限 `strong`（强效）· 现状 `strong`（强效）
@@ -115,7 +116,7 @@
 
 **覆盖**　上限 `full`（完全）· 现状 `strong`（强效）
 
-**局限**　拦了就拿不到奖励——与「保奖励」目标互斥，必须做模式切换；部分 App 检测到「无广告」会把任务置为不可用。
+**局限**　对穿山甲可只拦非激励路径：`ad.zijieapi.com` 的 inspire / inspire_preload / marketing_done 必须放行，其余路径照拦；优量汇/快手等联盟仍与「保奖励」互斥，必须做模式切换。部分 App 检测到「无广告」会把任务置为不可用。
 
 **为什么停在这**　聚合长尾只剩「没有公开请求域证据」的厂商：AdTiming 的 SDK 端点未公开，Smaato 走 smaato.net（已在清单）、Ogury 走 ogury.io（已在清单）。**按品牌名补 .com 会拦到官网却不命中广告请求**——要补只能抓包，抓不到就不补。
 
@@ -391,7 +392,7 @@
 |---|---:|---|
 | `[Rule]` | 13 | 补 `[Host]` 表达不了的通配与特征（`DOMAIN-WILDCARD`、`URL-REGEX`、`PROTOCOL`）。 |
 | `[Host]` | 12 | 独立广告域的主力。零证书、HTTPS/QUIC 通吃，是性价比最高的一层。 |
-| `[Script]` | 8 | 同域私有 JSON 的唯一解。必须 MITM，且要处理压缩与包络。 |
+| `[Script]` | 9 | 同域私有 JSON 的唯一解。必须 MITM，且要处理压缩与包络。 |
 | `[Rewrite]` | 4 | 轻量替代：能 `reject_dict` 就不写脚本，能 mock 就不写正则。 |
 | `[General]` | 1 | 只管 DNS 防泄漏，不直接拦广告。 |
 
@@ -504,7 +505,9 @@
 **① 独立广告域 → DNS 黑洞**（零证书，HTTPS/QUIC 通吃）
 
 ```ini
-ad.zijieapi.com = 127.0.0.1
+# 注意：ad.zijieapi.com 同时承载穿山甲激励广告与发奖回调，整域黑洞会让领奖失败；
+# 只黑洞信息流/开屏分片，激励路径交给 App 脚本按路径放行。
+ads5-normal-hl.zijieapi.com = 127.0.0.1
 *.pangolin-sdk-toutiao.com = 127.0.0.1
 ```
 

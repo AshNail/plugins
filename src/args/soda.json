@@ -14,18 +14,18 @@
       "type": "switch",
       "default": true,
       "tag": "保奖励模式",
-      "desc": "默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。",
+      "desc": "默认开启：保留激励广告、奖励任务和发奖链路；允许安全清理开屏/信息流/弹窗，但不改激励配置与发奖回调。",
       "label": "保奖励",
-      "readme": "保奖励优先；`sanitize` 对非开屏端点直接放行，`settings` 直接放行，域名拦截脚本也放行"
+      "readme": "默认开：保奖励。`sanitize` 只清理开屏/信息流/弹窗与福利页广告条目，`ads-config`/`incentive-*` 等发奖端点放行；`settings` 直接放行"
     },
     {
       "name": "cleanAds",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "去广告脚本",
-      "desc": "清理广告位、信息流和福利页广告任务；**不动激励广告素材**，所以不影响看广告领奖励。",
+      "desc": "清理广告位、信息流、弹窗和福利页的看广告/逛街任务；不动激励广告素材与发奖链路，所以可与保奖励同时开启。",
       "label": "去广告",
-      "readme": "广告位、信息流、福利页广告任务等清理脚本（**不含激励素材**）"
+      "readme": "默认开：清理广告位、信息流、弹窗与福利页看广告/逛街任务（**不含激励素材/发奖链路**），可与保奖励同开"
     },
     {
       "name": "killRewardAds",
@@ -39,11 +39,11 @@
     {
       "name": "blockAdDomains",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "广告域名拦截",
-      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。",
+      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。激励广告路径 inspire/inspire_preload/marketing_done 永远放行。",
       "label": "域名拦截",
-      "readme": "`block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名"
+      "readme": "默认开：`block-domains.js` 拦截广告/归因域名；**激励链路永远放行**，与 rewardSafe 无关"
     },
     {
       "name": "settingsClean",
@@ -77,9 +77,9 @@
       "type": "switch",
       "default": true,
       "tag": "拦截开屏广告请求",
-      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
+      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。品牌开屏响应由 splashClean 清理。",
       "label": "开屏请求拦截",
-      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常）"
+      "readme": "默认开：拦穿山甲开屏请求，**不碰激励广告**（`inspire` 与发奖回调照常）；品牌开屏响应由 `splashClean` 清理"
     },
     {
       "name": "debugLog",
@@ -138,7 +138,10 @@
       "name": "statusNotify",
       "type": "select",
       "default": "notification",
-      "values": ["notification", "silent"],
+      "values": [
+        "notification",
+        "silent"
+      ],
       "valueType": "string",
       "tag": "自检通知",
       "desc": "点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。",

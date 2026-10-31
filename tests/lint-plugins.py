@@ -18,7 +18,7 @@ def escape_regex_slashes(pattern):
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
     ("plugins/soda/soda.plugin", 5, 0, 2, 39, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 1, 11, "douyin"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 1, 13, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -67,10 +67,11 @@ FAMILY_CHECKS = {
             "treasureMinimal": 1,
             "cleanFeedAds": 1,
             "killRewardAds": 1,
-            "cleanUpsell": 2,
+            "cleanUpsell": 3,
             "cleanActivity": 1,
             "blockAdDomains": 1,
             "blockSplashAd": 1,
+            "splashClean": 1,
             "debugLog": 2,
         },
         "mitm": [
@@ -422,6 +423,7 @@ BINDING_SAMPLES = {
         ),
         "response": (
             "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
+            "https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve",
             "https://beta-luna.douyin.com/luna/ads/config",
             "https://beta-luna.douyin.com/luna/ads/retrieve",
             "https://beta-luna.douyin.com/luna/ads/dsp/retrieve",
@@ -1984,7 +1986,9 @@ def check_ads_family():
                     "(use an exact ad subdomain)"
                 )
 
-    for domain in ("ad.zijieapi.com", "ads.youtube.com", "gdt.qq.com"):
+    # ad.zijieapi.com 已从全局 Host 移出：它同时承载激励广告/发奖回调，
+    # DNS 层整域拦截会让抖音/汽水领奖失败；非激励路径由 App 插件按路径拦。
+    for domain in ("ads5-normal-hl.zijieapi.com", "ads.youtube.com", "gdt.qq.com"):
         if domain not in exact and domain not in wildcard:
             errors.append(f"{ADS_PLUGIN}: core sample missing: {domain}")
     for domain in ("doubleclick.net", "applovin.com", "pangle.io", "gdtimg.com"):

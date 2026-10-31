@@ -1,13 +1,13 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.3
+#!version=2.8.4
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
 #!loon_version=3.5.2(996)
-#!date=2026-10-30
+#!date=2026-10-31
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -252,9 +252,8 @@ DEST-PORT,853,REJECT
 # ============================================================================
 # 穿山甲 / Pangle（字节跳动）
 # ----------------------------------------------------------------------------
-# 字节系广告投放、Pangle 海外 SDK、穿山甲联盟 API 与广告素材签名。isnssdk.com 只列广告相关主机，且刻意排除 is.snssdk.com（头条搜索、豆包输入法共用，oisd 因其会断功能而排除）。
+# 字节系广告投放、Pangle 海外 SDK、穿山甲联盟 API 与广告素材签名。isnssdk.com 只列广告相关主机，且刻意排除 is.snssdk.com（头条搜索、豆包输入法共用，oisd 因其会断功能而排除）。 2026-10-31：ad.zijieapi.com 已移出全局 Host 黑洞——该主机同时承载穿山甲激励广告与发奖回调，DNS 层整域拦截会让抖音/汽水看广告领奖励必然失败；非激励路径改由 douyin/soda 的 blockAdDomains 按路径拦截。
 # ============================================================================
-ad.zijieapi.com = 127.0.0.1
 ads3-normal-hl.zijieapi.com = 127.0.0.1
 ads3-normal-lf.zijieapi.com = 127.0.0.1
 ads3-normal-lq.zijieapi.com = 127.0.0.1

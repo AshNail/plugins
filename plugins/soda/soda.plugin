@@ -1,13 +1,13 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐唯一插件：保奖励 / 去广告脚本 / 域名拦截 / 设置层 / 只读日志 / 隐藏听抖音 / 版本检查静音（实验）。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
+#!desc=汽水音乐唯一插件：默认去广告+保奖励。信息流/弹窗/开屏清理，广告域名按路径拦截（激励/发奖链路永远放行），激励配置与 settings 受保奖励保护；另有隐藏听抖音、版本检查静音（实验）。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=2.8.7
+#!version=2.9.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
 #!system=ios
 #!loon_version=3.5.1(983)
-#!date=2026-10-30
+#!date=2026-10-31
 #!tag=汽水音乐,统一,开关,Loon
 
 # ============================================================================
@@ -24,7 +24,8 @@
 #   rewardSafe      保奖励模式（默认开）
 #   cleanAds        去广告脚本（默认关：广告配置/信息流/福利页广告任务）
 #   killRewardAds   断激励素材（默认关：领奖会变 amount=-1）
-#   blockAdDomains  广告域名拦截（默认关：MITM + http-request 脚本）
+#   blockAdDomains  广告域名拦截（默认开：MITM + http-request 脚本；
+#                   激励链路永远放行，与 rewardSafe 无关）
 #   settingsClean   设置层净化（默认关，实验）
 #   skipUpdateCheck 版本检查静音（默认关，实验：只动 luna/check-update 的 has_update）
 #   hideDouyinEntry 隐藏设置层【听抖音】入口（默认关，可与保奖励同开）
@@ -37,17 +38,17 @@
 #   statusNotify    状态自检按钮的通知模式（notification/silent）
 #
 # 推荐组合：
-#   正常领奖励：rewardSafe=true，其余默认（blockSplashAd + splashClean 开屏双层已默认开）
+#   去广告+保奖励（默认）：rewardSafe=true + cleanAds=true + blockAdDomains=true
+#     —— 只清信息流/弹窗/开屏，激励配置与发奖链路原样保留。
+#   正常领奖励：rewardSafe=true，cleanAds 可关；开屏双层仍默认开。
 #   版本提示静音：默认态基础上打开 skipUpdateCheck
-#   排障：      保奖励基础上打开 debugLog
-#   去广告：    rewardSafe=false, cleanAds=true, splashClean=true
-#   强力去广告：rewardSafe=false, cleanAds=true, blockAdDomains=true
+#   排障：      默认态基础上打开 debugLog
+#   强力去广告：rewardSafe=false, cleanAds=true, killRewardAds=true
 #   设置层：    rewardSafe=false, settingsClean=true
 #
-# 不要这样开：
-#   rewardSafe=true + cleanAds=true
-#   rewardSafe=true + settingsClean=true
-#   脚本里有保护（rewardSafe 优先），但最稳妥的是只开一种模式。
+# 仍要避免：
+#   rewardSafe=true + settingsClean=true（设置层清理会被保奖励拦截）
+#   killRewardAds=true（广告完全不发，领奖会变 amount=-1）
 #
 # 两层模型（v2.8.0 起）：
 #   L1 运行时层 = [Argument] 开关：只给“用户可能想改主意”的功能。
@@ -69,7 +70,8 @@
 #   2. [MITM] 也是静态配置。广告域名写进 [MITM] 后，即使 blockAdDomains
 #      关闭也会被解密；如果激励广告因此播不了（证书固定），把 [MITM] 里
 #      那 5 个广告域名注释掉即可。
-#   3. rewardSafe=true 时，域名拦截脚本会直接放行，保证激励广告正常播放。
+#   3. 域名拦截脚本对激励链路（inspire / inspire_preload / marketing_done）
+#      永远放行；rewardSafe 不再让整段拦截失效，非激励广告照拦。
 #   4. 同一响应 Loon 只执行“配置顺序里第一条条件为真”的 Response Script。
 #      settings 两条绑定必须传同一组参数；task/page 的清理/观测脚本都内置
 #      了每日打卡副作用，独立 welfare-stamp 绑定只在其它脚本全关时兜底。
@@ -85,14 +87,14 @@
 
 # >>> GENERATED ARGUMENTS from src/args/soda.json -- do not edit (npm run build:args)
 [Argument]
-rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
-cleanAds = switch,false,tag=去广告脚本,desc=清理广告位、信息流和福利页广告任务；**不动激励广告素材**，所以不影响看广告领奖励。
+rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路；允许安全清理开屏/信息流/弹窗，但不改激励配置与发奖回调。
+cleanAds = switch,true,tag=去广告脚本,desc=清理广告位、信息流、弹窗和福利页的看广告/逛街任务；不动激励广告素材与发奖链路，所以可与保奖励同时开启。
 killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于“广告完全不发”，领奖会变成 amount=-1，请谨慎。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。
+blockAdDomains = switch,true,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。激励广告路径 inspire/inspire_preload/marketing_done 永远放行。
 settingsClean = switch,false,tag=设置层净化（实验）,desc=清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。
 skipUpdateCheck = switch,false,tag=版本检查静音（实验）,desc=把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。只动这一个键，其余字段与包络原样；解析失败原样放行（最坏情况 = 提示还在）。
 hideDouyinEntry = switch,false,tag=隐藏【听抖音】入口,desc=把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）。
-blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
+blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。品牌开屏响应由 splashClean 清理。
 debugLog = switch,false,tag=只读日志,desc=记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。
 logTaskTitles = switch,false,tag=日志带任务标题,desc=只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口；默认关闭以免把文案写进日志。
 splashClean = switch,true,tag=清开屏品牌广告,desc=清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
@@ -177,8 +179,9 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|bet
 # 开关以布尔值透传给脚本（$argument.<参数名>）。
 # debug=${debugLog} 接的是官方 with 属性：打开「只读日志」时同时打开 Loon 的
 #   原生脚本调试输出（命中哪条、耗时、异常），不用再靠 console.log 猜。
-# 保奖励模式优先：rewardSafe=true 时，sanitize 只处理开屏；
-# settings 脚本在 rewardSafe=true 时直接放行。
+# 保奖励模式优先：rewardSafe=true 时，sanitize 允许清理开屏/信息流/弹窗
+# 以及福利页里的广告条目，但会放行 ads-config / ads / incentive-* 等
+# 会影响发奖配置的端点；settings 脚本在 rewardSafe=true 时直接放行。
 #
 # luna 主机双绑（v2.8.6）：2026-10-29 真机日志（Luna 21.4.0，build 100214010）
 #   里 beta-luna.douyin.com/luna/* 有 784 条请求、api.qishui.com/luna/* 只有 3 条（非广告）；
@@ -193,8 +196,10 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|bet
 [Script]
 
 # ---- 广告域名拦截：blockAdDomains 开关 ----
-# HTTPS 必须先 MITM 解密才能匹配到域名；rewardSafe=true 时脚本直接放行。
-request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${rewardSafe}, ${blockAdDomains}}) with debug=${debugLog}, enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
+# HTTPS 必须先 MITM 解密才能匹配到域名。激励广告路径
+# （inspire / inspire_preload / marketing/done）在脚本内永远放行，
+# 与 rewardSafe 无关；其余广告路径照拦。
+request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${blockAdDomains}}) with debug=${debugLog}, enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
 
 # ---- 开屏品牌广告：保奖励/去广告共用 ----
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/advert\/splash\/brand\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}}) with debug=${debugLog}, enable=${splashClean}, requires_body=true, timeout=10, tag="开屏品牌广告：保奖励/去广告共用"

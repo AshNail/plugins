@@ -31,9 +31,9 @@ for (const family of FAMILIES) {
 
   console.log(`\n===== family: ${family} =====`);
 
-  console.log(`\n== 1. ${family}: blockAdDomains=true + rewardSafe=false：拦截广告域名 ==`);
+  console.log(`\n== 1. ${family}: blockAdDomains=true：拦截非激励广告域名 ==`);
   {
-    const r = runFor(family, AD_URL, { rewardSafe: false, blockAdDomains: true });
+    const r = runFor(family, AD_URL, { blockAdDomains: true });
     const resp = r.out && r.out.response;
     check(`${family} 返回 200 响应`, !!(resp && resp.status === 200), JSON.stringify(r.out));
     /* 与 [Rewrite] 的 reject_dict(200) 同形状：JSON {} + application/json。
@@ -48,13 +48,28 @@ for (const family of FAMILIES) {
       r.logs.join(" "));
   }
 
-  console.log(`\n== 2. ${family}: rewardSafe=true：放行，激励广告照常 ==`);
+  console.log(`\n== 2. ${family}: 激励链路永远放行（与 rewardSafe 无关）==`);
   {
-    const r = runFor(family, AD_URL, { rewardSafe: true, blockAdDomains: true });
-    check(`${family} 不返回 response`, !(r.out && r.out.response), JSON.stringify(r.out));
-    check(`${family} 日志记录 passthrough`,
-      r.logs.join(" ").includes("rewardSafe=on"),
-      r.logs.join(" "));
+    const rewardPaths = [
+      "https://ad.zijieapi.com/api/ad/v1/inspire/?ad_from=coin",
+      "https://ad.zijieapi.com/api/ad/v1/inspire_preload/?is_preload=1",
+      "https://ad.zijieapi.com/api/incentive/marketing/done/"
+    ];
+    for (const url of rewardPaths) {
+      for (const args of [{ blockAdDomains: true }, { rewardSafe: true, blockAdDomains: true }]) {
+        const r = runFor(family, url, args);
+        check(`${family} 放行 ${url.slice(8, 60)} (${JSON.stringify(args)})`,
+          !(r.out && r.out.response), JSON.stringify(r.out));
+        check(`${family} 日志记录 keep reward`,
+          r.logs.join(" ").includes("keep reward ad"), r.logs.join(" "));
+      }
+    }
+    const lookalike = runFor(family, "https://ad.zijieapi.com/api/ad/v1/inspirex/", { blockAdDomains: true });
+    check(`${family} 不放行仿冒路径 inspirex`, !!(lookalike.out && lookalike.out.response),
+      JSON.stringify(lookalike.out));
+    const splash = runFor(family, "https://ad.zijieapi.com/api/ad/v1/splash/stock/", { blockAdDomains: true });
+    check(`${family} 继续拦截开屏素材路径`, !!(splash.out && splash.out.response),
+      JSON.stringify(splash.out));
   }
 
   console.log(`\n== 3. ${family}: 没有 $argument（独立调用）：放行 ==`);
@@ -103,20 +118,14 @@ for (const family of FAMILIES) {
     }
   }
 
-  console.log(`\n== 6. ${family}: 只开 blockAdDomains（无 rewardSafe 参数）时按家族默认值分支 ==`);
+  console.log(`\n== 6. ${family}: 只开 blockAdDomains（无 rewardSafe 参数）→ 两家族一致拦截非激励路径 ==`);
   {
-    // soda 的 families.json 默认 rewardSafe=true（保奖励优先 → 放行）；
-    // douyin 默认 false（blockAdDomains 一开就拦）。两家族行为必须不同，
-    // 这里的断言把 families.json 的差异锁进测试。
     const r = runFor(family, AD_URL, { blockAdDomains: true });
-    if (family === "soda") {
-      check("soda 默认 rewardSafe=true → 放行", !(r.out && r.out.response), JSON.stringify(r.out));
-      check("soda 日志说明 rewardSafe=on", r.logs.join(" ").includes("rewardSafe=on"), r.logs.join(" "));
-    } else {
-      const resp = r.out && r.out.response;
-      check("douyin 默认 rewardSafe=false → 拦截", !!(resp && resp.status === 200), JSON.stringify(r.out));
-      check("douyin 日志记录 blocked", r.logs.join(" ").includes(`${TAG} blocked`), r.logs.join(" "));
-    }
+    const resp = r.out && r.out.response;
+    check(`${family} 非激励路径被拦截`, !!(resp && resp.status === 200), JSON.stringify(r.out));
+    check(`${family} 日志记录 blocked`, r.logs.join(" ").includes(`${TAG} blocked`), r.logs.join(" "));
+    const reward = runFor(family, "https://ad.zijieapi.com/api/ad/v1/inspire/", { blockAdDomains: true });
+    check(`${family} 激励路径仍放行`, !(reward.out && reward.out.response), JSON.stringify(reward.out));
   }
 }
 

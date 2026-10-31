@@ -65,7 +65,7 @@ console.log('\n== 3. task/view data 直接是数组 ==');
     ]
   });
   const o = JSON.parse(r.done.body);
-  check('只留 browse_mall', o.data.length === 1 && o.data[0].task_key === 'browse_mall', JSON.stringify(o.data));
+  check('browse_mall 也被摘（只删纯广告/商城，保留其它可领任务）', Array.isArray(o.data) && o.data.length === 0, JSON.stringify(o.data));
 }
 
 console.log('\n== 4. 没有广告任务 -> 放行 ==');

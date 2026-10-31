@@ -1,6 +1,6 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 2.8.7）/ `douyin.plugin`（当前 0.8.6）；`ads.plugin`（当前 2.8.3）见 H 节。
+> 适用：`soda.plugin`（当前 2.9.0）/ `douyin.plugin`（当前 0.9.0）；`ads.plugin`（当前 2.8.3）见 H 节。
 > 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 及全部 App 插件门槛降到 **App Store 正式版 3.5.2(996)**（`DOMAIN-WILDCARD` 仅 TF 3.5.3 有，改为默认注释层，不再卡正式版）。
 > 红线重申：本仓插件**只做净化与观测**——不缩短广告、不加速播放、不改写领奖请求、
 > 不做后台自动观看/自动领取。领奖链路（`incentive/done` 等全部 59 头请求）只读不动。
@@ -17,7 +17,7 @@
 - [ ] **排障首查项（本轮文档对差新增）**：某条 `[Host]` 黑洞不生效时，先看订阅是否下发 `[Host]` / `[DNS]` 段——官方《节点订阅》页明写「订阅 Host Map 加载后合并到当前 Host Map，并**优先于主配置**」。顺序口径：Rewrite/规则是「本地 > 插件 > 订阅」，Host Map 里订阅压过主配置，插件 [Host] 与订阅 Host Map 的相对顺序**官方未写**，遇到同名映射冲突属未定义行为，只能真机证实（先换订阅、再怀疑正则）。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.3`、`soda=2.8.7`、`douyin=0.8.6`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.4`、`soda=2.9.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
@@ -121,7 +121,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **Rayjump 的副作用**：`analytics.rayjump.com` 是 Mintegral 的统计通道，拦掉会连它的
       埋点一起断——这正是要的效果，但会让该 App 的「广告收益/填充率」在后台看起来更差，
       不必当故障。
-- [ ] 刷奖励前禁用 `ads.plugin`；纯去广告时再启用（与 soda/douyin 的 `rewardSafe` 互斥）
+- [ ] 刷穿山甲奖励前确认 `ad.zijieapi.com` 不在任何广告插件的 Host 黑洞里（ads.plugin 2.8.4 起已移除）；刷优量汇/快手奖励仍需临时禁用 `ads.plugin`
 - [ ] 误伤广告左标签业务时，删除对应 `DOMAIN-WILDCARD` 行即可单条回滚，无需卸载插件
 - [ ] **不该拦的**：`adtiming.com`、`smaato.com`、`ogury.com` 是官网域，**故意不在清单里**。
       如果你在别处看到有人加，那是猜的——真实请求走 AdTiming 私有端点 / `smaato.net` / `ogury.io`。
@@ -179,9 +179,9 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       默认注释组，域名形式主配置不再被本插件黑洞；车主配置保持域名形式也能正常解析。
       判读要认这个签名：`Host Map` 高频命中 `dns.alidns.com`/`doh.pub` = 本插件旧版本或手动开组，不是 App 在绕过。
       **2026-10-29 的 23 小时窗口升至 17073 + 11239（见 I2）**——这正是 2.8.0 撤回默认的原因。
-- [!] **激励分片与 rewardSafe 的互斥真机成立**：`ads5-normal-hl.zijieapi.com` 被 ads `[Host]` 黑洞 ×8，
-      同时 soda/douyin `[MITM]` 通配也在匹配它——ads 开着时 DNS 先死，`rewardSafe` 救不了「看广告领奖」类任务
-      （攒时长 `ack_time` 不受影响，日志证实正常）。刷激励广告前必须停用 ads.plugin（H 节口径，现已有实锤）。
+- [!] **激励与广告域的按路径拆分（2026-10-31 修正）**：`ads5-normal-hl.zijieapi.com` 等开屏/信息流分片仍被 ads `[Host]` 黑洞；
+      `ad.zijieapi.com` 已移出全局黑洞，由 soda/douyin 的 `blockAdDomains` 按路径放行 `inspire / inspire_preload / marketing_done`。
+      若抓包里这些路径仍是 status 0，先查是否还有别的广告插件在 Host/DNS 层拦 `ad.zijieapi.com`。
 - [x] **HTTPDNS 防绕过（第八轮 REJECT-DROP）真机确证**：`DOMAIN-KEYWORD,httpdns,REJECT-DROP`
       两个窗口合计 156 次命中，目标 `103.37.152.224` / `203.107.1.1` / `119.29.29.98` /
       `180.76.76.112` 的 :80 直连——App 确实在尝试绕开 TUN DNS，且被掐断。**该组保持默认开启正确。**

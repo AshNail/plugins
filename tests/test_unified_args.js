@@ -87,6 +87,31 @@ console.log("\n== 2. rewardSafe=true：开屏品牌广告仍然清理 ==");
     JSON.stringify(o));
 }
 
+console.log("\n== 2b. rewardSafe=true + cleanAds=true：安全规则（信息流）仍然清理 ==");
+{
+  const body = {
+    status_code: 0,
+    data: { ads_blocks: [{ is_ad: true, id: 1 }], items: [{ id: 2 }] }
+  };
+  const r = runSanitize(
+    "https://api.qishui.com/luna/feed/track",
+    body,
+    { rewardSafe: true, cleanAds: true }
+  );
+  const o = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("信息流响应被改写", !!o, JSON.stringify(r.out));
+  check("ads_blocks -> []", o && Array.isArray(o.data.ads_blocks) && o.data.ads_blocks.length === 0,
+    JSON.stringify(o));
+  check("普通条目保留", o && o.data.items && o.data.items.length === 1, JSON.stringify(o));
+  check("日志注明 safe clean", r.logs.join(" ").includes("safe clean: feed-ads"), r.logs.join(" "));
+  const cfg = runSanitize(
+    "https://api.qishui.com/luna/ads/config",
+    { status_code: 0, ad_unit_configs: { slot: [{ id: 1 }] }, preload: true },
+    { rewardSafe: true, cleanAds: true }
+  );
+  check("发奖相关的 ads/config 仍放行", !(cfg.out && cfg.out.body), JSON.stringify(cfg.out));
+}
+
 console.log("\n== 3. rewardSafe=false + cleanAds=true：广告位/信息流清理生效 ==");
 {
   const body = {

@@ -15,7 +15,7 @@
    私网绕过、853 端口阻断、`FINAL,DIRECT`）；[`configs/loon.conf`](../configs/loon.conf)
    是**整份可导入的全功能配置**，在 10 键之上再补 `interface-mode`、`ipv6-vif`、
    `udp-fallback-mode`、`geoip-url`、探活 URL、LAN 代理端口与 `sni-sniffing`（共 22 个
-   General 键），并自动加载 46 个插件与本仓库全部分流规则。前者给「已有主配置、只想补键」
+   General 键），并自动加载 41 个插件与本仓库全部分流规则。前者给「已有主配置、只想补键」
    的人，后者给「一份配置装完」的人。
 3. **域名形式加密 DNS 的自伤点已在 ads 2.8.0 关闭**。2026-10-29 的 23 小时真机日志里，
    ads 插件的 28,547 次 `Host Map IP:127.0.0.1` 有 28,312 次（99.2%）打在 Loon 自己的
@@ -41,7 +41,7 @@
 ### 0.1 三分钟上手
 
 1. **只想一份配置装完**：用根 README 的按钮导入 [`configs/loon.conf`](../configs/loon.conf)。
-   它会替换当前配置，并在 `[Plugin]` 里自动加载 46 个可用插件（本仓库 16 个一个不少）。
+   它会替换当前配置，并在 `[Plugin]` 里自动加载 41 个可用插件（本仓库 16 个一个不少）。
    公开版不含节点/订阅/CA，策略组全部 `DIRECT`；**已有订阅与证书时先导出 `.lcf`**，
    在本机跑 `python3 tools/make-private-config.py --lcf <导出.lcf>`，再导入生成的私有配置。
    生成器会合并 `.lcf` 的 MITM 正向主机与排除项，但把整段 `-*.apple.com` 换成公开表的
@@ -92,7 +92,7 @@
 如果你已有 `[Proxy]`/`[Proxy Group]`，保留它们并把 `FINAL` 改成你的策略组。
 
 整份替换的版本是 [`configs/loon.conf`](../configs/loon.conf)：同样的 General 骨架，
-加上 46 个自动加载插件、493 条分流规则、10 个 `select,DIRECT` 策略组和 MITM 排除表。
+加上 41 个自动加载插件、493 条分流规则、10 个 `select,DIRECT` 策略组和 MITM 排除表。
 两者的差异只在「是否替你决定插件与分流」，通用键的取舍是同一套。
 
 <!-- base-config:start -->
@@ -103,7 +103,7 @@
 # 用法：把需要的段落合并进你现有主配置，不要整份替换——这份文件刻意不含
 # 节点、订阅、证书私钥，也不替你决定 [Proxy]/[Proxy Group]/FINAL 的代理策略。
 # 语法来源：Loon 官方 26 个正文页；[Plugin] 行格式来自 Loon 官方 example.conf，
-# 不在 26 页手册内，因此本基线保持注释；整份自动加载 46 个插件的配置见 configs/loon.conf。
+# 不在 26 页手册内，因此本基线保持注释；整份自动加载 41 个插件的配置见 configs/loon.conf。
 # 目标：把「插件管不到、只能主配置做」的去广告前置条件全部配齐；
 # 插件层见 plugins/ads/ads.plugin 与各 App 插件 README。
 # ============================================================================
@@ -114,9 +114,9 @@
 # 加密 DNS。ads 2.8.0 已把国内公共 DoH 入口域移入默认注释的可选组，域形式不再
 # 必然被黑洞；这里仍用 IP 形式，不依赖该可选组永远保持注释。
 # Loon 会并发查询并采用最先返回的结果。
-dns-server = 223.5.5.5,119.29.29.29,180.184.1.1
-doh-server = https://223.5.5.5/dns-query,https://223.6.6.6/dns-query,https://1.12.12.12/dns-query
-doh3-server = h3://223.5.5.5/dns-query,h3://223.6.6.6/dns-query
+dns-server = 223.5.5.5,223.6.6.6,119.29.29.29
+doh-server = https://223.5.5.5/dns-query,https://223.6.6.6/dns-query
+# doh3-server 默认关闭：真机日志反复握手超时；需要时再打开
 # DoQ 默认关闭：同窗口 5,239 次 DoQ 建立尝试中 5,236 次失败。
 # 需要时改成 IP 形式再打开（官方 DNS 页写默认 853，通用配置页写 784，以服务端为准）：
 # doq-server = quic://223.5.5.5:853
@@ -241,7 +241,7 @@ FINAL,DIRECT
 
 | 键 | 作用 | 为什么默认开 | 风险/边界 |
 |---|---|---|---|
-| `dns-server` + `doh-server` + `doh3-server` | 具体 IP 的 DoU + DoH + DoH3，加密优先、并发取最快 | 不写 `system`，避免系统 DNS 把广告域解析回真实 IP；IP 形式避免被自己的 `[Host]` 黑洞 | 换网络后某个 IP 不可达时，Loon 会回落普通 DNS；可自行增删服务器 |
+| `dns-server` + `dns-server` + `doh-server` | IP 形态 DoU + 域名/IP 形态 DoH，加密优先、并发取最快；DoH3 默认关闭 | 不写 `system`，避免系统 DNS 把广告域解析回真实 IP；DoH 域名形态在 Mac 实测比 IP 形态稳定 | 换网络后某个 IP 不可达时，Loon 会回落普通 DNS；可自行增删服务器 |
 | `hijack-dns = *:53` | 劫持所有目标的 53 端口 UDP DNS，返回 Fake IP | 把 App 写死的 `8.8.8.8`/`114.114.114.114` 拉回 Loon；与 `bypass-tun` 配合，局域网 DNS 不受影响 | 公司/校园 DNS 若不在私网段，需在 `bypass-tun` 里补网段 |
 | `domain-reject-mode = DNS` + `dns-reject-mode = LOOPBACKIP` | 域名类 REJECT 在 DNS 阶段返回回环 IP | 与 ads 插件的 `127.0.0.1` 黑洞语义一致；请求不出网 | 官方说明 HTTP Proxy/TUN 下仍可能有一部分请求走到转发阶段，所以插件层继续保留 `[Rule] REJECT` |
 | `ip-mode = prefer-v4` | 有 A 用 A，没有 A 再用 AAAA | 不拒绝 IPv6，兼容 IPv6-only 网络；同时优先走 ads 插件能封的 IPv4 路径 | 不是 AAAA 的彻底封口；要彻底封口见 §3.4 的 `v4-only` |
@@ -398,7 +398,7 @@ ads 插件的 `[Host]` 只映射 IPv4，`prefer-v4` 仍可能让 IPv6 路径漏�
 官方 Plugin 页只在讲 IP Rewrite 优先级时提到「顺序以主配置 `[Plugin]` 列表为准」，
 没有给行语法。但 Loon App 自己导出的 `.lcf` 也原样带这一段，且用 `enabled=true`
 （App 内手动安装的插件还带 `pin=true`）——这不是社区猜测，而是产品写回配置的格式。
-所以 [`configs/loon.conf`](../configs/loon.conf) 用它自动加载 46 个插件：
+所以 [`configs/loon.conf`](../configs/loon.conf) 用它自动加载 41 个插件：
 
 ```text
 [Plugin]
@@ -464,8 +464,8 @@ CA / 口令。三个新增入口：
 
 | 层 | 插件 | 装不装 | 证书 | 与其它插件的关系 |
 |---|---|---|---|---|
-| DNS 底座 | [`ads`](../plugins/ads/README.md) | **默认装** | 不需要 | 与 soda/douyin 的激励广告互斥；刷奖励时禁用 |
-| MITM 脚本 | [`soda`](../plugins/soda/README.md) / [`douyin`](../plugins/douyin/README.md) | 按需 | 需要 Loon 内置 CA | 与 ads 同时装时，ads 的 `[Host]` 先生效，脚本收不到这些广告域；两者只开一个 |
+| DNS 底座 | [`ads`](../plugins/ads/README.md) | **默认装** | 不需要 | 穿山甲 `ad.zijieapi.com` 已移出黑洞；优量汇/快手等激励域仍互斥，刷对应奖励时禁用 |
+| MITM 脚本 | [`soda`](../plugins/soda/README.md) / [`douyin`](../plugins/douyin/README.md) | 按需 | 需要 Loon 内置 CA | 可同时装：ads 拦非激励分片，App 插件按路径放行激励并清理字段级广告 |
 | App 专属 | [`meituan`](../plugins/meituan/README.md)、[`xianyu`](../plugins/xianyu/README.md)、[`qidian`](../plugins/qidian/README.md) 等 13 个 | 按 App 装 | 默认不需要；3 个带可选 MITM 增强层 | 一个 App 只装一个插件；域重叠是按 App 开关的分组语义 |
 | 银行合集 | [`banks`](../plugins/banks/README.md) | 按需 | 不需要 | 6 款银行 App 合一个插件；证书固定/支付风控红线不提供 MITM |
 
@@ -485,7 +485,7 @@ CA / 口令。三个新增入口：
 
 | 档位 | 组合 | 代价 | 适合 |
 |---|---|---|---|
-| A. 一键全功能（推荐） | 导入 `configs/loon.conf`：46 个插件自动加载 + 493 条规则 + 10 个 `select,DIRECT` 组；域形式 DoH（ads 可选组保持注释） | 会替换当前配置；无节点/CA 的公开版需要私有生成器补回 | 想一次装完、以去广告为主 |
+| A. 一键全功能（推荐） | 导入 `configs/loon.conf`：41 个插件自动加载 + 493 条规则 + 10 个 `select,DIRECT` 组；域形式 DoH（ads 可选组保持注释） | 会替换当前配置；无节点/CA 的公开版需要私有生成器补回 | 想一次装完、以去广告为主 |
 | B. 只合并主配置 | `examples/loon.conf` 原样 + 用 UI 装 `ads.plugin`；`FINAL,DIRECT`；DNS 全部 IP 形式 | 插件要逐个装；没有代理能力 | 已有主配置、只想补键 |
 | C. 代理 + 去广告 | A 或 B + `[Proxy]`/`[Proxy Group]`/`[Remote Proxy]`；`FINAL` 改成策略组 | 策略组与节点由服务商决定；测速/订阅参数需自己维护 | 已有节点、希望分流与去广告共存 |
 | D. 最大隔离（按需） | C + `ip-mode = v4-only` + `disable-stun = true` + `disable-udp-ports = 443`（或 `udp-fallback-mode = REJECT`） | 会断 IPv6-only 网络、部分语音/视频通话与 QUIC 业务；只适合能接受副作用的设备 | 安全优先、愿意逐项真机验证的用户 |
@@ -514,7 +514,7 @@ CA / 口令。三个新增入口：
 | 4 | `dns-server` | 共享 | ✅ | 具体 IP 的 DoU，不写 `system` |
 | 5 | `doh-server` | 共享 | ✅ | 基线用 IP 形式；域形式仅在未被启用插件 `[Host]` 黑洞时可用 |
 | 6 | `doq-server` | 共享 | 🟡 | 默认关；日志里 5,236/5,239 次失败 |
-| 7 | `doh3-server` | 共享 | ✅ | 同上；`configs/loon.conf` 用域形式 DoH3 |
+| 7 | `doh3-server` | 共享 | ⚪ 默认注释 | 真机日志反复握手超时；需要时再开 |
 | 8 | `hijack-dns` | 主配置 | ✅ | 劫持 53 端口 UDP DNS，返回 Fake IP |
 | 9 | `ip-mode` | 主配置 | ✅ | 基线 `prefer-v4`；`v4-only` 放可选层 |
 | 10 | `ipv6-vif` | 共享 | 🟡 | 默认不写；需要时 off/auto/always |
@@ -551,7 +551,7 @@ CA / 口令。三个新增入口：
 | 41 | `[Remote Rewrite]` | 主配置 | ⚪ | 仅官方 example.conf；26 页正文查不到，远程复写有供应链风险 |
 | 42 | `[Remote Script]` | 主配置 | 🟡 | 官方 Script v2 页明列入适用来源；远程脚本有供应链风险，本方案默认只写本地脚本 |
 | 43 | `[Remote Filter]` | 主配置 | ⚪ | 节点筛选功能在 Node/nodefilter 页以 UI 形式文档化，但 `[Remote Filter]` 段语法仅 example.conf |
-| 44 | `[Plugin]` 列表 | 主配置 | ✅ | 行语法来自 example.conf 与 App 导出 `.lcf`；`configs/loon.conf` 自动加载 46 个插件，`examples` 基线仍注释 |
+| 44 | `[Plugin]` 列表 | 主配置 | ✅ | 行语法来自 example.conf 与 App 导出 `.lcf`；`configs/loon.conf` 自动加载 41 个插件，`examples` 基线仍注释 |
 | 45 | URL Scheme 控制 | 分发 | ✅ | on/off/editconfig/flowmodel/proxymode/update |
 | 46 | URL Scheme 导入 7 类 | 分发 | ✅ | sub/nodelist/rules/plugin/iconset/geoip/parser |
 | 47 | `[MITM] hostname` | 共享 | ✅ | 插件已用；支持 `*`/`?`/`-排除` |
@@ -564,7 +564,7 @@ CA / 口令。三个新增入口：
 <!-- ledger:end -->
 
 <!-- ledger-count: 53 -->
-<!-- ledger-counts: 15/26/7/1/4 -->
+<!-- ledger-counts: 14/26/7/1/5 -->
 
 台账里最值得注意的不是「还有多少没开」，而是 4 条 `⚪`：
 `[Remote Rewrite]`、`[Remote Filter]`、`ssid` 策略组与 `[MITM] enable` 只在官方

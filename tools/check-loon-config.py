@@ -947,10 +947,45 @@ def check_routing_example() -> tuple[int, int] | None:
         err("examples/loon-routing.conf: 域名规则必须排在 IP 规则之前")
     if "IP-ASN" in kinds and "GEOIP" in kinds and kinds.index("IP-ASN") > kinds.index("GEOIP"):
         err("examples/loon-routing.conf: IP-ASN 应排在 GEOIP 之前（更具体 → 更宽）")
+    ip_positions = [i for i, kind in enumerate(kinds) if kind in IP_RULE_TYPES]
+    if ip_positions:
+        for port_kind in ("DEST-PORT", "SRC-PORT", "PROTOCOL"):
+            if port_kind in kinds and kinds.index(port_kind) > min(ip_positions):
+                err(f"examples/loon-routing.conf: {port_kind} 必须排在 IP-ASN/IP-CIDR/GEOIP 之前，否则会被 IP 规则截胡")
     for num, line in rules:
         if line.upper().startswith("IP-ASN,") and "no-resolve" in line:
             err(f"examples/loon-routing.conf:{num}: 顺序演示必须让域名触发解析，不能写 no-resolve")
     return len(rules), len(set(kinds))
+
+
+PUBLIC_MITM_REQUIRED_EXCLUSIONS = (
+    "-*.alipay.com",
+    "-*.alipayobjects.com",
+    "-*.weixin.qq.com",
+    "-*.wechat.com",
+)
+
+
+def check_public_mitm() -> tuple[int, int] | None:
+    """公开配置的 MITM 只允许排除项；支付/微信排除必须存在。"""
+    if not PUBLIC_CONFIG.exists():
+        return None
+    text = PUBLIC_CONFIG.read_text(encoding="utf-8")
+    m = re.search(r"(?m)^hostname\s*=\s*(.+)$", text)
+    if m is None:
+        err("configs/loon.conf: [MITM] 缺少 hostname 行")
+        return None
+    items = [x.strip() for x in m.group(1).split(",") if x.strip()]
+    missing = [x for x in PUBLIC_MITM_REQUIRED_EXCLUSIONS if x not in items]
+    if missing:
+        err(f"configs/loon.conf: [MITM] 缺少支付/微信排除项 {missing}")
+    positives = [x for x in items if not x.startswith("-")]
+    if positives:
+        err(
+            "configs/loon.conf: [MITM] 公开配置应为纯排除项；"
+            f"发现正包含 {positives[:6]}（插件自己声明 MITM）"
+        )
+    return len(items), len(positives)
 
 
 def main() -> int:
@@ -966,6 +1001,7 @@ def main() -> int:
     ledger = check_doc(text)
     routing = check_deep_dive()
     routing_example = check_routing_example()
+    public_mitm = check_public_mitm()
     for msg in warnings:
         print(f"WARN {msg}")
     for msg in errors:
@@ -985,7 +1021,10 @@ def main() -> int:
     if routing_example:
         rule_lines, rule_kinds = routing_example
         print(f"routing example ok: {rule_lines} rule(s) / {rule_kinds} type(s) "
-              f"(domain -> asn -> geoip -> port -> final)")
+              f"(domain -> port -> asn -> geoip -> final)")
+    if public_mitm:
+        mitm_entries, mitm_positives = public_mitm
+        print(f"public MITM ok: {mitm_entries} exclusion(s), {mitm_positives} positive(s)")
     print(
         "config ok: "
         f"sections={stats['sections']} general={stats['general_keys']} "

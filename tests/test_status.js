@@ -122,9 +122,10 @@ function todayKey() {
   const res = runStatus(sodaStatus, {}, args);
   const body = res.doneOut.content;
   check("soda: 提醒 killRewardAds", body.includes("killRewardAds ——"), body);
-  check("soda: 提醒 rewardSafe+cleanAds", body.includes("rewardSafe+cleanAds"), body);
+  check("soda: 保奖励+去广告不再报冲突", !body.includes("rewardSafe+cleanAds"), body);
   check("soda: 提醒 rewardSafe+settingsClean", body.includes("rewardSafe+settingsClean"), body);
-  check("soda: 提醒 rewardSafe+blockAdDomains", body.includes("rewardSafe+blockAdDomains"), body);
+  check("soda: 保奖励+域名拦截不再报冲突", !body.includes("rewardSafe+blockAdDomains"), body);
+  check("soda: 奖励排障提示 ad.zijieapi.com", body.includes("ad.zijieapi.com/api/ad/v1/inspire"), body);
   check("soda: 提示 cleanAds+debugLog 遮蔽",
     body.includes("cleanAds+debugLog"), body);
   check("soda: 摘要含每日提醒时间", body.includes("每日提醒(5 9 * * *)"), body);
@@ -147,6 +148,8 @@ function todayKey() {
   check("douyin: 摘要含开屏请求拦截", body.includes("开屏请求拦截"), body);
   check("douyin: 摘要含只读日志", body.includes("只读日志"), body);
   check("douyin: 提醒 killRewardAds", body.includes("killRewardAds ——"), body);
+  check("douyin: 提醒 treasureMinimal 会移除福利任务",
+    body.includes("福利页精简已开"), body);
   check("douyin: 提醒 treasureMinimal+killRewardAds",
     body.includes("treasureMinimal+killRewardAds"), body);
   check("douyin: 提示 treasureMinimal+debugLog 遮蔽",

@@ -58,7 +58,6 @@ DOMAIN-SUFFIX,bugly.tencent.com,REJECT
 *.pangolin-sdk-toutiao5.com = 127.0.0.1
 *.pglstatp-toutiao.com = 127.0.0.1
 *.tiktokpangle-cdn-us.com = 127.0.0.1
-ad.zijieapi.com = 127.0.0.1
 ads3-normal-hl.zijieapi.com = 127.0.0.1
 ads3-normal-lf.zijieapi.com = 127.0.0.1
 ads3-normal-lq.zijieapi.com = 127.0.0.1

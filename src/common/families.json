@@ -30,10 +30,6 @@
       "appScheme"
     ],
     [
-      "@@REWARD_SAFE_DEFAULT@@",
-      "rewardSafeDefault"
-    ],
-    [
       "@@QUIC_COUNT@@",
       "quicCount"
     ]
@@ -44,7 +40,6 @@
       "appName": "汽水音乐",
       "notifyBody": "打开汽水 → 福利页完成任务即可领取（攒时长 / 花卡 / 签到）。",
       "appScheme": "qishui://",
-      "rewardSafeDefault": true,
       "quicCount": 17
     },
     "douyin": {
@@ -52,7 +47,6 @@
       "appName": "抖音",
       "notifyBody": "打开抖音福利页完成今天的领取任务（攒时长 / 翻卡 / 签到）。",
       "appScheme": "snssdk1128://",
-      "rewardSafeDefault": false,
       "quicCount": 16
     }
   }

@@ -59,6 +59,12 @@ const KILL_CONTAINERS = {
     kill: ["adinfosmap", "adinfos"],
     falsy: []
   },
+  "splash-brand": {
+    kill: ["adlaunchlist", "adlaunch", "adlaunches", "adinfo", "adinfos",
+           "splash", "brand", "ads", "splashactivedata", "jumpbtninfo",
+           "shakeinfo", "twistinfo", "motioninfo", "interactioninfo", "splashcache"],
+    falsy: []
+  },
   "ads-config": {
     kill: ["adconfig", "adinfos", "adinfo", "ads", "adlist", "adsinfo", "adsblocks",
            "addata", "adextra", "adunitconfigs", "adsources", "adlaunch", "adlaunchlist",
@@ -365,12 +371,16 @@ function markHeaders(reason, bodyChanged) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity"]);
+    const args = pargs([
+      "cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity", "splashClean"
+    ]);
 
     /* 决定这次请求归哪个开关管：没开的开关一律放行 */
     let mode = null;
     if (/\/luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
       if (pflag(args, "killRewardAds", false)) mode = "incentive";
+    } else if (/\/luna\/advert\/splash\/brand\/retrieve/.test(url)) {
+      if (pflag(args, "splashClean", false)) mode = "splash-brand";
     } else if (/\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) {
       if (pflag(args, "cleanFeedAds", false)) mode = "feed-ads";
     } else if (/\/luna\/commerce\/v2\/upsell/.test(url)) {
@@ -417,6 +427,8 @@ function markHeaders(reason, bodyChanged) {
       } else {
         killContainers(obj, KILL_CONTAINERS["incentive-retrieve"], log, "$", 0);
       }
+    } else if (mode === "splash-brand") {
+      killContainers(obj, KILL_CONTAINERS["splash-brand"], log, "$", 0);
     } else if (mode === "feed-ads") {
       killContainers(obj, KILL_CONTAINERS["ads-config"], log, "$", 0);
     } else if (mode === "upsell") {

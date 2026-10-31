@@ -102,14 +102,11 @@ function switchWarnings(args) {
   if (isOn(args.killRewardAds)) {
     out.push("⚠️ 冲突：killRewardAds —— 激励广告完全不发，相关奖励会失效");
   }
-  if (isOn(args.rewardSafe) && isOn(args.cleanAds)) {
-    out.push("⚠️ 冲突：rewardSafe+cleanAds —— 脚本只保护非开屏端点，建议只开一种");
-  }
   if (isOn(args.rewardSafe) && isOn(args.settingsClean)) {
-    out.push("⚠️ 冲突：rewardSafe+settingsClean —— 设置层清理会被放行");
+    out.push("⚠️ 冲突：rewardSafe+settingsClean —— 设置层清理会被保奖励拦截");
   }
-  if (isOn(args.rewardSafe) && isOn(args.blockAdDomains)) {
-    out.push("⚠️ 冲突：rewardSafe+blockAdDomains —— 域名拦截会被放行");
+  if (isOn(args.treasureMinimal)) {
+    out.push("ℹ️ 福利页精简已开：签到/翻卡/红包雨等入口会被移除；要全部保留请关掉");
   }
   if (isOn(args.treasureMinimal) && isOn(args.killRewardAds)) {
     out.push("⚠️ 冲突：treasureMinimal+killRewardAds —— 福利页只剩攒时长，但激励已断");
@@ -241,6 +238,8 @@ function capabilityLine() {
   if (env) detail += "\n运行环境：" + env;
   detail += "\nLoon 能力：" + capabilityLine();
   detail += "\n静态层：QUIC 回退 @@QUIC_COUNT@@ 域 · h2 · 压缩→gzip（常开）";
+  detail += "\n奖励排障：看广告领奖失败时，确认 ad.zijieapi.com/api/ad/v1/inspire* 未被其它广告插件在 DNS/Host 层黑洞（抓包里 status 0 即是此因）";
+  detail += "\n共存提醒：同时安装 soda/douyin 插件时，清理开关只在一个插件里开；Loon 同一响应只跑第一条命中的脚本";
   for (var w = 0; w < warns.length; w++) detail += "\n" + warns[w];
 
   console.log("[@@LOG_TAG@@-status] " + summary + " | " + statsText + " | " + switches +

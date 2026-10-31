@@ -1,13 +1,13 @@
 #!name=抖音 · douyin
-#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流广告清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、开屏广告请求拦截、只读日志。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
+#!desc=抖音唯一插件：默认去广告+保奖励+福利任务全保留。信息流/弹窗/活动清理、广告域名按路径拦截（激励链路永远放行）、开屏请求+品牌响应双层、福利页精简可选。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=0.8.6
+#!version=0.9.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/douyin/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/56/0d/e6/560de620-6e7e-4679-43e4-689a52d71e4c/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=ios
 #!loon_version=3.5.1(983)
-#!date=2026-10-30
+#!date=2026-10-31
 #!tag=抖音,去广告,福利页,Loon
 
 # ============================================================================
@@ -20,13 +20,16 @@
 # tools/build.js 按家族参数展开到 src/douyin/ 后压缩；名单还由 lint
 # 校验 [Script]/[MITM]/源码三处一致。
 #
-# 开关：
-#   treasureMinimal  福利页精简（默认开）：只留【攒时长 听歌不中断】
-#   cleanFeedAds     信息流/广告位广告清理（默认关）：不影响激励奖励
+# 开关（默认组合 = 去广告 + 保奖励 + 福利任务全保留）：
+#   treasureMinimal  福利页精简（默认关）：开=只留【攒时长 听歌不中断】
+#   cleanFeedAds     信息流/广告位广告清理（默认开）：不影响激励奖励
 #   killRewardAds    激励广告素材与预拉取（默认关）：开=广告完全不发，奖励也没了
-#   cleanUpsell      商业化弹窗/商城/演出清理（默认关）
-#   blockAdDomains   广告域名拦截（默认关）：MITM + http-request 脚本
-#   blockSplashAd    开屏广告请求拦截（默认开）：只堵穿山甲 splash/ 家族
+#   cleanUpsell      商业化弹窗/商城/演出清理（默认开）
+#   cleanActivity    活动入口清理（默认开）
+#   blockAdDomains   广告域名拦截（默认开）：MITM + http-request 脚本；
+#                    激励链路 inspire/inspire_preload/marketing_done 永远放行
+#   blockSplashAd    开屏请求拦截（默认开）：穿山甲 splash/ 全家族
+#   splashClean      开屏品牌广告清理（默认开）：清 luna 品牌开屏响应
 #   debugLog         只读日志（默认关）：日志前缀 [douyin-reward]
 #   statusNotify     状态自检按钮的通知模式（notification/silent）
 #
@@ -46,7 +49,9 @@
 #   1. 【攒时长 听歌不中断】= duration_task_section / luna_rewards_ads，
 #      按钮 schema 里 ad_type=ads_get_duration、luckydog_task_type=luna_watch_ads_settle_vip
 #      —— 它本身就是“看广告结算 VIP 时长”。
-#      所以：清激励广告配置（cleanAds）或拦广告域名（blockAdDomains）都会让这个模块拿不到时长。
+#      所以：killRewardAds=true 会让这个模块拿不到时长；blockAdDomains=true
+#      已按路径放行激励链路（inspire / marketing_done），不再破坏奖励。
+#      但 ads.plugin 这类全局 Host/DNS 黑洞发生在脚本之前，仍需先移出。
 #   2. 【签到得金币】= gold_task_section / soda_music_sign_in，点不动是**服务端风控**：
 #      aweme.snssdk.com/aweme/ug/common/luckyapi/v1/common/sign_in/sign_in_done
 #      返回 {"err_no":210021,"err_tips":"设备异常，领取失败"}（luckydog 设备分只有 13.9，
@@ -72,13 +77,14 @@
 
 # >>> GENERATED ARGUMENTS from src/args/douyin.json -- do not edit (npm run build:args)
 [Argument]
-treasureMinimal = switch,true,tag=福利页精简,desc=福利页只保留【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱等入口全部移除。
-cleanFeedAds = switch,false,tag=信息流广告清理,desc=清掉 ads/config、ads/retrieve、ads/dsp/retrieve 的信息流广告容器；不影响激励广告与奖励。
+treasureMinimal = switch,false,tag=福利页精简,desc=默认关闭，保留签到/翻卡/红包雨/开宝箱/攒时长等可领任务；开启后只保留【攒时长 听歌不中断】。看广告/逛街任务由 cleanUpsell 摘除。
+cleanFeedAds = switch,true,tag=信息流广告清理,desc=清掉 ads/config、ads/retrieve、ads/dsp/retrieve 的信息流广告容器；不影响激励广告与奖励。
 killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。
-cleanUpsell = switch,false,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
-cleanActivity = switch,false,tag=活动入口清理,desc=把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。
-blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
+cleanUpsell = switch,true,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗、清空汽水音乐节（演出）列表，并摘掉福利页的看广告/逛街任务；签到/翻卡/红包雨/宝箱/攒时长保留。
+cleanActivity = switch,true,tag=活动入口清理,desc=把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动置为不展示；不影响签到/翻卡/红包雨等任务。
+blockAdDomains = switch,true,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。激励广告路径 inspire/inspire_preload/marketing_done 永远放行。
+splashClean = switch,true,tag=清开屏品牌广告,desc=清理 beta-luna 的开屏品牌广告响应（ad_launch_list/splash/jump_btn_info 等）；穿山甲 splash 请求由 blockSplashAd 拦住，两层合起来实现开屏秒过。
+blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。品牌开屏响应由 splashClean 清理。
 debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
 dailyReminder = switch,false,tag=每日领取提醒,desc=每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。
 reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。
@@ -160,7 +166,13 @@ request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.
 [Script]
 
 # ---- 福利页精简：只留【攒时长 听歌不中断】 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}, ${dailyReminder}}) with debug=${debugLog}, enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}, ${dailyReminder}, ${cleanUpsell}}) with debug=${debugLog}, enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
+
+# ---- 福利页广告/商城入口清理：保留签到/翻卡/红包雨/宝箱/攒时长 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}, ${dailyReminder}, ${cleanUpsell}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="福利页广告/商城入口清理"
+
+# ---- 开屏品牌广告清理：穿山甲 splash 请求由 blockSplashAd 拦，这层清 luna 品牌开屏 ----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/splash\/brand\/retrieve/ then script("scripts/clean.min.js", {${splashClean}}) with debug=${debugLog}, enable=${splashClean}, requires_body=true, timeout=10, tag="开屏品牌广告清理（秒过）"
 
 # ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}}) with debug=${debugLog}, enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
@@ -190,7 +202,7 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/ta
 response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js", {${dailyReminder}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=10, tag="福利页打卡"
 cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
-generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal}, ${cleanFeedAds}, ${killRewardAds}, ${cleanUpsell}, ${cleanActivity}, ${blockAdDomains}, ${blockSplashAd}, ${debugLog}, ${dailyReminder}, ${reminderCron}}) with debug=${debugLog}, tag="插件状态自检", img_url="checkmark.seal", timeout=10
+generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal}, ${cleanFeedAds}, ${killRewardAds}, ${cleanUpsell}, ${cleanActivity}, ${blockAdDomains}, ${blockSplashAd}, ${splashClean}, ${debugLog}, ${dailyReminder}, ${reminderCron}}) with debug=${debugLog}, tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================

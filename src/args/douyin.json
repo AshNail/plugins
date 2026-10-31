@@ -12,20 +12,20 @@
     {
       "name": "treasureMinimal",
       "type": "switch",
-      "default": true,
+      "default": false,
       "tag": "福利页精简",
-      "desc": "福利页只保留【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱等入口全部移除。",
+      "desc": "默认关闭，保留签到/翻卡/红包雨/开宝箱/攒时长等可领任务；开启后只保留【攒时长 听歌不中断】。看广告/逛街任务由 cleanUpsell 摘除。",
       "label": "福利页精简",
-      "readme": "福利页只保留【攒时长 听歌不中断】"
+      "readme": "默认关：保留签到/翻卡/红包雨/宝箱/攒时长等可领任务；开启后只保留【攒时长 听歌不中断】"
     },
     {
       "name": "cleanFeedAds",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "信息流广告清理",
       "desc": "清掉 ads/config、ads/retrieve、ads/dsp/retrieve 的信息流广告容器；不影响激励广告与奖励。",
       "label": "清信息流广告",
-      "readme": "清掉信息流/广告位广告容器（**不影响激励奖励**）"
+      "readme": "默认开：清掉信息流/广告位广告容器（**不影响激励奖励**）"
     },
     {
       "name": "killRewardAds",
@@ -39,38 +39,47 @@
     {
       "name": "cleanUpsell",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "商业化弹窗/商城/演出清理",
-      "desc": "删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。",
+      "desc": "删除 upsell 里的广告类弹窗与逛商城弹窗、清空汽水音乐节（演出）列表，并摘掉福利页的看广告/逛街任务；签到/翻卡/红包雨/宝箱/攒时长保留。",
       "label": "弹窗/演出清理",
-      "readme": "删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表"
+      "readme": "默认开：删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表，以及福利页看广告/逛街任务"
     },
     {
       "name": "cleanActivity",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "活动入口清理",
-      "desc": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。",
+      "desc": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动置为不展示；不影响签到/翻卡/红包雨等任务。",
       "label": "活动入口清理",
-      "readme": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示"
+      "readme": "默认开：把 polaris 活动配置里的汽水音乐节与抖音运营活动置为不展示"
     },
     {
       "name": "blockAdDomains",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "广告域名拦截",
-      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。",
+      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。激励广告路径 inspire/inspire_preload/marketing_done 永远放行。",
       "label": "域名拦截",
-      "readme": "广告/归因域名拦截（MITM + `http-request` 脚本）"
+      "readme": "默认开：广告/归因域名拦截（MITM + `http-request` 脚本）；**激励链路永远放行**"
+    },
+    {
+      "name": "splashClean",
+      "type": "switch",
+      "default": true,
+      "tag": "清开屏品牌广告",
+      "desc": "清理 beta-luna 的开屏品牌广告响应（ad_launch_list/splash/jump_btn_info 等）；穿山甲 splash 请求由 blockSplashAd 拦住，两层合起来实现开屏秒过。",
+      "label": "清开屏",
+      "readme": "清理 luna 品牌开屏响应；与 `blockSplashAd` 请求拦截组成开屏双层"
     },
     {
       "name": "blockSplashAd",
       "type": "switch",
       "default": true,
       "tag": "拦截开屏广告请求",
-      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
+      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。品牌开屏响应由 splashClean 清理。",
       "label": "开屏请求拦截",
-      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调"
+      "readme": "默认开：拦穿山甲开屏请求，**不碰激励广告**与发奖回调；品牌开屏响应由 `splashClean` 清理"
     },
     {
       "name": "debugLog",
@@ -102,7 +111,10 @@
       "name": "statusNotify",
       "type": "select",
       "default": "notification",
-      "values": ["notification", "silent"],
+      "values": [
+        "notification",
+        "silent"
+      ],
       "valueType": "string",
       "tag": "自检通知",
       "desc": "点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。",

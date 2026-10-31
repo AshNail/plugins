@@ -99,6 +99,35 @@ function pruneAdConfig(cfg, sections, log) {
   }
 }
 
+/* 福利页里的纯广告/商城任务：保留签到、翻卡、红包雨、宝箱、攒时长等可领任务。 */
+const KILL_TASK_RX =
+  /(?:music_incentive_ad|luna_treasure_shop|browse[_-]?mall|看广告赚金币|逛街赚金币)/i;
+
+function pruneWelfareEntries(obj, log) {
+  const data = obj && obj.data;
+  if (!isPlainObject(data) || !Array.isArray(data.sections)) return false;
+  let removed = 0;
+  for (const section of data.sections) {
+    if (!isPlainObject(section)) continue;
+    const groups = [section.task_group, section.widget_task_group];
+    for (const group of groups) {
+      if (!isPlainObject(group) || !Array.isArray(group.tasks)) continue;
+      group.tasks = group.tasks.filter(function (task) {
+        if (!isPlainObject(task)) return true;
+        const key = String(task.key || "");
+        const title = task.view && task.view.title && task.view.title.plain_text;
+        if (!KILL_TASK_RX.test(key + " " + (title || ""))) return true;
+        log.push("drop welfare entry " + key + (title ? " (" + title + ")" : ""));
+        removed += 1;
+        return false;
+      });
+    }
+  }
+  if (removed === 0) return false;
+  pruneAdConfig(data.config, data.sections, log);
+  return true;
+}
+
 function pruneTreasure(obj, log) {
   const data = obj && obj.data;
   if (!isPlainObject(data)) return false;
@@ -290,10 +319,12 @@ function stampWelfare(args) {
     const url = ($request && $request.url) || "";
     if (!/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) return $done({});
 
-    const args = pargs(["treasureMinimal", "dailyReminder"]);
+    const args = pargs(["treasureMinimal", "dailyReminder", "cleanUpsell"]);
     stampWelfare(args);
-    if (!pflag(args, "treasureMinimal", true)) {
-      console.log("[douyin-treasure] treasureMinimal=off, passthrough: " + url);
+    const minimal = pflag(args, "treasureMinimal", false);
+    const cleanWelfare = pflag(args, "cleanUpsell", false);
+    if (!minimal && !cleanWelfare) {
+      console.log("[douyin-treasure] both switches off, passthrough: " + url);
       return $done({ headers: markHeaders("douyin-treasure;skip=switch-off") });
     }
 
@@ -314,15 +345,21 @@ function stampWelfare(args) {
       return $done({ headers: markHeaders("douyin-treasure;skip=json-parse" + ceTag($response)) });
     }
 
-    const log = [];
-    if (!pruneTreasure(obj, log)) {
+    if (!isPlainObject(obj.data) || !Array.isArray(obj.data.sections)) {
       console.log("[douyin-treasure] unexpected shape, passthrough: " + url);
       return $done({ headers: markHeaders("douyin-treasure;skip=shape") });
     }
 
+    const log = [];
+    if (minimal) {
+      pruneTreasure(obj, log);
+    } else {
+      pruneWelfareEntries(obj, log);
+    }
+
     if (log.length === 0) {
-      console.log("[douyin-treasure] already minimal");
-      return $done({ headers: markHeaders("douyin-treasure;noop=already-minimal") });
+      console.log("[douyin-treasure] already clean");
+      return $done({ headers: markHeaders("douyin-treasure;noop=already-clean") });
     }
 
     console.log(

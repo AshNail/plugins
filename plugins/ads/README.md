@@ -10,11 +10,11 @@
 
 ## 和 soda / douyin 的冲突（先读）
 
-`soda.plugin` / `douyin.plugin` 默认 `rewardSafe=true`，靠穿山甲/优量汇/快手联盟的激励广告领奖励。`ads.plugin` 会在 DNS 阶段把这些广告域打到 `127.0.0.1`，**激励广告加载不出来，奖励任务会失败**。
+`soda.plugin` / `douyin.plugin` 默认 `rewardSafe=true`，靠穿山甲/优量汇/快手联盟的激励广告领奖励。**2026-10-31 起 `ad.zijieapi.com` 已移出本插件的 [Host] 黑洞**：它同时承载穿山甲激励广告与发奖回调，DNS 层整域拦截会让抖音/汽水领奖必然失败；非激励路径改由 App 插件的 `blockAdDomains` 按路径拦。
 
-- **刷奖励**：不要装 `ads.plugin`，或临时在 Loon 里禁用；soda/douyin 保持 `rewardSafe=true`。
-- **纯去广告**：装 `ads.plugin`；soda/douyin 里把 `rewardSafe` 设为 `false`，它们的 `blockAdDomains` 也就冗余了。
-- **两个都装时**：`[Host]` 先生效，soda/douyin 的广告域名脚本收不到请求；它们的 `[MITM]` 仍只解密自己的 API 域，不会额外放大风险。
+- **刷穿山甲奖励**：可以继续装 `ads.plugin`；确认 `ad.zijieapi.com` 不再出现在任何其它广告插件的 Host/REJECT 名单里。
+- **刷优量汇/快手奖励**：这些联盟域仍是全局黑洞，刷奖励时需临时禁用 `ads.plugin` 或删对应 Host 行。
+- **纯去广告**：装 `ads.plugin`；soda/douyin 里把 `rewardSafe` 设为 `false`，它们的 `blockAdDomains` 负责按路径补漏。
 
 ---
 
@@ -46,7 +46,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | 公共 DoH/DNS 防泄漏 | 对比插件启用/禁用，看是否还连 Google/Cloudflare/NextDNS 等公共 DoH | 启用时不连被拦的公共 DoH；`doh.dns.apple.com` 正常 |
 | 误伤排查 | 某个 App 登录/正常功能异常 | 先禁用插件复现；再按“风险与误伤”表删对应行 |
 
-> **第一优先**：刷奖励前临时禁用本插件，避免激励广告被拦导致奖励失败。
+> **第一优先**：刷奖励前先确认 `ad.zijieapi.com` 不在其它广告插件的 Host 黑洞里；本插件已移出该主机，但优量汇/快手联盟仍需临时禁用本插件。
 
 ### 从旧版迁移
 
@@ -60,7 +60,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1378 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` 核心广告组 | 14 组、1377 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
 | `[Host]` HTTPDNS 组 | 73 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 48 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等海外厂商 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
@@ -71,7 +71,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 无 | 无证书、无 MITM、无脚本 |
 
-合计：**22 组、1499 条生效 Host（exact 921 / wildcard 578）、166 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
+合计：**22 组、1498 条生效 Host（exact 920 / wildcard 578）、166 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 默认注释组（可选开启）
 
@@ -181,11 +181,11 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（14 组 / 1378 条展开）
+### 核心广告组（14 组 / 1377 条展开）
 
 | 组 | 代表 |
 |---|---|
-| 穿山甲 / Pangle | `ad.zijieapi.com`、`pangolin.snssdk.com`、`*.pangle.io`、`*.pglstatp-toutiao.com` |
+| 穿山甲 / Pangle（激励链路保留） | `ads5-normal*.zijieapi.com`、`pangolin.snssdk.com`、`*.pangle.io`、`*.pglstatp-toutiao.com`。**2026-10-31 起 `ad.zijieapi.com` 已移出 Host 黑洞**：该主机同时承载激励广告与发奖回调，全局 DNS 拦截会让抖音/汽水看广告领奖必失败；非激励路径由 App 插件按路径拦。 |
 | 腾讯广告 / 优量汇 | `*.gdt.qq.com`、`*.gdtimg.com`、`*.e.qq.com`、`*.l.qq.com` |
 | 快手联盟 | `*.adkwai.com`、`*.adukwai.com`、`*.open.kwaizt.com`、`*.e.kuaishou.com` |
 | 百度 / 百青藤 | `*.mobads.baidu.com`、`*.pos.baidu.com`、`cpro.baidustatic.com` |
@@ -292,7 +292,7 @@ dns-reject-mode = LOOPBACKIP
 
 | 功能 | 影响 | 处理 |
 |---|---|---|
-| 激励广告/看广告领奖励 | 穿山甲、优量汇、快手联盟广告加载失败，奖励任务失败 | 刷奖励时禁用 `ads.plugin`，或不要装 |
+| 激励广告/看广告领奖励 | 优量汇、快手联盟等仍被全局黑洞；穿山甲的 `ad.zijieapi.com` 已移出，激励与发奖路径可正常加载 | 刷优量汇/快手奖励时临时禁用 `ads.plugin`；穿山甲奖励无需禁用 |
 | 安装归因/渠道 ROI | 只有手动启用归因组后才断 AppsFlyer/Adjust 等上报 | 保持默认注释，或删对应组 |
 | Firebase/GA/友盟统计 | 只有手动启用统计组后才断报表 | 保持默认注释，或删对应组 |
 | App 内置 HTTPDNS | 极少数 App 没有 DNS 回退会断网 | 删 HTTPDNS 组里对应行 |
@@ -441,7 +441,7 @@ Loon 的 `*.example.com` 不保证匹配 `example.com`；广告专域通常两�
 HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦它让 App 回退到 Loon DNS，从而让广告 Host 生效；代价是极少数没有回退的 App 可能断网。删对应行即可。
 
 **Q：能不能只拦广告、保留激励广告？**
-不能按 App 区分——同一个穿山甲/优量汇域名既服务激励广告也服务普通广告。要保留激励广告，只能不装 `ads.plugin`，或在刷奖励时临时禁用。
+部分可以。穿山甲的激励/发奖都在 `ad.zijieapi.com` 的子路径上，本插件已把该主机移出全局黑洞，由 App 插件按路径放行；但优量汇 `gdt.qq.com`、快手联盟等域名仍同时服务激励与普通广告，保留激励只能刷奖励时临时禁用本插件。
 
 **Q：为什么归因/统计不默认启用？**
 它们会断安装归因、渠道 ROI 和报表，但不影响广告展示拦截。默认注释，避免“装个去广告插件把统计打挂”；需要时按上面的方法开启。

@@ -68,9 +68,9 @@ if (schemas) {
     soda: {
       rewardSafe: true,
       splashClean: true,
-      cleanAds: false,
+      cleanAds: true,
       killRewardAds: false,
-      blockAdDomains: false,
+      blockAdDomains: true,
       settingsClean: false,
       dailyReminder: false,
       skipUpdateCheck: false,
@@ -78,13 +78,14 @@ if (schemas) {
       statusNotify: "notification"
     },
     douyin: {
-      treasureMinimal: true,
-      cleanFeedAds: false,
+      treasureMinimal: false,
+      cleanFeedAds: true,
       killRewardAds: false,
-      cleanUpsell: false,
-      cleanActivity: false,
-      blockAdDomains: false,
+      cleanUpsell: true,
+      cleanActivity: true,
+      blockAdDomains: true,
       blockSplashAd: true,
+      splashClean: true,
       dailyReminder: false,
       statusNotify: "notification"
     }
