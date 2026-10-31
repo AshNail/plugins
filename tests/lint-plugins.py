@@ -2854,7 +2854,9 @@ def check_app_plugins():
                     errors.append(
                         f"apps/{slug}: cron script {m.group('script')!r} != crons[].script {want_script!r}"
                     )
-                if m.group("expr") != c.get("cron"):
+                # Loon requires a quoted cron expression; source JSON stores the bare 5-field value.
+                expr = m.group("expr").strip().strip('"\'')
+                if expr != c.get("cron"):
                     errors.append(
                         f"apps/{slug}: cron expr {m.group('expr')!r} != crons[].cron {c.get('cron')!r}"
                     )

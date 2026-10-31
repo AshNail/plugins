@@ -332,7 +332,7 @@ def render_crons(app: dict) -> list[str]:
         if c.get("note"):
             lines.append(f'# {c["id"]}: {c["note"]}')
         lines.append(
-            f'cron {c["cron"]} then script("scripts/{c["script"]}.min.js") '
+            f'cron "{c["cron"]}" then script("scripts/{c["script"]}.min.js") '
             f'with timeout=60, tag="{c["tag"]}"'
         )
         lines.append("")

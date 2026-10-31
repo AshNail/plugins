@@ -182,10 +182,10 @@ ywlog.reader.qq.com = 127.0.0.1
 [Script]
 
 # sign-reminder: 每天 09:00 发一条本地通知，点通知直达签到页 QDReader://usercenter/sign，人手在 App 内完成签到。不代签——/argus/api/v1/checkin/* 全部要求 App 进程内 encryptSign 签名；会员可直接开启 App 自带「会员自动签到」。深链路由以真机验证为准，若未直达改用 QDReader://app/openSignIn。
-cron 0 9 * * * then script("scripts/sign-reminder.min.js") with timeout=60, tag="每日签到提醒"
+cron "0 9 * * *" then script("scripts/sign-reminder.min.js") with timeout=60, tag="每日签到提醒"
 
 # welfare-reminder: 每天 21:00 提醒任务/福利中心 QDReader://usercenter/task：真实阅读/观看之后人手领取；领取层(/pickup/risk)按服务端账本校验，插件不碰。
-cron 0 21 * * * then script("scripts/welfare-reminder.min.js") with timeout=60, tag="每日任务提醒"
+cron "0 21 * * *" then script("scripts/welfare-reminder.min.js") with timeout=60, tag="每日任务提醒"
 
 
 # ========================================================================
