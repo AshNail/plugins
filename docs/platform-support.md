@@ -80,7 +80,7 @@ python3 tools/make-private-config.py \
 - 不需要 MITM 的另一个好处：YouTube / Bilibili / Netflix 的 TV 客户端证书固定或内嵌播放器
   广告不会被误伤；代价是**贴片广告无法去除**——HTTPS 路径改写必须有 MITM，而 TV 端这些
   App 的证书固定风险高，本仓不把「强开 MITM 去贴片」作为推荐路径。
-- 如果 kelee 两个 URL 也 403，就只保留 `ads.plugin`。它自己的 1498 条 Host + 13 条规则
+- 如果 kelee 两个 URL 也 403，就只保留 `ads.plugin`。它自己的 1497 条 Host + 13 条规则
   已经是可独立工作的底座，比为了凑数留一堆下载失败的条目更稳。
 - 不要导入 soda / douyin / JD / 微信 / 银行等 App 插件：TV 上没有这些 App，
   它们的 Host 规则在全局仍然生效，但属于「为不存在的消费方付加载成本」。

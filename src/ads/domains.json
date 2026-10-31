@@ -1,6 +1,6 @@
 {
-  "version": "2.8.4",
-  "updated": "2026-10-31",
+  "version": "2.8.5",
+  "updated": "2026-11-01",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "openUrl": "https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.4",
+      "version": "2.8.5",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -437,7 +437,6 @@
             "adv.ccb.com",
             "ad.icbc.com.cn",
             "ad.boc.cn",
-            "jf365.boc.cn",
             "ad.bankcomm.com",
             "ad.psbc.com",
             "ykad-data.youku.com",

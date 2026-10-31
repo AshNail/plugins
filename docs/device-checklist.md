@@ -1,6 +1,6 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 2.9.0）/ `douyin.plugin`（当前 0.9.0）；`ads.plugin`（当前 2.8.4）见 H 节。
+> 适用：`soda.plugin`（当前 2.9.0）/ `douyin.plugin`（当前 0.9.0）；`ads.plugin`（当前 2.8.5）见 H 节。
 > 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 及全部 App 插件门槛降到 **App Store 正式版 3.5.2(996)**（`DOMAIN-WILDCARD` 仅 TF 3.5.3 有，改为默认注释层，不再卡正式版）。
 > 红线重申：本仓插件**只做净化与观测**——不缩短广告、不加速播放、不改写领奖请求、
 > 不做后台自动观看/自动领取。领奖链路（`incentive/done` 等全部 59 头请求）只读不动。
@@ -19,10 +19,11 @@
 - [x] **Remote Rule 镜像全 404（2026-11-01 实测）**：`ws.wenn.in/main/Mirror/rules/loon-{China,Global,Advertising,Privacy,Hijacking,Epic}.list` 六条全部 404。已改为 blackmatrix7 上游 `raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Loon/<类>/<类>.list`，策略与 tag 不变；重启后六份 `.lsr` 重新下载（China 2056 / Global 6218 / Advertising 26870 / Privacy 821 / Hijacking 6734 / Epic 588 字节），DNS 与广告回归正常。`make-private-config.py` 会自动把旧 URL 改写成上游，防止从旧 `.lcf` 备份重新生成时带回死订阅。
 - [x] **红线域全量抽测 0 误杀（2026-11-01 实测）**：对 `src/apps/*.json` 的 111 个红线域逐个 `dig`，修复前有 5 个解析到 `127.0.0.1`：`ads.privacy.qq.com`（微信广点通合规入口）、`dns.jd.com` / `janapi.jd.com`（京东 HTTPDNS/数据网关）、`resolver.msg.xiaomi.net`（米家推送/解析）、`fockrt.yuewen.com`（阅文 fock 文件服务）。公开配置和 Mac 私有配置都加了 local `DIRECT` 精确放行，并删掉 `fockrt` 自相矛盾的 REJECT；修复后 111/111 无 DNS 黑洞，5 个域 HTTPS 均返回真实响应（404/200/401）。广告与正常域回归通过。
 - [x] **银行规则误杀清理（2026-11-01 实测）**：公开配置原有 10 条无 banks 插件证据的 REJECT，其中 `creditcard.bankcomm.com`（交行信用卡主站）、`switch.cup.com.cn`（银联支付切换）、`cdn1.mbs.boc.cn`（中行移动银行 CDN）、`ads.95516.com`（插件明确默认关，重试风暴）等可能直接断业务。已全部移除，银行广告只保留 banks 插件证实的 `mbads.paas.cmbchina.com`、`ads.cup.com.cn`、`alliance.com.corpqueue.net` 三条。公开规则 497→487，Mac 私有 535→525。
+- [x] **中银积分365 误杀修复（2026-11-01）**：`jf365.boc.cn` 是官方积分查询/兑换商城（中行公告明确），旧 ads 数据误收。已从 ads cn_union 移除、lint 加负向门禁，ads 升到 2.8.5；公开/私有主配置 `[Host]` 增加显式 DoH 解析，兼容旧插件。实测真实 IP、HTTPS 200。
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.4`、`soda=2.9.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.5`、`soda=2.9.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
@@ -104,7 +105,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 
 ## H. ads.plugin（DNS 层 + DOMAIN-WILDCARD 默认注释层）
 
-- [ ] Loon 版本 ≥ **3.5.2(996)**（App Store 正式版即可导入）；插件页版本为 2.8.4
+- [ ] Loon 版本 ≥ **3.5.2(996)**（App Store 正式版即可导入）；插件页版本为 2.8.5
       （此前 2.6.0 把门槛抬到 3.5.3(1008) 会挡住正式版用户；2.7.0 已降回正式版，
       `DOMAIN-WILDCARD` 通配/家族两层改为**默认注释**，正式版用户保持注释、其余全量生效。）
 - [ ] 规则页看不到生效的国内公共 DoH/DoT：`dns.alidns.com`、`doh.pub`、`doh.360.cn` 等 9 条整组为 `# ` 注释，

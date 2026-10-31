@@ -2140,7 +2140,14 @@ def check_ads_family():
 
     # Explicitly excluded shared hosts must never become active by accident.
     # ad.abchina.com 经 EasyList China / AdRules 实证承载农行认证/核心脚本，绝不能拦截。
-    for domain in ("is.snssdk.com", "graph.facebook.com", "branch.io", "ad.abchina.com"):
+    # jf365.boc.cn 是中国银行官方“中银积分365”积分查询/兑换商城，拦了直接损失用户权益。
+    for domain in (
+        "is.snssdk.com",
+        "graph.facebook.com",
+        "branch.io",
+        "ad.abchina.com",
+        "jf365.boc.cn",
+    ):
         if domain in exact or domain in wildcard:
             errors.append(f"{ADS_PLUGIN}: excluded shared host is active: {domain}")
 
@@ -2149,7 +2156,6 @@ def check_ads_family():
         "adv.ccb.com",
         "ad.icbc.com.cn",
         "ad.boc.cn",
-        "jf365.boc.cn",
         "ad.bankcomm.com",
         "ad.psbc.com",
     ):
