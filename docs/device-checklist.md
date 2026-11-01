@@ -21,6 +21,7 @@
 - [x] **银行规则误杀清理（2026-11-01 实测）**：公开配置原有 10 条无 banks 插件证据的 REJECT，其中 `creditcard.bankcomm.com`（交行信用卡主站）、`switch.cup.com.cn`（银联支付切换）、`cdn1.mbs.boc.cn`（中行移动银行 CDN）、`ads.95516.com`（插件明确默认关，重试风暴）等可能直接断业务。已全部移除，银行广告只保留 banks 插件证实的 `mbads.paas.cmbchina.com`、`ads.cup.com.cn`、`alliance.com.corpqueue.net` 三条。公开规则 497→487，Mac 私有 535→525。
 - [x] **中银积分365 误杀修复（2026-11-01）**：`jf365.boc.cn` 是官方积分查询/兑换商城（中行公告明确），旧 ads 数据误收。已从 ads cn_union 移除、lint 加负向门禁，ads 升到 2.8.5；公开/私有主配置 `[Host]` 增加显式 DoH 解析，兼容旧插件。实测真实 IP、HTTPS 200。
 - [x] **Fallback 空组修复（2026-11-01）**：策略页曾显示 `Fallback · 暂无可用子策略`，而 Final/Streaming/AI/Developer/Gaming/Social 都把 Fallback 作为可选子策略；已补入订阅节点组 `东京`。重启后策略页显示 10 组 / 31 节点，Fallback 选中 `hy2-main-JP`，无空组。
+- [x] **规则集合核对（2026-11-01）**：规则页显示 8 个集合 / 521 条规则；国内域名 DIRECT、国际域名 Proxy、广告域名 REJECT、隐私保护 REJECT、反劫持 REJECT、Epic Games Proxy，兜底 Final。6 条 Remote Rule 均已加载，不再有 404 空订阅。
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
