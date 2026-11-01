@@ -83,7 +83,17 @@ python3 tools/mac-plugin-compat.py --apply
 - `soda` / `douyin` 仍显示「不支持的操作系统」：它们只声明 iOS/iPadOS，
   macOS 没有对应 App，这是正确的平台限制，不是版本问题。
 
-## 4. 不默认开启及原因
+## 4. Script 验证限制（2026-11-01）
+
+- 插件新版 **Rewrite** 已实测执行（淘宝 idle 合成 404 / film popup 合成 200）。
+- Script 绑定已计入仪表（Script 250），但受控的主配置 response Script 测试
+  （本地文件路径、本地 HTTP、404 与 200 响应各一次）都没有改写 body；
+  kelee 的远程脚本 CDN 当前 403，无法用其做独立对照。
+- 因此当前只能确认“Script 绑定被加载”，不能确认 Mac 0.5.0(1011) 主配置
+  response Script 的最终执行。下一步应使用可公开访问的远程脚本 + Loon 脚本日志
+  复核；在结论出来前不要把 Script 当作已验证的覆盖层。
+
+## 5. 不默认开启及原因
 
 | 功能 | 不默认开启的原因 |
 |---|---|
