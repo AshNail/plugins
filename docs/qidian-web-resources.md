@@ -50,6 +50,10 @@ DOMAIN-SUFFIX,rumt-zh.com,REJECT
 `aegis.cdn-go.cn`、`h.trace.qq.com`、`otheve.beacon.qq.com` 已有规则；
 `qdp.qidian.com` 属推送网关，继续放行。
 
+Mac 复核：`hm.baidu.com` / `rumt-zh.com` 均解析 `127.0.0.1`、HTTPS 不可达；
+Chrome 仍拿到约 236KB 完整 DOM，标题正常，`turing.captcha.*`、
+`qdfepccdn.qidian.com`、`bookcover.yuewen.com` 均可达。
+
 ## 可选优化（默认不启用）
 
 如果目标是进一步降低首屏体积、且不需要 App 下载/游戏推广：
