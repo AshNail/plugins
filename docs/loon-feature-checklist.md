@@ -450,7 +450,7 @@
     - **脚本边界**：新增 `src/soda/check-update.js`，绑定 `enable=${skipUpdateCheck}`（默认关，实验）。只把归一化后的 `has_update` / `hasUpdate` 置 false；包络、`media_result` 与同形键（`check_update_info` / `force_update_ts_ms` 等）零接触。无键、非 JSON、ungzip 失败一律原样放行（最坏情况 = 提示还在）；回写时删掉过期的 `content-encoding` / `content-length`，诊断头 `X-Soda-Plugin` 每个分支都带 `skip=` / `ce=`。
     - **绑定与测试**：`api.qishui.com` / `beta-luna.douyin.com` 双主机各一条响应绑定；`BINDING_SAMPLES["soda"]["response"]` 补两条回放样本，lint 的 `luna host parity` 仍全双主机。新增 `tests/test_check_update.js` 23 断言（src/dist 双跑）：深层置 false、包络与同形键保留、三条放行路径、gzip 路径、过期头清理、回滚常量存在。
     - **默认值调整**：`blockSplashAd` 在 soda/douyin 两个家族统一默认开，满足 schema 的「同名共享开关类型/默认值/label 一致」约束；只拦穿山甲开屏素材与登记家族，`inspire*` 与发奖回调不匹配，回滚只需关开关。汽水 2.8.7、抖音 0.8.6。
-    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；`test_args_schema` 39 断言、17 个开关 label。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 53 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
+    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；`test_args_schema` 39 断言、17 个开关 label。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 54 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
 
 67. [x] **第四十三轮：公开仓库交叉核对；微博 4 个多源广告主机 + 2 个 dig 解析端点落地，白名单/单源/支付域拒收**
     - **数据来源与可信度**：只读比对 fmz200 `weibo.plugin`/`Block_HTTPDNS.plugin`、RuCu6 微博插件、blackmatrix7 `AdvertisingScript.plugin` 三个公开仓库的规则文本；本地缓存清单（anti-AD/AWAvenue/AdRules/hagezi）逐域计数。A 级（≥3 源）才进默认生效组，B 级只进默认注释组或留档。
@@ -470,7 +470,7 @@
     - **ads 落地 7 个（均 ≥3 家公开清单可证 + 语义自证）**：`=appsflyersdk.com`（AppsFlyer SDK 请求/深链，归因组默认注释）、`=shuzilm.cn` / `=yandexmetrica.com`（统计组默认注释）、`adapi.izuiyou.com` / `ems.youku.com` / `=ubixioe.com`（cn_union）、`ws.tapjoyads.com`（mobile_sdks；已有 `tapjoyads.com` 精确主机覆盖不到该子域）。生效 Host 1466→1471（exact 891→895 / wildcard 575→576）、默认注释 131→137、核心广告组 1347→1352、组数仍 20。
     - **拒收并留档**：`v.smtcdns.com` 是腾讯视频 CDN（`moviets`/`vlive` 播放链路），拦了断视频；`wxs.qq.com` 是微信核心静态域；`janapi/dns.jd.com` 是京东明文红线；`asiad.byteactivity`、`lf-ad-ies.bytecdn.cn`、`mon.toutiacloud.com` 仅频道单源、公开清单零命中，留待真机抓包。
     - **App 可选层（全部默认注释，零证书红线不破）**：闲鱼 1.5.0 补 4 条 mtop 广告模块 `REJECT-DICT`（`home.whale.modulet`、`item.resell.recommendorhotcate`、`topic.banner`、`idlehome.idle.coin.nextfresh`）；美团 1.2.3 补 2 条开屏图 `REJECT-IMG` 与 2 个 MITM 主机（`flowplus.meituan.net`、`img.meituan.net`）；京东 1.0.2 / 微信 1.1.4 只把频道建议的拒收理由写进注释——京东 `m.360buyimg.com` 开屏图、微信 `wxs.qq.com` 整域与 `mp.weixin.qq.com` 路径改写都要求 MITM 证书固定类 App，按既定红线（`APP_NO_ENHANCE_SLUGS`）不做。
-    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 53 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
+    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 54 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
 
 
 ## 10. 明确不采纳清单（持续维护，带理由）
@@ -521,7 +521,7 @@
     - **按路径拆分**：`ads.plugin` 2.8.4 把 `ad.zijieapi.com` 移出 Host 黑洞；`block-domains.js` 新增 `REWARD_PATH_RX`，`inspire` / `inspire_preload` / `incentive/marketing/done` 在任何被拦主机上永远放行，其余路径照拦。`rewardSafe` 不再让整段拦截失效。
     - **默认改为去广告+保奖励**：抖音 0.9.0 默认 `treasureMinimal=false`（保留签到/翻卡/红包雨/宝箱/攒时长，`cleanUpsell` 摘掉看广告/逛街任务）、`cleanFeedAds/cleanUpsell/cleanActivity/blockAdDomains/splashClean` 开；汽水 2.9.0 默认 `cleanAds/blockAdDomains` 开、`rewardSafe` 保持开。汽水 `sanitize` 在 `rewardSafe=true` 时只清理安全规则（开屏/信息流/弹窗/福利页广告与逛街任务），放行 `ads-config` / `ads` / `incentive-*`。抖音新增 `splashClean`，清 `splash/brand/retrieve` 品牌开屏，与 `blockSplashAd` 组成请求+响应双层。
     - **边界**：`210021` 仍是服务端风控；不看满 30 秒直接领奖仍是广告欺诈，不做。HAR 未看到 `X-Soda-Plugin` 的实验结论记为「Loon 抓包可能记录脚本前响应，不能只凭该头判断」，真机以 App 行为与脚本日志为准。
-    - **口径**：测试 27 套件 ×2 = 54、1760 断言（src 880）；`test_args_schema` 40 断言、17 个 label；ads 生效 Host 1499→1498（exact 921→920 / wildcard 578 不变）。四道受管声明：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 53 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run lint` 0 errors、`tests/run-all.py` 54/1760 全绿。
+    - **口径**：测试 27 套件 ×2 = 54、1760 断言（src 880）；`test_args_schema` 40 断言、17 个 label；ads 生效 Host 1499→1498（exact 921→920 / wildcard 578 不变）。四道受管声明：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 54 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run lint` 0 errors、`tests/run-all.py` 54/1760 全绿。
 
 ## 11. 与本仓库的接口速查
 
