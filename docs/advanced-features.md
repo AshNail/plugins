@@ -53,6 +53,14 @@
    `mtop.taobao.idle.home.welcome` 返回合成 404、`film.life.popup.get` 返回
    合成 200 `{}`，同域对照路径真实 200；MITM 280 / Rewrite 282 / Script 250
    均由仪表确认加载。早先 Mac 1009 的插件新 Rewrite 不执行问题在 1011 已修复。
+8. **IPA 广告端点跨端补齐**：IPA 审计里的 8 个域名
+   （`api-adservices.apple.com`、`mtadservice.com`、`vads.bankcomm.cn`、
+   `adashx.m.taobao.com`、`s-adashx.ut.taobao.com`、`ads.m.taobao.com`、
+   `simba.taobao.com`、`topshow.taobao.com`）此前只在 Mac 私有增量里，
+   现已进公开主配置，iOS/iPad/TV 不依赖 kelee 下载也能拦住。
+   JD/Taobao 的路径级 Rewrite 仍留在 Mac 私有档：它们需要新增
+   `api.m.jd.com` / `acs.m.taobao.com` MITM，证书固定风险未在真机证伪，
+   不贸然扩大公开解密面。
 
 ## 3. Mac 0.x 插件版本兼容
 
