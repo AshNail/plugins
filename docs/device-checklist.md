@@ -274,3 +274,12 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **meituan**：同法启用 `wmapi/apimobile/p?.meituan.net` 层。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；广告图路径命中后应看到 1px 图（`REJECT-IMG` 200 + GIF，不是 404）且商品图正常；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
 - [ ] **xianyu**：本层有三块——`# [MITM]`（2 主机）、`# [Rewrite]`（15 条 `response.json.jq`）、`# [Rule]`（2 条 QUIC 回退 + 2 条 `URL-REGEX`，拦 `splash.ads`/`idle.ad.expose`）。建议顺序：先只开 `[MITM]` + QUIC + 两条 `URL-REGEX`，验证开屏广告消失且发布、下单、聊天、扫一扫无恙；再开 `[Rewrite]` 里**一条** `group.myself.banner`（`.data.bannerList = []`，最保守），确认群聊页 banner 消失、消息列表正常、响应仍是合法 JSON；第二步试 `item.recommend`（只删 mamaAD）与三条占位规则（`user.strategy.list` / `search.shade` / `search.activate`）；最后再试「只留 item/业务分区」的激进规则：`home.nextfresh`、`search.search`、`local.home`、`search.discover`、`item.buy.feeds`、`item.recommend.list`，以及最激进的 `user.page.my.adapter`（我的页面只留 head/user/trade 分区）。任一规则导致白屏/接口报错，只重新注释该行即可回滚；整体异常（登录转圈、全局接口报错）则整段恢复注释。**若 jq 规则全无效果，先怀疑 Loon 没执行 jq（响应压缩/内容类型不满足），不要改正则硬试**——mtop 网关被解密本身就改变连接形态，本层对该 App 定位是「实验」。
 - [ ] **共同回滚判据**：银行/支付/门锁等红线域绝不允许进 `[MITM]` hostname；增强层启用后若 App 报「网络异常/证书错误」，说明该 App 实际做了固定或检测，接受现实、整段恢复注释（插件注释已声明此可能）。
+
+## K. MITM 名单收敛与插件 `[General]` DNS（2026-11-02 macOS 实测）
+
+- [x] **主配置与插件 `hostname` 是合并生效**：主配置只写少量主机时，插件声明的 `app.bilibili.com` 仍被解密（TLS 签发者为 Loon CA）；未列入任何名单的 `example.com` 返回真实 Cloudflare 证书。判据用 `openssl s_client` 看 issuer，不要看 `curl` 的 HTTP 状态（被解密与否都可能 200）。
+- [x] **主配置独有主机要逐条找消费方**：从 `[Plugin]` 的启用 URL 算 MD5 映射到 `remotePlugin/<md5>.lpx`，解析每个插件 `[MITM] hostname`（去 `%APPEND%`、跳过 `-` 排除）取并集；主配置里不被并集覆盖、且插件 Rewrite/Script/Rule 文本与主配置 `[Rewrite]/[Script]` 都不引用的主机，才可判孤儿。示例：私有 Mac 配置 50 个正包含 → 18 个（32 个孤儿删除），61 个排除项全部保留；`ad.zijieapi.com`、`beta-api.m.jd.com` 因主配置 Rewrite 命中而保留。
+- [x] **证书验证**：重启隧道后对每个删除项跑 `echo | openssl s_client -connect <host>:443 -servername <host> 2>/dev/null | openssl x509 -noout -issuer`；真实 CA＝已退出解密，`O=Loon`＝仍在名单（检查插件是否声明或配置未重载）。
+- [x] **macOS 重启隧道**：Loon for Mac 不注册 `loon://` scheme，退出 App 也不会重启网络扩展；用 `scutil --nc stop "Loon for Mac"` → `scutil --nc start "Loon for Mac"` 才会重载 `Loon.lcf` 与插件缓存。改动前备份 `Loon.lcf`，回滚即恢复备份后再重启 VPN。
+- [x] **插件 `[General]` 会追加 DNS**：启用插件的 `dns-server` / `doh-server` / `doh3-server` 是追加而非替换。实测 All-in-One 追加了 `h3://223.5.5.5`、`h3://223.6.6.6` 与 `1.12.12.12`，会在主配置已清理 DoH3 后重新引入；排障时先 grep 插件缓存的 `[General]`，再怀疑主配置。若删除缓存里的这些行，先备份 `.lpx`；「更新全部外部资源」会恢复远端版本。
+- [x] **不要用 UI 的 MITM 计数判断主机数**：清理后 TLS issuer 已按主机变化，但首页「MITM 228」计数未同步；以证书签发者与插件缓存名单为准。
