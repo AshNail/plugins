@@ -10,7 +10,7 @@
 |---|---|---|
 | `helloobike.snippet` | 哈啰 | 多数广告网络已被 ads/meituan 覆盖；脚本逻辑不移植 |
 | `xhey-ad-clean.snippet` | 今日水印相机 | TopOn/百度/快手/CLL 广告网络多数已覆盖；补少量缺口 |
-| `MT.snippet` | 美团 12.67.403 | 移植 `shark-*` 整主机 reject；脚本私有协议不移植 |
+| `MT.snippet` | 美团 12.67.403 | 移植 5 个 `shark-*` 广告域；`shark.dianping.com` 因 Pike 长连红线放行；脚本不移植 |
 | `TxvideoAD.snippet` | 腾讯视频 | 移植 `iacc.stgw.qq.com` / `tacc.video.qq.com`；共享域不拦 |
 | `txsports-ad-clean.snippet` | 腾讯体育 | 移植 `k.ssp.qq.com` / `sports.ssp.qq.com`；`app.sports` 不拦 |
 
