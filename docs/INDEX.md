@@ -29,6 +29,7 @@
 | [规则有效率](rule-effectiveness.md) | “写了”不等于“生效”：前提、MITM、正则面审计 |
 | [起点官网 Web 资源](qidian-web-resources.md) | 首页实际字节、第三方推广/统计与可选拦截清单 |
 | [TG@Nzmgs 上游研究](nzmgs-upstream.md) | QX 脚本源的可移植域、明确排除项与验证边界 |
+| [网易云与镜像源研究](netease-mirror-sources.md) | 网易云模块、可莉 GitHub 镜像与 Jsforbaby 合规边界 |
 | [旁路审计](bypass-audit.md) | “拦了”不等于“拦住”：DNS/HTTPDNS/DoH 旁路与红线 |
 | [Loon 能力覆盖](loon-coverage.md) | 已用/可用未用/不适用能力盘点 |
 | [App 插件覆盖率](app-coverage.md) | App 级覆盖矩阵（生成物） |
