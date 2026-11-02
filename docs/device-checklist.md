@@ -283,3 +283,4 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [x] **macOS 重启隧道**：Loon for Mac 不注册 `loon://` scheme，退出 App 也不会重启网络扩展；用 `scutil --nc stop "Loon for Mac"` → `scutil --nc start "Loon for Mac"` 才会重载 `Loon.lcf` 与插件缓存。改动前备份 `Loon.lcf`，回滚即恢复备份后再重启 VPN。
 - [x] **插件 `[General]` 会追加 DNS**：启用插件的 `dns-server` / `doh-server` / `doh3-server` 是追加而非替换。实测 All-in-One 追加了 `h3://223.5.5.5`、`h3://223.6.6.6` 与 `1.12.12.12`，会在主配置已清理 DoH3 后重新引入；排障时先 grep 插件缓存的 `[General]`，再怀疑主配置。若删除缓存里的这些行，先备份 `.lpx`；「更新全部外部资源」会恢复远端版本。
 - [x] **不要用 UI 的 MITM 计数判断主机数**：清理后 TLS issuer 已按主机变化，但首页「MITM 228」计数未同步；以证书签发者与插件缓存名单为准。
+- [x] **只读审计工具**：`python3 tools/mac-mitm-audit.py` 列出主配置独有 MITM 主机及插件缓存/主配置消费证据，`--json` 可机器读取。候选判断是启发式的（如 `(?:beta-)?api.m.jd.com` 这类可选前缀正则），删除前仍要按上一条做证书验证。
