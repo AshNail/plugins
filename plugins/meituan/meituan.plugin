@@ -139,7 +139,7 @@ s3plus-pre.51ping.com = 127.0.0.1
 # [MITM]
 # ------------------------------------------------------------
 # hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
-# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net, flowplus.meituan.net, img.meituan.net, feedguess.meituan.com, mt-personalcenter.meituan.com
+# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net, flowplus.meituan.net, img.meituan.net, feedguess.meituan.com, mt-personalcenter.meituan.com, assistify.meituan.com, mop.meituan.com
 #
 # [Rewrite]
 # ------------------------------------------------------------
@@ -156,6 +156,12 @@ s3plus-pre.51ping.com = 127.0.0.1
 # response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/defaultword/ then response.json.jq(`.searchIntroduceResponse.defaultWordRes.defaultWordItems = [] | .searchIntroduceResponse.HotWordInfos = []`)
 # 来源 https://t.me/Nzmgs：去掉搜索热词推荐与 AI 气泡；来自 Nzmgs MT.snippet，默认注释。
 # response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/hotword\/city\/divide\/hotrecommend\// then response.json.jq(`(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != "EntranceHotwordsV2Hotwords" and .pageName != "EntranceHotwordsV2ContentCard")) | .data.aiSearchBubble.bubbleTexts = []`)
+# 来源 https://t.me/Nzmgs：清空 AI 技能配置（data 内嵌 JSON 的 skills 对象）；解析失败保持原样；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/assistify\.meituan\.com\/assistant\/getAppClientHornConfig/ then response.json.jq(`.data |= (. as $orig | if type == "string" then (try (fromjson | if type == "object" and (.skills | type) == "object" then .skills = {} else . end | tojson) catch $orig) else . end)`)
+# 来源 https://t.me/Nzmgs：清空购物车入口顶部 banner（topBannerArea）；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/mop\/entry\/shoppingCartEntry/ then response.json.jq(`walk(if type == "object" and (.topBannerArea? | type) == "array" then .topBannerArea = [] else . end)`)
+# 来源 https://t.me/Nzmgs：清空 mop 启动图（startupPicArea）；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/api\/entryModule\/startupPicture/ then response.json.jq(`walk(if type == "object" and (.startupPicArea? | type) == "array" then .startupPicArea = [] else . end)`)
 #
 # [Rule]
 # ------------------------------------------------------------
@@ -169,6 +175,8 @@ s3plus-pre.51ping.com = 127.0.0.1
 # AND,((DOMAIN-SUFFIX,img.meituan.net),(PROTOCOL,QUIC)),REJECT
 # AND,((DOMAIN-SUFFIX,feedguess.meituan.com),(PROTOCOL,QUIC)),REJECT
 # AND,((DOMAIN-SUFFIX,mt-personalcenter.meituan.com),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,assistify.meituan.com),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,mop.meituan.com),(PROTOCOL,QUIC)),REJECT
 # 通配主机无法用 DOMAIN-SUFFIX 表达，QUIC 回退需另行处理: p?.meituan.net
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT

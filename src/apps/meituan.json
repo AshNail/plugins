@@ -199,7 +199,9 @@
       "flowplus.meituan.net",
       "img.meituan.net",
       "feedguess.meituan.com",
-      "mt-personalcenter.meituan.com"
+      "mt-personalcenter.meituan.com",
+      "assistify.meituan.com",
+      "mop.meituan.com"
     ],
     "url_regex": [
       "URL-REGEX,^https?://wmapi\\.meituan\\.com/api/v[0-9]/openscreen\\?ad,REJECT-DICT",
@@ -244,6 +246,27 @@
         "jq": "(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != \"EntranceHotwordsV2Hotwords\" and .pageName != \"EntranceHotwordsV2ContentCard\")) | .data.aiSearchBubble.bubbleTexts = []",
         "sample": "https://apimobile.meituan.com/group/v1/deal/searchpage/hotword/city/divide/hotrecommend/",
         "note": "去掉搜索热词推荐与 AI 气泡；来自 Nzmgs MT.snippet，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      },
+      {
+        "url": "^https?://assistify\\.meituan\\.com/assistant/getAppClientHornConfig",
+        "jq": ".data |= (. as $orig | if type == \"string\" then (try (fromjson | if type == \"object\" and (.skills | type) == \"object\" then .skills = {} else . end | tojson) catch $orig) else . end)",
+        "sample": "https://assistify.meituan.com/assistant/getAppClientHornConfig",
+        "note": "清空 AI 技能配置（data 内嵌 JSON 的 skills 对象）；解析失败保持原样；来自 Nzmgs MT.snippet，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      },
+      {
+        "url": "^https?://mop\\.meituan\\.com/mop/entry/shoppingCartEntry",
+        "jq": "walk(if type == \"object\" and (.topBannerArea? | type) == \"array\" then .topBannerArea = [] else . end)",
+        "sample": "https://mop.meituan.com/mop/entry/shoppingCartEntry",
+        "note": "清空购物车入口顶部 banner（topBannerArea）；来自 Nzmgs MT.snippet，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      },
+      {
+        "url": "^https?://mop\\.meituan\\.com/api/entryModule/startupPicture",
+        "jq": "walk(if type == \"object\" and (.startupPicArea? | type) == \"array\" then .startupPicArea = [] else . end)",
+        "sample": "https://mop.meituan.com/api/entryModule/startupPicture",
+        "note": "清空 mop 启动图（startupPicArea）；来自 Nzmgs MT.snippet，默认注释。",
         "source": "https://t.me/Nzmgs"
       }
     ]
