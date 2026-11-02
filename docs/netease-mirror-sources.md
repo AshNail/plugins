@@ -62,11 +62,25 @@
 “只做净化与观测、不绕过付费/授权”的边界。
 其中消息 12 只是推荐 `fkingikelee/fkikelee` 镜像，已按 §2 处理。
 
-## 5. 验证
+## 5. 镜像逐字节对账（2026-11-02）
+
+16 个与当前公开配置相关的可莉插件逐条对比（忽略本地兼容层改写的
+`#!loon_version`）：
+
+- **15/16 与官方缓存逐字节一致**；
+- 唯一差异 `Google.lpx`：官方缓存是旧写法
+  `^^https?://… 302 https://www.google.com`，镜像是新版
+  `request if ${url} … then redirect(307, "https://www.google.com")`。
+  两者都能重定向，镜像不是篡改，属于上游版本差异。
+- 顺手发现：该插件的 `[MITM] hostname` 只有 `www.google.cn`，但 Rewrite
+  里还有 `g.cn`、`maps.google.cn` 两条模式，因此这两条是**死规则**；
+  需要覆盖时得补 MITM hostname，再真机确认 Google 地图是否受影响。
+
+## 6. 验证
 
 - 网易云新增域在 Mac 私有档与公开配置同步；预期 `127.0.0.1`/000。
 - `music.163.com`、`interface.music.163.com` 等核心域保持可达。
-- `npm run check` exit 0；公开配置 512 规则。
+- `npm run check` exit 0；公开配置 511 规则。
 - 镜像只做内容一致性对比，不进入公开配置，不复制脚本/插件文件。
 
 ## 来源
