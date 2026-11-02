@@ -25,5 +25,13 @@ request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(?:sea
 request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/x?eapi\/(?:mlivestream\/entrance\/playpage|link\/(?:position\/show\/strategy|scene\/show)|ios\/version|v\d\/content\/exposure\/comment\/banner)/i then reject_dict(200)
 request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/store\/x?e?api\/(?:webconfig|entryconfig)/i then reject_dict(200)
 
+[Script]
+# 自己实现的 JSON 清理：删除广告标记字段/广告卡片，保留内容。
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/homepage\/block\/page/i then script("scripts/netease-clean.js") with requires_body=true, tag="网易云首页清理"
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/link\/page\/discovery\/resource\/show/i then script("scripts/netease-clean.js") with requires_body=true, tag="网易云发现页清理"
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/link\/position\/show\/resource/i then script("scripts/netease-clean.js") with requires_body=true, tag="网易云我的页清理"
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/vipactivity\/app\/cashier\/setting\/get/i then script("scripts/netease-clean.js") with requires_body=true, tag="网易云收银台清理"
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/v\d\/resource\/comment\/floor\/get/i then script("scripts/netease-clean.js") with requires_body=true, tag="网易云评论区清理"
+
 [MITM]
 hostname = music.163.com,interface.music.163.com,interface3.music.163.com,interface9.music.163.com,ipv4.music.163.com

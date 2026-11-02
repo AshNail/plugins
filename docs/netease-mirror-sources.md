@@ -30,8 +30,9 @@
   request 阶段 `reject_dict(200)`，并入公开主配置 + 对应 MITM；
   实测 `/eapi/ad`、`/wapi/search/default`、`/xeapi/mlivestream/entrance/playpage`
   返回合成 `{}`，核心 `music.163.com` 仍 200。
-- **上游 JS 未复制**：132KB JS 负责 Tab/首页字段级清理，无许可证且本机无
-  网易云 App；需要时另写/真机验证，不直接引用或内联上游脚本。
+- **自研清理脚本**：新增原创 `plugins/netease/scripts/netease-clean.js`，
+  递归删除广告字段/广告卡片，已用真实首页 JSON 离线单测；
+  但 Mac 0.5.0 实测 Script 未执行（脚本已下载、响应未变），需 iOS/iPad/tvOS 验证。
 
 ## 2. `fkingikelee/fkikelee` 可莉插件镜像
 
