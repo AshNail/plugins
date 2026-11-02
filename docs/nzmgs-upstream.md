@@ -26,7 +26,6 @@ DOMAIN,shark-default.meituan.com,REJECT
 DOMAIN,shark-dp.meituan.com,REJECT
 DOMAIN,shark-ps.meituan.com,REJECT
 DOMAIN,shark-wm.sankuai.com,REJECT
-DOMAIN,shark.dianping.com,REJECT
 DOMAIN,mobads-pre-config.bj.bcebos.com,REJECT
 DOMAIN,ad.xhey.top,REJECT
 DOMAIN-SUFFIX,statisticslinks.com,REJECT
@@ -36,7 +35,7 @@ DOMAIN,als.baidu.com,REJECT
 
 理由：这些在 QX snippet 中是 `host, …, reject` 或广告 SDK 的独立域名；
 `statisticslinks.com` 是广告追踪族；`als.baidu.com` 是百度日志。
-公开规则 495 → **510**。
+公开规则 495 → **511**。
 
 ## 明确不移植
 
@@ -51,7 +50,7 @@ DOMAIN,als.baidu.com,REJECT
 
 ## 证据强度与回滚
 
-- 这 15 个域里，`statisticslinks.com` 在 MISP 的 Cloudflare top 列表中可见；
+- 这 14 个域里，`statisticslinks.com` 在 MISP 的 Cloudflare top 列表中可见；
   其余主要是 **QX 单源 host reject**，没有第二份独立规则集交叉证明。
 - 已验证：新增域解析 `127.0.0.1`/HTTPS 000；核心域 `app.sports.qq.com`、
   `i.video.qq.com`、`config.ab.qq.com`、`rdelivery.qq.com`、`v.qq.com`、
@@ -59,6 +58,8 @@ DOMAIN,als.baidu.com,REJECT
 - **未真机验证**：腾讯视频/腾讯体育/美团/哈啰/水印相机 App 均未安装，
   无法确认域名级拦截是否影响其私有协议。出现“无网络/功能缺失”时，
   按 App 对应行回滚（每行独立，不涉及其它规则）。
+- **已验证并回滚 1 条**：`shark.dianping.com` 是美团 Pike 长连通道，
+  与 `src/apps/meituan.json` 红线冲突；已撤回，红线审计恢复 0。
 - 因此这批规则定位为“可回滚的覆盖补强”，不是与仓库内 A 级 App 插件同级的
   多源证据；后续若拿到第二/第三份公开规则或真机日志，再升级证据口径。
 
