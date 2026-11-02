@@ -376,7 +376,7 @@ CAPABILITIES = [
          why="soda/douyin 的响应层是字段级脚本 + 开关分支；原生 JSON 改写命中后同阶段脚本不执行，会整条废掉「保奖励」判断"),
     dict(layer="复写层", key="w-res-json-jq", name="`response.json.jq`", expect="used",
          probe=r"then\s+response\.json\.jq\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="netease 插件用原生 jq 删除网易云广告字段（5 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条"),
+         why="netease 插件用原生 jq 删除网易云广告字段（9 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条"),
     dict(layer="复写层", key="w-res-json-jq-file", name="`response.json.jq_file`", expect="reject",
          probe=r"then\s+response\.json\.jq_file\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="插件资源文件会引入包外依赖；本仓库要求自包含"),

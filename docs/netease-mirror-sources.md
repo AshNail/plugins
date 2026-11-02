@@ -30,6 +30,9 @@
   request 阶段 `reject_dict(200)`，并入公开主配置 + 对应 MITM；
   实测 `/eapi/ad`、`/wapi/search/default`、`/xeapi/mlivestream/entrance/playpage`
   返回合成 `{}`，核心 `music.163.com` 仍 200。
+- **响应字段清理已吸收**：9 条原生 `response.json.jq` 覆盖首页/发现/我的/收银台/
+  评论/`batch`/`v1/user/info`/推荐页/关注推荐；上游 `wyyad.js` 未复制，
+  Tab 名称自定义未移植。
 - **原生 jq 清理**：用 Loon `response.json.jq` 删除广告字段；
   但 Mac 0.5.0 实测 response jq 未执行（请求阶段空响应规则正常），
   需 iOS/iPad/tvOS 验证。

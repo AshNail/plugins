@@ -113,7 +113,7 @@
 | `response.body.replace` | ❌ 判死 | 同上；且命中后同阶段脚本不再执行，等于用正则换掉全部 JSON 逻辑 |
 | `request.json.*` | ❌ 判死 | 本插件不改请求体；请求侧无广告载荷需要剥 |
 | `response.json.add/delete/replace` | ❌ 判死 | soda/douyin 的响应层是字段级脚本 + 开关分支；原生 JSON 改写命中后同阶段脚本不执行，会整条废掉「保奖励」判断 |
-| `response.json.jq` | ✅ 已用 | netease 插件用原生 jq 删除网易云广告字段（5 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条 |
+| `response.json.jq` | ✅ 已用 | netease 插件用原生 jq 删除网易云广告字段（9 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条 |
 | `response.json.jq_file` | ❌ 判死 | 插件资源文件会引入包外依赖；本仓库要求自包含 |
 | `request.body.mock` | ❌ 判死 | 同上：改写请求体不属于本插件职责 |
 | `response.body.mock` | ❌ 判死 | 包络写错＝白屏，且会把同 URL 的脚本全废掉；收益只在「省一次解码」 |
