@@ -17,15 +17,60 @@
     "公开仓库补充(2026-10-30)：blackmatrix7 AdvertisingScript 的 img.meituan.net/(adunion|display|dpmobile|midas)/ 图片路径已有 MITM 主机、无需新增解密域，补为第三条默认注释 REJECT-IMG；与 bizad 路径同属共享图床的广告目录段，只按路径拦、不整域。"
   ],
   "redlines": [
-    {"domain": "appsec-mobile.meituan.com", "kind": "host", "quote": "appsec-mobile.meituan.com（mtgsig 签名+设备指纹上报，拦=触发下单/支付风控，无任何黑名单收录）", "why": "mtgsig 签名 + 设备指纹上报，拦=触发下单/支付风控"},
-    {"domain": "api-unionid.meituan.com", "kind": "host", "quote": "api-unionid.meituan.com（统一账号）", "why": "统一账号"},
-    {"domain": "api-map.meituan.net", "kind": "host", "quote": "api-map.meituan.net（地图瓦片）", "why": "地图瓦片"},
-    {"domain": "shark.dianping.com", "kind": "host", "quote": "shark.dianping.com（Pike 长连通道，核弹模块 S9 也误伤它）", "why": "Pike 长连通道"},
-    {"domain": "mrn.meituan.net", "kind": "host", "quote": "mrn.meituan.net 与 beauty-*.meituan.net（VOD/直播拉流）", "why": "VOD/直播拉流"},
-    {"domain": "apimobile.meituan.com", "kind": "host", "quote": "apimobile.meituan.com", "why": "主业务 API"},
-    {"domain": "i.meituan.com", "kind": "host", "quote": "i.meituan.com", "why": "业务入口"},
-    {"domain": "meituan.com", "kind": "family", "quote": "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）", "why": "交易规则依赖深层子域，禁止整域操作"},
-    {"domain": "meituan.net", "kind": "family", "quote": "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）", "why": "同上"}
+    {
+      "domain": "appsec-mobile.meituan.com",
+      "kind": "host",
+      "quote": "appsec-mobile.meituan.com（mtgsig 签名+设备指纹上报，拦=触发下单/支付风控，无任何黑名单收录）",
+      "why": "mtgsig 签名 + 设备指纹上报，拦=触发下单/支付风控"
+    },
+    {
+      "domain": "api-unionid.meituan.com",
+      "kind": "host",
+      "quote": "api-unionid.meituan.com（统一账号）",
+      "why": "统一账号"
+    },
+    {
+      "domain": "api-map.meituan.net",
+      "kind": "host",
+      "quote": "api-map.meituan.net（地图瓦片）",
+      "why": "地图瓦片"
+    },
+    {
+      "domain": "shark.dianping.com",
+      "kind": "host",
+      "quote": "shark.dianping.com（Pike 长连通道，核弹模块 S9 也误伤它）",
+      "why": "Pike 长连通道"
+    },
+    {
+      "domain": "mrn.meituan.net",
+      "kind": "host",
+      "quote": "mrn.meituan.net 与 beauty-*.meituan.net（VOD/直播拉流）",
+      "why": "VOD/直播拉流"
+    },
+    {
+      "domain": "apimobile.meituan.com",
+      "kind": "host",
+      "quote": "apimobile.meituan.com",
+      "why": "主业务 API"
+    },
+    {
+      "domain": "i.meituan.com",
+      "kind": "host",
+      "quote": "i.meituan.com",
+      "why": "业务入口"
+    },
+    {
+      "domain": "meituan.com",
+      "kind": "family",
+      "quote": "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）",
+      "why": "交易规则依赖深层子域，禁止整域操作"
+    },
+    {
+      "domain": "meituan.net",
+      "kind": "family",
+      "quote": "只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）",
+      "why": "同上"
+    }
   ],
   "sdks": [
     "sigmob",
@@ -143,14 +188,18 @@
       "https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin",
       "https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module",
       "https://t.me/GitCube",
-      "https://t.me/Aa28413761"
+      "https://t.me/Aa28413761",
+      "https://t.me/Nzmgs",
+      "https://github.com/ZenmoFeiShi/Qx"
     ],
     "mitm_hosts": [
       "wmapi.meituan.com",
       "apimobile.meituan.com",
       "p?.meituan.net",
       "flowplus.meituan.net",
-      "img.meituan.net"
+      "img.meituan.net",
+      "feedguess.meituan.com",
+      "mt-personalcenter.meituan.com"
     ],
     "url_regex": [
       "URL-REGEX,^https?://wmapi\\.meituan\\.com/api/v[0-9]/openscreen\\?ad,REJECT-DICT",
@@ -160,6 +209,43 @@
       "URL-REGEX,^https?://flowplus\\.meituan\\.net/v1/mss_[^/]+/linglong/[^/]+\\.jpg,REJECT-IMG",
       "URL-REGEX,^https?://img\\.meituan\\.net/bizad/bizad_brandCpt_[^/]+\\.jpg,REJECT-IMG",
       "URL-REGEX,^https?://img\\.meituan\\.net/(adunion|display|dpmobile|midas)/[A-Za-z0-9_-]+\\.(?:gif|jpg|jpg\\.webp)$,REJECT-IMG"
+    ],
+    "rewrite_json": [
+      {
+        "url": "^https?://apimobile\\.meituan\\.com/aggroup/indexTab",
+        "jq": ".data.resource.tabArea |= map(select(.tabName == \"homepage\" or .tabName == \"mine\"))",
+        "sample": "https://apimobile.meituan.com/aggroup/indexTab",
+        "note": "隐藏 video/xiaotuan 底部 tab，只保留 homepage/mine；来自 Nzmgs MT.snippet 的字段事实，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      },
+      {
+        "url": "^https?://feedguess\\.meituan\\.com/lycoris/scene/(?:gwc_feed1_2265|personalcenter_2154)",
+        "jq": ".data = [] | .bottom = true | .ext.forbidByExp = true",
+        "sample": "https://feedguess.meituan.com/lycoris/scene/gwc_feed1_2265",
+        "note": "清空购物车/个人中心推荐流；来自 Nzmgs MT.snippet，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      },
+      {
+        "url": "^https?://mt-personalcenter\\.meituan\\.com/usercenter/display",
+        "jq": ".children |= map(select(.name != \"mine_cross_recommend\"))",
+        "sample": "https://mt-personalcenter.meituan.com/usercenter/display",
+        "note": "我的页去掉交叉推荐；来自 Nzmgs MT.snippet，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      },
+      {
+        "url": "^https?://apimobile\\.meituan\\.com/group/v1/deal/searchpage/defaultword",
+        "jq": ".searchIntroduceResponse.defaultWordRes.defaultWordItems = [] | .searchIntroduceResponse.HotWordInfos = []",
+        "sample": "https://apimobile.meituan.com/group/v1/deal/searchpage/defaultword",
+        "note": "清空搜索默认词与热词；来自 Nzmgs MT.snippet，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      },
+      {
+        "url": "^https?://apimobile\\.meituan\\.com/group/v1/deal/searchpage/hotword/city/divide/hotrecommend/",
+        "jq": "(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != \"EntranceHotwordsV2Hotwords\" and .pageName != \"EntranceHotwordsV2ContentCard\")) | .data.aiSearchBubble.bubbleTexts = []",
+        "sample": "https://apimobile.meituan.com/group/v1/deal/searchpage/hotword/city/divide/hotrecommend/",
+        "note": "去掉搜索热词推荐与 AI 气泡；来自 Nzmgs MT.snippet，默认注释。",
+        "source": "https://t.me/Nzmgs"
+      }
     ]
   },
   "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/de/7e/9e/de7e9e88-fb46-d039-d61b-cb349ea8f05f/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg"

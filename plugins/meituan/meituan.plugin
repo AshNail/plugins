@@ -122,7 +122,8 @@ s3plus-pre.51ping.com = 127.0.0.1
 # 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。2026-10-30 再补频道 2024-10 的两条图片路径（flowplus linglong / img.meituan.net bizad）与 blackmatrix7 的 img.meituan.net 广告目录路径（adunion/display/dpmobile/midas），同样默认注释；flowplus 与 img.meituan.net 都是共享素材主机，启用后这两台的图片流量都会进 MITM（只有广告路径被 REJECT-IMG 拒绝），介意解密面就只开 wmapi/apimobile 的 JSON 规则或跳过本层。
 # 启用步骤：①Loon 里装并信任证书 →
 #           ②取消 [MITM] 头与其 hostname 行的注释 →
-#           ③取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
+#           ③取消 [Rewrite] 头及其下所需 response.json.jq 行的注释 →
+#           ④取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
 # 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
 # MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
 # 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
@@ -131,23 +132,43 @@ s3plus-pre.51ping.com = 127.0.0.1
 # 证据: https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
 # 证据: https://t.me/GitCube
 # 证据: https://t.me/Aa28413761
+# 证据: https://t.me/Nzmgs
+# 证据: https://github.com/ZenmoFeiShi/Qx
 # ========================================================================
 
 # [MITM]
 # ------------------------------------------------------------
 # hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
-# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net, flowplus.meituan.net, img.meituan.net
+# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net, flowplus.meituan.net, img.meituan.net, feedguess.meituan.com, mt-personalcenter.meituan.com
+#
+# [Rewrite]
+# ------------------------------------------------------------
+# 下列响应 JSON 改写必须放在 [Rewrite] 段：取消本行（# [Rewrite]）与所需行的注释才生效。
+# response.json.jq 是 Loon 原生 jq：只删广告字段/节点、保留 mtop 包络；
+# 与 Response Script 互斥（body rewrite 命中后脚本不执行），本层不含脚本。
+# 来源 https://t.me/Nzmgs：隐藏 video/xiaotuan 底部 tab，只保留 homepage/mine；来自 Nzmgs MT.snippet 的字段事实，默认注释。
+# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/aggroup\/indexTab/ then response.json.jq(`.data.resource.tabArea |= map(select(.tabName == "homepage" or .tabName == "mine"))`)
+# 来源 https://t.me/Nzmgs：清空购物车/个人中心推荐流；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/feedguess\.meituan\.com\/lycoris\/scene\/(?:gwc_feed1_2265|personalcenter_2154)/ then response.json.jq(`.data = [] | .bottom = true | .ext.forbidByExp = true`)
+# 来源 https://t.me/Nzmgs：我的页去掉交叉推荐；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/mt-personalcenter\.meituan\.com\/usercenter\/display/ then response.json.jq(`.children |= map(select(.name != "mine_cross_recommend"))`)
+# 来源 https://t.me/Nzmgs：清空搜索默认词与热词；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/defaultword/ then response.json.jq(`.searchIntroduceResponse.defaultWordRes.defaultWordItems = [] | .searchIntroduceResponse.HotWordInfos = []`)
+# 来源 https://t.me/Nzmgs：去掉搜索热词推荐与 AI 气泡；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/hotword\/city\/divide\/hotrecommend\// then response.json.jq(`(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != "EntranceHotwordsV2Hotwords" and .pageName != "EntranceHotwordsV2ContentCard")) | .data.aiSearchBubble.bubbleTexts = []`)
 #
 # [Rule]
 # ------------------------------------------------------------
 # 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。
 # QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的
-# URL-REGEX 会静默失效。
+# URL-REGEX / response.json.jq 会静默失效。
 # 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。
 # AND,((DOMAIN-SUFFIX,wmapi.meituan.com),(PROTOCOL,QUIC)),REJECT
 # AND,((DOMAIN-SUFFIX,apimobile.meituan.com),(PROTOCOL,QUIC)),REJECT
 # AND,((DOMAIN-SUFFIX,flowplus.meituan.net),(PROTOCOL,QUIC)),REJECT
 # AND,((DOMAIN-SUFFIX,img.meituan.net),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,feedguess.meituan.com),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,mt-personalcenter.meituan.com),(PROTOCOL,QUIC)),REJECT
 # 通配主机无法用 DOMAIN-SUFFIX 表达，QUIC 回退需另行处理: p?.meituan.net
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
 # URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT
