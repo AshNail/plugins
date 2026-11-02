@@ -26,9 +26,12 @@
   已由 ads 插件覆盖。
 - 本轮公开配置补了 `iadmat.nosdn.127.net`、`iadmatapk.nosdn.127.net`
   两个广告材质域（规则 510→512）。
-- **脚本和 Map Local 未默认接入**：模块的 Tab/首页改动会直接影响 App UI，
-  且 132KB 远程 JS 有供应链风险；本机没有网易云 App，无法做真机回归。
-  需要时可按模块的 10 条响应绑定自行转成 Loon 插件，并在真机逐条启用。
+- **Map Local/URL 规则已吸收**：模块的 7 条空响应端点已转成 Loon
+  request 阶段 `reject_dict(200)`，并入公开主配置 + 对应 MITM；
+  实测 `/eapi/ad`、`/wapi/search/default`、`/xeapi/mlivestream/entrance/playpage`
+  返回合成 `{}`，核心 `music.163.com` 仍 200。
+- **上游 JS 未复制**：132KB JS 负责 Tab/首页字段级清理，无许可证且本机无
+  网易云 App；需要时另写/真机验证，不直接引用或内联上游脚本。
 
 ## 2. `fkingikelee/fkikelee` 可莉插件镜像
 

@@ -10,12 +10,12 @@
   不是 Loon 能力，而是 **App 是否存在、插件作者是否声明支持、以及 MITM 是否值得开**。
 - `#!system` 为空表示全部平台；写了值就按值声明支持。`#!system_version` 是**一个值约束
   `#!system` 里的所有平台**，所以本仓不写它，避免把 macOS / tvOS 一起挡掉。
-- 41 个公开插件里，平台声明分三组：
+- 42 个公开插件里，平台声明分三组：
   - **16 个未写平台**：15 个 kelee 插件 + Badoo，`#!system=` 为空，按官方语义全平台；
   - **18 个四端全声明**：ads、13 个 App 插件、Biliverse Redirect/Global/Enhanced、DualSubs；
-  - **7 个部分声明**：见下表。
-- macOS 按声明应加载 **38 个**（soda、douyin、BiliBili ADBlock 不声明 macOS）；
-  iOS 41 个；iPadOS 在补齐 soda/douyin 的 `iPadOS` 声明后 41 个；
+  - **8 个部分声明**：见下表。
+- macOS 按声明应加载 **39 个**（soda、douyin、BiliBili ADBlock 不声明 macOS）；
+  iOS 42 个；iPadOS 在补齐 soda/douyin 的 `iPadOS` 声明后 42 个；
   tvOS 按声明只有 **34 个**（soda、douyin、BiliBili ADBlock、iRingo 三件套、YouTube
   均未声明 tvOS）；即便 Loon 全部加载，其中大量 App 插件对 TV 无消费方，
   建议用 §2 的 Apple TV 精简档。
@@ -31,6 +31,7 @@
 | iRingo LocationService | `iOS,iPadOS,macOS` | ✅ | ✅ | ✅ | — | 无 tvOS 声明 |
 | iRingo WeatherKit | `iOS,iPadOS,macOS,watchOS` | ✅ | ✅ | ✅ | — | 含 watchOS；无 tvOS 声明 |
 | YouTube 去广告 | `iOS,iPadOS,macOS` | ✅ | ✅ | ✅ | — | YouTube tvOS App 不在覆盖范围 |
+| 网易云音乐（规则层） | `iOS,iPadOS,macOS` | ✅ | ✅ | ✅ | — | 本轮新增；无 tvOS 声明 |
 
 其余 34 个插件要么四端全声明，要么未写平台（按官方语义全平台）。未写平台的 16 个里，
 绝大多数是可莉的 App 专用 Rewrite；它们在 tvOS 上没有对应 App，但规则本身不会造成额外风险，
@@ -40,7 +41,7 @@
 
 ### iPhone / iPad
 
-- 直接用公开主配置的 41 个插件。
+- 直接用公开主配置的 42 个插件。
 - iPad 需要 `soda.plugin` / `douyin.plugin` 的新版（`#!system=iOS,iPadOS`）。
   旧缓存如果还是 `ios`，在 Loon 里删除插件重新导入即可。
 - 首次导入要留意 kelee 的 16 个 URL：当前网络实测返回 Cloudflare 403。
@@ -48,8 +49,8 @@
 
 ### macOS
 
-- Mac 私有档已收敛到 **38 个**（移除 soda、douyin、BiliBili ADBlock：macOS 无对应 App
-  或作者不支持）；公开配置仍保留 41 个给 iOS/iPad/TV。Loon 的 `#!system` 检查
+- Mac 私有档已收敛到 **39 个**（移除 soda、douyin、BiliBili ADBlock：macOS 无对应 App
+  或作者不支持）；公开配置仍保留 42 个给 iOS/iPad/TV。Loon 的 `#!system` 检查
   不再产生这 3 个平台告警。
 - BiliBili 的 Redirect / Global / Enhanced 声明了 macOS；ADBlock 没有。不要因为
   「B 站 Mac 版也能看」就擅自给 ADBlock 补 macOS——脚本按 iOS 页面结构写的。
@@ -59,7 +60,7 @@
 
 ### Apple TV
 
-TV 端建议用**零 MITM、零脚本**的网络层精简档，而不是原样导入 41 个。
+TV 端建议用**零 MITM、零脚本**的网络层精简档，而不是原样导入 42 个。
 生成命令（用你自己的 `.lcf` 备份；输出含订阅/节点，权限 0600，不要入库）：
 
 ```bash
@@ -104,8 +105,8 @@ python3 tools/make-private-config.py \
 
 | 平台 | 已验证 | 待真机 |
 |---|---|---|
-| macOS | Host 黑洞恢复（微信广告主机 5s 黑洞、正常域 200）、DoH 未被明文映射降级、私有档 38 插件全部可用 | 长周期广告/支付/登录回归 |
-| iPhone | — | 41 插件导入、soda/douyin 开屏与领奖、CA 信任、TLS 证书错误 |
+| macOS | Host 黑洞恢复（微信广告主机 5s 黑洞、正常域 200）、DoH 未被明文映射降级、私有档 39 插件全部可用 | 长周期广告/支付/登录回归 |
+| iPhone | — | 42 插件导入、soda/douyin 开屏与领奖、CA 信任、TLS 证书错误 |
 | iPad | — | soda/douyin 元数据补齐后是否加载、B 站 ADBlock、分屏/兼容模式 |
 | Apple TV | — | 三插件精简档导入、DNS 广告拦截、无 MITM 证书问题 |
 

@@ -1,0 +1,29 @@
+#!name=网易云音乐 · 净化（规则层）
+#!desc=吸纳 ios151/NeteasemusicAd 的 Map Local/URL 事实：广告/推广接口返回空 JSON，并补广告材质域；不包含上游 JS，Tab/首页字段级清理需另行评估。需要 Loon 3.5.1(983)+ 与 MITM。
+#!author=AshNail（规则整理；来源 ios151/NeteasemusicAd）
+#!version=1.0.0
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/netease/README.md
+#!icon=https://raw.githubusercontent.com/Keywos/rule/main/tv/app/144px/Netease.png
+#!system=iOS,iPadOS,macOS
+#!loon_version=3.5.1(983)
+#!date=2026-11-02
+#!tag=网易云音乐,去广告,规则层
+#!type=normal
+
+[Rule]
+# 域名由 ads 插件与公开主配置覆盖；此处只放 MITM/Rewrite。
+
+[Rewrite]
+# 吸收 ios151/NeteasemusicAd 的 Map Local 端点，改为请求阶段返回空 JSON。
+# 这是规则层移植，不包含上游 wyyad.js 的 Tab/首页字段级逻辑。
+request if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/x?e?api\/ad/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(?:side-bar\/mini-program\/music-service\/account|delivery\/(?:batch-deliver|deliver)|moment\/tab\/info\/get|yunbei\/account\/entrance\/get)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/x?eapi\/(?:resource\/comments?\/musiciansaid|community\/friends\/fans-group\/artist\/group\/get|user\/sub\/artist|music\/songshare\/text\/recommend\/get|mine\/applet\/redpoint|resniche\/position\/play\/new\/get)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/search\/default/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(?:search\/(?:chart|rcmd\/keyword|specialkeyword)|resource-exposure\/|activity\/bonus\/playpage\/time\/query)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/x?eapi\/(?:mlivestream\/entrance\/playpage|link\/(?:position\/show\/strategy|scene\/show)|ios\/version|v\d\/content\/exposure\/comment\/banner)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/store\/x?e?api\/(?:webconfig|entryconfig)/i then reject_dict(200)
+
+[MITM]
+hostname = music.163.com,interface.music.163.com,interface3.music.163.com,interface9.music.163.com,ipv4.music.163.com
