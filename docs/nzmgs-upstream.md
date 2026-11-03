@@ -88,7 +88,7 @@ DOMAIN,als.baidu.com,REJECT
 ## 验证
 
 - `npm run check` exit 0（54 套件 / 1760 断言，lint 0）。
-- 公开配置：45 插件 / **511 规则**。
+- 公开配置：46 插件 / **511 规则**。
 - 对新增域做 DNS/HTTPS 抽测，预期 `127.0.0.1`/000；核心域
   `app.sports.qq.com`、`i.video.qq.com` 保持可达。
 

@@ -237,6 +237,16 @@
 
 无 A/B 级缺口候选。
 
+## `youtube` — 生效黑洞 0 域；缺口候选 A:1 B:1 C:3（已裁决排除 0 条；已收录但默认关闭 0 条）
+
+| A 候选（≥3 源） | 源 | 状态 |
+|---|---|---|
+| `fcmatch.youtube.com` | 5: adguard-dns,adrules,anti-ad,easyprivacy,hagezi-pro | 缺口 |
+
+| B 候选（2 源） | 源 | 状态 |
+|---|---|---|
+| `youtube.googleapis.com` | 2: adrules,easyprivacy | 缺口 |
+
 ## `zhihu` — 生效黑洞 0 域；缺口候选 A:2 B:0 C:5（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |

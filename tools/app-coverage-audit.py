@@ -46,6 +46,7 @@ PATTERNS: dict[str, re.Pattern] = {
     "taobao": re.compile(r"adashx|simba\.taobao|ads\.m\.taobao|topshow\.taobao|alimama|tanx\.|mmstat|hudong\.alicdn|ossgw\.alicdn"),
     "zhihu": re.compile(r"zhihu|zhimg"),
     "bilibili": re.compile(r"bilibili|biliapi|bilivideo|hdslb|biligame"),
+    "youtube": re.compile(r"youtube|googlevideo|ytimg|youtubei"),
 }
 
 # 品牌根域白名单：候选的 registrable root 必须属于 App 主体（拒掉 typosquat/第三方站点/社区站）
@@ -67,6 +68,7 @@ BRAND_ROOTS: dict[str, set[str]] = {
     "taobao": {"taobao.com", "tmall.com", "alimama.com", "tanx.com", "mmstat.com", "alicdn.com"},
     "zhihu": {"zhihu.com", "zhimg.com"},
     "bilibili": {"bilibili.com", "biliapi.com", "biliapi.net", "bilivideo.com", "hdslb.com", "biligame.com"},
+    "youtube": {"youtube.com", "googlevideo.com", "ytimg.com", "googleapis.com"},
 }
 
 # 整 root 不进候选（共享主域/CDN/网关，命中再多也不是「广告专用域」）
@@ -80,6 +82,7 @@ EXCLUDE_ROOTS = {
     "jd.com", "360buyimg.com", "360buy.com", "jd.hk",
     "zhihu.com", "zhimg.com",
     "bilibili.com", "biliapi.com", "biliapi.net", "bilivideo.com", "hdslb.com", "biligame.com",
+    "youtube.com", "googlevideo.com", "ytimg.com", "googleapis.com",
 }
 # root 本身排除，但其广告向子域仍可进候选（用 token 再筛一层）
 ROOT_AD_HINT = {

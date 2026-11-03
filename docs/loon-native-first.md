@@ -465,7 +465,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 
 ### 9.7 文档里的数字也是数据源（第二十四轮补上门禁）
 
-一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`1497 条生效 Host`、`16 个 App 插件`、
+一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`1497 条生效 Host`、`17 个 App 插件`、
 `官方文档 26 页`、`1760 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
 **风险面的规模**来用：加一批域名忘了改文档，读者就照着虚高（或虚低）的数字判断该不该装。
 
@@ -476,7 +476,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 | `plugins/ads/README.md` 的分组条数、生效/注释 Host、exact/wildcard、通配与家族拆分、可选 Rule 的 27/16/1 | `tools/build-ads.py --stats-json` |
 | 规模页 `docs/repo-metrics.md` 的正文页数、能力表 175 条与五档分布、旁路路径数、广告类型数、上游黑名单家数、App 插件数 / 覆盖 App 数 / 增强层个数 | `tokens.json`、`loon-coverage --check`、`bypass-audit --check`、`ad-surface-audit --check`、`app-coverage-audit.SOURCE_NAMES`、`src/apps/*.json` |
 | 「N 套件 ×2 = M 套件 / K 断言」与 `tests/README.md` 的断言分布表 | `tests/run-all.py` 本次实跑的 per-suite 计数 |
-| 本节自己的 `1497 条生效 Host`、`16 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
+| 本节自己的 `1497 条生效 Host`、`17 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
 | 文档里复述的「门禁管了 N 条声明」与 `readme numbers: N …` 成功行 | 同一次 lint 真实核对成功的条数 |
 | 文档任意一行同时出现 `test_xxx` 与「N 断言」 | 该套件本次实跑数（查不到套件名直接报错） |
 | 真机清单的 J 段插件数、正文页数、`ads=<版本>` 式版本引用 | `src/apps/*.json`、`tokens.json`、各插件 `#!version` |
@@ -497,7 +497,7 @@ Scheme 导入种类 6→7），分属四个不同出口——说明「数字散�
 `红线（绝不进任何拦截组）：mapi.m.jd.com / cactus.jd.com / dns.jd.com …`。没有任何门禁能回答
 「这条规则碰没碰红线」，因为红线在一个字符串里，规则在另一个数组里。
 
-第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 128 条 App 红线，覆盖 16 个 App 的红线声明）：
+第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 132 条 App 红线，覆盖 17 个 App 的红线声明）：
 
 | 字段 | 作用 |
 |---|---|
@@ -508,7 +508,7 @@ Scheme 导入种类 6→7），分属四个不同出口——说明「数字散�
 
 `quote` 是防伪层：把猜测写成字段是最容易从结构化里钻回来的造假路径。凭品牌名补一个
 `sso.jd.com`、或从 `api.io.mi.com` 里截出 `io.mi.com` 当主域，都会因为「quote 不在原文里」
-或「domain 不是 quote 中的独立 token」当场构建失败。128 条红线的规模不是估的——它就是
+或「domain 不是 quote 中的独立 token」当场构建失败。132 条红线的规模不是估的——它就是
 `tools/build-ads.py --stats-json` 数出来的，本节这两个数字也钉在那个出口上。
 
 判定只禁两种操作：把红线名字本身黑洞掉，或用任意一层通配/后缀把它捞进去；红线之下的精确广告子域
