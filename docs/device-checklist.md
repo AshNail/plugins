@@ -293,3 +293,4 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [x] **现网结果**：Mac 私有配置 540 条本地规则 / 10 个策略组；FINAL 唯一且在末条，0 重复、0 端口/IP 倒序、0 域名遮蔽、0 未定义策略。公开配置 511 条同样全绿。
 - [x] **远程规则**：6 条 `[Remote Rule]` 分别绑 DIRECT / Proxy / REJECT；工具只汇总 policy，不打印远程 URL。
 - [x] **边界**：该工具只做结构检查，不判断业务策略是否最优；`url-test` 只测延迟，不能发现“延迟低但吞吐崩”的节点（2026-11-03 实测：唯一存活 HY2 节点 189ms，但 Cloudflare 下载仅 4–7 KB/s；两条 VLESS 均 Timeout）。节点吞吐问题应更新订阅/换线路，不要改规则顺序。
+- [x] **远程规则集红线审计**：`python3 tools/remote-rules-audit.py` 拉取 blackmatrix7 的 Advertising / Privacy / Hijacking 三套 REJECT 规则，对照 122 条 App 红线并检查本地 DIRECT 覆盖。当前 Advertising 有 3 条京东红线关键词（kepler.jd.com / mapi.m.jd.com / policy.jd.com），均由本地精确 DIRECT 规则覆盖；实测 HTTPS 返回真实 302/403/404。远程清单更新后必须重跑，出现无本地覆盖的红线命中时工具 exit 1，不要删除本地覆盖行。
