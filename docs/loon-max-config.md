@@ -92,7 +92,7 @@
 如果你已有 `[Proxy]`/`[Proxy Group]`，保留它们并把 `FINAL` 改成你的策略组。
 
 整份替换的版本是 [`configs/loon.conf`](../configs/loon.conf)：同样的 General 骨架，
-加上 44 个自动加载插件、511 条分流规则、10 个 `select,DIRECT` 策略组和 MITM 排除表。
+加上 45 个自动加载插件、511 条分流规则、10 个 `select,DIRECT` 策略组和 MITM 排除表。
 两者的差异只在「是否替你决定插件与分流」，通用键的取舍是同一套。
 
 <!-- base-config:start -->
@@ -485,7 +485,7 @@ CA / 口令。三个新增入口：
 
 | 档位 | 组合 | 代价 | 适合 |
 |---|---|---|---|
-| A. 一键全功能（推荐） | 导入 `configs/loon.conf`：44 个插件自动加载 + 511 条规则 + 10 个 `select,DIRECT` 组；域形式 DoH（ads 可选组保持注释） | 会替换当前配置；无节点/CA 的公开版需要私有生成器补回 | 想一次装完、以去广告为主 |
+| A. 一键全功能（推荐） | 导入 `configs/loon.conf`：45 个插件自动加载 + 511 条规则 + 10 个 `select,DIRECT` 组；域形式 DoH（ads 可选组保持注释） | 会替换当前配置；无节点/CA 的公开版需要私有生成器补回 | 想一次装完、以去广告为主 |
 | B. 只合并主配置 | `examples/loon.conf` 原样 + 用 UI 装 `ads.plugin`；`FINAL,DIRECT`；DNS 全部 IP 形式 | 插件要逐个装；没有代理能力 | 已有主配置、只想补键 |
 | C. 代理 + 去广告 | A 或 B + `[Proxy]`/`[Proxy Group]`/`[Remote Proxy]`；`FINAL` 改成策略组 | 策略组与节点由服务商决定；测速/订阅参数需自己维护 | 已有节点、希望分流与去广告共存 |
 | D. 最大隔离（按需） | C + `ip-mode = v4-only` + `disable-stun = true` + `disable-udp-ports = 443`（或 `udp-fallback-mode = REJECT`） | 会断 IPv6-only 网络、部分语音/视频通话与 QUIC 业务；只适合能接受副作用的设备 | 安全优先、愿意逐项真机验证的用户 |

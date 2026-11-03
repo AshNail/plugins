@@ -11,6 +11,19 @@
 |---|---|---|
 | `ads.95516.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
 
+## `bilibili` — 生效黑洞 0 域；缺口候选 A:3 B:2 C:7（已裁决排除 0 条；已收录但默认关闭 0 条）
+
+| A 候选（≥3 源） | 源 | 状态 |
+|---|---|---|
+| `dataflow.biliapi.com` | 4: adguard-dns,adguard-mobile,anti-ad,hagezi-pro | 缺口 |
+| `api.bilibili.com` | 3: adguard-cn,adrules,easylist-cn | 缺口 |
+| `data.bilibili.com` | 3: adrules,easyprivacy,hagezi-pro | 缺口 |
+
+| B 候选（2 源） | 源 | 状态 |
+|---|---|---|
+| `api.live.bilibili.com` | 2: adguard-cn,adrules | 缺口 |
+| `miniapp.bilibili.com` | 2: anti-ad,hagezi-pro | 缺口 |
+
 ## `bubei-danci` — 生效黑洞 1 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
