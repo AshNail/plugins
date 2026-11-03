@@ -10,7 +10,7 @@
 |---|---|---|
 | 广告平台拦截器 | 已覆盖 | `ads.plugin` 的 921 个可莉广告平台域全部覆盖（域名差集 0） |
 | HTTPDNS 拦截器 | 基本覆盖 | `ads` 已覆盖 63/70 个端点；剩 Youku XPIS/inkuai/q2cdn/k-dyn 等 7 个，未默认吸收 |
-| 可莉广告过滤器 | 待落地 | 82 条 request reject；16 个域名缺口，部分为小米遥测/商城，不能直接照搬 |
+| 可莉广告过滤器 | **已完成-原生子集** | `plugins/adfilter`：52 条 API 级 URL 规则（默认注释）+ 11 个精确广告域；排除钱包/核心 API/共享 CDN/图片硬编码 |
 | 淘宝去广告 | **已完成** | `plugins/taobao`：12 个精确 DNS 域 + 11 条可选 MITM URL 规则；可莉 JS 未复制 |
 | 闲鱼去广告 | **已完成** | `plugins/xianyu`：DNS 组 + 15 条可选 `response.json.jq` |
 | 知乎去广告 | **已完成** | `plugins/zhihu`：16 条请求拒绝 + 14 条响应 jq，全部原生；可莉 JS 未复制 |
