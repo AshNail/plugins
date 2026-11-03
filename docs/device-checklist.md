@@ -247,7 +247,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       那是用户主配置自己的 MITM 名单，不参与本清单判读。
 - [x] **有意的数据缺口**：638 条非广告 luna 请求未绑定；没有“全 luna 都处理”的假宣告。
 
-## J. 13 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
+## J. 14 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
 
 - [ ] 逐个导入 `plugins/<slug>/<slug>.plugin`，装后完全退出并重开目标 App。
 - [ ] **生效判读**：日志里命中域应显示 `Host Map IP:127.0.0.1`（插件 [Host] 的特征字样，区别于主配置的 `Reject domain ... in DNS phase`）。
@@ -260,6 +260,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] 红线交叉验证（ads × `jd`/`mijia`）：`src/apps/*.json` 的 `redlines` 把 `dns.jd.com`（京东自建 HTTPDNS）、`union.jd.com`（京东联盟站）与 `resolver.msg.xiaomi.net`（小米推送/米家解析通道，出处是 `mijia.json` 台账「推送/云红线」的 `resolver.msg.*`，不在 `comment` 里）划为绝不进拦截组，`tools/build-ads.py` 因此拒绝把它们放进任何默认生效组，三者现在只存在于 ads 的「与按 App 插件红线冲突的候选」注释组。取证两步：①同时导入 ads + `jd` + `mijia`，确认日志里**没有**这几条的 `Host Map IP:127.0.0.1`，京东搜索/下单/图片正常、米家设备控制与消息推送正常；②逐行取消 `# ` 打开它们后重开这两个 App，观察是否出现「转圈/搜索无结果/白图/设备离线/收不到推送」——若一切正常，说明它们确实回退系统 DNS，可把对应条目挪回默认生效组并同步改该 App 的红线与本清单（挪回去要先删红线，门禁会当场拒绝无红线的激活）。没做完这两步之前，别凭「成熟清单也拦」推断无副作用。
 - [ ] **qidian/xianyu/x/instagram**：预期收益低（内联广告），判读以「遥测域消失 + 业务无恙」为准，不以「广告消失」为准。
 - [ ] **bubei-danci** 不背单词：本插件**没有广告 SDK 组**——官方 SDK 目录 `https://learnywhere.cn/lexis/sdklist` 里没有穿山甲/优量汇/快手/百青藤，变现是酷币与会员内购，所以这里的「去广告」实际是去跟踪。判读：`ns.360wgjs.com`（站外埋点，anti-AD/PiT 等三家清单收录）从日志消失；学习链路 `learnywhere.cn`（API + 例句音频）、`bbdc.cn`、声通评测 `isuntone` 必须无恙。**`umeng` 组默认关**：`umeng.com` 整域拦会把统计 + U-Push + 一键登录一起断（签到提醒、号码认证同断），只在「不在乎推送、只要隐私」时开。
+- [ ] **taobao**：DNS 组应命中 h-adashx/ossgw/hudong 等精确广告域；可选 MITM 的 11 条 URL-REGEX 启用后，搜索、下单、购物车、支付必须无恙，`acs.m.taobao.com` 与 `guide-acs.m.taobao.com` 不得被 DNS 黑洞；广告图片路径应返回 1px 图。
 - [ ] **mba-dashi** MBA大师：开屏走穿山甲、课程列表插屏走优量汇（两家 SDK 由官方隐私政策确认）。判读：冷启开屏广告加载失败、课程列表插屏消失即 pangle/gdt 组命中；红线 `www/m/file/video.mbajm.com` 全是讲义、课程、视频链路，绝不允许出现在拦截日志。**代价**：App 内「看广告领课程」依赖这些 SDK——启用即断该活动，属预期而非故障。
 - [ ] **ruankao-tong** 软考通：同为 pangle + gdt（`ixinz` 系）。判读：开屏与课程列表插屏加载失败即命中；红线 `www.ixinz.com` 与 `*.s2.ixinz.com` 是课程/题库内容分发域，不得出现在日志。官方隐私政策只给 SDK 包名不给域名，域名按两家 SDK 公开集成文档补齐（B 级）；题库内容与广告同源不可分，「看广告解锁真题」启用即断。崩溃上报（`shenzhou` / `crash.ixinz`）为第一方自建、网络层无从区分，故不列。
 - [ ] **以上两款共有的口径**：`mba-dashi` / `ruankao-tong` 的 `[Host]`/`[Rule]` 是全设备生效（Loon 无法按 App 限定），同一 SDK 域跨 App 共享黑洞——「按 App 插件」只是分组开关；测试时若别的 App 也报广告加载失败，那是同一批域在起作用，不是插件写错。配合全局 ads 插件的 httpdns 组防绕过。
@@ -284,3 +285,10 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [x] **插件 `[General]` 会追加 DNS**：启用插件的 `dns-server` / `doh-server` / `doh3-server` 是追加而非替换。实测 All-in-One 追加了 `h3://223.5.5.5`、`h3://223.6.6.6` 与 `1.12.12.12`，会在主配置已清理 DoH3 后重新引入；排障时先 grep 插件缓存的 `[General]`，再怀疑主配置。若删除缓存里的这些行，先备份 `.lpx`；「更新全部外部资源」会恢复远端版本。
 - [x] **不要用 UI 的 MITM 计数判断主机数**：清理后 TLS issuer 已按主机变化，但首页「MITM 228」计数未同步；以证书签发者与插件缓存名单为准。
 - [x] **只读审计工具**：`python3 tools/mac-mitm-audit.py` 列出主配置独有 MITM 主机及插件缓存/主配置消费证据，`--json` 可机器读取。候选判断是启发式的（如 `(?:beta-)?api.m.jd.com` 这类可选前缀正则），删除前仍要按上一条做证书验证。
+
+## L. 分流结构审计（2026-11-03 macOS 实测）
+
+- [x] **只读工具**：`python3 tools/mac-routing-audit.py` 检查本地 `[Rule]` 的 FINAL 位置、重复行、端口/协议规则是否落在 IP 规则之后、域名是否被更早的宽规则遮蔽、策略组是否未定义；`--json` 机器可读，`--check` 有发现时 exit 1。
+- [x] **现网结果**：Mac 私有配置 540 条本地规则 / 10 个策略组；FINAL 唯一且在末条，0 重复、0 端口/IP 倒序、0 域名遮蔽、0 未定义策略。公开配置 511 条同样全绿。
+- [x] **远程规则**：6 条 `[Remote Rule]` 分别绑 DIRECT / Proxy / REJECT；工具只汇总 policy，不打印远程 URL。
+- [x] **边界**：该工具只做结构检查，不判断业务策略是否最优；`url-test` 只测延迟，不能发现“延迟低但吞吐崩”的节点（2026-11-03 实测：唯一存活 HY2 节点 189ms，但 Cloudflare 下载仅 4–7 KB/s；两条 VLESS 均 Timeout）。节点吞吐问题应更新订阅/换线路，不要改规则顺序。

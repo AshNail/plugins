@@ -43,6 +43,7 @@ PATTERNS: dict[str, re.Pattern] = {
     "bubei-danci": re.compile(r"bubei|(^|\.)5cd\.|(^|\.)notword|(^|\.)wanbang|langeasy"),
     "zhihuifangdong": re.compile(r"fangdd|zhihuifangdong|loofz|ttlock"),
     "jd": re.compile(r"(^|\.)jd\.com(\.|$)|(^|\.)360buy(img)?\.com|(^|\.)jd\.hk(\.|$)|(^|\.)jdx\.com|(^|\.)jingxi\.com"),
+    "taobao": re.compile(r"adashx|simba\.taobao|ads\.m\.taobao|topshow\.taobao|alimama|tanx\.|mmstat|hudong\.alicdn|ossgw\.alicdn"),
 }
 
 # 品牌根域白名单：候选的 registrable root 必须属于 App 主体（拒掉 typosquat/第三方站点/社区站）
@@ -61,6 +62,7 @@ BRAND_ROOTS: dict[str, set[str]] = {
     "bubei-danci": {"bubei.com", "bubei.com.cn", "5cd.com", "wanbang.com", "langeasy.cn", "langeasy.com"},
     "zhihuifangdong": {"ttlock.com", "loofz.com", "fangdd.com", "zhihuifangdong.com"},
     "jd": {"jd.com", "360buyimg.com", "360buy.com", "jd.hk", "jdx.com", "jingxi.com"},
+    "taobao": {"taobao.com", "tmall.com", "alimama.com", "tanx.com", "mmstat.com", "alicdn.com"},
 }
 
 # 整 root 不进候选（共享主域/CDN/网关，命中再多也不是「广告专用域」）
@@ -92,6 +94,7 @@ ROOT_AD_HINT = {
     "360buyimg.com": re.compile(r"img"),
     "360buy.com": re.compile(r"cps|union"),
     "jd.hk": re.compile(r"."),
+    "alicdn.com": re.compile(r"ad|hudong|ossgw|simba|tanx"),
 }
 
 ADBLOCK_RE_EXTRA = re.compile(r"^\|\|([^/*^$]+)\^?", re.IGNORECASE)
