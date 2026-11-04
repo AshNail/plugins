@@ -720,7 +720,14 @@ CAPABILITIES = [
          probe=r"(?m)^#!system_version\s*=", href=DOC + "/Plugin/",
          why="一个值同时约束 `#!system` 里列的**所有**平台：ads 写了 `iOS,iPadOS,tvOS,macOS`，"
              "填 15.0 等于要求 macOS 15 / tvOS 15。不填＝全部支持，比填错安全"),
-    dict(layer="元数据", key="m-loon-version", name="`#!loon_version`", expect="used", probe=r"(?m)^#!loon_version\s*=", href=DOC + "/Plugin/"),
+    dict(layer="元数据", key="m-loon-version", name="`#!loon_version`", expect="used",
+         probe=r"(?m)^#!loon_version\s*=", href=DOC + "/Plugin/",
+         why="只在 `#!system=ios` 的 soda/douyin 上声明；14 个 `#!system` 覆盖 macOS 的插件**不写这行**。"
+             "Loon for Mac 的营销版本号是独立一条线（0.1(26) → 0.5.0(1011)，构建号自 991 起才与 iOS 统一），"
+             "iOS 口径的 `3.5.1(983)` 在 Mac 上比的到底是营销版本还是构建号官方没写，两种读法都会挡掉"
+             "一部分 Mac 用户；不填＝不带最低版本（官方明写「未填写表示全部支持」的是 `#!system`，"
+             "这条属推断），裁量同 `#!system_version`。功能基线退回 README 供人参考，"
+             "机器侧由 lint 的 `check_loon_version_gate()` 反向锁死「声明 macOS 就不许带门槛」"),
     dict(layer="元数据", key="m-date", name="`#!date`", expect="used", probe=r"(?m)^#!date\s*=", href=DOC + "/Plugin/"),
     dict(layer="元数据", key="m-tag", name="`#!tag`", expect="used", probe=r"(?m)^#!tag\s*=", href=DOC + "/Plugin/"),
     dict(layer="元数据", key="m-type", name="`#!type`", expect="used", probe=r"(?m)^#!type\s*=", href=DOC + "/Plugin/"),
@@ -856,9 +863,9 @@ def render_md(rows, summary):
                  "本行也必须带 `token=` 链接指向 `tools/loon-token-audit.py` 的例外表，两边脱钩就红。")
     lines.append("")
     lines.append("**主配置层的 0% 是插件能力分母口径**：插件不能声明 `[Proxy]`/`[Proxy Group]`/"
-                 "`FINAL` 等主配置段落，所以这些条目记为不适用，不代表主配置没有落地。"
-                 "主配置的实际基线见 `examples/loon.conf`，插件外能力台账见 "
-                 "`docs/loon-max-config.md`。")
+                 "`FINAL` 等主配置段落，所以这些条目记为不适用。本仓库**不做主配置**——"
+                 "分发面只有独立插件（`plugins/<slug>/<slug>.plugin`），主配置段落一律由用户自己的"
+                 "配置决定；这些条目留在表里是为了记录「Loon 有这个能力，但我们有意不从仓库下发」。")
     lines.append("")
     lines.append("## 总览")
     lines.append("")

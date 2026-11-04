@@ -2,7 +2,7 @@
 
 > 依据：官方文档 `https://nsloon.app/docs/`（源仓库 [Loon0x00/LoonManual](https://github.com/Loon0x00/LoonManual) `docs/cn/`，2026-10-27 逐页核对）。
 > 图例：✅ 本仓库已在用 / 🟡 建议你在设备侧开启 / ⚪ 进阶可选 / 🔒 需真机取证后启用 / ❌ 不采纳（带理由）。
-> 适用版本：主配置按当前 stable 功能描述；标注 build 号的是硬门槛（soda/douyin 标注 3.5.1(983)+，gzip 响应解析需 3.5.1(988)+；ads 与全部 App 插件门槛降到 App Store 正式版 **3.5.2(996)**，`DOMAIN-WILDCARD` 仅 TF 3.5.3(1008) 有、改为默认注释层）。
+> 适用版本：主配置按当前 stable 功能描述；标注 build 号的是硬门槛（soda/douyin 标注 3.5.1(983)+，gzip 响应解析需 3.5.1(988)+；ads 与全部 App 插件的功能基线是 App Store 正式版 **3.5.2(996)**、`DOMAIN-WILDCARD` 仅 TF 3.5.3(1008) 有故默认注释层，但**插件头不写 `#!loon_version`**——那是 iOS 口径的导入门槛，Loon for Mac 的版本号是独立一条线，见 §7）。
 > 第 9 节起的 `[x]` 表示**该轮研究/处置已完成**，不等于对应功能默认开启；未落地、未取证或刻意不启用的项都在正文逐条标注理由。
 
 ## 1. 导入与快捷指令（docs/cn/scheme.md）
@@ -18,7 +18,7 @@
 | 导入订阅/节点/规则/**插件**/图标集/geoip/解析器 | `loon://import?plugin=encode(url)` 等 7 种 | `…/openloon/import?...` |
 | 更新全部订阅 | `loon://update?sub=all` | `…/openloon/update?sub=all` |
 
-- ✅ 根 README 只保留一个 `openloon/import?sub=` 按钮，导入整份 `configs/loon.conf`；插件在该配置的 `[Plugin]` 里自动加载，不再逐个点安装。
+- ❌ **本仓库不下发主配置**（2026-11-04 撤下）：`configs/loon.conf`、`examples/loon*.conf`、`docs/loon-max-config.md`、`docs/loon-routing-host-asn.md`、`tools/check-loon-config.py`、`tools/make-private-config.py` 与 `npm run check:config` 已全部删除。根 README 回到**逐个插件**的 `openloon/import?plugin=` 按钮表——去广告能力已经在插件层自带 `[Host]`/`[Rule]`/`[Script]`，而整份 profile 会替换用户现有配置，风险与噪音都大于收益。
 - 🟡 **iOS 快捷指令**绑定 `loon://off`（一键全关）与 `loon://update?sub=all`（出门前更新）。
 - 🟡 `loon://editconfig` 加到主屏：主配置加固改起来快。
 
@@ -48,7 +48,7 @@
 ## 3. DNS 面板与解析（dns.md / hostmap.md）
 
 - ✅ `[Host]` 域名映射（ads 用 127.0.0.1 黑洞）；本仓库构建器速记 `=` → 域 + `*.域`（不是 Loon 语法，由 `tools/build-ads.py` 展开）。
-- ✅ DoH 两种形态都实测在用：`ads.plugin` 的 [General] 继续用 IP 形式（`https://223.5.5.5/dns-query`）；整份 `configs/loon.conf` 用域形式（`https://dns.alidns.com/dns-query`），因为 ads 2.8.0 已把国内公共 DoH 入口域移入**默认注释**的可选组。**官方 Plugin 文档列明插件 [General] 可用键**：`bypass-tun` / `include-tun` / `skip-proxy` / `real-ip` / `dns-server` / `doh-server` / `doq-server` / `doh3-server` / `ipv6-vif`。
+- ✅ DoH 两种形态都实测在用：`ads.plugin` 的 [General] 继续用 IP 形式（`https://223.5.5.5/dns-query`）；域形式（`https://dns.alidns.com/dns-query`）留给用户自己的主配置，因为 ads 2.8.0 已把国内公共 DoH 入口域移入**默认注释**的可选组。本仓库不再下发主配置（见 §1）。**官方 Plugin 文档列明插件 [General] 可用键**：`bypass-tun` / `include-tun` / `skip-proxy` / `real-ip` / `dns-server` / `doh-server` / `doq-server` / `doh3-server` / `ipv6-vif`。
 - ✅ `h3://223.5.5.5/dns-query`（DoH3）已随 ads v2.7.0 声明；真机在 Loon DNS 页确认显示即生效。
 - ⚪ DoT 域名形式 `tls://` 与 IP 形式取舍：海外公共 DoH 入口仍由 ads 默认拦截；国内三家入口默认注释，启用前先确认不会打死 Loon 自己的 `doh-server`。
 
@@ -117,7 +117,8 @@
 
 ## 7. 插件机制（plugin.md）
 
-- ✅ 元数据齐全并受 lint 校验：soda/douyin 至少 `name/desc/author/version/date`；ads 另含 `homepage/icon/system/loon_version/tag/type`。
+- ✅ 元数据齐全并受 lint 校验：soda/douyin 至少 `name/desc/author/version/date`；ads 另含 `homepage/icon/system/tag/type`。
+- ✅ **`#!loon_version` 只留给纯 iOS 插件（2026-11-04）**：官方把它定义为「最低 Loon 版本」，示例 `3.5.1(978)` 是 iOS 口径；而 Loon for Mac 的营销版本号是独立一条线（`0.1(26)` → `0.5.0(1011)`，官方在 `0.4.0(991)` 更新日志写明「macOS 构建号与 iOS 统一至 991」，991 之前 Mac 括号里的数字是 26~81，与 iOS 的 9xx 不同刻度）。`#!system` 覆盖 macOS 的插件写 `3.5.1(983)`，两种读法都挡人：比营销版本 → Mac 永远「太旧」，14 个声称支持 macOS 的插件在 Mac 上装不上；只比构建号 → 误杀 `0.4.0(66~81)` 那批已支持 `[Argument]`＋新版 Script 引擎的设备。官方没写比哪个，Mac 侧行为**仍未取证**。落地：`build-apps.py`/`build-ads.py` 不再输出该行（值退回 `src/apps/*.json` 的 `loonVersion`，只供 README 说明），只声明 `#!system=ios` 的 soda/douyin 保留 `3.5.1(983)`；lint 侧把旧的「`loon_version ≤ 996`」上限锁换成反向锁 `check_loon_version_gate()`——`#!system` 含 macOS（或不填＝全平台）却带 `#!loon_version` 即报错。不填即「不带最低版本」（官方只对 `#!system` 明写「未填写表示全部支持」，这一条属**推断**，不是原文），裁量方式与 `#!system_version` 一致（`docs/loon-native-first.md` §12.3）。
 - ✅ `[Argument]` 类型 `bool`（开关）、`input`（cron 文本）与 `select`（`statusNotify`：notification/silent，`type=string`；候选值经 `script(...,{${statusNotify}})` 以 String 透传）。
 - ✅ 脚本相对路径绑定（`scripts/*.min.js` 与 `.plugin` 同级——这就是 raw 直链部署无需 Pages 的原因）。
 - ✅ **`[MITM]` 支持通配（第二轮落地）**：官方文档写明 `hostname` 支持 `*`、`?`，域名前加 `-` 表示排除。soda/douyin 用一条 `ads?-normal*.zijieapi.com` 覆盖 Pangle 全部分片，而 `[Rule]` 的 `DOMAIN-SUFFIX` 不吃通配、只能逐个列 10 条 QUIC 回退——两边各用自己最强的写法，覆盖关系由 lint 校验（`mitm_covers()` 按 glob 匹配）。
@@ -450,7 +451,7 @@
     - **脚本边界**：新增 `src/soda/check-update.js`，绑定 `enable=${skipUpdateCheck}`（默认关，实验）。只把归一化后的 `has_update` / `hasUpdate` 置 false；包络、`media_result` 与同形键（`check_update_info` / `force_update_ts_ms` 等）零接触。无键、非 JSON、ungzip 失败一律原样放行（最坏情况 = 提示还在）；回写时删掉过期的 `content-encoding` / `content-length`，诊断头 `X-Soda-Plugin` 每个分支都带 `skip=` / `ce=`。
     - **绑定与测试**：`api.qishui.com` / `beta-luna.douyin.com` 双主机各一条响应绑定；`BINDING_SAMPLES["soda"]["response"]` 补两条回放样本，lint 的 `luna host parity` 仍全双主机。新增 `tests/test_check_update.js` 23 断言（src/dist 双跑）：深层置 false、包络与同形键保留、三条放行路径、gzip 路径、过期头清理、回滚常量存在。
     - **默认值调整**：`blockSplashAd` 在 soda/douyin 两个家族统一默认开，满足 schema 的「同名共享开关类型/默认值/label 一致」约束；只拦穿山甲开屏素材与登记家族，`inspire*` 与发奖回调不匹配，回滚只需关开关。汽水 2.8.7、抖音 0.8.6。
-    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；`test_args_schema` 39 断言、17 个开关 label。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 30 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
+    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；`test_args_schema` 39 断言、17 个开关 label。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: <当轮条数> relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
 
 67. [x] **第四十三轮：公开仓库交叉核对；微博 4 个多源广告主机 + 2 个 dig 解析端点落地，白名单/单源/支付域拒收**
     - **数据来源与可信度**：只读比对 fmz200 `weibo.plugin`/`Block_HTTPDNS.plugin`、RuCu6 微博插件、blackmatrix7 `AdvertisingScript.plugin` 三个公开仓库的规则文本；本地缓存清单（anti-AD/AWAvenue/AdRules/hagezi）逐域计数。A 级（≥3 源）才进默认生效组，B 级只进默认注释组或留档。
@@ -470,7 +471,22 @@
     - **ads 落地 7 个（均 ≥3 家公开清单可证 + 语义自证）**：`=appsflyersdk.com`（AppsFlyer SDK 请求/深链，归因组默认注释）、`=shuzilm.cn` / `=yandexmetrica.com`（统计组默认注释）、`adapi.izuiyou.com` / `ems.youku.com` / `=ubixioe.com`（cn_union）、`ws.tapjoyads.com`（mobile_sdks；已有 `tapjoyads.com` 精确主机覆盖不到该子域）。生效 Host 1466→1471（exact 891→895 / wildcard 575→576）、默认注释 131→137、核心广告组 1347→1352、组数仍 20。
     - **拒收并留档**：`v.smtcdns.com` 是腾讯视频 CDN（`moviets`/`vlive` 播放链路），拦了断视频；`wxs.qq.com` 是微信核心静态域；`janapi/dns.jd.com` 是京东明文红线；`asiad.byteactivity`、`lf-ad-ies.bytecdn.cn`、`mon.toutiacloud.com` 仅频道单源、公开清单零命中，留待真机抓包。
     - **App 可选层（全部默认注释，零证书红线不破）**：闲鱼 1.5.0 补 4 条 mtop 广告模块 `REJECT-DICT`（`home.whale.modulet`、`item.resell.recommendorhotcate`、`topic.banner`、`idlehome.idle.coin.nextfresh`）；美团 1.2.3 补 2 条开屏图 `REJECT-IMG` 与 2 个 MITM 主机（`flowplus.meituan.net`、`img.meituan.net`）；京东 1.0.2 / 微信 1.1.4 只把频道建议的拒收理由写进注释——京东 `m.360buyimg.com` 开屏图、微信 `wxs.qq.com` 整域与 `mp.weixin.qq.com` 路径改写都要求 MITM 证书固定类 App，按既定红线（`APP_NO_ENHANCE_SLUGS`）不做。
-    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 30 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
+    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: <当轮条数> relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
+
+69. [x] **第四十五轮：`#!loon_version` 只留给 iOS-only 插件，声明 macOS 的一律不带最低门槛**
+    - **现象**：14 个 `#!system` 覆盖 macOS 的插件头部都带着 `#!loon_version = 3.5.1(983)`（soda/douyin 的 iOS 口径被生成器复制过去了）。Loon for Mac 的营销版本号是**独立的一条线**（0.1(26) → 0.5.0(1011)），官方只从构建号 991 起把 macOS 与 iOS 对齐。
+    - **语义未定就是风险**：官方《Plugin》把该键定义为「最低 Loon 版本」，示例给的是 iOS 口径。Mac 上比的到底是营销版本还是构建号，官方没写——按营销版本比，`3.5.1` 大于任何 `0.x`，Mac 用户全被挡在门外；按构建号比才勉强说得通。一条读法未定的导入门槛不值得拿 14 个插件去赌。
+    - **处置**：`tools/build-apps.py` / `tools/build-ads.py` 不再输出 `#!loon_version`；功能基线退回 `src/apps/*.json` 的 `loonVersion` 字段，只由 `tools/gen-app-readmes.py` 写进 README 说明（「iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛」）。「不填＝不带最低版本」是**推断**——官方只对 `#!system` 明写「未填写表示全部支持」，裁量与 `#!system_version` 同判（`docs/loon-native-first.md` §12.3）。
+    - **门禁**：lint 新增 `check_loon_version_gate()`，方向是**反向锁**：只要 `#!loon_version` 还在、且 `#!system` 未填或含 macOS 就报错（未填 `#!system` 按官方语义＝全部平台，同样覆盖 Mac）；只声明 iOS 的 soda/douyin 允许保留，当前读数 `kept on iOS-only plugin(s): douyin=3.5.1(983), soda=3.5.1(983)`。`ADS_META_KEYS` 与 App 元数据必备键相应摘掉该键，14 份 `.plugin` 与对应 README 重新生成。能力表 `m-loon-version` 仍记 `used`（两条 iOS-only 命中探针），理由列改写为「为什么其余插件不写」。
+    - **口径**：本轮只改插件头元数据与文档/门禁措辞，**规则、脚本与默认行为零变化**，不 bump 插件版本；四道受管声明由**下一条**（最后一条记录）复述。
+
+70. [x] **第四十六轮：配置层整体撤下 —— 仓库只分发独立去广告插件**
+    - **触发**：用户要求「配置相关的都彻底移除掉，当前项目只保留去广告的独立插件项」，并对两项处置分别确认「`configs/loon.conf` 连这份也删掉」「历史产物与门禁全删」。
+    - **删除清单**：`configs/loon.conf`、`configs/loon-full.conf`、`examples/loon.conf`、`examples/loon-routing.conf`、`docs/loon-max-config.md`、`docs/loon-routing-host-asn.md`、`tools/check-loon-config.py`、`tools/make-private-config.py`（连它的 `--self-test`）；`configs/`、`examples/` 两个目录随之消失；`package.json` 删掉 `check:config` 脚本并从 `check` 链中摘除。历史实现留在 git 记录里，要回看按 commit 取。
+    - **为什么删得起**：去广告能力全部在插件层自包含——`[Host]` 黑洞、`[Rule]`、`[Rewrite]`/`[Script]`、插件自己的 `[MITM] hostname` 与红线排除表都由插件携带，lint 的 `mitm reach` / `rule vectors` 逐条对着 111 条红线核。主配置多出来的只有节点、策略组与分流，而 `import?sub=` 的语义是**整份替换用户当前配置**：公开版不许含节点与 CA 私钥，于是它既替用户配不出代理，又把「替换掉他原来那份」的风险摆上台面；想只补几个键的人，本来就该在自己配置里改。
+    - **根 README 回到逐个插件**：顶部一句话交代分发面（无主配置、无分流规则、无节点/订阅、无证书私钥），四条使用前提（零 MITM 插件不需要证书；MITM 插件自带 `[MITM]`，需在 Loon → 设置 → MITM 生成并信任证书后才解密；一个 App 只装一个；证书固定类 App 只有 DNS/规则层——这是能力边界不是遗漏），主体是 16 行 `openloon/import?plugin=` 按钮表，另加「已撤下的东西」一节记下本轮删了什么与为什么。
+    - **其余引用**：`tools/loon-coverage.py` 页脚改为「主配置段落记为不适用，是本仓库有意不从仓库下发，不是插件没有这能力」，`docs/loon-coverage.md` 随之重新生成；`tests/README.md` 的检查链说明补一段撤下记录；§1 的「不下发主配置」与 §3 的 DoH 口径改指「用户自己的主配置」。第 35/39/40/41 轮那些配置层历史记录原样保留，不回删、不改写。
+    - **口径**：插件规则、脚本产物与默认行为零变化，不 bump 版本；测试仍为 27 套件 ×2 = 54、1646 断言；能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 6 relative link(s)`、`device checklist: J section covers all 13/13 app plugins`；`npm run check` 全绿 exit 0。
 
 
 ## 10. 明确不采纳清单（持续维护，带理由）
@@ -484,12 +500,14 @@
 | 旧版 Rewrite / Script 语法（`script-path=`、`header-del`、`reject-200`、`\x20`…） | 官方定位「仅维护旧配置，不再扩展」；按空格拆参数、无类型与批量数组表达。本仓库全部走 3.5.1(978/983)+ 新语法，并由 `lint` 的 `check_no_legacy_syntax()` 在有效行上锁死 |
 | `[General]` 弃用四键（`ipv6` / `switch-node-after-failure-times` / `force-http-engine-hosts` / `skip-first-packet`） | 官方明写「仅用于识别旧配置，新配置不应继续使用」，分别自 3.2.3(754/787)、3.5.0(968) 起被替代或自动识别；写进插件等于给升级埋雷 |
 | `[MITM]` 的 `ca-p12` / `ca-passphrase`（官方键，仍不用） | 自带 CA 意味着把**私钥**塞进公开插件：用户拿到的是别人的信任根，且换设备就得重导。统一用 Loon 内置 CA + 用户自己装的描述文件。lint `check_mitm_surface()` 把这两个键列为永久禁止 |
+| 整份可导入主配置（`[General]`/`[Rule]`/策略组 profile，2026-11-04 撤下） | `import?sub=` 是**替换**用户当前配置，而公开产物不许含节点/订阅/CA 私钥——于是它既配不出代理，又要用户承担「原有分流被覆盖」的风险；去广告能力插件层已自带 `[Host]`/`[Rule]`/`[Script]`/`[MITM]`。分发面只剩独立插件 |
 | `geoip-url` / `ipasn-url` | 换 GeoIP/ASN 数据源影响整机分流判定，且插件不可声明；`$utils.geoip/ipasn/ipaso` 与 `GEOIP`/`IP-ASN` 大网段本就判死 |
 | `hijack-dns` / `domain-reject-mode` / `dns-reject-mode`（插件内） | 插件 [General] 白名单外；放主配置清单（第 2 节） |
 | `$config.setSelectPolicy` / `$setRunningModel` | 本仓库插件无策略组场景 |
 | `$persistentStore.remove()` | 官方语义是**清空全部**脚本数据，不接受 key 参数；删单项只能用 `write(undefined, key)` |
 | `[IP Rewrite]` | 只接受精确 IPv4、不支持 CIDR/域名；广告目标 IP 随时变，逐条枚举必漏 |
 | `#!system_version` | 一个值同时约束 `#!system` 列出的所有平台；ads 声明了 macOS，填 15.0 会把 macOS 14 挡在门外。不填＝全部支持 |
+| `#!loon_version`（`#!system` 覆盖 macOS 的插件） | Loon for Mac 是独立的一条版本号线（0.5.0(1011)），iOS 口径门槛在 Mac 上比什么官方未写，两种读法都会挡掉一部分 Mac 用户。功能基线写进 README，插件头不声明；lint `check_loon_version_gate()` 反向锁 |
 | `$config.getSubPolicies` | 异步读策略组列表，插件不管理节点，读完没有动作可做 |
 | `$crypto.aes` / `$utils.gzip` 上行方向 | 现有脚本无加密上行/压缩上行需求 |
 | 域名/开屏拦截改用纯 `Rewrite … then reject_dict(200)` | 保留 `http-request` 脚本：需要逐请求日志、`rewardSafe` 分支与跨家族测试（42 + 22 条断言）；原生 Rewrite 无法输出自定义日志，且开关逻辑一旦写进静态行就失去脚本内的二次域名校验 |

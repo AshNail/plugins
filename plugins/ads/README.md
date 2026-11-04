@@ -34,7 +34,7 @@ Loon 导入链接：
 loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fads%2Fads.plugin
 ```
 
-要求 **Loon 3.5.2(996)+**（当前 App Store 正式版）。插件头 `#!loon_version=3.5.2(996)` 与正式版对齐，**所有真实用户都能直接导入**——不再用 TestFlight 的 3.5.3 卡门槛。核心 `[Host]` 黑洞、`[Rule]` HTTPDNS/端口、`[General]` DoH/DoT 在 3.5.2 完整生效。`DOMAIN-WILDCARD` 通配/家族层（Loon 3.5.3(1008)+，目前仅 TestFlight）默认以注释行收录：App Store 用户保持注释即可（对应的具体广告/DoH 域已由 `[Host]` 逐条覆盖），装了 3.5.3+ 的用户逐行去掉行首 `# ` 即启用整族拦截。安装后建议重连一次 Loon，让 DNS/DoH 配置生效。
+功能基线 **Loon 3.5.2(996)+**（当前 App Store 正式版）。插件头**不写 `#!loon_version`**：那是官方定义的「最低 Loon 版本」导入门槛，取值口径来自 iOS，而 Loon for Mac 的营销版本号是独立一条线（`0.1(26)` → `0.5.0(1011)`，构建号自 991 起才与 iOS 统一），写 `3.5.2(996)` 反而可能把 Mac 用户挡在门外；不填即不带最低版本，**任何在用的 Loon 都能直接导入**。核心 `[Host]` 黑洞、`[Rule]` HTTPDNS/端口、`[General]` DoH/DoT 在 3.5.2 完整生效。`DOMAIN-WILDCARD` 通配/家族层（Loon 3.5.3(1008)+，目前仅 TestFlight）默认以注释行收录：App Store 用户保持注释即可（对应的具体广告/DoH 域已由 `[Host]` 逐条覆盖），装了 3.5.3+ 的用户逐行去掉行首 `# ` 即启用整族拦截。安装后建议重连一次 Loon，让 DNS/DoH 配置生效。
 
 ### 真机验证清单
 

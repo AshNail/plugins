@@ -1,7 +1,7 @@
 # 真机验证清单（重装/更新后照单走）
 
 > 适用：`soda.plugin`（当前 2.8.7）/ `douyin.plugin`（当前 0.8.6）；`ads.plugin`（当前 2.8.3）见 H 节。
-> 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 及全部 App 插件门槛降到 **App Store 正式版 3.5.2(996)**（`DOMAIN-WILDCARD` 仅 TF 3.5.3 有，改为默认注释层，不再卡正式版）。
+> 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 与全部 App 插件**不再声明 `#!loon_version`**（`#!system` 覆盖 macOS，Loon for Mac 的营销版本号是独立一条线 `0.5.0(1011)`，iOS 口径门槛在 Mac 上语义未定），功能基线仍是 App Store 正式版 **3.5.2(996)**；`DOMAIN-WILDCARD` 仅 TF 3.5.3(1008)+ 有，保持默认注释层。
 > 红线重申：本仓插件**只做净化与观测**——不缩短广告、不加速播放、不改写领奖请求、
 > 不做后台自动观看/自动领取。领奖链路（`incentive/done` 等全部 59 头请求）只读不动。
 

@@ -41,7 +41,12 @@ def render(app, sdklib, ads_groups):
         "",
         f"> {app['desc']}",
         "",
-        f"版本 **{app['version']}** ｜ 最低 Loon **{app['loonVersion']}** ｜ {tier_line}",
+        # 功能基线只写进 README 给人看：iOS/tvOS 是 3.5.x 口径，Loon for Mac 另起 0.x 一条线
+        # （构建号自 991 起才与 iOS 统一），所以插件头不带 #!loon_version——反向锁见
+        # tests/lint-plugins.py 的 check_loon_version_gate()。
+        f"版本 **{app['version']}** ｜ 功能基线 Loon **{app['loonVersion']}**+ "
+        "（iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ "
+        f"{tier_line}",
         "",
         "## 安装",
         "",

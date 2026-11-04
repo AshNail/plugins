@@ -115,7 +115,6 @@ ADS_META_KEYS = (
     "openUrl",
     "icon",
     "system",
-    "loon_version",
     "date",
     "tag",
 )
@@ -240,9 +239,6 @@ ADS_WILDCARD_MUST_MISS = (
     "adunit2.example.com",
 )
 ADS_WILDCARD_MIN_BUILD = 1008
-# 当前 App Store 正式版 = Loon 3.5.2(996)；TestFlight 才是 3.5.3(1008-1011)。
-# 任何插件的 #!loon_version 都不得高于正式版 build，否则真实用户无法导入。
-ADS_APPSTORE_STABLE_BUILD = 996
 
 # 数字分片家族层（第二层 DOMAIN-WILDCARD）：Loon 3.5.3(1008) 起支持 `[...]`
 # 字符类，官方示例含 node[0-9].example.com。这一层只允许 `[0-9]`——数字类
@@ -1851,14 +1847,6 @@ def check_ads_family():
         )
     if len(set(wildcard_patterns)) != len(wildcard_patterns):
         errors.append(f"{ADS_PLUGIN}: duplicate DOMAIN-WILDCARD rule")
-    loon_version = meta.get("loon_version", "")
-    loon_build = re.search(r"\((\d+)\)", loon_version)
-    if not loon_build or int(loon_build.group(1)) > ADS_APPSTORE_STABLE_BUILD:
-        errors.append(
-            f"{ADS_PLUGIN}: #!loon_version={loon_version!r} must not exceed the "
-            f"App Store stable build ({ADS_APPSTORE_STABLE_BUILD}) — TestFlight "
-            "gating blocks real users from importing"
-        )
     glob_regexes = {
         pattern: ads_glob_regex(pattern) for pattern in set(wildcard_patterns)
     }
@@ -2804,18 +2792,11 @@ def check_app_plugins():
             errors.append(f"apps/{slug}: generated plugin missing: {plugin.relative_to(ROOT)} (run npm run build:apps)")
             continue
         meta = parse_meta(plugin)
-        for key in ("name", "desc", "version", "date", "tag", "loon_version", "type"):
+        for key in ("name", "desc", "version", "date", "tag", "type"):
             if not meta.get(key):
                 errors.append(f"apps/{slug}: header missing #{key} in {plugin.relative_to(ROOT)}")
         if meta.get("type") != "normal":
             errors.append(f"apps/{slug}: #!type must be normal, got {meta.get('type')!r}")
-        m_build = re.search(r"\((\d+)\)", meta.get("loon_version", ""))
-        if m_build and int(m_build.group(1)) > ADS_APPSTORE_STABLE_BUILD:
-            errors.append(
-                f"apps/{slug}: #!loon_version={meta.get('loon_version')!r} gates on a "
-                f"TestFlight build (> {ADS_APPSTORE_STABLE_BUILD}); App Store users "
-                "could not import"
-            )
         for key in ("homepage", "openUrl", "icon"):
             val = meta.get(key, "")
             if val and not val.startswith("https://"):
@@ -3070,6 +3051,32 @@ def check_no_legacy_syntax():
                     break
     if not hits:
         print("legacy syntax: 0 legacy tokens in active plugin lines")
+
+
+def check_loon_version_gate():
+    """声明 macOS 的插件不得带 `#!loon_version`——只声明 iOS 的（soda/douyin）保留门槛。"""
+    # 官方把该键定义为「最低 Loon 版本」，示例是 iOS 口径的 `3.5.1(978)`；Loon for Mac 的
+    # 营销版本号却是独立一条线（0.1(26) → 0.5.0(1011)，构建号自 991 起才与 iOS 统一）。
+    # Mac 上比的是营销版本还是构建号官方没写，两种读法都会挡掉一部分 Mac 用户；
+    # 不填＝不带最低版本（官方只对 `#!system` 明写「未填写表示全部支持」，这条属推断），
+    # 裁量同 `#!system_version`。
+    gated = []
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        meta = parse_meta(path)
+        if "loon_version" not in meta:
+            continue
+        system = meta.get("system", "").lower()
+        if not system or "mac" in system:
+            errors.append(
+                f"{path.relative_to(ROOT)}: #!system={meta.get('system') or '(未填＝全部平台)'} "
+                f"覆盖 macOS，却声明了 #!loon_version={meta['loon_version']!r}——"
+                "Loon for Mac 的版本号是另一条线（0.5.0(1011)），iOS 口径门槛在 Mac 上语义未定；"
+                "删掉这一行——不填即不带最低版本"
+            )
+        else:
+            gated.append(f"{path.stem}={meta['loon_version']}")
+    if gated:
+        print(f"loon_version gate: kept on iOS-only plugin(s): {', '.join(gated)}")
 
 
 IP_MODE_VALUES = ("v4-only", "dual", "prefer-v4", "prefer-v6", "v6-only")
@@ -3733,6 +3740,7 @@ check_encoding_guard()
 check_script_safety()
 check_bypass_dns_guard()
 check_no_legacy_syntax()
+check_loon_version_gate()
 check_ip_mode_values()
 check_mitm_surface()
 check_mitm_reach()

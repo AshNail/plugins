@@ -23,7 +23,12 @@
   每条路径规则必须附公开可引用 sources，禁止凭空造路径。
 - 禁用 DOMAIN-WILDCARD：该语法仅 3.5.3(1008) TestFlight 提供，app 插件必须
   让 App Store 正式版（3.5.2/996）用户可直接导入；通配一律走 [Host] '*.domain'。
-- #!loon_version 不得高于 App Store 正式版 build（APPSTORE_STABLE_BUILD）。
+- 不写 `#!loon_version`：app 插件的 `#!system` 含 macOS，而 Loon for Mac 的营销版本号是
+  独立的一条线（0.1(26) → 0.5.0(1011)，官方只从 991 起把 macOS 构建号与 iOS 统一），
+  iOS 口径的 `3.5.1(983)` 在 Mac 上到底比什么官方没写，写了就可能把 Mac 用户挡在门外。
+  不填＝不带最低版本（官方只对 `#!system` 明写「未填写表示全部支持」，这条属推断），
+  裁量同 `#!system_version`（docs/loon-native-first.md §12.3）；
+  功能基线只作为 `loonVersion` 留在 src/apps/*.json 供 README 说明，不进插件头。
 - 通配 glob 与精确域都不得命中 src/ads/protected-roots.json 里的共享主域。
 - 默认生效条目不得命中任何 App 在 `redlines` 里声明的生死线（名单与判定见 tools/redlines.py，
   与 tools/build-ads.py 共用同一条纪律；注释掉的组不参与，因为红线只管默认就会生效的东西）。
@@ -45,9 +50,6 @@ APPS = ROOT / "src/apps"
 ADS_ROOTS = ROOT / "src/ads/protected-roots.json"
 
 HOST_BLACKHOLE = "127.0.0.1"
-# App Store 正式版基线（Loon 3.5.2 build 996，官方文档 server-dns 条目佐证）。
-# 插件头 loon_version 高于此 = 正式版用户无法导入，永久禁止。
-APPSTORE_STABLE_BUILD = 996
 DEFAULT_SYSTEM = "iOS,iPadOS,tvOS,macOS"
 DEFAULT_ICON = "https://cdn.adguard.com/public/Adguard/Common/logo.png"
 DOMAIN_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+$")
@@ -55,7 +57,7 @@ WILDCARD_GLOB_RE = re.compile(r"^[a-z0-9*?\[\]!.-]+$")
 RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
 ACTIONS = {"REJECT", "REJECT-DROP"}
 KEY_ORDER = ("name", "desc", "author", "version", "homepage", "openUrl", "icon",
-             "system", "loon_version", "date", "tag", "type")
+             "system", "date", "tag", "type")
 
 
 class BuildError(Exception):
@@ -80,11 +82,6 @@ def load_roots(redlines: list[dict] | None = None) -> set[str]:
         roots.add((item if isinstance(item, str) else item["domain"]).lower())
     entries = app_redlines() if redlines is None else redlines
     return roots | redline_roots(entries)
-
-
-def build_number(version: str) -> int:
-    m = re.search(r"\((\d+)\)", version)
-    return int(m.group(1)) if m else 0
 
 
 def glob_to_regex(pattern: str) -> re.Pattern[str]:
@@ -360,14 +357,10 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
         rules += g["rules"]
 
     has_wildcard = any(r.startswith("DOMAIN-WILDCARD,") for r in rules)
-    loon_version = app.get("loonVersion", "3.5.1(983)")
     if has_wildcard:
         raise BuildError(f"{where}: DOMAIN-WILDCARD 语法仅 3.5.3(1008) TestFlight 提供，"
                          "App Store 正式版（3.5.2/996）无法保证解析——"
                          "app 插件一律改用 [Host] '*.domain' 通配黑洞")
-    if build_number(loon_version) > APPSTORE_STABLE_BUILD:
-        raise BuildError(f"{where}: loonVersion={loon_version!r} 高于 App Store 正式版 "
-                         f"build {APPSTORE_STABLE_BUILD}，正式版用户将无法导入")
 
     meta = {
         "name": app["name"],
@@ -378,7 +371,6 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
         "openUrl": app.get("openUrl", f"https://github.com/AshNail/plugins/blob/main/plugins/{slug}/README.md"),
         "icon": app.get("icon", DEFAULT_ICON),
         "system": app.get("system", DEFAULT_SYSTEM),
-        "loon_version": loon_version,
         "date": app.get("date", ""),
         "tag": app.get("tag", "去广告"),
         "type": "normal",
