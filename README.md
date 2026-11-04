@@ -1,16 +1,12 @@
 # Loon 去广告插件集
 
-本仓库只分发**独立的去广告插件**：没有主配置、没有分流规则、没有节点或订阅、没有证书私钥。
-装一个就是一个，开关都在插件自己的 `[Argument]` 里，卸载即回归原样。
-
-- **零 MITM 的插件不碰证书**：只做 `[Host]` 黑洞与 `[Rule]` 拒绝，导入就能用。
-- **需要解密的插件自带 `[MITM]`**：先在 Loon → 设置 → MITM 生成并信任证书，否则那层静默不生效。
-- **一个 App 只装一个**：本仓库对同一个 App 只有一个插件，第三方同类插件请择一。
-- **证书固定的 App 不 MITM**：银行 / 微信 / 米家 / 京东 / X / Instagram 只做 DNS 与规则层，这是能力边界，不是遗漏。
+只分发**独立插件**：无主配置、无分流规则、无节点/订阅、无证书私钥。装一个是一个，开关都在插件自己的 `[Argument]` 里。
+零 MITM 的插件导入即用；带 `[MITM]` 的要先在 Loon → 设置 → MITM 生成并信任证书，否则那层静默不生效。
+一个 App 只装一个。证书固定的 App（银行 / 微信 / 米家 / 京东 / X / Instagram）只有 DNS 与规则层——能力边界，不是遗漏。
 
 ## 插件与一键导入
 
-点「导入」→ Loon 打开该插件 → 确认即可；能力边界、开关与取证结论见每个插件自己的 README。
+点「导入」→ Loon 打开该插件 → 确认；边界、开关与取证结论见各插件 README。
 
 | 插件 | 管什么 | 导入 |
 |---|---|---|
@@ -31,17 +27,6 @@
 | `ruankao-tong.plugin` | 软考通：开屏 / 插屏走穿山甲 + 优量汇。**启用即断「看广告解锁真题」** | [导入](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fruankao-tong%2Fruankao-tong.plugin) |
 | `mba-dashi.plugin` | MBA大师：开屏穿山甲、课程列表插屏优量汇。**启用即断「看广告领课程」** | [导入](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmba-dashi%2Fmba-dashi.plugin) |
 
-## 已撤下的东西
+2026-11-04 撤下主配置层：`configs/loon.conf`、`examples/loon*.conf`、两份配置文档、两个配置工具与 `npm run check:config` 全部删除——整份 profile 会替换用户现有配置，而去广告能力插件层已经自带。历史实现见 git 记录。
 
-2026-11-04 起不再提供主配置类产物：`configs/loon.conf`（全功能可导入配置）、`examples/loon*.conf`
-（主配置基线与分流演示）、`docs/loon-max-config.md`、`docs/loon-routing-host-asn.md`、
-`tools/check-loon-config.py`、`tools/make-private-config.py` 与 `npm run check:config` 全部删除。
-理由：去广告能力已经在插件层自包含（`[Host]` / `[Rule]` / `[Script]` / `[MITM]` 都随插件走），
-而整份主配置会替换用户现有 profile，风险和噪音都远大于收益。
-需要回看那份实现，从 git 历史取。
-
-## 开发
-
-插件都是生成物：改 `src/apps/<slug>.json` 或 `src/ads/domains.json`，再跑
-`npm run build` / `npm run build:apps` / `npm run build:ads`，不要手改 `plugins/**/*.plugin`。
-全量门禁 `npm run check`（构建 + lint + 静态检查 + 审计 + 测试）。
+开发：改 `src/apps/<slug>.json` 或 `src/ads/domains.json`，再 `npm run build`，勿手改 `plugins/**/*.plugin`；全量门禁 `npm run check`。
