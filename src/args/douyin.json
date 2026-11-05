@@ -50,18 +50,18 @@
       "type": "switch",
       "default": false,
       "tag": "活动入口清理",
-      "desc": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。",
+      "desc": "目标：把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。真机取证（2026-11-05 20:25:48）：polaris.zijieapi.com 固定证书——26 SNI / 26 Match / 26 次握手失败，这台主机的连接被掐断，绑定已注册但当前不生效。",
       "label": "活动入口清理",
-      "readme": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示"
+      "readme": "把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示。**真机状态**：`polaris.zijieapi.com` 已取证为固定证书（26/26/26 SNI / Match / 握手失败），当前只算「已注册、未解除前不生效」，见 README 5.4 节"
     },
     {
       "name": "blockAdDomains",
       "type": "switch",
       "default": false,
       "tag": "广告域名拦截",
-      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。",
+      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。",
       "label": "域名拦截",
-      "readme": "广告/归因域名拦截（MITM + `http-request` 脚本）"
+      "readme": "广告/归因域名拦截（MITM + `http-request` 脚本）。**真机状态**：`ads?-normal*` 分片与 `zlink.ugsdk.cn` 已取证为固定证书（握手失败），命中它们时准确说法是「连接被掐断」而不是「已拦截」，见 README 5.4 节"
     },
     {
       "name": "blockSplashAd",

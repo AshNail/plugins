@@ -74,8 +74,8 @@ treasureMinimal = switch,true,tag=福利页精简,desc=福利页只保留【攒�
 cleanFeedAds = switch,false,tag=信息流/搜索广告清理,desc=清掉信息流/搜索/广告位响应里的广告容器与明确广告条目（is_ad/is_promoted 等）；保留正常媒体、系统公告与激励奖励。
 killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。
 cleanUpsell = switch,false,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
-cleanActivity = switch,false,tag=活动入口清理,desc=把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。
+cleanActivity = switch,false,tag=活动入口清理,desc=目标：把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。真机取证（2026-11-05 20:25:48）：polaris.zijieapi.com 固定证书——26 SNI / 26 Match / 26 次握手失败，这台主机的连接被掐断，绑定已注册但当前不生效。
+blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。
 blockSplashAd = switch,true,tag=开屏请求与品牌响应清理,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族），并清理开屏品牌响应（advert/splash/brand/retrieve）的素材、缓存、预加载与摇一摇/扭一扭配置；不影响激励广告与奖励。
 debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。

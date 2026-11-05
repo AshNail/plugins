@@ -42,9 +42,9 @@
       "type": "switch",
       "default": false,
       "tag": "广告域名拦截",
-      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。",
+      "desc": "拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。",
       "label": "域名拦截",
-      "readme": "`block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名"
+      "readme": "`block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名。**真机状态**：`ads?-normal*` 分片与 `zlink.ugsdk.cn` 已取证为固定证书（握手失败），命中它们时准确说法是「连接被掐断」而不是「已拦截」，见 8.1 节"
     },
     {
       "name": "settingsClean",

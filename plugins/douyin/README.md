@@ -20,8 +20,8 @@
 | `cleanFeedAds` | 关 | 清掉信息流/搜索/广告位广告容器与广告条目（**不影响激励奖励**） |
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
-| `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
-| `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
+| `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示。**真机状态**：`polaris.zijieapi.com` 已取证为固定证书（26/26/26 SNI / Match / 握手失败），当前只算「已注册、未解除前不生效」，见 README 5.4 节 |
+| `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本）。**真机状态**：`ads?-normal*` 分片与 `zlink.ugsdk.cn` 已取证为固定证书（握手失败），命中它们时准确说法是「连接被掐断」而不是「已拦截」，见 README 5.4 节 |
 | `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族）+ 清理开屏品牌响应素材/缓存/预加载/传感器配置，**不碰激励广告**与发奖回调 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
 | `statusNotify` | `notification` | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式） |

@@ -389,7 +389,7 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | `rewardSafe` | 开 | 保奖励优先；`sanitize` 对非开屏端点直接放行，`settings` 直接放行，域名拦截脚本也放行 |
 | `cleanAds` | 开 | 广告位、信息流、福利页广告任务等清理脚本（**不含激励素材**） |
 | `killRewardAds` | 关 | 清空激励广告素材与预拉取 + 兜底发奖凭证；开了领奖会变 `amount=-1` |
-| `blockAdDomains` | 关 | `block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名 |
+| `blockAdDomains` | 关 | `block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名。**真机状态**：`ads?-normal*` 分片与 `zlink.ugsdk.cn` 已取证为固定证书（握手失败），命中它们时准确说法是「连接被掐断」而不是「已拦截」，见 8.1 节 |
 | `settingsClean` | 开 | `conf.qishui.com` 设置层脚本 |
 | `skipUpdateCheck` | 开 | `luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示 |
 | `hideDouyinEntry` | 开 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现 |
@@ -984,6 +984,11 @@ luna 请求——端点真实在跑，由 `api.qishui.com` + `beta-luna.douyin.c
 
 - **新增 `autoTask` 开关（默认关）**：激励任务自动化功能。基于 REA 21.4.0 逆向分析 + 真机日志验证，自动完成听歌任务、看广告任务。参考起点读书的 finishWatch 重放机制，拦截 `/luna/advert/incentive/done` 等端点并自动重放。
 - **新增 `autoSignIn` 开关（默认关）**：自动签到功能。每天自动执行签到任务（`/luna/treasure/task/sign_in/do_action`）。
+  - ⚠️ 上面两条写的「默认关」与产物对不上：`git show` 追到这两个开关在仓库里首次出现是 v3.1.0（`deba38f`），
+    当时就是 `switch,true`，此后没改过。**当前 `src/args/soda.json` 里两个都是默认开**。
+    全仓只有这两个自动化开关默认生效——App 插件侧的门禁（`tools/build-apps.py` 的
+    `validate_enhance_active`）会拒「自动化默认生效」，但族插件是手写的、不走这道门禁。
+    改成默认关是行为变更，需要用户点头，本轮只做披露不做变更。
 - **Token 捕获**：从请求 headers 中提取认证信息（sessionid/token/cookie），存储到 `$persistentStore`，供自动化脚本复用。
 - **Bundle ID 适配**：支持 21.4.0 版本的 Bundle ID 变化（`com.luna.music` → `com.soda.music`）。
 - **新增脚本** `src/soda/auto-task.js`（13KB）→ `plugins/soda/scripts/auto-task.min.js`（7KB）。
