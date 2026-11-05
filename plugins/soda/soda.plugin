@@ -305,6 +305,12 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 # 福利任务页面观测：记录任务状态和资产
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/treasure\/task\/page\/v2/ then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="任务页面观测"
 
+# 💎 本地权益注入：commerce_info 响应增强（解锁 VIP/SVIP/无损/全景声/免广告）
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/commerce_info/ then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="💎 权益注入：commerce_info"
+
+# 🚫 Upsell 弹窗清空：移除广告/营销弹窗，保留奖励相关
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="🚫 Upsell弹窗清空"
+
 # 签到详情观测
 response if ${url} ~= /^https?:\/\/(?:aweme\.snssdk\.com|api\.qishui\.com)\/.*\/sign_in\/sign_in_detail/ then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="签到详情观测"
 

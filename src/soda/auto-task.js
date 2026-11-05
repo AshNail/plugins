@@ -190,6 +190,183 @@ function captureTokens(request) {
 }
 
 // ==========================================
+// 💎 本地权益注入（commerce_info 响应增强）
+// ==========================================
+
+/**
+ * 注入 commerce_info 响应，解锁本地权益：
+ * - 音质：lossless/spatial 从 svip 改为 free
+ * - 会员：注入 membership_detail_map_v2 让 is_vip/is_svip/is_free_vip 全部 true
+ * - 播放：延长 play_track.expire_time
+ * - 下载：增加 download.quota
+ * - 激励：标记任务完成
+ *
+ * 关键发现（HAR 实锤）：
+ * upsell/variables 里的 is_vip/is_svip/is_free_vip/is_membership 全部从
+ * commerce_info.membership.membership_detail_map_v2 计算。
+ * quality_list 里 lossless/spatial 的 stage="svip" → 改为 "free" 即解锁。
+ */
+function injectCommerceInfo(responseBody) {
+  try {
+    const resp = typeof responseBody === "string" ? JSON.parse(responseBody) : responseBody;
+    if (!resp || resp.status_code !== 0) return responseBody;
+
+    const FAR_FUTURE = 4070908800; // 2099-01-01 00:00:00 UTC
+    const now = Math.floor(Date.now() / 1000);
+
+    // 1. 音质权益解锁
+    if (resp.benefit_base?.quality?.quality_list) {
+      resp.benefit_base.quality.quality_list.forEach(q => {
+        if (q.key === "lossless" || q.key === "spatial" || q.key === "hi_res") {
+          q.stage = "free";
+          q.expire_time = FAR_FUTURE;
+        }
+      });
+      // 也更新 benefit_quality_map
+      const bqm = resp.benefit_base.quality.benefit_quality_map || {};
+      for (const key of Object.keys(bqm)) {
+        if (key.includes("lossless") || key.includes("spatial") || key.includes("highest")) {
+          bqm[key].end_time = FAR_FUTURE;
+        }
+      }
+      resp.benefit_base.quality.max_level = 4; // 最高音质
+    }
+
+    // 2. 播放权益延长
+    if (resp.benefit_base?.play_track) {
+      resp.benefit_base.play_track.expire_time = FAR_FUTURE;
+    }
+
+    // 3. 下载配额
+    if (resp.benefit_base?.download) {
+      resp.benefit_base.download.quota = 9999;
+    }
+
+    // 4. 会员状态注入
+    if (!resp.membership) resp.membership = {};
+    resp.membership.expire_time = FAR_FUTURE;
+    resp.membership.expire_time_max = FAR_FUTURE;
+    resp.membership.membership_detail_map_v2 = {
+      vip: {
+        start_time: 0,
+        expire_time: FAR_FUTURE,
+        membership_type: "vip",
+        is_valid: true,
+      },
+      svip: {
+        start_time: 0,
+        expire_time: FAR_FUTURE,
+        membership_type: "svip",
+        is_valid: true,
+      },
+      free_vip: {
+        start_time: 0,
+        expire_time: FAR_FUTURE,
+        membership_type: "free_vip",
+        is_valid: true,
+      },
+    };
+
+    // 5. 激励任务标记完成
+    if (resp.incentive) {
+      if (resp.incentive.tasks && Array.isArray(resp.incentive.tasks)) {
+        resp.incentive.tasks.forEach(task => {
+          task.is_completed = true;
+          if (task.stages && Array.isArray(task.stages)) {
+            task.stages.forEach(stage => {
+              stage.is_completed = true;
+              if (stage.rewards && Array.isArray(stage.rewards)) {
+                stage.rewards.forEach(reward => {
+                  reward.claim_status = 1; // 已领取
+                });
+              }
+            });
+          }
+        });
+      }
+      // 播放权益
+      if (resp.incentive.expire_time) {
+        resp.incentive.expire_time = FAR_FUTURE;
+      }
+    }
+
+    // 6. 播放权益（play_entitlements）
+    if (resp.play_entitlements) {
+      resp.play_entitlements.expire_at = FAR_FUTURE;
+      if (resp.play_entitlements.reward_finished_task_info) {
+        resp.play_entitlements.reward_finished_task_info.all_full = true;
+        resp.play_entitlements.reward_finished_task_info.full_day = true;
+      }
+    }
+
+    // 7. 活动免费 VIP
+    if (resp.activity_free_vip) {
+      resp.activity_free_vip.end_date = "2099-01-01";
+      resp.activity_free_vip.applied_cnt = 1;
+    }
+
+    // 8. 交易信息 - 标记有付费订单（防止弹窗提示开通）
+    if (resp.trade) {
+      resp.trade.has_paid_order = true;
+    }
+
+    if (!CONFIG.SilentMode) {
+      console.log(`[SodaAuto] 💎 权益注入: VIP/SVIP/无损/全景声 已解锁`);
+    }
+
+    return JSON.stringify(resp);
+  } catch (e) {
+    console.log(`[SodaAuto] ⚠️ commerce_info 注入失败: ${e.message}`);
+    return responseBody;
+  }
+}
+
+// ==========================================
+// 🚫 Upsell 弹窗清空
+// ==========================================
+
+/**
+ * 清空 upsell 响应中的弹窗和营销内容
+ * 保留奖励相关字段（variables 里的权益表达式需要保留）
+ */
+function cleanUpsell(responseBody) {
+  try {
+    const resp = typeof responseBody === "string" ? JSON.parse(responseBody) : responseBody;
+    if (!resp || resp.status_code !== 0) return responseBody;
+
+    // 清空弹窗配置
+    if (resp.popup_config) {
+      resp.popup_config.popup_frequency_control = { group_gap: 999999, time_interval: 999999 };
+    }
+
+    // 清空 scene_upsells_map 里的广告/营销弹窗
+    const sceneMap = resp.scene_upsells_map || resp.sceneUpsellsMap || {};
+    for (const scene of Object.keys(sceneMap)) {
+      const candidates = sceneMap[scene]?.candidates || [];
+      sceneMap[scene].candidates = candidates.filter(c => {
+        const name = c?.unique_name || c?.uniqueName || "";
+        // 保留奖励相关弹窗，删除广告/营销弹窗
+        if (name.includes("reward") || name.includes("coin") || name.includes("treasure")) return true;
+        if (name.includes("ads") || name.includes("popup") || name.includes("commerce")) return false;
+        return true;
+      });
+    }
+
+    // 修改 variables 里的倒计时表达式，让权益永不过期
+    if (resp.variables) {
+      // 让 ad_reward_benefit_countdown 返回一个很大的值
+      if (resp.variables.ad_reward_benefit_countdown) {
+        resp.variables.ad_reward_benefit_countdown = "999999999999";
+      }
+    }
+
+    return JSON.stringify(resp);
+  } catch (e) {
+    return responseBody;
+  }
+}
+
+// ==========================================
 // 📢 广告 SDK 注入（Pangle/穿山甲）
 // ==========================================
 
@@ -517,6 +694,16 @@ if (isResponse) {
   else if (url.includes("/luna/advert/incentive/config")) {
     cacheIncentiveConfig(body);
     $done({});
+  }
+  // ---- 💎 本地权益注入（commerce_info） ----
+  else if (url.includes("/luna/commerce/v2/commerce_info")) {
+    const injected = injectCommerceInfo(body);
+    $done({ body: injected });
+  }
+  // ---- 🚫 Upsell 弹窗清空 ----
+  else if (url.includes("/luna/commerce/v2/upsell") && !url.includes("sort_decision")) {
+    const cleaned = cleanUpsell(body);
+    $done({ body: cleaned });
   }
   // ---- 任务页面观测 ----
   else if (url.includes("/treasure/task/page/v2")) {
