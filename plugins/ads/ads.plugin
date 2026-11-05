@@ -1,7 +1,7 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.8
+#!version=2.8.9
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
@@ -452,6 +452,10 @@ ubmcmm.baidustatic.com = 127.0.0.1
 ubmcvideo.baidustatic.com = 127.0.0.1
 popin.cc = 127.0.0.1
 *.popin.cc = 127.0.0.1
+fclog.baidu.com = 127.0.0.1
+als.baidu.com = 127.0.0.1
+ecma.bdimg.com = 127.0.0.1
+besc.baidustatic.com = 127.0.0.1
 
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
@@ -465,6 +469,8 @@ alimama.com = 127.0.0.1
 mmstat.com = 127.0.0.1
 *.mmstat.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
+alimama.alicdn.com = 127.0.0.1
+tns.simba.taobao.com = 127.0.0.1
 
 # ============================================================================
 # 中国广告联盟 / 媒体广告位 / 广告监测
@@ -666,6 +672,16 @@ tagtic.cn = 127.0.0.1
 *.tagtic.cn = 127.0.0.1
 xdrig.com = 127.0.0.1
 *.xdrig.com = 127.0.0.1
+atm.youku.com = 127.0.0.1
+m.atm.youku.com = 127.0.0.1
+ykad-gateway.youku.com = 127.0.0.1
+iyes.youku.com = 127.0.0.1
+da.mgtv.com = 127.0.0.1
+*.da.mgtv.com = 127.0.0.1
+api.cupid.qiyi.com = 127.0.0.1
+iad.g.163.com = 127.0.0.1
+yt-adp.nosdn.127.net = 127.0.0.1
+masdk.3g.qq.com = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -854,6 +870,8 @@ xadx.file.market.xiaomi.com = 127.0.0.1
 adx-in.ads.heytapmobile.com = 127.0.0.1
 ads-drcn.platform.hihonorcloud.com = 127.0.0.1
 metrics-ad-drcn.dt.hihonorcloud.com = 127.0.0.1
+stsdk.vivo.com.cn = 127.0.0.1
+*.stsdk.vivo.com.cn = 127.0.0.1
 
 # ============================================================================
 # 全球移动广告 SDK / 聚合平台

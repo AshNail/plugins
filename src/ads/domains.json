@@ -1,5 +1,5 @@
 {
-  "version": "2.8.8",
+  "version": "2.8.9",
   "updated": "2026-11-05",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.8",
+      "version": "2.8.9",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -396,7 +396,11 @@
             "dup.baidustatic.com",
             "ubmcmm.baidustatic.com",
             "ubmcvideo.baidustatic.com",
-            "=popin.cc"
+            "=popin.cc",
+            "fclog.baidu.com",
+            "als.baidu.com",
+            "ecma.bdimg.com",
+            "besc.baidustatic.com"
           ]
         },
         {
@@ -407,7 +411,9 @@
             "=tanx.com",
             "=alimama.com",
             "=mmstat.com",
-            "atanx.alicdn.com"
+            "atanx.alicdn.com",
+            "alimama.alicdn.com",
+            "tns.simba.taobao.com"
           ]
         },
         {
@@ -545,7 +551,16 @@
             "ark.letv.com",
             "doubleclick.ctfile.com",
             "=tagtic.cn",
-            "=xdrig.com"
+            "=xdrig.com",
+            "atm.youku.com",
+            "m.atm.youku.com",
+            "ykad-gateway.youku.com",
+            "iyes.youku.com",
+            "=da.mgtv.com",
+            "api.cupid.qiyi.com",
+            "iad.g.163.com",
+            "yt-adp.nosdn.127.net",
+            "masdk.3g.qq.com"
           ]
         },
         {
@@ -699,7 +714,8 @@
             "=xadx.file.market.xiaomi.com",
             "adx-in.ads.heytapmobile.com",
             "ads-drcn.platform.hihonorcloud.com",
-            "metrics-ad-drcn.dt.hihonorcloud.com"
+            "metrics-ad-drcn.dt.hihonorcloud.com",
+            "=stsdk.vivo.com.cn"
           ]
         },
         {

@@ -29,7 +29,9 @@
 *.alimama.com = 127.0.0.1
 *.mmstat.com = 127.0.0.1
 *.tanx.com = 127.0.0.1
+alimama.alicdn.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
+tns.simba.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 阿里广告/UT 独立端点（置信 B）
