@@ -238,7 +238,7 @@ function capabilityLine() {
                "开关状态：" + switches;
   if (env) detail += "\n运行环境：" + env;
   detail += "\nLoon 能力：" + capabilityLine();
-  detail += "\n静态层：QUIC 回退 18 域 · h2 · 压缩→gzip（常开）";
+  detail += "\n静态层：QUIC 回退 25 域 · h2 · 压缩→gzip（常开）";
   if (isOn(args.debugLog)) {
     detail += "\n调试模式：✅ 已开启（可在 Loon「日志」按 [soda-AdBlock] 实时查看拦截证据）";
   }

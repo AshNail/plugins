@@ -30,7 +30,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 
 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。2026-10-30 再补频道 2024-10 的两条图片路径（flowplus linglong / img.meituan.net bizad）与 blackmatrix7 的 img.meituan.net 广告目录路径（adunion/display/dpmobile/midas），同样默认注释；flowplus 与 img.meituan.net 都是共享素材主机，启用后这两台的图片流量都会进 MITM（只有广告路径被 REJECT-IMG 拒绝），介意解密面就只开 wmapi/apimobile 的 JSON 规则或跳过本层。
 
-- 解密主机（`[MITM] hostname`，9 个）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`, `flowplus.meituan.net`, `img.meituan.net`, `feedguess.meituan.com`, `mt-personalcenter.meituan.com`, `assistify.meituan.com`, `mop.meituan.com`
+- 解密主机（`[MITM] hostname`，9 个，注释态，取消注释才解密）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`, `flowplus.meituan.net`, `img.meituan.net`, `feedguess.meituan.com`, `mt-personalcenter.meituan.com`, `assistify.meituan.com`, `mop.meituan.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，8 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 与 `response.json.jq` 都会静默失效；启用本层时应连同这些行一起取消注释。
 - 通配主机（`p?.meituan.net`）无法用 `DOMAIN-SUFFIX` 表达 QUIC 回退，启用该层的这一域时需另行处理。
 - 路径级规则（`URL-REGEX`，7 条，命中即拦对应广告接口/素材，不影响同域功能请求）：

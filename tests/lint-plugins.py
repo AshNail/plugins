@@ -571,6 +571,17 @@ QUIC_HOSTS = {
     "soda": (
         "api.qishui.com",
         "conf.qishui.com",
+        # 汽水自己的 API 分片（2026-11-05 20:25:48 真机日志逐台取证）：主接口不落在
+        # api.qishui.com，而走带分片后缀的 api<n>-<shard>.qishui.com。它们 alpn 只报
+        # h2,http/1.1、整份日志对 *.qishui.com 零次 certificate unknown——不做证书固定、
+        # 只是没进 hostname，所以 url:(null)。纳进来才有取证通道，见插件里的取证注释。
+        "api3-hl.qishui.com",
+        "api3-lf.qishui.com",
+        "api3-lq.qishui.com",
+        "api5-hl.qishui.com",
+        "api5-lf.qishui.com",
+        "api5-lq.qishui.com",
+        "conf5-lf.qishui.com",
         "ad.zijieapi.com",
         "aweme.snssdk.com",
         "lianmengapi.snssdk.com",
@@ -2764,6 +2775,22 @@ APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
 APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP"}
 APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+\s*=\s*\d{1,3}(?:\.\d{1,3}){3}$")
 APP_SECTIONS = {"Rule", "Host", "Script"}
+# enhance.active=true 的 App 插件才允许的段：净化层默认启用要靠 [Argument] 开关 + [MITM] 解密。
+APP_ACTIVE_SECTIONS = {"Argument", "MITM"}
+
+# 生成器是唯一真源：lint 直接 import tools/build-apps.py，用同一份 render 逻辑
+# 逐行对账产物，而不是在 lint 里重写第二套判定（v4.0.0 的教训正是两处各写一遍）。
+_build_apps_spec = importlib.util.spec_from_file_location(
+    "build_apps", str(ROOT / "tools/build-apps.py")
+)
+BUILD_APPS = None
+if _build_apps_spec and _build_apps_spec.loader:
+    sys.path.insert(0, str(ROOT / "tools"))
+    try:
+        BUILD_APPS = importlib.util.module_from_spec(_build_apps_spec)
+        _build_apps_spec.loader.exec_module(BUILD_APPS)
+    finally:
+        sys.path.remove(str(ROOT / "tools"))
 
 # app 插件 [Script] 的唯一合法形态（build-apps.py render_crons 钉死的生成形状）：
 # cron 本地通知——零 MITM、零网络请求；request/response/generic 型一律不许出现。
@@ -2823,22 +2850,50 @@ def check_app_plugins():
             if val and not val.startswith("https://"):
                 errors.append(f"apps/{slug}: #{key} must be https: {val}")
         parsed, sections = parse_plugin(plugin)
-        bad = [s for s in sections if s not in APP_SECTIONS]
+        enh = data.get("enhance")
+        active_enh = bool((enh or {}).get("active"))
+        allowed_sections = APP_SECTIONS | (APP_ACTIVE_SECTIONS if active_enh else set())
+        bad = [s for s in sections if s not in allowed_sections]
         if bad:
-            errors.append(f"apps/{slug}: sections outside Rule/Host/Script: {sorted(set(bad))}")
+            errors.append(
+                f"apps/{slug}: sections outside {sorted(allowed_sections)}: {sorted(set(bad))}"
+                + ("（active 增强层才允许 Argument/MITM）" if not active_enh else "")
+            )
+        want_bindings: list[str] = []
+        if active_enh:
+            try:
+                want_bindings = BUILD_APPS.validate_enhance_active(enh, f"src/apps/{slug}.json")
+            except Exception as e:
+                errors.append(f"apps/{slug}: enhance.active 源侧校验失败: {e}")
         crons = data.get("crons") or []
         script_lines = parsed.get("Script", [])
-        if crons:
+        if crons or want_bindings:
             if "Script" not in sections:
                 errors.append(
-                    f"apps/{slug}: src/apps/{slug}.json declares crons but "
+                    f"apps/{slug}: src/apps/{slug}.json declares crons/enhance.bindings but "
                     "plugin has no [Script] section (stale build; run npm run build:apps)"
                 )
-            if len(script_lines) != len(crons):
-                errors.append(
-                    f"apps/{slug}: [Script] has {len(script_lines)} effective line(s) "
-                    f"but src crons={len(crons)} (rebuild to resync)"
-                )
+        if len(script_lines) != len(crons) + len(want_bindings) and (crons or want_bindings):
+            errors.append(
+                f"apps/{slug}: [Script] has {len(script_lines)} effective line(s) "
+                f"but src crons={len(crons)} + enhance.bindings={len(want_bindings)} "
+                "(rebuild to resync)"
+            )
+        if want_bindings:
+            got_tail = script_lines[len(crons):]
+            for idx, (got, want) in enumerate(zip(got_tail, want_bindings), start=1):
+                if got != want:
+                    errors.append(
+                        f"apps/{slug}: [Script] 绑定 #{idx} 与源里的 enhance.bindings 不一致\n"
+                        f"    产物: {got}\n    源应: {want}"
+                    )
+            for extra in got_tail[len(want_bindings):]:
+                errors.append(f"apps/{slug}: [Script] 多出源里没有的绑定行: {extra}")
+            for b in enh.get("bindings", []):
+                dist = ROOT / "plugins" / slug / "scripts" / f"{b.get('script')}.min.js"
+                if not dist.exists():
+                    errors.append(f"apps/{slug}: missing {dist.relative_to(ROOT)} (run npm run build)")
+        if crons:
             for c, line in zip(crons, script_lines):
                 m = APP_CRON_LINE_RE.match(line)
                 if not m:
@@ -2865,12 +2920,20 @@ def check_app_plugins():
                     errors.append(
                         f"apps/{slug}: missing {dist.relative_to(ROOT)} (run npm run build)"
                     )
-        elif script_lines:
+        elif script_lines and not want_bindings:
             errors.append(
                 f"apps/{slug}: [Script] section without crons in src/apps/{slug}.json "
-                "(拦截/改写型脚本不入 app 插件)"
+                "(拦截/改写型脚本不入 app 插件；要默认生效就写进 enhance.bindings 并声明 active)"
             )
+        quic_fallback_lines = set()
+        if active_enh and enh.get("quic_fallback"):
+            quic_fallback_lines = {
+                f"AND,((DOMAIN-SUFFIX,{h}),(PROTOCOL,QUIC)),REJECT"
+                for h in (BUILD_APPS.plain_hosts(enh) if hasattr(BUILD_APPS, "plain_hosts") else [])
+            }
         for line in parsed.get("Rule", []):
+            if active_enh and line in quic_fallback_lines:
+                continue
             parts = [p.strip() for p in line.split(",")]
             if parts[0] not in APP_RULE_KINDS:
                 errors.append(f"apps/{slug}: rule kind not whitelisted: {line}")
@@ -2899,14 +2962,30 @@ def check_app_plugins():
                     "(红线：MITM 不可行也不做)"
                 )
             raw = plugin.read_text()
-            for line in raw.splitlines():
-                s = line.strip()
-                if s.startswith(("[MITM]", "hostname =", "URL-REGEX,", "response if", "response.json.jq")):
-                    errors.append(
-                        f"apps/{slug}: enhance line must stay commented: {s!r}"
-                    )
-            if not rd_has_section(plugin.parent / "README.md", "可选 MITM 增强层"):
-                errors.append(f"apps/{slug}: README missing 可选 MITM 增强层 section")
+            if active_enh:
+                # active 层允许 [MITM]/hostname/[Script] 绑定默认生效；路径级黑洞必须仍是注释态。
+                script_set = {ln.strip() for ln in parsed.get("Script", [])}
+                for line in raw.splitlines():
+                    s = line.strip()
+                    if s.startswith(("URL-REGEX,", "response.json.jq")) or (
+                        "response.json.jq" in s and not s.startswith("#")
+                    ):
+                        errors.append(f"apps/{slug}: active 层的路径级黑洞必须保持注释: {s!r}")
+                    if s.startswith(("response if ", "request if ", "cron ", "generic ")) \
+                            and not s.startswith("#") and s not in script_set:
+                        errors.append(
+                            f"apps/{slug}: 绑定行必须落在 [Script] 段里（当前在段外且不在源 bindings 对账范围）: {s!r}"
+                        )
+            else:
+                for line in raw.splitlines():
+                    s = line.strip()
+                    if s.startswith(("[MITM]", "hostname =", "URL-REGEX,", "response if", "response.json.jq")):
+                        errors.append(
+                            f"apps/{slug}: enhance line must stay commented: {s!r}"
+                        )
+            need_heading = "默认启用的 MITM 层" if active_enh else "可选 MITM 增强层"
+            if not rd_has_section(plugin.parent / "README.md", need_heading):
+                errors.append(f"apps/{slug}: README missing {need_heading} section")
             elif "QUIC 回退" not in (plugin.parent / "README.md").read_text():
                 errors.append(
                     f"apps/{slug}: README must explain the QUIC fallback (MITM sees TCP only)"
@@ -2967,7 +3046,27 @@ def check_app_plugins():
                 except ValueError:
                     return -1
 
-            if enh.get("mitm_hosts") and line_index("# [MITM]") < 0:
+            if active_enh:
+                want_hostname = "hostname = %APPEND% " + ", ".join(enh.get("mitm_hosts", []))
+                if parsed.get("MITM", []) != [want_hostname]:
+                    errors.append(
+                        f"apps/{slug}: active 层的 [MITM] 必须是唯一一行 {want_hostname!r}，"
+                        f"实际 {parsed.get('MITM', [])}"
+                    )
+                want_args = [
+                    f'{a.get("name")} = switch,{a.get("default")},tag={a.get("tag")},desc={a.get("desc")}'
+                    for a in enh.get("arguments", [])
+                ]
+                if parsed.get("Argument", []) != want_args:
+                    errors.append(
+                        f"apps/{slug}: [Argument] 与 enhance.arguments 不一致（rebuild to resync）\n"
+                        f"    产物: {parsed.get('Argument', [])}\n    源应: {want_args}"
+                    )
+                if "MITM" not in sections:
+                    errors.append(f"apps/{slug}: enhance.active 但产物没有生效的 [MITM] 段")
+                if "Argument" not in sections:
+                    errors.append(f"apps/{slug}: enhance.active 但产物没有 [Argument] 段")
+            elif enh.get("mitm_hosts") and line_index("# [MITM]") < 0:
                 errors.append(f"apps/{slug}: enhance missing uncommentable '# [MITM]' header")
             rewrite_i = line_index("# [Rewrite]")
             if rewrite_json and rewrite_i < 0:
@@ -2990,28 +3089,59 @@ def check_app_plugins():
                         f"apps/{slug}: response.json.jq must sit under the '# [Rewrite]' header"
                     )
             rule_i = line_index("# [Rule]")
-            if enh.get("url_regex") and rule_i < 0:
-                errors.append(
-                    f"apps/{slug}: enhance URL-REGEX missing uncommentable '# [Rule]' header"
-                )
-            for h in quic_hosts:
-                want = f"# AND,((DOMAIN-SUFFIX,{h}),(PROTOCOL,QUIC)),REJECT"
-                if want not in raw_lines:
+            live_rule_i = line_index("[Rule]")
+            if active_enh:
+                # 启用层没有注释态的 '# [Rule]'：路径黑洞要移进上方已生效的 [Rule] 段，
+                # 所以这里的纪律是「注释行仍在、且 [Rule] 段是活的」。
+                if live_rule_i < 0:
+                    errors.append(f"apps/{slug}: enhance.active 但产物没有生效的 [Rule] 段")
+                if enh.get("url_regex") and rule_i >= 0:
                     errors.append(
-                        f"apps/{slug}: enhance host {h} missing commented QUIC fallback "
-                        "(MITM only sees TCP; HTTP/3 would silently skip URL-REGEX)"
+                        f"apps/{slug}: active 层不该再留 '# [Rule]' 头（规则请移进生效的 [Rule] 段）"
                     )
-                elif rule_i >= 0 and line_index(want) < rule_i:
+                for r in enh.get("url_regex", []):
+                    if f"# {r}" not in raw_lines:
+                        errors.append(
+                            f"apps/{slug}: active 层的 URL-REGEX 必须保持注释态且逐条可取消: {r!r}"
+                        )
+                want_quic = {
+                    f"AND,((DOMAIN-SUFFIX,{h}),(PROTOCOL,QUIC)),REJECT" for h in quic_hosts
+                }
+                if enh.get("quic_fallback"):
+                    got_quic = {ln for ln in parsed.get("Rule", []) if ln in want_quic}
+                    if got_quic != want_quic:
+                        errors.append(
+                            f"apps/{slug}: active 层的 QUIC 回退必须整组生效在 [Rule] 段，"
+                            f"应为 {len(want_quic)} 条、实际 {len(got_quic)} 条"
+                        )
+                for ln in parsed.get("Rule", []):
+                    if ln.startswith("AND,") and "PROTOCOL,QUIC" in ln and ln not in want_quic:
+                        errors.append(
+                            f"apps/{slug}: [Rule] 里的 QUIC 回退与源 mitm_hosts 不一致: {ln!r}"
+                        )
+            else:
+                if enh.get("url_regex") and rule_i < 0:
                     errors.append(
-                        f"apps/{slug}: QUIC fallback must sit under the '# [Rule]' header"
+                        f"apps/{slug}: enhance URL-REGEX missing uncommentable '# [Rule]' header"
                     )
-            for r in enh.get("url_regex", []):
-                want = f"# {r}"
-                if rule_i >= 0 and line_index(want) < rule_i:
-                    errors.append(
-                        f"apps/{slug}: URL-REGEX must sit under the '# [Rule]' header"
-                    )
-            if enh.get("scripts"):
+                for h in quic_hosts:
+                    want = f"# AND,((DOMAIN-SUFFIX,{h}),(PROTOCOL,QUIC)),REJECT"
+                    if want not in raw_lines:
+                        errors.append(
+                            f"apps/{slug}: enhance host {h} missing commented QUIC fallback "
+                            "(MITM only sees TCP; HTTP/3 would silently skip URL-REGEX)"
+                        )
+                    elif rule_i >= 0 and line_index(want) < rule_i:
+                        errors.append(
+                            f"apps/{slug}: QUIC fallback must sit under the '# [Rule]' header"
+                        )
+                for r in enh.get("url_regex", []):
+                    want = f"# {r}"
+                    if rule_i >= 0 and line_index(want) < rule_i:
+                        errors.append(
+                            f"apps/{slug}: URL-REGEX must sit under the '# [Rule]' header"
+                        )
+            if enh.get("scripts") and not active_enh:
                 script_i = line_index("# [Script]")
                 if script_i < 0:
                     errors.append(
@@ -3023,12 +3153,13 @@ def check_app_plugins():
                             errors.append(
                                 f"apps/{slug}: enhance script must sit under the '# [Script]' header"
                             )
-            for line in raw_lines:
-                s = line.strip()
-                if s.startswith("AND,") and "PROTOCOL,QUIC" in s:
-                    errors.append(
-                        f"apps/{slug}: QUIC fallback must stay commented: {s!r}"
-                    )
+            if not active_enh:
+                for line in raw_lines:
+                    s = line.strip()
+                    if s.startswith("AND,") and "PROTOCOL,QUIC" in s:
+                        errors.append(
+                            f"apps/{slug}: QUIC fallback must stay commented: {s!r}"
+                        )
         rd = plugin.parent / "README.md"
         if not rd.exists():
             errors.append(f"apps/{slug}: missing plugins/{slug}/README.md")
@@ -3639,7 +3770,7 @@ def check_rule_vectors():
     module = REDLINES_MODULE
     entries = module.load_app_redlines()
     plugins = sorted(ROOT.glob("plugins/*/*.plugin"))
-    lines = items = nested = hits = 0
+    lines = items = nested = hits = proto = 0
     seen_types = set()
     for path in plugins:
         rel = path.relative_to(ROOT)
@@ -3650,6 +3781,8 @@ def check_rule_vectors():
             items += len(own)
             if line.upper().startswith(("AND,", "OR,")):
                 nested += len(own)
+            if module.protocol_scoped_composite(line):
+                proto += 1
             for kind, target, item in module.rule_redline_hits(line, entries):
                 hits += 1
                 errors.append(
@@ -3681,6 +3814,10 @@ def check_rule_vectors():
             f"rule vectors: {len(plugins)} plugin(s) / {lines} active [Rule] line(s) / "
             f"{items} domain-scoped match item(s) ({nested} of them nested in composites) / "
             f"{len(seen_types)} rule type(s) all classified against {len(entries)} red line(s)"
+        )
+        print(
+            f"rule vectors: 其中 {proto} 条是「AND + PROTOCOL」协议限定复合——只对 HTTP/3 生效、"
+            "不黑洞域名，故不计入红线命中（MITM 配套回退就靠这一类）"
         )
         print(
             f"protected roots: {len(hand)} 手写 + {len(derived - hand)} 由 App 红线派生 "

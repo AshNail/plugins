@@ -320,8 +320,28 @@ def match_item_hit(kind: str, target: str, entry: dict) -> bool:
     raise ValueError(f"未知域名类匹配项 {kind!r}")
 
 
+_PROTOCOL_QUALIFIER_RE = re.compile(r"\(\s*PROTOCOL\s*,\s*[A-Za-z0-9/]+\s*\)")
+
+
+def protocol_scoped_composite(rule: str) -> bool:
+    r"""这条规则是不是「域名 AND 协议」的复合——AND 的每个 conjunct 都要成立才匹配，
+    所以 `(PROTOCOL,QUIC)` 一进来，域名项就只对 QUIC 连接生效，同一主机的 TCP 请求零影响。
+
+    `OR,((DOMAIN-SUFFIX,x),(PROTOCOL,QUIC))` 不算：OR 里域名项自己就能独立命中，
+    那仍是整族黑洞。判定放在这里而不是各调用点复制一遍，是为了让构建器与 lint
+    用同一个标准回答「这条生效规则有没有踩红线」。
+    """
+    return rule.upper().startswith("AND,") and bool(_PROTOCOL_QUALIFIER_RE.search(rule))
+
+
 def rule_redline_hits(rule: str, entries: list[dict]) -> list[tuple[str, str, dict]]:
-    """返回 (匹配类型, 目标, 红线条目) 三元组；一条规则能同时踩到几条就都报出来。"""
+    """返回 (匹配类型, 目标, 红线条目) 三元组；一条规则能同时踩到几条就都报出来。
+
+    协议限定的 AND 复合（QUIC 回退那一类）不报命中：它拒的是 HTTP/3 这条通道，不是这个域。
+    MITM 只解密 TCP，App 走 QUIC 时响应脚本静默收不到——配套回退正是「解密了却没拦到」的解药。
+    """
+    if protocol_scoped_composite(rule):
+        return []
     hits = []
     for kind, target in rule_match_items(rule):
         for entry in entries:

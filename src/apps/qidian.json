@@ -1,12 +1,14 @@
 {
   "slug": "qidian",
   "name": "起点读书 · 看书激励助手",
-  "desc": "起点读书看书激励助手 v3.1.0:核心看书+激励。自动化(签到/抽奖/激励任务重放/自动领奖) + 响应净化(getconf/开屏/发现页/书架/福利中心/账户页/每日导读/广告列表/阅读积分/弹窗红点/新手引导/章末模块/青少年配置) + 广告SDK秒播。Token 窃取:App 打开时自动捕获 auth headers。自动签到:cron 每天 POST /argus/api/v2/checkin/checkin + 抽奖。激励任务重放:拦截 finishWatch，重放 9/9 和 3/3。自动领奖:拦截 receiveTaskReward + 尝试 6 个领奖端点。响应净化:getconf 30 项覆写 + 10 项删除、开屏/发现页/书架/福利中心/账户页/每日导读/广告列表/阅读积分/弹窗红点/新手引导/章末模块/青少年配置全部净化。广告SDK秒播:视频时长 patch 成 1 秒。前置:需 MITM 证书(magev6.if.qidian.com+h5.if.qidian.com);用户每天至少打开一次 App 刷新 Token。",
-  "version": "3.1.0",
+  "desc": "起点读书看书激励助手 v3.2.0:净化默认开、自动化默认关。响应净化(cleanAds 默认开):getconf 30 项覆写 + 10 项删除、开屏/发现页/书架/福利中心/账户页/每日导读/广告列表/阅读积分/弹窗红点/新手引导/章末模块/青少年配置。自动化(autoTask 默认关):Token 捕获 → cron 自动签到+抽奖 → finishWatch 重放 9/9 与 3/3 → receiveTaskReward 领奖 → 广告 SDK 时长 patch 成 1 秒。启用层写在 src/apps/qidian.json 里由 tools/build-apps.py 生成、lint 逐行对账——不再手改生成物(v4.0.0 的启用层就是一次构建被覆盖回注释基线的)。前置:本层 [MITM] 默认生效,Loon 须已安装并信任证书,否则起点 API 的 TLS 会被客户端掐断;autoTask 依赖当天打开过起点 App 刷新 Token。",
+  "version": "3.2.0",
   "date": "2026-11-05",
   "loonVersion": "3.5.1(983)",
   "tag": "看书,激励,起点读书,阅文,纯净阅读,自动签到,激励任务,自动领奖,响应净化",
   "comment": [
+    "v3.2.0 启用层回到源里:MITM/Script/Argument 三层由 enhance.active=true 默认启用(净化 cleanAds=true、自动化 autoTask=false),整段生成、逐行对账。v4.0.0 曾把同一层手工开在生成物上,被下一次 build:apps 覆盖回注释基线——生成物不是真源,源才是。",
+    "真机取证(2026-11-05 20:25:48 Loon 日志,iPhone18,4 / iOS 27.2 / Loon 3.5.3(1014)):注释态增强层=零生效。magev6.if.qidian.com 22 次、h5.if.qidian.com 4 次连接全部 GEOIP,CN DIRECT 且 url:(null),auto-task.min.js 一次都没执行;整份日志只有 1 条请求进入明文(Apple 地理配置)。同期 [Host]/[Rule] 黑洞层正常命中(unitelogreport.reader.qq.com / rmonitor.qq.com / path.book.qq.com / stats.jpush.cn 在 DNS 阶段 REJECT),红线侧 pay6.yuewen.com / fockrt.yuewen.com / cococdn.qidian.com / readx-her-* 全部 DIRECT——充值与正文没被误伤。",
     "v3.1.0 优化:聚焦看书+激励核心功能。移除通知推送层(Bark/Telegram/PushPlus)、移除提醒层(sign-reminder/welfare-reminder)、精简发现页白名单(保留书单/专栏/IP专区)、精简广告白名单(只保留激励相关)。",
     "官方声明源:acts.qidian.com/pact/sdk_table.html 列穿山甲(北京巨量引擎)+七巧板通用 SDK(深圳腾讯,程序化广告推送/监测/归因)+腾讯灯塔/Ostar 画像;未声明快手/百青藤/倍孜——未声明的联盟一律不加(纪律同 ads v2.4.0)。",
     "红线（绝不进任何拦截组）：magev6.if.qidian.com（Argus 主 API:章节目录/书架与广告位 adv 同域同主机——黑洞=起点废掉）/ mage.if.qidian.com（同 Argus 接口的旧版主机——enhance 的 URL-REGEX 写作 magev?6? 即旧版也在承载正文/书架，黑洞同样废掉 App）/ druid.if.qidian.com（章节目录）/ h5.if.qidian.com / cococdn.qidian.com / bookcover.yuewen.com / *.qidianalipay.com（广告图床与书城、充值共用）。",
@@ -218,15 +220,165 @@
     }
   ],
   "enhance": {
-    "intro": "起点读书 iOS 未做证书固定：开屏/书架广告位、听书/漫画/短剧 API 与章节内容同主机 magev6.if.qidian.com，[Host] 黑洞会废掉 App，正解是 MITM 后按路径拦。广告路径规则来自 app2smile / blackmatrix7 / fmz200 三家公开模块;听书/漫画/短剧路径规则来自 REA 5.9.482 二进制字面 URL 全量扫描(/argus/api/v1/audio/* 30+ 端点、/argus/api/Comic/* 15+ 端点、/argus/api/v1/circle/getBookMyPiaVideoList)。源里的 reject-200 对应 Loon 的 REJECT-DICT：200 + {} JSON，默认整段注释、装证书后按需启用。",
+    "active": true,
+    "intro": "起点读书 iOS 未做证书固定：开屏/书架广告位、听书/漫画/短剧 API 与章节内容同主机 magev6.if.qidian.com，[Host] 黑洞会废掉 App，正解是 MITM 后按路径拦。广告路径规则来自 app2smile / blackmatrix7 / fmz200 三家公开模块;听书/漫画/短剧路径规则来自 REA 5.9.482 二进制字面 URL 全量扫描(/argus/api/v1/audio/* 30+ 端点、/argus/api/Comic/* 15+ 端点、/argus/api/v1/circle/getBookMyPiaVideoList)。源里的 reject-200 对应 Loon 的 REJECT-DICT：200 + {} JSON。本 App 走的是「净化要靠脚本读响应体」的路子，所以 [MITM]+[Script]+[Argument] 三层默认启用（autoTask 类自动化默认关）；而 URL-REGEX 那批路径级黑洞仍按仓库纪律保持注释态—— magev6/mage/h5.if 是本 App 自己登记的红线，解密不等于拦截。",
     "sources": [
       "https://github.com/app2smile/rules/blob/master/plugin/qidian.plugin",
       "https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin",
       "https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module"
     ],
+    "arguments": [
+      {
+        "name": "cleanAds",
+        "default": "true",
+        "tag": "响应净化（默认开）",
+        "desc": "改写起点响应体剥广告/弹窗/红点/引导：getconf 30 项覆写+10 项删除、开屏、发现页、书架悬浮位与置顶运营、福利中心、账户页、每日导读、广告列表、阅读积分、新手引导、章末模块、青少年配置。需已装证书。"
+      },
+      {
+        "name": "autoTask",
+        "default": "false",
+        "tag": "激励任务自动化（默认关）",
+        "desc": "Token 捕获 + cron 自动签到与抽奖 + finishWatch 重放 + receiveTaskReward 领奖 + 广告 SDK 时长 patch 成 1 秒。会缓存 App 凭据到 $persistentStore 并代打卡代领奖，属激励自动化，默认关；开启前请确认你接受服务端风控后果。"
+      },
+      {
+        "name": "debugLog",
+        "default": "false",
+        "tag": "调试日志",
+        "desc": "打开净化/自动化的逐项日志，同时打开 Loon 原生脚本调试（with debug）。默认关。"
+      }
+    ],
+    "quic_fallback": true,
     "mitm_hosts": [
       "magev6.if.qidian.com",
-      "mage.if.qidian.com"
+      "mage.if.qidian.com",
+      "h5.if.qidian.com"
+    ],
+    "bindings": [
+      {
+        "id": "capture-logininfo",
+        "kind": "response",
+        "pattern": "^https://h5\\.if\\.qidian\\.com/argus/api/v1/user/getlogininfo",
+        "hosts": ["h5.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点Token捕获",
+        "note": "getlogininfo 返回完整用户凭据，autoTask 打开时才缓存到 $persistentStore(Qidian_Headers)"
+      },
+      {
+        "id": "capture-conf-checkin",
+        "kind": "request",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]/(client/getconf|checkin/)",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "requires_body": false,
+        "timeout": 10,
+        "tag": "起点Token捕获(补充)",
+        "note": "getconf/checkin 请求自带 auth headers，作为 getlogininfo 的补充捕获口"
+      },
+      {
+        "id": "getconf-clean",
+        "kind": "response",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v1/client/getconf",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "cleanAds",
+        "args": ["debugLog", "cleanAds"],
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点getconf净化",
+        "note": "getconf 30 项字段覆写（关广告/追踪/弹窗）+ 10 项字段删除（悬浮广告/活动图标/推广模块）"
+      },
+      {
+        "id": "finishwatch-replay",
+        "kind": "request",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/finishWatch",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "requires_body": true,
+        "timeout": 120,
+        "tag": "起点激励任务重放",
+        "note": "按 body 里的 taskId 重放 finishWatch（激励视频 9 次 / 福利任务 3 次，递增 2s 间隔）——代打卡性质，默认关"
+      },
+      {
+        "id": "receive-reward",
+        "kind": "request",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/receiveTaskReward",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点自动领奖",
+        "note": "缓存 receiveTaskReward 请求，再由脚本重放到 6 个领奖端点——代领取性质，默认关"
+      },
+      {
+        "id": "adsec-gdt-inner-view",
+        "kind": "response",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/gdt_inner_view",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点广告SDK秒播(gdt_inner_view)",
+        "note": "把广告时长字段 patch 成 1 秒 + 1 秒黑屏素材——伪造观看完成，归 autoTask 且默认关，不挂净化开关"
+      },
+      {
+        "id": "adsec-get-ads",
+        "kind": "response",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/get_ads",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点广告SDK秒播(get_ads)",
+        "note": "同上：时长 patch 属激励完成伪造，不随 cleanAds 默认生效"
+      },
+      {
+        "id": "deep-clean",
+        "kind": "response",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/adv/getadvlistbatch|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/user/getsimplediscover|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/readtime/readpage|v[0-9]+/user/getaccountpage)",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "cleanAds",
+        "args": ["debugLog", "cleanAds"],
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点深度净化",
+        "note": "22 个端点族的响应体净化：广告列表/开屏/弹窗/红点/新手引导/章末/青少年/发现页/书架/福利中心/账户页/每日导读"
+      },
+      {
+        "id": "cron-sign-in",
+        "kind": "cron",
+        "cron": "11 2 * * *",
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "timeout": 420,
+        "tag": "起点自动签到",
+        "note": "每天 02:11 复用缓存 headers POST /argus/api/v2/checkin/checkin + /checkin/checkinlottery 抽奖；Token 过期即失败"
+      },
+      {
+        "id": "manual-check",
+        "kind": "generic",
+        "script": "auto-task",
+        "args": ["debugLog", "cleanAds", "autoTask"],
+        "timeout": 420,
+        "tag": "起点手动签到/自检",
+        "imgUrl": "checkmark.seal",
+        "note": "插件面板手动按钮：自检净化/自动化状态，autoTask 打开时顺带手动签到一次"
+      }
     ],
     "url_regex": [
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/client/getsplashscreen,REJECT-DICT",

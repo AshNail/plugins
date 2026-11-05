@@ -26,16 +26,19 @@ def render(app, sdklib, ads_groups):
         f"(https://www.nsloon.com/openloon/import?plugin={quote(url, safe='')})"
     )
     enh = app.get("enhance") or {}
+    active_enh = bool(enh.get("active"))
     crons = app.get("crons") or []
-    tier_line = (
-        "零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）"
-        if enh
-        else (
-            "零 MITM · 零证书（拦截面 `[Host]`/`[Rule]` + cron 提醒脚本层，见下）"
-            if crons
-            else "零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）"
+    if active_enh:
+        tier_line = (
+            "净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 "
+            "Loon 证书）· 拦截面 `[Host]`/`[Rule]`"
         )
-    )
+    elif enh:
+        tier_line = "零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）"
+    elif crons:
+        tier_line = "零 MITM · 零证书（拦截面 `[Host]`/`[Rule]` + cron 提醒脚本层，见下）"
+    else:
+        tier_line = "零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）"
     lines = [
         f"# {name}",
         "",
@@ -82,6 +85,14 @@ def render(app, sdklib, ads_groups):
         title = meta.get("title", sid)
         note = meta.get("note", "域名真源见 ads 组/SDK 库")
         lines.append(f"| {title}（引用组） | A | 启用 | {note} 共 {n_h} 域 / {n_r} 规则。 |")
+    if active_enh and enh.get("quic_fallback"):
+        n_quic = len([h for h in enh.get("mitm_hosts", []) if not any(c in h for c in "*?[]:")])
+        rules += n_quic
+        lines.append(
+            f"| QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 "
+            "这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 "
+            f"{n_quic} 条。 |"
+        )
     if crons:
         lines += [
             "",
@@ -106,16 +117,57 @@ def render(app, sdklib, ads_groups):
         skipped = [h for h in enh.get("mitm_hosts", []) if h not in quic]
         lines += [
             "",
-            "## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）",
+            "## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）"
+            if active_enh
+            else "## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）",
             "",
             enh.get("intro", ""),
             "",
-            f"- 解密主机（`[MITM] hostname`，{n_hosts} 个）：{', '.join('`' + h + '`' for h in enh.get('mitm_hosts', []))}",
-            f"- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，{len(quic)} 条，注释态）："
+            f"- 解密主机（`[MITM] hostname`，{n_hosts} 个，"
+            + ("本层已默认生效" if active_enh else "注释态，取消注释才解密")
+            + f"）：{', '.join('`' + h + '`' for h in enh.get('mitm_hosts', []))}",
+            f"- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，{len(quic)} 条，"
+            + ("已生效" if active_enh else "注释态")
+            + "）："
             "MITM 只解密 TCP，App 走 HTTP/3 时"
             + (" `URL-REGEX` 与 `response.json.jq` 都会静默失效" if n_json else " `URL-REGEX` 会静默失效")
-            + "；启用本层时应连同这些行一起取消注释。",
+            + ("；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。"
+               if active_enh else "；启用本层时应连同这些行一起取消注释。"),
         ]
+        if active_enh:
+            lines += [
+                "",
+                "### 开关（`[Argument]`）",
+                "",
+                "| 开关 | 默认 | 作用 |",
+                "|---|---|---|",
+            ]
+            for a in enh.get("arguments", []):
+                lines.append(
+                    f"| `{a.get('name')}` | {a.get('default')} | {a.get('desc', a.get('tag', ''))} |"
+                )
+            lines += [
+                "",
+                "> 净化类默认开、自动化类默认关：领奖/签到/重放这条线不默认启用是仓库纪律，"
+                "要用就把 `autoTask` 改成 true。",
+                "",
+                "### 绑定（`[Script]`）",
+                "",
+                "| 脚本 | 触发面 | 开关 | 行为 |",
+                "|---|---|---|---|",
+            ]
+            for b in enh.get("bindings", []):
+                face = b.get("pattern") or b.get("cron") or "generic"
+                lines.append(
+                    f"| `{b.get('script')}` | `{face}` | `{b.get('switch') or '—'}` | "
+                    f"{b.get('note', b.get('tag', ''))} |"
+                )
+            lines += [
+                "",
+                f"> 全层由 `src/apps/{slug}.json` 的 `enhance` 整段生成（`tools/build-apps.py`），"
+                "lint 逐行对账产物——直接改生成物会在下一次构建被覆盖。",
+                "",
+            ]
         if skipped:
             lines.append(
                 f"- 通配主机（{', '.join('`' + h + '`' for h in skipped)}）无法用 `DOMAIN-SUFFIX` 表达 QUIC 回退，"
@@ -123,7 +175,9 @@ def render(app, sdklib, ads_groups):
             )
         if n_regex:
             lines += [
-                f"- 路径级规则（`URL-REGEX`，{n_regex} 条，命中即拦对应广告接口/素材，不影响同域功能请求）：",
+                f"- 路径级规则（`URL-REGEX`，{n_regex} 条，命中即拦对应广告接口/素材，不影响同域功能请求）"
+                + ("，**保持注释态**——正文与广告位同主机，解密不等于拦截，按需自行启用："
+                   if active_enh else "："),
                 "",
                 "```text",
             ]
@@ -145,25 +199,41 @@ def render(app, sdklib, ads_groups):
                     f" then response.json.jq(`{item['jq']}`)"
                 )
             lines += ["```", ""]
-        steps = ["Loon 装并信任证书", "取消插件内 `[MITM]` 头与 hostname 行注释"]
-        if n_json:
-            steps.append("取消 `[Rewrite]` 头与所需 `response.json.jq` 行的注释")
-        if n_regex:
-            steps.append(
-                "取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，"
-                "否则规则会落在上一段的末尾而不生效）"
-            )
-        if enh.get("scripts"):
-            steps.append("取消 `[Script]` 头与所需脚本行的注释")
+        if active_enh:
+            steps = ["Loon 装并信任证书（本层已默认解密这些主机）"]
+            if enh.get("arguments"):
+                steps.append("要自动化就把 `[Argument]` 里的对应开关改成 true（默认关的那几个）")
+            if n_regex:
+                steps.append(
+                    "要路径级黑洞就取消对应 `URL-REGEX` 行的注释并移进上方已生效的 `[Rule]` 段"
+                )
+        else:
+            steps = ["Loon 装并信任证书", "取消插件内 `[MITM]` 头与 hostname 行注释"]
+            if n_json:
+                steps.append("取消 `[Rewrite]` 头与所需 `response.json.jq` 行的注释")
+            if n_regex:
+                steps.append(
+                    "取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，"
+                    "否则规则会落在上一段的末尾而不生效）"
+                )
+            if enh.get("scripts"):
+                steps.append("取消 `[Script]` 头与所需脚本行的注释")
         circled = "①②③④⑤⑥"
-        lines.append("启用步骤：" + " → ".join(circled[i] + s for i, s in enumerate(steps)) + "。")
+        lines.append(
+            ("前提与步骤：" if active_enh else "启用步骤：")
+            + " → ".join(circled[i] + s for i, s in enumerate(steps)) + "。"
+        )
         lines += [
             "",
             "> 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，"
             "那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。",
-            "",
-            "证据：",
         ]
+        if active_enh:
+            lines.append(
+                "> 反过来说：本层已经默认写在生效配置里，**证书没装好时这些主机的 TLS 会失败**——"
+                "不是「没生效」而是「连不上」。装好证书再评估，或直接把 `[MITM]` 那两行注释掉退回零证书形态。"
+            )
+        lines += ["", "证据："]
         for src in enh.get("sources", []):
             lines.append(f"- {src}")
     lines += ["", "## 红线与天花板（如实）", ""]

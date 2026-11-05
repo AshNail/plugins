@@ -15,6 +15,10 @@
 
 **v3.1.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】、**激励任务自动化 v2.0（MITM 响应注入）**全部通过 Loon `[Argument]` 开关控制。默认 `rewardSafe=true`，只清开屏品牌广告。
 
+**v3.2.0 核心变更（2026-11-05）**：
+- **汽水 API 分片纳入 `[MITM]` 取证通道**：`api3-hl/api3-lf/api3-lq/api5-hl/api5-lf/api5-lq/conf5-lf.qishui.com` 七台，配套 7 条 QUIC 回退与 gzip 降级同步补齐（静态层 18→25 条）。取证细节见「传输层」一节；**零新增绑定**。
+- **起点 v3.2.0 的教训同步到这里**：启用层只写在生成物上会被下一次构建覆盖——本插件是手写族插件，改动全部直接落在 `plugins/soda/soda.plugin` 与 `src/common/families.json`（`quicCount` 18→25），由 `npm run lint` 的 static layer / regex scopes 两道门禁逐条对账。
+
 **v3.1.0 核心变更（2026-11-05）**：
 - **激励任务自动化升级为 v2.0**：从"请求重放"改为"MITM 响应注入"。HAR 深度分析发现 `time_token`/`nonce` 每次动态生成，纯重放不可行；设备已被风控标记（`err_no=210021`）。新方案：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。
 - **新增端点**：`aweme.snssdk.com`（签到 API）加入 `[Rule]` QUIC 回退 + `[MITM]`。
@@ -388,10 +392,11 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
   - `rewardSafe=true` → 脚本内部直接放行，激励广告照常播放。
   - HTTP/3 不再是漏洞：v2.8.0 起 `[Rule]` 常开 QUIC 强制回退（见下），这些域只会走 TCP+TLS。
   - 仍依赖 MITM：所以它不能替代 `ads.plugin` 的 DNS 层，两者互补。
-- **静态传输层（常开，无开关）**：`[Rule]` 对这 17 个广告域名做 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`，
+- **静态传输层（常开，无开关）**：`[Rule]` 对这 25 个域做 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`，
   把 HTTP/3 逼回 TCP；`[MITM]` 另写 `h2 = true`（未文档化键，零成本冗余，见下）。
   这两项不提供开关——关掉等于让所有脚本看不见流量。回滚方式：删掉对应行。
-- **`[MITM]` 也不能按开关启停**。插件声明 `api.qishui.com, conf.qishui.com` 与 5 个广告域名；即使 `blockAdDomains` 关闭，这些域名也会被解密。如果开启后激励广告播不了（证书固定），把 `[MITM]` 里那 5 个广告域名注释掉即可。
+- **`[MITM]` 也不能按开关启停**。插件声明 16 条 hostname：luna 的两个已证主机、`conf.qishui.com`、汽水 API 的 7 个分片（v3.2.0 新增）、以及若干广告/SDK 域名；即使 `blockAdDomains` 关闭，这些域名也会被解密。如果开启后激励广告播不了（证书固定），把 `[MITM]` 里那几个广告域名注释掉即可。
+- **v3.2.0 · 汽水 API 分片取证通道**：两份真机日志（2026-10-29 10:39:55 / 2026-11-05 20:25:48）显示承接流量的主机是 `api3-lf`/`api3-hl`/`api5-lf`/`api5-hl`/`api5-lq`/`api3-lq`/`conf5-lf.qishui.com`（10-29 单份 747 次 SNI），而插件原先只写了 `api.qishui.com`（同一份日志 34 次）。这些分片 alpn 只报 `h2,http/1.1`、`*.qishui.com` 相关 6543+198 行里 `certificate unknown` **零次**——不是证书固定，是名单里没有它们，于是 Loon 只能按 SNI 查规则、`url:(null)`，响应脚本永远拿不到 body。v3.2.0 把 7 台补进 `[MITM]`，并按「两边严格对齐」的纪律同步补 7 条 QUIC 回退与 gzip 降级覆盖。**本轮零新增绑定**：绑定仍只写 luna 的两个已证主机（lint 的 luna host parity 锁死），分片解密出来的路径留给下一轮日志裁决，再决定要不要挂脚本。`log.qishui.com` / `log3-lf` / `log5-lf` 是纯上报、无绑定指向，刻意不纳入。
 - **开关冲突保护**：`rewardSafe=true` 时脚本优先保护非开屏端点；但仍建议不要同时打开 `rewardSafe` 与 `cleanAds` / `settingsClean`。
 
 ---
@@ -400,7 +405,7 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 
 | 层 | 内容 | 默认 | MITM |
 |---|---|---|---|
-| **L0** | 传输层：17 条 QUIC 回退（8 个 `[MITM]` 条目，含 Pangle 10 个分片）+ `h2` | ✅ 常开（无开关） | 是（前置条件） |
+| **L0** | 传输层：25 条 QUIC 回退（16 个 `[MITM]` 条目：15 个精确主机 + Pangle 分片族 glob，逐个枚举成 10 条回退）+ `h2` | ✅ 常开（无开关） | 是（前置条件） |
 | **L1** | `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com`（Pangle 分片族）、`zlink.ugsdk.cn`、`praisewindow.ugsdk.cn`（App Store 评分）→ 拦截 | ⬜（`blockAdDomains` 开关） | 是（脚本） |
 | **L2** | 字段级裁剪（见 3.2） | ✅ 部分（`cleanAds` 开关） | 是 |
 | **L2.5** | 设置层：`conf.qishui.com/service/settings/v3/`；可选 `is.snssdk.com` / `i.snssdk.com` | ⬜（`settingsClean` 开关） | 是 |
@@ -425,7 +430,7 @@ L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
 | 段 | 作用 | 需要 MITM |
 |---|---|---|
-| `[Rule]` | 传输层：8 个 MITM 域 `AND+PROTOCOL,QUIC` → `REJECT`（常开） | ❌ |
+| `[Rule]` | 传输层：25 条 MITM 域 `AND+PROTOCOL,QUIC` → `REJECT`（常开） | ❌ |
 | `[Rewrite]` | URL 级重写：上报端点 `reject_dict(200)`（开关） | ✅ |
 | `[Script]` | 字段级响应改写 + 广告域名拦截脚本（保留包络） | ✅ |
 | `[MITM]` | 声明 `api.qishui.com`、`conf.qishui.com` 与 5 个广告域名（域名拦截开关需要）+ `h2 = true`（未文档化键，保留作冗余） | ✅ |
@@ -615,7 +620,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 - **强力域名拦截**：关闭 `rewardSafe` 后开 `blockAdDomains` 即可；HTTP/3 已由 `[Rule]` 的 QUIC 回退覆盖，不需要再手改静态规则。
 
 > Loon 的 `[Rule]` 不能按开关关闭，所以域名拦截改用脚本实现（`blockAdDomains`）：开关关闭时零影响，`rewardSafe=true` 时自动放行。
-> 唯一需要静态层兜的是传输协议：v2.8.0 起 8 个 MITM 域常开 QUIC 回退，脚本才能稳定看见流量。
+> 唯一需要静态层兜的是传输协议：v2.8.0 起 MITM 域常开 QUIC 回退（v3.2.0 起 25 条），脚本才能稳定看见流量。
 
 > 【听抖音】默认保留。它属于福利页的正常任务条目，`hideDouyinTab` 打开后只删除带“抖音”字样的列表项，不动签到 / 听歌 / 分享 / 金币 / 逛商城 / 翻牌 / 引导。字段定位以你提供的珠宝页 HAR 为准。
 

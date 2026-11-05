@@ -21,7 +21,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/youtube/youtube.p
 
 只做 YouTubei JSON 的广告字段删除：递归删除 adPlacements / playerAds / adSlots / adBreakHeartbeatParams / adBreakParams。不复制可莉脚本，不处理 googlevideo initplayback、上传、Shorts、字幕或日志事件参数。默认整段注释，先在非主力设备验证。
 
-- 解密主机（`[MITM] hostname`，2 个）：`youtubei.googleapis.com`, `www.youtube.com`
+- 解密主机（`[MITM] hostname`，2 个，注释态，取消注释才解密）：`youtubei.googleapis.com`, `www.youtube.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，2 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 与 `response.json.jq` 都会静默失效；启用本层时应连同这些行一起取消注释。
 - 路径级规则（`URL-REGEX`，1 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 

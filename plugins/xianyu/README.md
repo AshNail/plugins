@@ -25,7 +25,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 
 闲鱼 iOS 未做证书固定：开屏/曝光计数是 mtop 主网关 acs.m.goofish.com 的路径名（splash.ads / idle.ad.expose），信息流广告则在同域 API 的 JSON 字段里（nextfresh 分区 / item.recommend 的 bizType=mamaAD）。黑洞整网关=废掉 App，正解是 MITM 后按路径 reject，或用 Loon 原生 response.json.jq 只删广告字段、保留 mtop 包络。下列 jq 来自 ddgksf2013 GoofishAds 与 fmz200 blockAds 两个公开模块（后者已在用同域 http-response-jq），默认整段注释；建议逐条启用、真机确认后再加下一条。fmz200 的 circle.visited（最近访问）与 fun.follow.often.visit（常访问）更像功能/历史而非广告，刻意不收。2026-10-30 再补频道 2024-10 插件的 4 个模块级 reject-dict（home.whale.modulet / item.resell.recommendorhotcate / topic.banner / idlehome.idle.coin.nextfresh），它们不是整域 REJECT，不触发本插件 acs.m.goofish.com 红线；2024 路径未复测，放在最后供逐条验证。
 
-- 解密主机（`[MITM] hostname`，2 个）：`acs.m.goofish.com`, `g-acs.m.goofish.com`
+- 解密主机（`[MITM] hostname`，2 个，注释态，取消注释才解密）：`acs.m.goofish.com`, `g-acs.m.goofish.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，2 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 与 `response.json.jq` 都会静默失效；启用本层时应连同这些行一起取消注释。
 - 路径级规则（`URL-REGEX`，6 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 

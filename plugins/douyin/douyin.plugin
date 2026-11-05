@@ -207,6 +207,24 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal
 #                两边各用自己最强的写法，名单靠 lint 校验覆盖关系。
 #                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
 #                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
+# 固定证书止损（2026-11-05 20:25:48 真机日志 · iPhone18,4 / iOS 27.2 / Loon 3.5.3(1014)）：
+#                下面这几台**客户端拒收了 Loon 证书**，签名统一是
+#                `ssl/tls alert certificate unknown`（err 167773206 / 0A000416）：
+#                  polaris.zijieapi.com          26 次 SNI / 26 次 Match MITM host / 26 次握手失败
+#                  zlink.ugsdk.cn                 6 次 SNI /  6 次 Match MITM host /  6 次握手失败
+#                  ads5-normal-gl2.zijieapi.com   5 次 SNI /  0 次 Match MITM host /  5 次握手失败
+#                同窗口 Apple 主机正常解密、Loon CA 已加载，所以这不是「用户没装证书」，
+#                是 App 侧固定证书。后果要讲清楚：**不是这条面静默不生效，而是这台主机的
+#                连接被我们掐断了**——声明进 [MITM] 之后握手失败即整条请求失败。
+#                因此落在它们身上的绑定（本插件的 `polaris.zijieapi.com/luckycat/activity/settings/`
+#                响应清理、`blockAdDomains` 请求层里的 ads 分片与 zlink）都是结构性失效，
+#                对外只许说「已注册、固定证书未解除前不生效」，不许说「已净化/已拦截」。
+#                ads5-normal-gl2 那 5 次失败没有 Match 行，属用户主配置的解密面
+#                （判读纪律见 docs/device-checklist.md「别把主配置记在插件头上」），
+#                但同族的 `ads?-normal*.zijieapi.com` 是本插件声明的，一并按固定证书对待。
+#                止损动作（默认不执行，要就手动）：把这些主机从上面 hostname 行删掉，
+#                对应 [Rule] 的 QUIC 回退行与 [Script] 里只命中它们的绑定一起注释——
+#                删掉之后连接恢复正常，只是这些端点重新变成黑盒。
 # h2 = true（常开）：未文档化键，社区通行写法。官方 MitM 文档只列三个键，
 #                HTTP/2 解密本就是默认能力，这里保留纯属零成本保险（未知键被忽略）。
 #                若某个 build 把它当非法键导致断网，删掉这一行即可回滚。

@@ -1,6 +1,6 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 3.1.0）/ `douyin.plugin`（当前 0.9.0）；`ads.plugin`（当前 2.8.10）见 H 节。
+> 适用：`soda.plugin`（当前 3.2.0）/ `douyin.plugin`（当前 0.9.0）；`ads.plugin`（当前 2.8.10）见 H 节。
 > 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 与全部 App 插件**不再声明 `#!loon_version`**（`#!system` 覆盖 macOS，Loon for Mac 的营销版本号是独立一条线 `0.5.0(1011)`，iOS 口径门槛在 Mac 上语义未定），功能基线仍是 App Store 正式版 **3.5.2(996)**；`DOMAIN-WILDCARD` 仅 TF 3.5.3(1008)+ 有，保持默认注释层。
 > 红线重申：净化/观测层默认生效、零改写；自动化层（签到 / 激励任务重放 / 自动领取 / 广告秒播，
 > 3kaiu 方案）是独立显式开关，默认值见各插件 `[Argument]`，开启前先读插件 README 的副作用说明。
@@ -26,7 +26,7 @@
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.10`、`soda=3.1.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.10`、`soda=3.2.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
@@ -202,7 +202,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       两个窗口内**没有任何脚本错误/超时**日志（`debugLog=off` 时脚本静默属预期）。
 - [ ] **QUIC 回退本窗口 0 命中（待国内 Wi-Fi 复测）**：`REJECT by QUIC Fallback Protection` 出现 4 次，
       但 SNI 是 `youtubei.googleapis.com`（用户主配置的规则，不在本仓域名清单）；本窗口 `api.qishui.com`
-      只有 `protocol:2`（h2），未观测到 QUIC。结论：仓库 17/16 条 QUIC 回退在该网络**没触发也没误伤**；
+      只有 `protocol:2`（h2），未观测到 QUIC。结论：仓库当时的 18/16 条 QUIC 回退（汽水侧 v3.2.0 起增至 25 条）在该网络**没触发也没误伤**；
       F 段「回退是否发生」仍待一个真实走 QUIC 的网络环境复测。
 - [!] **新发现：加密 DNS 链在海外蜂窝基本瘫**（ads 插件 `[General]` 的 doh/doh3/doq 均为境内服务）：
       `h3://223.5.5.5` 285 次查询 210 次空回复（74%）、`h3://223.6.6.6` 280/201（72%）、
@@ -241,11 +241,14 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [x] **Pangle 分片**：`ads5-normal-hl.zijieapi.com` ×12、`ad.zijieapi.com` ×2 被黑洞；
       与 soda/douyin `splash-ad` 的请求层拦截互补（一个挡 DNS，一个挡请求）。
 - [!] **起点可选层判读**：`magev6.if.qidian.com` 出现 `Match MITM host:` 20 次但 0 条拦截——
-      本仓 qidian 可选层默认整段注释；若只解注释了 `[MITM]`、没解注释 `[Rule]`，
-      这就是预期（解密≠拦截），不是插件失效。
+      那是 v3.1.0 的注释基线形态；**v3.2.0 起 `[MITM]`+`[Script]`+`[Argument]` 已默认生效**，
+      解密≠拦截这条判读仍然成立（路径级 `URL-REGEX` 那 13 条按纪律保持注释态）。
 - [!] **别把主配置记在插件头上**：`api3-lq.qishui.com` / `api5-lq.qishui.com` 各 73/74 次 MITM，
-      但本仓没有任何插件声明这两个主机，也没有对应的 `Search rule by host:`——
-      那是用户主配置自己的 MITM 名单，不参与本清单判读。
+      但那一版 soda 插件没声明这两个主机，也没有对应的 `Search rule by host:`——
+      那是用户主配置自己的 MITM 名单，不参与本清单判读。**v3.2.0 起 soda 已把这 7 台
+      分片（api3/api5 × hl/lf/lq + conf5-lf）写进 `[MITM]`**，所以今后判读要先对 `#!version`：
+      插件自己声明了的解密面才归本仓解释，没声明的一律算主配置。
+- [ ] **v3.2.0 待复测（汽水 API 分片取证通道）**：`api3/api5 × hl/lf/lq` 与 `conf5-lf` 这 7 台已进 soda 的 `[MITM]`，下一轮日志要回答三个问题——① 是否出现 `Match MITM host:api5-lf.qishui.com` 这类行（证明解密面确实铺开）；② 这些分片上有没有 `/luna/*`、开屏上报或激励端点（决定要不要给它们加绑定）；③ 有没有出现 `certificate unknown`（两份日志的 6543+198 行 `*.qishui.com` 里零次，一旦出现就是固定证书，立刻退回注释并写进本清单）。**本轮没有为它们写任何绑定**，所以「已净化/已拦截」这类话在这一层还不成立，只有「能看见了」。
 - [x] **有意的数据缺口**：638 条非广告 luna 请求未绑定；没有“全 luna 都处理”的假宣告。
 
 ## J. 15 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
@@ -268,12 +271,12 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **以上两款共有的口径**：`mba-dashi` / `ruankao-tong` 的 `[Host]`/`[Rule]` 是全设备生效（Loon 无法按 App 限定），同一 SDK 域跨 App 共享黑洞——「按 App 插件」只是分组开关；测试时若别的 App 也报广告加载失败，那是同一批域在起作用，不是插件写错。配合全局 ads 插件的 httpdns 组防绕过。
 - [ ] 默认关的组（watchlist/telemetry/amdc/waimai_ad/d_meituan_net/unionpay_optional/jd_ad_watchlist/jd_telemetry 等）试开前，先在日志确认对应域真实出现——没出现就开了也没有收益。
 
-### J2. 可选 MITM 增强层（meituan/xianyu/qidian 文末整段默认注释）
+### J2. MITM 增强层（meituan/xianyu 文末整段默认注释；qidian 自 v3.2.0 起默认启用）
 
 不装证书 = 本层永不生效，上面各项判读不变；启用与否、启用几条完全自愿，随时可回滚（重新注释即回到原状）。
 
 - [ ] **前置**：Loon → 证书管理 → 生成/安装 CA → iOS 设置里「通用→关于→证书信任设置」打开完全信任；无证书时取消注释也无效，先装证书再改规则。
-- [ ] **qidian**：只取消 `[MITM]` 头 + `hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com` + 8 条 `URL-REGEX`（REJECT-DICT）。验证：冷启动开屏广告秒过、书架悬浮广告/每日推荐位消失、我的页内测推广与书架置顶推广消失；正文阅读、听书、评论、支付必须无恙（同主机业务路径不在正则内）。日志应见 `Reject ... by URL-Regex` 且主机仍正常解析。
+- [!] **qidian（v3.2.0 起形态变了）**：`[Argument]` + `[MITM]` + `[Script]` 三层已**默认写进生效配置**——不再需要取消 `[MITM]` 注释，`hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com, h5.if.qidian.com` 直接生效，10 条脚本绑定由 `[Argument]` 控制（净化 `cleanAds=true` 默认开、自动化 `autoTask=false` 默认关）。**所以判读前置换成了证书**：Loon 没装/没完全信任 CA 时，这三台主机不是「没生效」而是 TLS 直接失败——起点打不开就是这条，先装证书再评估。2026-11-05 20:25:48 那份日志的取证正相反：增强层还是注释基线时 `magev6.if.qidian.com` 22 次、`h5.if.qidian.com` 4 次连接全部 `GEOIP,CN DIRECT` 且 `url:(null)`，`auto-task.min.js` 一次都没执行。验证：冷启动开屏广告秒过、书架悬浮广告/每日推荐位消失、我的页内测推广与书架置顶推广消失；正文阅读、听书、评论、支付必须无恙。路径级 `URL-REGEX`（13 条）仍按仓库纪律保持注释态——正文与广告位同主机，**解密不等于拦截**；要额外拦路径才取消注释并移进上方已生效的 `[Rule]` 段（配套 3 条 QUIC 回退已生效）。
 - [ ] **meituan**：MITM 主机 9 个（`wmapi/apimobile/p?.meituan.net/flowplus/img/feedguess/mt-personalcenter/assistify/mop`），响应 jq 8 条（tab/推荐流/我的页/搜索词/AI skills/购物车 banner/启动图），默认全注释、逐条启用。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；广告图路径命中后应看到 1px 图（`REJECT-IMG` 200 + GIF，不是 404）且商品图正常；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
 - [ ] **xianyu**：本层有三块——`# [MITM]`（2 主机）、`# [Rewrite]`（15 条 `response.json.jq`）、`# [Rule]`（2 条 QUIC 回退 + 2 条 `URL-REGEX`，拦 `splash.ads`/`idle.ad.expose`）。建议顺序：先只开 `[MITM]` + QUIC + 两条 `URL-REGEX`，验证开屏广告消失且发布、下单、聊天、扫一扫无恙；再开 `[Rewrite]` 里**一条** `group.myself.banner`（`.data.bannerList = []`，最保守），确认群聊页 banner 消失、消息列表正常、响应仍是合法 JSON；第二步试 `item.recommend`（只删 mamaAD）与三条占位规则（`user.strategy.list` / `search.shade` / `search.activate`）；最后再试「只留 item/业务分区」的激进规则：`home.nextfresh`、`search.search`、`local.home`、`search.discover`、`item.buy.feeds`、`item.recommend.list`，以及最激进的 `user.page.my.adapter`（我的页面只留 head/user/trade 分区）。任一规则导致白屏/接口报错，只重新注释该行即可回滚；整体异常（登录转圈、全局接口报错）则整段恢复注释。**若 jq 规则全无效果，先怀疑 Loon 没执行 jq（响应压缩/内容类型不满足），不要改正则硬试**——mtop 网关被解密本身就改变连接形态，本层对该 App 定位是「实验」。
 - [ ] **共同回滚判据**：银行/支付/门锁等红线域绝不允许进 `[MITM]` hostname；增强层启用后若 App 报「网络异常/证书错误」，说明该 App 实际做了固定或检测，接受现实、整段恢复注释（插件注释已声明此可能）。

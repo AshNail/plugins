@@ -26,7 +26,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 
 淘宝 iOS 的开屏/推荐/活动广告入口与交易共用 acs.m.taobao.com、guide-acs.m.taobao.com，不能黑洞整域。下列 11 条 URL-REGEX 来自可莉淘宝插件的 request reject 事实，改写为 Loon 原生 REJECT-DICT（200 + 空字典）；广告图片路径用 REJECT-IMG。上游两条 response script（cloudvideo、poplayer 模板）需要 JS，本插件不包含。默认整段注释，装证书后逐条启用，先验搜索/下单/购物车/支付。
 
-- 解密主机（`[MITM] hostname`，4 个）：`acs.m.taobao.com`, `guide-acs.m.taobao.com`, `gw.alicdn.com`, `heic.alicdn.com`
+- 解密主机（`[MITM] hostname`，4 个，注释态，取消注释才解密）：`acs.m.taobao.com`, `guide-acs.m.taobao.com`, `gw.alicdn.com`, `heic.alicdn.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，4 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 会静默失效；启用本层时应连同这些行一起取消注释。
 - 路径级规则（`URL-REGEX`，11 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 

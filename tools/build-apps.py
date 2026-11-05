@@ -344,12 +344,23 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     all_redlines = app_redlines()
     hosts: list[str] = []
     rules: list[str] = []
+    enh = app.get("enhance") or {}
+    active_enh = bool(enh.get("active"))
+    if active_enh and enh.get("quic_fallback"):
+        groups.append(quic_fallback_group(enh, where, roots))
+        rules += groups[-1]["rules"]
     for g in groups:
         gid = g.get("id", "?")
         redlines = [] if g.get("disabled") else all_redlines
         for h in g["hosts"]:
             validate_host(h, f"{where}:{gid}", roots)
             check_redline(h, f"{where}:{gid}", redlines)
+        if g.get("raw"):
+            # QUIC 回退组：validate_rule 的形状表只收域名拦截类，所以形状跳过、
+            # 红线判定不跳过——protocol_scoped_composite 认得「AND + PROTOCOL」不黑洞域名。
+            for r in g["rules"]:
+                check_rule_redline(r, f"{where}:{gid}", redlines)
+            continue
         for r in g["rules"]:
             validate_rule(r, f"{where}:{gid}", roots)
             check_rule_redline(r, f"{where}:{gid}", redlines)
@@ -416,14 +427,18 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
             out.append("")
         return out
 
+    enh = app.get("enhance")
+    if active_enh:
+        lines += render_arguments(enh, where)
     if rules:
         lines += section("Rule", rules, lambda r: r)
     lines += section("Host", hosts, lambda h: h + f" = {HOST_BLACKHOLE}")
-    lines += render_crons(app)
-
-    enh = app.get("enhance")
+    cron_lines = render_crons(app)
+    lines += cron_lines
+    if active_enh:
+        lines += render_active_layer(enh, where, bool(cron_lines))
     if enh:
-        lines += render_enhance(enh, where, roots)
+        lines += render_enhance(enh, where, roots, active=active_enh)
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
@@ -431,13 +446,228 @@ def escape_regex_slashes(pattern: str) -> str:
     return re.sub(r"(?<!\\)/", r"\\/", pattern)
 
 
-def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
-    """可选 MITM 增强层：整段注释输出。
+# 增强层「默认启用」是用户裁决的例外，不是给所有 App 开门：只有源里写死
+# active=true 的 App 才允许出现 [Argument]/[MITM]/[Script] 三类默认生效配置，
+# 且每一行都要能被源逐行重述（tests/lint-plugins.py 的 check_app_plugins 复审）。
+BIND_KINDS = {"request", "response", "cron", "generic"}
+CRON_EXPR_RE = re.compile(r"^\S+ \S+ \S+ \S+ \S+$")
+ARG_NAME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9]*$")
+SCRIPT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def plain_hosts(enh: dict) -> list[str]:
+    return [h for h in enh.get("mitm_hosts", []) if not any(c in h for c in "*?[]:")]
+
+
+def quic_fallback_group(enh: dict, where: str, roots: set[str]) -> dict:
+    """active 层的配套 QUIC 回退：拒的是 HTTP/3 协议，不是这台主机。
+
+    MITM 只解密 TCP。App 走 QUIC 时净化脚本一条都收不到——真机日志里那些
+    `url:(null)` 就是这个形状。不补这条，默认启用的脚本层等于半生效。
+    """
+    hosts = plain_hosts(enh)
+    if not hosts:
+        raise BuildError(f"{where}: enhance.quic_fallback 需要可用的 mitm_hosts（无通配主机）")
+    for h in hosts:
+        if h.lower() in roots:
+            raise BuildError(f"{where}: QUIC 回退主机 {h!r} 是共享主域")
+    return {
+        "id": "quic-fallback",
+        "raw": True,
+        "disabled": False,
+        "hosts": [],
+        "title": "QUIC 回退（增强层配套 · 拒的是 HTTP/3 协议，回落 TCP 后正文不受影响）",
+        "note": "MITM 只解密 TCP；App 走 HTTP/3 时下面这些主机的响应脚本会静默收不到。"
+                "本组只对 PROTOCOL,QUIC 生效，同一主机的 TCP 请求（正文/书架/章节）零影响。",
+        "sources": [],
+        "rules": [f"AND,((DOMAIN-SUFFIX,{h}),(PROTOCOL,QUIC)),REJECT" for h in hosts],
+    }
+
+
+def validate_enhance_active(enh: dict, where: str) -> list[str]:
+    """active 层的源侧校验：返回绑定行（同时供生成与 lint 对账复用）。"""
+    arguments = enh.get("arguments") or []
+    bindings = enh.get("bindings") or []
+    if not arguments or not bindings:
+        raise BuildError(f"{where}: enhance.active 需要 arguments 与 bindings 两段都不为空")
+    if enh.get("scripts"):
+        raise BuildError(
+            f"{where}: enhance.active 用结构化 bindings，不再接受旧的注释态 scripts 字符串"
+        )
+    if enh.get("rewrite_json"):
+        raise BuildError(
+            f"{where}: enhance.active 与 response.json.jq 互斥"
+            "（官方：Response Body Rewrite 命中时同阶段脚本不执行，active 层已经挂了 Response Script）"
+        )
+    names: list[str] = []
+    for a in arguments:
+        name = a.get("name", "")
+        if not ARG_NAME_RE.match(name):
+            raise BuildError(f"{where}: enhance.arguments.name 非法: {name!r}")
+        if name in names:
+            raise BuildError(f"{where}: 开关重名 {name!r}")
+        if a.get("default") not in ("true", "false"):
+            raise BuildError(f"{where}: 开关 {name!r} 的默认值必须是 true/false")
+        if not a.get("tag") or not a.get("desc"):
+            raise BuildError(f"{where}: 开关 {name!r} 缺 tag/desc")
+        names.append(name)
+    if "debugLog" not in names:
+        raise BuildError(f"{where}: active 层必须有 debugLog 开关（所有绑定都接 with debug=）")
+    lines: list[str] = []
+    for b in bindings:
+        bid = b.get("id", "?")
+        kind = b.get("kind")
+        if kind not in BIND_KINDS:
+            raise BuildError(f"{where}: bindings[{bid}].kind {kind!r} 不在 {sorted(BIND_KINDS)}")
+        script = b.get("script", "")
+        if not SCRIPT_NAME_RE.match(script):
+            raise BuildError(f"{where}: bindings[{bid}].script 非法: {script!r}")
+        if not b.get("tag"):
+            raise BuildError(f"{where}: bindings[{bid}] 缺 tag")
+        timeout = b.get("timeout")
+        if not isinstance(timeout, int) or not 1 <= timeout <= 600:
+            raise BuildError(f"{where}: bindings[{bid}].timeout 需在 1..600: {timeout!r}")
+        for arg in b.get("args", []):
+            if arg not in names:
+                raise BuildError(f"{where}: bindings[{bid}] 透传了未声明的开关 {arg!r}")
+        switch = b.get("switch")
+        if switch is not None and switch not in names:
+            raise BuildError(f"{where}: bindings[{bid}].switch {switch!r} 不在 arguments 里")
+        if kind in ("request", "response", "cron") and not switch:
+            raise BuildError(
+                f"{where}: bindings[{bid}] 是 {kind} 型绑定，必须带 switch（自动化不得默认生效）"
+            )
+        if kind in ("request", "response"):
+            pattern = b.get("pattern", "")
+            if not pattern.startswith("^https://"):
+                raise BuildError(f"{where}: bindings[{bid}].pattern 必须以 ^https:// 开头")
+            try:
+                re.compile(pattern)
+            except re.error as e:
+                raise BuildError(f"{where}: bindings[{bid}].pattern 正则非法: {e}") from e
+            declared = b.get("hosts") or []
+            if not declared:
+                raise BuildError(
+                    f"{where}: bindings[{bid}] 缺 hosts——必须写明挂在哪些已解密主机上，"
+                    "不然就是「绑了但收不到响应」的假接线"
+                )
+            bare = pattern.replace("\\.", ".")
+            for h in declared:
+                if h not in enh.get("mitm_hosts", []):
+                    raise BuildError(
+                        f"{where}: bindings[{bid}] 声明 {h!r} 不在 enhance.mitm_hosts 里"
+                    )
+                suffix = ".".join(h.split(".")[-2:])
+                if suffix not in bare:
+                    raise BuildError(
+                        f"{where}: bindings[{bid}] 声明 {h!r}，但正则里找不到它的后缀 {suffix!r}"
+                    )
+        if kind == "cron" and not CRON_EXPR_RE.match(b.get("cron", "")):
+            raise BuildError(f"{where}: bindings[{bid}].cron 需 5 段: {b.get('cron')!r}")
+        lines.append(render_binding(b))
+    return lines
+
+
+def render_binding(b: dict) -> str:
+    """一条现代语法绑定。形状与 soda/douyin 手写接线一致：属性顺序 debug→enable→requires_body→timeout→tag。"""
+    kind = b["kind"]
+    args = ", ".join(f"${{{a}}}" for a in b.get("args", []))
+    call = f'script("scripts/{b["script"]}.min.js"'
+    call += f", {{{args}}})" if args else ")"
+    attrs = ["debug=${debugLog}"]
+    if b.get("switch"):
+        attrs.append(f'enable=${{{b["switch"]}}}')
+    head = ""
+    if kind in ("request", "response"):
+        if b.get("requires_body"):
+            attrs.append("requires_body=true")
+        attrs.append(f'timeout={b["timeout"]}')
+        attrs.append(f'tag="{b["tag"]}"')
+        head = f'{kind} if ${{url}} ~= /{escape_regex_slashes(b["pattern"])}/ then {call} with '
+    elif kind == "cron":
+        attrs.append(f'timeout={b["timeout"]}')
+        attrs.append(f'tag="{b["tag"]}"')
+        head = f'cron "{b["cron"]}" then {call} with '
+    else:
+        attrs.append(f'tag="{b["tag"]}"')
+        if b.get("imgUrl"):
+            attrs.append(f'img_url="{b["imgUrl"]}"')
+        attrs.append(f"timeout={b['timeout']}")
+        head = f"generic then {call} with "
+    return head + ", ".join(attrs)
+
+
+def render_arguments(enh: dict, where: str) -> list[str]:
+    validate_enhance_active(enh, where)
+    out = [
+        "",
+        "# " + "=" * 72,
+        "# 开关（源：src/apps/<slug>.json 的 enhance.arguments；改开关改源后 npm run build:apps）",
+        "# " + "-" * 72,
+        "# 净化类默认开、自动化类默认关——finishWatch 重放、代领奖、广告时长 patch 都是",
+        "# 「代打卡/伪造完成」，不默认生效，也不随净化开关一起被打开。",
+        "# " + "=" * 72,
+        "",
+        "[Argument]",
+        "",
+    ]
+    for a in enh.get("arguments", []):
+        out.append(
+            f'{a["name"]} = switch,{a["default"]},tag={a["tag"]},desc={a["desc"]}'
+        )
+    out.append("")
+    return out
+
+
+def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[str]:
+    """active 增强层的默认生效配置层：[MITM] hostname + [Script] 绑定。"""
+    validate_enhance_active(enh, where)
+    hosts = enh.get("mitm_hosts", [])
+    out = [
+        "",
+        "# " + "=" * 72,
+        "# 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）",
+        "# " + "-" * 72,
+        "# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——",
+        "# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，",
+        "# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。",
+        "# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，",
+        "# 解密不等于拦截。",
+        "# " + "=" * 72,
+        "",
+        "[MITM]",
+        "",
+        f"hostname = %APPEND% {', '.join(hosts)}",
+        "",
+    ]
+    if not has_cron_section:
+        out += [
+            "# " + "=" * 72,
+            "# 脚本层（绑定行由 enhance.bindings 生成，lint 逐行对账）",
+            "# " + "-" * 72,
+            "# 同名脚本 auto-task.min.js 按 URL 分流：捕获 / 净化 / 秒播 / 重放 / 领奖。",
+            "# 源码 src/<slug>/auto-task.js（可读）→ plugins/<slug>/scripts/auto-task.min.js。",
+            "# " + "=" * 72,
+            "",
+            "[Script]",
+            "",
+        ]
+    for b in enh.get("bindings", []):
+        note = b.get("note")
+        if note:
+            out.append(f'# {b["id"]}: {note}')
+        out.append(render_binding(b))
+        out.append("")
+    return out
+
+
+def render_enhance(enh: dict, where: str, roots: set[str], active: bool = False) -> list[str]:
+    """增强层尾巴：注释态的路径级黑洞（response.json.jq / URL-REGEX）。
 
     只对未做证书固定的 App 有效；启用需要用户先装并信任 Loon 证书，再逐行取消
-    注释。因为默认全注释，插件头仍是纯 rule/host 零证书形态，lint 的段白名单不受
-    影响（注释头不会被解析成 section）。这里的每条 URL-REGEX / jq / 脚本都必须来自
-    公开可引用的规则源（enhance.sources），不凭空造路径。
+    注释。这里的每条 URL-REGEX / jq 都必须来自公开可引用的规则源
+    （enhance.sources），不凭空造路径。`active=True` 时 [MITM]/QUIC/[Script]
+    已经由 render_active_layer 默认生效输出，这里只留仍然注释的路径黑洞。
     """
     mitm_hosts = enh.get("mitm_hosts", [])
     url_rules = enh.get("url_regex", [])
@@ -492,17 +722,28 @@ def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
             )
     out = [""]
     out.append("# " + "=" * 72)
-    out.append("# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）")
+    out.append(
+        "# 仍然注释的路径级黑洞（本 App 的 MITM/脚本层已默认启用，这一批按需再开）"
+        if active else
+        "# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）"
+    )
     out.append("# " + "-" * 72)
     for note in enh.get("intro", "").splitlines():
         out.append(f"# {note}")
     circled = "①②③④⑤⑥"
-    steps = ["Loon 里装并信任证书", "取消 [MITM] 头与其 hostname 行的注释"]
+    if active:
+        steps = ["确认 Loon 已装并信任证书（本层已默认解密）"]
+    else:
+        steps = ["Loon 里装并信任证书", "取消 [MITM] 头与其 hostname 行的注释"]
     if rewrite_json:
         steps.append("取消 [Rewrite] 头及其下所需 response.json.jq 行的注释")
     if url_rules:
-        steps.append("取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行")
-    if scripts:
+        steps.append(
+            "把需要的 URL-REGEX 行取消注释并移进上方生效的 [Rule] 段"
+            if active else
+            "取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行"
+        )
+    if scripts and not active:
         steps.append("如含脚本，再取消 [Script] 头与其脚本行的注释")
     for i, step in enumerate(steps):
         prefix = "# 启用步骤：" if i == 0 else "#           "
@@ -514,7 +755,7 @@ def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
         out.append(f"# 证据: {src}")
     out.append("# " + "=" * 72)
     out.append("")
-    if mitm_hosts:
+    if mitm_hosts and not active:
         out.append("# [MITM]")
         out.append("# " + "-" * 60)
         out.append("# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。")
@@ -534,12 +775,16 @@ def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
             )
     if url_rules:
         out.append("#")
-        out.append("# [Rule]")
+        out.append("# [Rule]" if not active else "# （路径规则请移进文件上方已生效的 [Rule] 段）")
         out.append("# " + "-" * 60)
-        out.append("# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。")
+        out.append(
+            "# 这些规则命中即黑洞本 App 自己登记的红线主机，默认保持注释、按需自行启用。"
+            if active else
+            "# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。"
+        )
         quic = [h for h in mitm_hosts if not any(c in h for c in "*?[]:")]
         skipped = [h for h in mitm_hosts if h not in quic]
-        if quic:
+        if quic and not active:
             out.append("# QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的")
             out.append("# " + ("URL-REGEX / response.json.jq 会静默失效。" if rewrite_json else "URL-REGEX 会静默失效。"))
             out.append("# 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。")
@@ -549,7 +794,7 @@ def render_enhance(enh: dict, where: str, roots: set[str]) -> list[str]:
             out.append("# 通配主机无法用 DOMAIN-SUFFIX 表达，QUIC 回退需另行处理: " + ", ".join(skipped))
         for r in url_rules:
             out.append(f"# {r}")
-    if scripts:
+    if scripts and not active:
         out.append("#")
         out.append("# [Script]")
         out.append("# " + "-" * 60)
