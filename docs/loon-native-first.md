@@ -225,7 +225,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 
 - **现状**：lint 已经锁了「脚本 vs 脚本」首条命中，但**没有锁「Rewrite vs Script」「Rule vs Script」**。`soda.plugin` 的 `[Rewrite]` 与 `[Script]` 存在同域绑定（`splash/brand/report` 与 `splash/brand/retrieve` 同前缀），一旦有人把 Rewrite 正则放宽，脚本会静默失效——这正是历史上「settings 双绑定」那类 bug 的同构版本。
 - **做法**：给 lint 增加一层矩阵：对每个 URL 样本，列出所有可能命中的 `[Rule]` / `[Rewrite]` / `[Script]`，标出「跨层短路」；允许清单显式登记「故意短路」。
-- **收益**：把「注释里写清楚」升级为「CI 挡住」。
+- **收益**：把「注释里写清楚」升级为「门禁挡住」。
 - **风险**：无（纯静态检查）。
 - **结论**：**P0**，与 E1 无关，可立即做。
 
