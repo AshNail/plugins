@@ -175,9 +175,9 @@ CAPABILITIES = [
          why="upsell 响应 gzip 后已 183~191 KB，去压缩会膨胀 5~10 倍"),
 
     # ---------------- 规则层 ----------------
-    dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="used",
+    dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="open",
          probe=r"(?m)^DOMAIN\s*,", href=DOC + "/Rule/domain_rule",
-         why="adfilter 用精确 DOMAIN 拦截 AdNexus/21CN/联通广告等独立域；其余共享域仍由 [Host] 精确映射覆盖"),
+         why="原 adfilter 的精确 DOMAIN 规则并入 ads 时改用 [Host] 精确映射（ad.21cn.com 等 6 个新主机 + 既有 adnxs 族）；[Rule] DOMAIN 目前没有生效用法"),
     dict(layer="规则层", key="r-suffix", name="`DOMAIN-SUFFIX`", expect="used",
          probe=r"(?m)^DOMAIN-SUFFIX\s*,", href=DOC + "/Rule/domain_rule",
          why="ads 通配层与 app 插件（banks/qidian/x）整域 REJECT 使用；`[Host]` 的 `*.` 只映射 DNS，"
