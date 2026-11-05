@@ -110,11 +110,16 @@ function hostOf(url) {
   try {
     const url = ($request && $request.url) || "";
 
-    const args = pargs(["blockAdDomains", "rewardSafe"]);
+    const args = pargs(["blockAdDomains", "rewardSafe", "debugLog"]);
+    const debugOn = pflag(args, "debugLog", false);
 
     /* 只有明确打开 blockAdDomains 才拦截，避免被误挂到别的规则上 */
     if (!pflag(args, "blockAdDomains", false)) {
       return $done({});
+    }
+    if (debugOn) {
+      console.log("[@@LOG_TAG@@-trace] REQ block-domains url=" + url +
+        " rewardSafe=" + pflag(args, "rewardSafe", @@REWARD_SAFE_DEFAULT@@));
     }
 
     /* 保奖励模式：激励广告必须能正常加载，直接放行（soda 默认开 / douyin 默认关） */

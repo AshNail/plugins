@@ -167,8 +167,11 @@ const SCALAR_KEYS = new Map([
   ["banneradswitch", "false"],
   ["enableh5ad", "false"],
   ["h5adswitch", "false"],
-  /* 21.4.0 二进制实测：开屏总开关。置 false 后服务端不再下发可展示开屏。 */
-  ["enablesplashshow", "false"]
+  /* 21.4.0 二进制实测：开屏总开关 + 每日展示上限 + 开屏广告声音。
+     上限置 0 = 服务端下发的开屏当日不再展示；不影响激励广告。 */
+  ["enablesplashshow", "false"],
+  ["dailysplashshowlimit", "zero"],
+  ["audiblesplashad", "false"]
 ]);
 
 /*
@@ -573,10 +576,20 @@ function markHeaders(reason, bodyChanged) {
      *   hideDouyinEntry 关掉【听抖音】入口（anchor_luna_to_douyin*，不动广告配置）
      * 保奖励模式只挡“清广告配置”这一步；隐藏【听抖音】不影响发奖链路，可以照常做。
      */
-    const pluginArgs = pargs(["settingsClean", "hideDouyinEntry", "rewardSafe"]);
+    const pluginArgs = pargs(["settingsClean", "hideDouyinEntry", "rewardSafe", "debugLog"]);
     const wantClean = pflag(pluginArgs, "settingsClean", false);
     const wantDouyin = pflag(pluginArgs, "hideDouyinEntry", false);
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
+    const debugOn = pflag(pluginArgs, "debugLog", false);
+
+    const url = ($request && $request.url) || "";
+    const raw = readBody($response);
+    if (debugOn) {
+      console.log("[soda-trace] RESP settings url=" + url +
+        " len=" + (raw && raw.length) + " switches=" +
+        (wantClean ? "clean " : "") + (wantDouyin ? "douyin" : ""));
+    }
+
     if (!wantClean && !wantDouyin) {
       console.log("[soda-settings] no switch on, passthrough");
       return $done({ headers: markHeaders("soda-settings;skip=switch-off") });
@@ -586,9 +599,6 @@ function markHeaders(reason, bodyChanged) {
     }
     cleanAdsConfig = wantClean && !rewardSafe;
     hideDouyin = wantDouyin;
-
-    const url = ($request && $request.url) || "";
-    const raw = readBody($response);
 
     const isSettingsHost =
       url.indexOf("conf.qishui.com") !== -1 ||

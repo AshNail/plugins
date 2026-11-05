@@ -25,11 +25,6 @@
 |---|---|
 | [按广告类型分类的去除策略](ad-type-strategy.md) | DNS、Host、路径 Rewrite、脚本裁剪的选型 |
 | [规则有效率](rule-effectiveness.md) | “写了”不等于“生效”：前提、MITM、正则面审计 |
-| [起点官网 Web 资源](qidian-web-resources.md) | 首页实际字节、第三方推广/统计与可选拦截清单 |
-| [TG@Nzmgs 上游研究](nzmgs-upstream.md) | QX 脚本源的可移植域、明确排除项与验证边界 |
-| [网易云与镜像源研究](netease-mirror-sources.md) | 网易云模块、可莉 GitHub 镜像与 Jsforbaby 合规边界 |
-| [可莉迁移对照](kelee-migration.md) | 可莉插件规则到自研原生实现的逐条迁移记录 |
-| [可莉清单](fkikelee-inventory.md) | 上游可莉规则清单与裁剪口径 |
 | [旁路审计](bypass-audit.md) | “拦了”不等于“拦住”：DNS/HTTPDNS/DoH 旁路与红线 |
 | [Loon 能力覆盖](loon-coverage.md) | 已用/可用未用/不适用能力盘点 |
 | [App 插件覆盖率](app-coverage.md) | App 级覆盖矩阵（生成物） |
@@ -40,7 +35,6 @@
 | 文档 | 用途 |
 |---|---|
 | [真机验证清单](device-checklist.md) | 重装/更新后按单走的分段验证 |
-| [听抖音字段工具包](listen-douyin-field-kit.md) | 【听抖音】入口字段定位与回传流程 |
 | [测试套件说明](../tests/README.md) | Node 回归套件、断言分布、lint 与配置门禁 |
 
 ## 插件入口
