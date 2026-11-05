@@ -408,14 +408,21 @@ async function autoReceiveRewards(E, headers) {
 // 🔧 响应净化
 // ==========================================
 function handleClientConfig(E, response) {
+  console.log("[起点全能助手] handleClientConfig 开始执行");
   debugLog("handleClientConfig 开始执行");
+  
+  const bodyType = typeof response.body;
+  console.log("[起点全能助手] response.body 类型: " + bodyType);
+  
   const obj = safeJsonParse(response.body);
   if (!obj) {
-    debugLog("handleClientConfig: JSON 解析失败, body 类型: " + typeof response.body);
+    console.log("[起点全能助手] JSON 解析失败，跳过净化");
+    debugLog("handleClientConfig: JSON 解析失败, body 类型: " + bodyType);
     E.done();
     return;
   }
   if (!obj.Data) {
+    console.log("[起点全能助手] obj.Data 不存在");
     debugLog("handleClientConfig: obj.Data 不存在");
     E.done();
     return;
@@ -434,9 +441,10 @@ function handleClientConfig(E, response) {
     obj.Data.CloudSetting.TeenShowFreq = "0";
   }
 
+  console.log("[起点全能助手] getconf 净化: " + changes.length + " 项变更");
   debugLog("getconf 净化: " + changes.length + " 项变更 [" + changes.slice(0, 5).join(", ") + (changes.length > 5 ? "..." : "") + "]");
   E.log("getconf 净化完成");
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleSplashScreen(E, response) {
@@ -451,21 +459,21 @@ function handleSplashScreen(E, response) {
     debugLog("handleSplashScreen: 清空 List, 原长度: " + obj.Data.List.length);
     obj.Data.List = [];
   }
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleDeeplink(E, response) {
   const obj = safeJsonParse(response.body);
   if (!obj) { E.done(); return; }
   if (obj.Data) obj.Data = {};
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleDailyRec(E, response) {
   const obj = safeJsonParse(response.body);
   if (!obj) { E.done(); return; }
   if (obj.Data && obj.Data.Items) obj.Data.Items = [];
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleAccountPage(E, response) {
@@ -478,7 +486,7 @@ function handleAccountPage(E, response) {
     });
     if (deleted.length > 0) debugLog("账户页删除: " + deleted.join(", "));
   }
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleAdListBatch(E, url, response) {
@@ -486,7 +494,7 @@ function handleAdListBatch(E, url, response) {
   const obj = safeJsonParse(response.body);
   if (!obj) { E.done(); return; }
   if (obj.Data) obj.Data = Array.isArray(obj.Data) ? [] : {};
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleDirectAdKill(E, url, response) {
@@ -495,7 +503,7 @@ function handleDirectAdKill(E, url, response) {
   if (!obj) { E.done(); return; }
   if (obj.Data) obj.Data = Array.isArray(obj.Data) ? [] : {};
   E.log("广告已秒杀");
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleMainPage(E, response) {
@@ -510,7 +518,7 @@ function handleMainPage(E, response) {
   ];
   REMOVE_KEYS.forEach(k => { delete data[k]; });
   E.log("福利中心净化完成");
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleDiscover(E, response) {
@@ -518,7 +526,7 @@ function handleDiscover(E, response) {
   if (!obj || !obj.Data || !Array.isArray(obj.Data.Items)) { E.done(); return; }
   obj.Data.Items = obj.Data.Items.filter(item => CONFIG.DiscoverKeepKeys.includes(item.KeyName));
   E.log("发现页过滤完成，保留 " + obj.Data.Items.length + " 项");
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleHoverAdv(E, response) {
@@ -527,7 +535,7 @@ function handleHoverAdv(E, response) {
   if (!obj.Data) obj.Data = {};
   obj.Data.ItemList = [];
   E.log("书架悬浮广告已清空");
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleReadTime(E, response) {
@@ -539,7 +547,7 @@ function handleReadTime(E, response) {
     data.TaskModule.TaskList.forEach(t => { t.Status = 2; });
   }
   E.log("每日阅读积分已满");
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function handleVideoReplace(E) {
@@ -555,7 +563,7 @@ function handleAdSkip(E, response) {
   const obj = safeJsonParse(response.body);
   if (obj) {
     patchDurationFields(obj, CONFIG.AdDurationKeys, CONFIG.VideoSkipSeconds);
-    E.done({ body: JSON.stringify(obj) });
+    respondJson(E, obj, "qidian-sanitize");
     return;
   }
   let body = String(response.body || "");
@@ -594,7 +602,7 @@ function handleClean(E, path, response) {
   const rules = getCleanRules(path);
   if (rules) rules.forEach(r => applyCleanRule(obj, r.split(".")));
   E.log("净化完成: " + path.split("/").pop());
-  E.done({ body: JSON.stringify(obj) });
+  respondJson(E, obj, "qidian-sanitize");
 }
 
 function parseSelector(segment) {
