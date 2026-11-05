@@ -11,6 +11,17 @@
 |---|---|---|
 | `ads.95516.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
 
+## `bilibili` — 生效黑洞 0 域；缺口候选 A:1 B:2 C:4（已裁决排除 0 条；已收录但默认关闭 0 条）
+
+| A 候选（≥3 源） | 源 | 状态 |
+|---|---|---|
+| `dataflow.biliapi.com` | 4: adguard-dns,adguard-mobile,anti-ad,hagezi-pro | 缺口 |
+
+| B 候选（2 源） | 源 | 状态 |
+|---|---|---|
+| `data.bilibili.com` | 2: easyprivacy,hagezi-pro | 缺口 |
+| `miniapp.bilibili.com` | 2: anti-ad,hagezi-pro | 缺口 |
+
 ## `bubei-danci` — 生效黑洞 1 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
@@ -25,27 +36,25 @@
 |---|---|---|
 | `cm.netseer.com` | 2: anti-ad,stevenblack | 已收录·默认关 |
 
-## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:12（已裁决排除 14 条；已收录但默认关闭 17 条）
+## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:13（已裁决排除 11 条；已收录但默认关闭 17 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
-| `mllog.jd.com` | 5: adguard-dns,adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
-| `sgm-w.jd.com` | 5: adguard-dns,adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
-| `uranus.jd.com` | 5: adrules,anti-ad,awa,easyprivacy,hagezi-pro | 已收录·默认关 |
-| `cactus.jd.com` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 排除·交易/风控红线 |
-| `hermes.jd.com` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
-| `janapi.jd.com` | 4: adrules,anti-ad,awa,hagezi-pro | 排除·交易/风控红线 |
-| `jcm.jd.com` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
-| `mercury.jd.com` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
-| `xlog.jd.com` | 4: adrules,anti-ad,awa,hagezi-pro | 已收录·默认关 |
+| `mllog.jd.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
+| `sgm-w.jd.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
+| `uranus.jd.com` | 4: anti-ad,awa,easyprivacy,hagezi-pro | 已收录·默认关 |
+| `cactus.jd.com` | 3: anti-ad,easyprivacy,hagezi-pro | 排除·交易/风控红线 |
 | `chat1.jd.com` | 3: anti-ad,awa,hagezi-pro | 排除·推送/客服红线 |
-| `im-x.jd.com` | 3: adrules,anti-ad,hagezi-pro | 已收录·默认关 |
+| `hermes.jd.com` | 3: anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
 | `img-x.jd.com` | 3: anti-ad,awa,hagezi-pro | 排除·商品图 CDN 放行 |
 | `img2.360buyimg.com` | 3: anti-ad,awa,hagezi-pro | 排除·商品图 CDN 放行 |
+| `janapi.jd.com` | 3: anti-ad,awa,hagezi-pro | 排除·交易/风控红线 |
 | `kepler.jd.com` | 3: adwars,awa,hagezi-pro | 排除·基础设施红线 |
 | `knicks.jd.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
 | `mapi.m.jd.com` | 3: anti-ad,awa,hagezi-pro | 排除·交易/风控红线 |
+| `mercury.jd.com` | 3: anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
 | `orbit.jd.com` | 3: adwars,awa,hagezi-pro | 已收录·默认关 |
+| `xlog.jd.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|
@@ -53,14 +62,13 @@
 | `cm.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `dns.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `gia.jd.com` | 2: easyprivacy,hagezi-pro | 排除·基础设施红线 |
-| `gias.jd.com` | 2: adrules,easyprivacy | 排除·基础设施红线 |
-| `h5speed.m.jd.com` | 2: adrules,easyprivacy | 排除·基础设施红线 |
+| `im-x.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `jcm.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `jpushjd.m.jd.com` | 2: anti-ad,hagezi-pro | 排除·推送/客服红线 |
 | `jrad.jd.com` | 2: adwars,anti-ad | 已收录·默认关 |
 | `log.jd.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
 | `policy.jd.com` | 2: anti-ad,hagezi-pro | 排除·基础设施红线 |
 | `u-x.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
-| `wl.jd.com` | 2: adrules,easyprivacy | 排除·基础设施红线 |
 | `wn.x.jd.com` | 2: anti-ad,awa | 已收录·默认关 |
 | `x.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
@@ -72,7 +80,7 @@
 - `基础设施红线` ← `dns.*`, `blackhole*`, `h5speed.*`, `gia.*`, `gias.*`, `dgstatic.*`, `wl.jd.com`, `policy.*`, `kepler.*`, `union.jd.com`, `cps.*`, `jrclick.*`
 - `C 级单源不收` ← `u.x.jd.com`, `bdsp.x.jd.com`, `du.jd.com`, `nfa.jd.com`, `c-nfa.jd.com`, `firevent.jd.com`, `stat.m.jd.com`, `ads.union.jd.com`, `jzt.jd.com`
 
-## `mba-dashi` — 生效黑洞 54 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `mba-dashi` — 生效黑洞 53 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -88,7 +96,7 @@
 |---|---|---|
 | `dreport.meituan.net` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:14（已裁决排除 141 条；已收录但默认关闭 23 条）
+## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:14（已裁决排除 140 条；已收录但默认关闭 23 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -152,8 +160,8 @@
 | `api.xmpush.global.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·推送/云红线 |
 | `api.xmpush.xiaomi.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·推送/云红线 |
 | `apkrep.ff.avast.sec.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
-| `app.chat.xiaomi.net` | 2: adrules,easyprivacy | 排除·推送/云红线 |
 | `app.greengurad.sec.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
+| `app.miui.com` | 2: hagezi-pro,hagezi-xiaomi | 排除·MIUI 业务域 |
 
 裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
 - `安全族红线` ← `*.sec.miui.com`, `*.sec.intl.miui.com`, `*avlyun*`, `*avast*`
@@ -170,15 +178,34 @@
 - `米家业务` ← `*.mihome.xiaomi.net`
 - `MIUI 业务域` ← `app.miui.com`, `feedback.miui.com`, `hybrid.miui.com`, `mcc.miui.com`, `rus.miui.com`, `india.miui.com`, `testit.miui.com`, `privacy.miui.com`, `search.miui.com`, `intl.up.w.xk.miui.com`, `gtglobal.intl.miui.com`, `preload.xiaomi.com`, `*.sms.miui.com`
 
-## `qidian` — 生效黑洞 85 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `qidian` — 生效黑洞 102 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `qdp.qidian.com` | 3: adrules,anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `ruankao-tong` — 生效黑洞 54 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `ruankao-tong` — 生效黑洞 53 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
+
+## `taobao` — 生效黑洞 12 域；缺口候选 A:0 B:3 C:8（已裁决排除 0 条；已收录但默认关闭 8 条）
+
+| A 候选（≥3 源） | 源 | 状态 |
+|---|---|---|
+| `adashx4ae.ut.taobao.com` | 5: adaway,adguard-dns,anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
+| `adashxgc.ut.taobao.com` | 4: adwars,anti-ad,awa,hagezi-pro | 已收录·默认关 |
+| `h-adashx4ae.ut.taobao.com` | 3: adguard-dns,hagezi-pro,stevenblack | 已收录·默认关 |
+| `h-adashx4yt.ut.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+
+| B 候选（2 源） | 源 | 状态 |
+|---|---|---|
+| `adashx.ut.taobao.com` | 2: hagezi-pro,stevenblack | 已收录·默认关 |
+| `adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
+| `h-adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
+| `mclick.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
+| `redirect.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
+| `textlink.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
+| `v6-adashx.ut.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
 ## `wechat` — 生效黑洞 25 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
@@ -198,7 +225,21 @@
 
 无 A/B 级缺口候选。
 
-## `zhihuifangdong` — 生效黑洞 88 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `youtube` — 生效黑洞 0 域；缺口候选 A:1 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 0 条）
+
+| A 候选（≥3 源） | 源 | 状态 |
+|---|---|---|
+| `fcmatch.youtube.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 缺口 |
+
+## `zhihu` — 生效黑洞 0 域；缺口候选 A:2 B:0 C:5（已裁决排除 0 条；已收录但默认关闭 1 条）
+
+| A 候选（≥3 源） | 源 | 状态 |
+|---|---|---|
+| `zhihu-web-analytics.zhihu.com` | 8: adguard-dns,adrules,adwars,anti-ad,awa,easyprivacy,hagezi-pro,stevenblack | 已收录·默认关 |
+| `udd1i5.zhihu.com` | 5: adguard-cn,adguard-dns,adrules,anti-ad,easylist-cn | 缺口 |
+| `crash2.zhihu.com` | 3: anti-ad,awa,hagezi-pro | 缺口 |
+
+## `zhihuifangdong` — 生效黑洞 87 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 

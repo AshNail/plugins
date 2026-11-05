@@ -15,7 +15,7 @@
 # ----------------------------------------------------------------------------
 # 目标接口：beta-luna.douyin.com/luna/*（抖音内嵌的音乐/福利模块）
 #
-# 共享脚本层：本插件的 block-domains / daily-reminder / welfare-stamp 与
+# 共享脚本层：本插件的 block-domains / splash-ad / status 与
 # 汽水插件共用同一份源码（src/common/*.js + src/common/families.json），
 # tools/build.js 按家族参数展开到 src/douyin/ 后压缩；名单还由 lint
 # 校验 [Script]/[MITM]/源码三处一致。
@@ -60,8 +60,6 @@
 #      但发奖靠服务端凭证（advert/fallback/done/info 的 time_token/nonce →
 #      advert/incentive/done）。少看广告再领奖属于广告欺诈，本插件不做。
 #   6. 同一响应 Loon 只执行“配置顺序里第一条条件为真”的 Response Script。
-#      treasureMinimal 默认开启并排在 welfare-stamp 之前，所以打卡逻辑
-#      已内置进 treasure/observe；独立 welfare-stamp 只在两者都关时兜底。
 #      debugLog 与 treasureMinimal 同开时，福利页日志会被精简脚本遮蔽。
 #
 # 风险：
@@ -80,9 +78,10 @@ cleanActivity = switch,false,tag=活动入口清理,desc=把 polaris 活动配�
 blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。
 blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
 debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
-dailyReminder = switch,false,tag=每日领取提醒,desc=每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。
-reminderCron = input,"30 20 * * *",tag=提醒时间(cron),desc=五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
+skipUpdateCheck = switch,false,tag=版本检查静音,desc=把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。只动这一个键，其余字段与包络原样；解析失败原样放行。
+autoTask = switch,false,tag=激励任务自动化,desc=自动完成激励任务（听歌/看广告/签到）；需要 MITM 证书。默认关闭。
+autoSignIn = switch,false,tag=自动签到,desc=每天自动执行签到任务；需要 MITM 证书。默认关闭。
 # <<< GENERATED ARGUMENTS
 
 
@@ -160,7 +159,7 @@ request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.
 [Script]
 
 # ---- 福利页精简：只留【攒时长 听歌不中断】 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}, ${dailyReminder}}) with debug=${debugLog}, enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}}) with debug=${debugLog}, enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
 
 # ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}}) with debug=${debugLog}, enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
@@ -184,13 +183,11 @@ request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|
 request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with debug=${debugLog}, enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
 
 # ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|retrieve|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js", {${dailyReminder}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|retrieve|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
 
 # ---- 只读日志：穿山甲广告平台（广告配置 / 领奖回调 / 开屏广告） ----
-response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js", {${dailyReminder}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page/ then script("scripts/welfare-stamp.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=10, tag="福利页打卡"
-cron ${reminderCron} then script("scripts/daily-reminder.min.js", {${debugLog}}) with debug=${debugLog}, enable=${dailyReminder}, timeout=60, tag="每日领取提醒"
-generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal}, ${cleanFeedAds}, ${killRewardAds}, ${cleanUpsell}, ${cleanActivity}, ${blockAdDomains}, ${blockSplashAd}, ${debugLog}, ${dailyReminder}, ${reminderCron}}) with debug=${debugLog}, tag="插件状态自检", img_url="checkmark.seal", timeout=10
+response if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/ then script("scripts/observe.min.js") with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：广告平台广告配置与领奖回调"
+generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal}, ${cleanFeedAds}, ${killRewardAds}, ${cleanUpsell}, ${cleanActivity}, ${blockAdDomains}, ${blockSplashAd}, ${debugLog}}) with debug=${debugLog}, tag="插件状态自检", img_url="checkmark.seal", timeout=10
 
 
 # ============================================================================

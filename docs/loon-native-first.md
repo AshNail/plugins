@@ -2,8 +2,8 @@
 
 > **一句话结论**：本仓库把「能开关的」做到了极致，但 Loon 有近一半能力**天生不能开关**——它们只能用构建期/发行期手段启用。缺的不是功能，是**开关模型**。
 >
-> 依据：`docs/loon-feature-checklist.md`（官方文档逐页核对）、两份外部去广告指南、iRingo / Biliverse / DualSubs 三个线上插件工程的实际产物、本仓库 54 套件 / 1646 断言现状。
-> 适用门槛：soda/douyin 3.5.1(983)+（gzip 清理 988+）；ads 与 13 款 App 插件**不声明 `#!loon_version`**——它们的 `#!system` 覆盖 macOS，而 Loon for Mac 的版本号是独立一条线（见 §12.3），功能基线仍是正式版 3.5.2(996)，`DOMAIN-WILDCARD` 需 3.5.3(1008)+ 所以默认注释。
+> 依据：`docs/loon-feature-checklist.md`（官方文档逐页核对）、两份外部去广告指南、iRingo / Biliverse / DualSubs 三个线上插件工程的实际产物、本仓库 54 套件 / 1674 断言现状。
+> 适用门槛：soda/douyin 3.5.1(983)+（gzip 清理 988+）；ads 与全部 App 插件**不声明 `#!loon_version`**——它们的 `#!system` 覆盖 macOS，而 Loon for Mac 的版本号是独立一条线（见 §12.3），功能基线仍是正式版 3.5.2(996)，`DOMAIN-WILDCARD` 需 3.5.3(1008)+ 所以默认注释。
 > 证据标注：**【文档】**= Loon 官方手册明示；**【实证】**= 第三方线上 Loon 插件正在使用；**【未收录】**= 第三方在用但官方手册未收录——**可以保留，但不能当能力点宣称**；**【待证】**= 假设，需真机。
 
 > **落地状态（2026-10-27 第七轮 · soda v2.8.4 / douyin v0.8.4 / ads v2.4.0）**
@@ -240,7 +240,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 - **门禁**：`node tools/gen-args.js --check` 逐字节比对三处生成物，已接入 `tests/lint-plugins.py` 与 `npm run check:args`（在 build 之前跑，防止 build 自动修复后掩盖漂移）。lint 里手写的开关名、默认值、generic 透传清单全部删除，改为从 schema 派生。
 - **golden diff**：迁移时两插件 `[Argument]` 43 行与手写版逐字节一致；`SWITCH_LABELS` 只多一个尾逗号；README 表按 `[Argument]` 顺序重排，并补回此前漏掉的 `dailyReminder` / `reminderCron`。
 - **收益**：新增开关只改 1 个 JSON；声明、标签、文档不可能再漏。共享开关（`killRewardAds` 等）跨家族语义由测试锁定。
-- **验证**：`tests/test_args_schema.js` 37 条断言（源码/压缩各一遍）；坏输入（非布尔 switch 默认值等）由生成器验证器拒绝。
+- **验证**：`tests/test_args_schema.js` 35 条断言（源码/压缩各一遍）；坏输入（非布尔 switch 默认值等）由生成器验证器拒绝。
 - **结论**：**✅ 已落地**。`[Argument]` 的语法/类型校验仍由 `check_argument_schema()` 独立把关，生成器只保证「三处一致」。
 
 ### E7 发行层：lite / strict 变体 —— **已取消**
@@ -298,7 +298,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | E8a | `[MITM] h2 = true` | lint 锁定；状态看板不再显示“未知协议” |
 | E8b | 状态看板「静态层：QUIC 回退 N 域」 | `families.json.quicCount` + lint 对账 + `test_status` 4 条断言 |
 | E5 | lint 跨层命中矩阵 | 注入 `DOMAIN,api.qishui.com,REJECT` / 终止型 Rewrite 均能报错 |
-| E6 | `src/args/*.json` 单源生成 `[Argument]` / `SWITCH_LABELS` / README 表 | `gen-args --check` 漂移门禁 + `test_args_schema` 39 断言 ×2 |
+| E6 | `src/args/*.json` 单源生成 `[Argument]` / `SWITCH_LABELS` / README 表 | `gen-args --check` 漂移门禁 + `test_args_schema` 35 断言 ×2 |
 | 清理 | 删除两插件注释里的 `[Rule]` 严格模式 | 常量面 -10 行，不再有“手改配置”的分叉 |
 
 ### 待真机（不改代码，只观察）
@@ -348,7 +348,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | Request Body Rewrite 或 Request Body Mock 命中时，Request Script 不执行 | 同上，请求方向 |
 | 只修改 Request Header 的 Rewrite 不会因此新增禁用行为 | header 级复写可以和脚本共存 |
 
-于是 MITM 内部的顺序是 **Rewrite → Script**，两个阶段都各自「第一条命中」。
+于是 MITM 内部的顺序是 **Rewrite → Script**：同一阶段**所有命中的 Rewrite 按配置顺序全部执行**（官方原文「所有匹配成功的 Rewrite 都会按照配置顺序执行」），只有 Script 才是「同一响应第一条命中」。
 `[Rule]` 位于复写之后（文档原话），而 `[Host]` 127.0.0.1 是 DNS 阶段、必定最早。
 
 **这正好解释了 lint 为什么必须保守**：只有进入 HTTP 引擎的连接才会有 Rewrite/Script，
@@ -465,8 +465,8 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 
 ### 9.7 文档里的数字也是数据源（第二十四轮补上门禁）
 
-一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`1499 条生效 Host`、`13 个 App 插件`、
-`官方文档 26 页`、`1646 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
+一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`1497 条生效 Host`、`17 个 App 插件`、
+`官方文档 26 页`、`1674 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
 **风险面的规模**来用：加一批域名忘了改文档，读者就照着虚高（或虚低）的数字判断该不该装。
 
 第二十四轮起，每个数字都有一个**唯一的机器出口**，文档只是它的一种显示方式：
@@ -476,7 +476,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 | `plugins/ads/README.md` 的分组条数、生效/注释 Host、exact/wildcard、通配与家族拆分、可选 Rule 的 27/16/1 | `tools/build-ads.py --stats-json` |
 | 规模页 `docs/repo-metrics.md` 的正文页数、能力表 175 条与五档分布、旁路路径数、广告类型数、上游黑名单家数、App 插件数 / 覆盖 App 数 / 增强层个数 | `tokens.json`、`loon-coverage --check`、`bypass-audit --check`、`ad-surface-audit --check`、`app-coverage-audit.SOURCE_NAMES`、`src/apps/*.json` |
 | 「N 套件 ×2 = M 套件 / K 断言」与 `tests/README.md` 的断言分布表 | `tests/run-all.py` 本次实跑的 per-suite 计数 |
-| 本节自己的 `1499 条生效 Host`、`13 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
+| 本节自己的 `1497 条生效 Host`、`17 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
 | 文档里复述的「门禁管了 N 条声明」与 `readme numbers: N …` 成功行 | 同一次 lint 真实核对成功的条数 |
 | 文档任意一行同时出现 `test_xxx` 与「N 断言」 | 该套件本次实跑数（查不到套件名直接报错） |
 | 真机清单的 J 段插件数、正文页数、`ads=<版本>` 式版本引用 | `src/apps/*.json`、`tokens.json`、各插件 `#!version` |
@@ -497,7 +497,7 @@ Scheme 导入种类 6→7），分属四个不同出口——说明「数字散�
 `红线（绝不进任何拦截组）：mapi.m.jd.com / cactus.jd.com / dns.jd.com …`。没有任何门禁能回答
 「这条规则碰没碰红线」，因为红线在一个字符串里，规则在另一个数组里。
 
-第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 111 条 App 红线，覆盖 13 个 App 的红线声明）：
+第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 132 条 App 红线，覆盖 17 个 App 的红线声明）：
 
 | 字段 | 作用 |
 |---|---|
@@ -508,7 +508,7 @@ Scheme 导入种类 6→7），分属四个不同出口——说明「数字散�
 
 `quote` 是防伪层：把猜测写成字段是最容易从结构化里钻回来的造假路径。凭品牌名补一个
 `sso.jd.com`、或从 `api.io.mi.com` 里截出 `io.mi.com` 当主域，都会因为「quote 不在原文里」
-或「domain 不是 quote 中的独立 token」当场构建失败。111 条红线的规模不是估的——它就是
+或「domain 不是 quote 中的独立 token」当场构建失败。132 条红线的规模不是估的——它就是
 `tools/build-ads.py --stats-json` 数出来的，本节这两个数字也钉在那个出口上。
 
 判定只禁两种操作：把红线名字本身黑洞掉，或用任意一层通配/后缀把它捞进去；红线之下的精确广告子域

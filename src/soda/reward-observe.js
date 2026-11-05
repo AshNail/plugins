@@ -534,18 +534,6 @@ function todayKey() {
   return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" + (day.length < 2 ? "0" + day : day);
 }
 
-/* 福利页打卡：观测脚本在同一响应上胜出时也要留下“今天来过”的凭证 */
-function stampWelfare(args) {
-  if (!pflag(args, "dailyReminder", false)) return;
-  try {
-    if (typeof $persistentStore === "undefined" || !$persistentStore ||
-        typeof $persistentStore.write !== "function") return;
-    const key = todayKey();
-    $persistentStore.write(key, "soda-welfare-seen");
-    console.log(PREFIX + " welfare stamp " + key);
-  } catch (e) { /* 存储不可用不影响响应 */ }
-}
-
 function recordAdSeconds(seconds) {
   if (seconds < 0) return null;
   try {
@@ -591,7 +579,7 @@ function adElapsedSeconds() {
     /*
      * 只清这一个键：官方 API 文档 5.3 写明 `$persistentStore.remove()` **不接受参数**，
      * 作用是「清空通过脚本存储 API 保存的全部数据」。传进去的 key 会被忽略，
-     * 于是每量一次广告时长，就把 welfare-seen / ad-stats / 每日提醒等其它键一起抹了。
+     * 于是每量一次广告时长，就把 ad-stats 等其它键一起抹了。
      * 删单个键的唯一写法是 `write(undefined, key)`（官方 5.1）。
      */
     if (typeof $persistentStore.write === "function") {
@@ -609,9 +597,8 @@ let LOG_TASK_TITLES = false;
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const args = pargs(["logTaskTitles", "dailyReminder"]);
+    const args = pargs(["logTaskTitles"]);
     LOG_TASK_TITLES = pflag(args, "logTaskTitles", false);
-    if (/\/luna\/treasure\/task\/page/.test(url)) stampWelfare(args);
 
     const rule = RULES.find(function (r) { return r.match.test(url); });
     if (!rule) return $done({});

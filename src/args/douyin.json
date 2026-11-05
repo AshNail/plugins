@@ -82,23 +82,6 @@
       "readme": "只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测）"
     },
     {
-      "name": "dailyReminder",
-      "type": "switch",
-      "default": false,
-      "tag": "每日领取提醒",
-      "desc": "每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。",
-      "label": "每日提醒",
-      "readme": "每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领）"
-    },
-    {
-      "name": "reminderCron",
-      "type": "input",
-      "default": "30 20 * * *",
-      "tag": "提醒时间(cron)",
-      "desc": "五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。",
-      "readme": "提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30"
-    },
-    {
       "name": "statusNotify",
       "type": "select",
       "default": "notification",
@@ -107,6 +90,33 @@
       "tag": "自检通知",
       "desc": "点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。",
       "readme": "状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式）"
+    },
+    {
+      "name": "skipUpdateCheck",
+      "type": "switch",
+      "default": false,
+      "tag": "版本检查静音",
+      "desc": "把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。只动这一个键，其余字段与包络原样；解析失败原样放行。",
+      "label": "版本检查静音",
+      "readme": "`luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示"
+    },
+    {
+      "name": "autoTask",
+      "type": "switch",
+      "default": false,
+      "tag": "激励任务自动化",
+      "desc": "自动完成激励任务（听歌/看广告/签到）；需要 MITM 证书。默认关闭。",
+      "label": "自动任务",
+      "readme": "自动完成激励任务（听歌/看广告/签到）；需要 MITM 证书"
+    },
+    {
+      "name": "autoSignIn",
+      "type": "switch",
+      "default": false,
+      "tag": "自动签到",
+      "desc": "每天自动执行签到任务；需要 MITM 证书。默认关闭。",
+      "label": "自动签到",
+      "readme": "每天自动执行签到任务；需要 MITM 证书"
     }
   ]
 }

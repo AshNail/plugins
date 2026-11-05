@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "purpose": "private-use-research",
+  "sources": [
+    {
+      "id": "ddgksf2013",
+      "url": "https://github.com/ddgksf2013/ddgksf2013",
+      "categories": ["routing", "rewrite", "diagnostics"],
+      "format": "primarily-quantumult-x",
+      "status": "index-reviewed",
+      "licenseStatus": "per-resource-review-required",
+      "runtimeDependency": false,
+      "notes": "入口含多作者资源和转载限制；必须追溯实际文件，不能直接将 QX 语法用于 Loon。"
+    },
+    {
+      "id": "yfamily",
+      "url": "https://yfamilys.com/loon",
+      "categories": ["routing", "plugins", "diagnostics", "notifications"],
+      "format": "loon-catalog",
+      "status": "index-reviewed",
+      "licenseStatus": "per-resource-review-required",
+      "runtimeDependency": false,
+      "notes": "网站存在 Cloudflare challenge；仅获取目录，不代表每个插件可下载或授权。"
+    },
+    {
+      "id": "fkikelee",
+      "url": "https://github.com/fkingikelee/fkikelee",
+      "categories": ["ads", "dns", "diagnostics", "subscriptions", "conversion"],
+      "format": "loon-catalog",
+      "status": "index-reviewed",
+      "licenseStatus": "per-resource-review-required",
+      "runtimeDependency": false,
+      "notes": "仅作为对照和研究候选，不用镜像重新引入已移除的可莉运行依赖。"
+    }
+  ],
+  "admission": {
+    "required": ["originalAuthor", "sourceUrl", "revision", "sha256", "license", "platforms", "dependencies", "conflicts", "fixtures", "verification"],
+    "defaultEnabled": false,
+    "secretStorage": "outside-git",
+    "externalUpload": "explicit-approval-required"
+  }
+}

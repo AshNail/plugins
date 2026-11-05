@@ -104,7 +104,21 @@ const CONFIG_KEYS = new Set([
   "popupadconfig",
   "banneradconfig",
   "interstitialadconfig",
-  "searchadconfig"
+  "searchadconfig",
+  /* 21.4.0 二进制实测（`strings` 唯一命中）：
+     ad_feed_pre_show / ad_feed_loudness_config / ad_information_flow /
+     ad_center_page / ad_audition_intercept / ad_brand_launch_limit /
+     ad_charge_config / ad_charge_passive_unlock_config /
+     bdp_splash_ad_config（小程序开屏）。全部是广告配置容器，清空不影响发奖。 */
+  "adfeedpreshow",
+  "adfeedloudnessconfig",
+  "adinformationflow",
+  "adcenterpage",
+  "adauditionintercept",
+  "adbrandlaunchlimit",
+  "adchargeconfig",
+  "adchargepassiveunlockconfig",
+  "bdpsplashadconfig"
 ]);
 
 /* 默认只关“广告功能开关”，不动全局广告 SDK 与时长/发奖 */
@@ -152,7 +166,9 @@ const SCALAR_KEYS = new Map([
   ["enablebannerad", "false"],
   ["banneradswitch", "false"],
   ["enableh5ad", "false"],
-  ["h5adswitch", "false"]
+  ["h5adswitch", "false"],
+  /* 21.4.0 二进制实测：开屏总开关。置 false 后服务端不再下发可展示开屏。 */
+  ["enablesplashshow", "false"]
 ]);
 
 /*

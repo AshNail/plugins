@@ -1,0 +1,62 @@
+#!name=YouTube · 广告字段清理（原生 jq）
+#!desc=不复制可莉 YouTube 脚本：对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应，用 Loon 原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、不做上传/Shorts 功能开关。
+#!author=edy
+#!version=1.0.0
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/youtube/README.md
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/be/56/df/be56dfa2-70bd-feb2-b666-38277eb5be3b/logo_youtube_2024_q4_color-0-0-1x_U007emarketing-0-0-0-7-0-0-0-85-220.png/512x512bb.jpg
+#!system=iOS,iPadOS,tvOS,macOS
+#!date=2026-11-03
+#!tag=去广告,YouTube
+#!type=normal
+
+# ========================================================================
+# YouTube · 广告字段清理（原生 jq）
+# ------------------------------------------------------------------------
+# 红线：*.youtube.com / *.googlevideo.com / *.ytimg.com / youtubei.googleapis.com 承载登录、播放、缩略图与 API；本插件只做 youtubei JSON 广告字段清理，不黑洞整域，不改播放地址。
+# 可莉 YouTube 插件是纯 response/request 脚本（含上传、Shorts、字幕、日志事件参数）；本插件不复制、不依赖，只实现可由 Loon 原生 jq 表达的广告字段删除。
+# 响应规则只删除 adPlacements/playerAds/adSlots/adBreakHeartbeatParams/adBreakParams；不改播放 URL、不碰 googlevideo 的 initplayback，避免把视频本体拦掉。
+# 证据基线：YouTubei 公开响应中的广告字段名；未在 2026-11-03 用 iOS/TV 真机逐端点验证，Mac 当前不执行 response jq，启用后先在非主力设备验证。
+# 没有默认生效的 [Host]/[Rule]；MITM 与 Rewrite 整段默认注释，装证书后按需启用。
+# 本文件由 tools/build-apps.py 从 src/apps/youtube.json 生成，不要手改生成物。
+# ========================================================================
+
+[Host]
+
+
+# ========================================================================
+# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
+# ------------------------------------------------------------------------
+# 只做 YouTubei JSON 的广告字段删除：递归删除 adPlacements / playerAds / adSlots / adBreakHeartbeatParams / adBreakParams。不复制可莉脚本，不处理 googlevideo initplayback、上传、Shorts、字幕或日志事件参数。默认整段注释，先在非主力设备验证。
+# 启用步骤：①Loon 里装并信任证书 →
+#           ②取消 [MITM] 头与其 hostname 行的注释 →
+#           ③取消 [Rewrite] 头及其下所需 response.json.jq 行的注释 →
+#           ④取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
+# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
+# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
+# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
+# 证据: https://www.youtube.com/
+# ========================================================================
+
+# [MITM]
+# ------------------------------------------------------------
+# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
+# hostname = %APPEND% youtubei.googleapis.com, www.youtube.com
+#
+# [Rewrite]
+# ------------------------------------------------------------
+# 下列响应 JSON 改写必须放在 [Rewrite] 段：取消本行（# [Rewrite]）与所需行的注释才生效。
+# response.json.jq 是 Loon 原生 jq：只删广告字段/节点、保留 mtop 包络；
+# 与 Response Script 互斥（body rewrite 命中后脚本不执行），本层不含脚本。
+# 来源 https://www.youtube.com/：YouTubei 响应递归删除广告字段；不改播放地址
+# response if ${url} ~= /^https?:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch|log_event|config)(\?.*)?$/ then response.json.jq(`walk(if type == "object" then del(.adPlacements, .playerAds, .adSlots, .adBreakHeartbeatParams, .adBreakParams) else . end)`)
+#
+# [Rule]
+# ------------------------------------------------------------
+# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。
+# QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的
+# URL-REGEX / response.json.jq 会静默失效。
+# 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。
+# AND,((DOMAIN-SUFFIX,youtubei.googleapis.com),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,www.youtube.com),(PROTOCOL,QUIC)),REJECT
+# URL-REGEX,^https?://www\.youtube\.com/(?:pagead/|api/stats/ads),REJECT

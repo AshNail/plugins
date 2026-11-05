@@ -30,8 +30,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 
 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。2026-10-30 再补频道 2024-10 的两条图片路径（flowplus linglong / img.meituan.net bizad）与 blackmatrix7 的 img.meituan.net 广告目录路径（adunion/display/dpmobile/midas），同样默认注释；flowplus 与 img.meituan.net 都是共享素材主机，启用后这两台的图片流量都会进 MITM（只有广告路径被 REJECT-IMG 拒绝），介意解密面就只开 wmapi/apimobile 的 JSON 规则或跳过本层。
 
-- 解密主机（`[MITM] hostname`，5 个）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`, `flowplus.meituan.net`, `img.meituan.net`
-- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，4 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 会静默失效；启用本层时应连同这些行一起取消注释。
+- 解密主机（`[MITM] hostname`，9 个）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`, `flowplus.meituan.net`, `img.meituan.net`, `feedguess.meituan.com`, `mt-personalcenter.meituan.com`, `assistify.meituan.com`, `mop.meituan.com`
+- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，8 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 与 `response.json.jq` 都会静默失效；启用本层时应连同这些行一起取消注释。
 - 通配主机（`p?.meituan.net`）无法用 `DOMAIN-SUFFIX` 表达 QUIC 回退，启用该层的这一域时需另行处理。
 - 路径级规则（`URL-REGEX`，7 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 
@@ -45,7 +45,28 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 # URL-REGEX,^https?://img\.meituan\.net/(adunion|display|dpmobile|midas)/[A-Za-z0-9_-]+\.(?:gif|jpg|jpg\.webp)$,REJECT-IMG
 ```
 
-启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，否则规则会落在上一段的末尾而不生效）。
+- 响应 JSON 改写（`response.json.jq`，8 条，注释态）：MITM 解密后按公开模块的 jq 只删广告字段/节点、保留 mtop 包络；与 Response Script 二选一（本层不含脚本）。建议逐条启用、真机确认后再加下一条。
+
+```text
+# 来源 https://t.me/Nzmgs：隐藏 video/xiaotuan 底部 tab，只保留 homepage/mine；来自 Nzmgs MT.snippet 的字段事实，默认注释。
+# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/aggroup\/indexTab/ then response.json.jq(`.data.resource.tabArea |= map(select(.tabName == "homepage" or .tabName == "mine"))`)
+# 来源 https://t.me/Nzmgs：清空购物车/个人中心推荐流；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/feedguess\.meituan\.com\/lycoris\/scene\/(?:gwc_feed1_2265|personalcenter_2154)/ then response.json.jq(`.data = [] | .bottom = true | .ext.forbidByExp = true`)
+# 来源 https://t.me/Nzmgs：我的页去掉交叉推荐；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/mt-personalcenter\.meituan\.com\/usercenter\/display/ then response.json.jq(`.children |= map(select(.name != "mine_cross_recommend"))`)
+# 来源 https://t.me/Nzmgs：清空搜索默认词与热词；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/defaultword/ then response.json.jq(`.searchIntroduceResponse.defaultWordRes.defaultWordItems = [] | .searchIntroduceResponse.HotWordInfos = []`)
+# 来源 https://t.me/Nzmgs：去掉搜索热词推荐与 AI 气泡；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/hotword\/city\/divide\/hotrecommend\// then response.json.jq(`(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != "EntranceHotwordsV2Hotwords" and .pageName != "EntranceHotwordsV2ContentCard")) | .data.aiSearchBubble.bubbleTexts = []`)
+# 来源 https://t.me/Nzmgs：清空 AI 技能配置（data 内嵌 JSON 的 skills 对象）；解析失败保持原样；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/assistify\.meituan\.com\/assistant\/getAppClientHornConfig/ then response.json.jq(`.data |= (. as $orig | if type == "string" then (try (fromjson | if type == "object" and (.skills | type) == "object" then .skills = {} else . end | tojson) catch $orig) else . end)`)
+# 来源 https://t.me/Nzmgs：清空购物车入口顶部 banner（topBannerArea）；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/mop\/entry\/shoppingCartEntry/ then response.json.jq(`walk(if type == "object" and (.topBannerArea? | type) == "array" then .topBannerArea = [] else . end)`)
+# 来源 https://t.me/Nzmgs：清空 mop 启动图（startupPicArea）；来自 Nzmgs MT.snippet，默认注释。
+# response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/api\/entryModule\/startupPicture/ then response.json.jq(`walk(if type == "object" and (.startupPicArea? | type) == "array" then .startupPicArea = [] else . end)`)
+```
+
+启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③取消 `[Rewrite]` 头与所需 `response.json.jq` 行的注释 → ④取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，否则规则会落在上一段的末尾而不生效）。
 
 > 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。
 
@@ -55,6 +76,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 - https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
 - https://t.me/GitCube
 - https://t.me/Aa28413761
+- https://t.me/Nzmgs
+- https://github.com/ZenmoFeiShi/Qx
 
 ## 红线与天花板（如实）
 

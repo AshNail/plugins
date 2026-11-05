@@ -52,6 +52,16 @@ console.log("\n[1] flat dict / object config / JSON string config / scalar");
     preload_dsp_config: { k: 1 },
     splash_mannor_config: { l: 1 },
     ad_ignore_player_status_config: { m: 1 },
+    ad_feed_pre_show: { n: 1 },
+    ad_feed_loudness_config: { o: 1 },
+    ad_information_flow: { p: 1 },
+    ad_center_page: { q: 1 },
+    ad_audition_intercept: { r: 1 },
+    ad_brand_launch_limit: 5,
+    ad_charge_config: { s: 1 },
+    ad_charge_passive_unlock_config: { t: 1 },
+    bdp_splash_ad_config: { u: 1 },
+    enable_splash_show: true,
     switch_show_all_ad: true,
     enable_client_ads_strategy: true,
     preload_feed_ads: true,
@@ -79,18 +89,23 @@ console.log("\n[1] flat dict / object config / JSON string config / scalar");
   check("feed reward ad entrance emptied", JSON.stringify(j.feed_reward_ad_entrance) === "{}");
   const extraConfigs = ["commerce_libra_ad_config", "commerce_common_ad_config",
     "adn_group_config", "splash_dsp_config", "preload_dsp_config",
-    "splash_mannor_config", "ad_ignore_player_status_config"];
+    "splash_mannor_config", "ad_ignore_player_status_config",
+    "ad_feed_pre_show", "ad_feed_loudness_config", "ad_information_flow",
+    "ad_center_page", "ad_audition_intercept", "ad_brand_launch_limit",
+    "ad_charge_config", "ad_charge_passive_unlock_config",
+    "bdp_splash_ad_config"];
   check("new ad configs emptied",
     extraConfigs.every((k) => Array.isArray(j[k])
       ? j[k].length === 0
-      : JSON.stringify(j[k]) === "{}"),
+      : (typeof j[k] === "number" ? j[k] === 0 : JSON.stringify(j[k]) === "{}")),
     JSON.stringify(extraConfigs.map((k) => [k, j[k]])));
   check("switch_show_all_ad untouched by default", j.switch_show_all_ad === true);
   check("client ads strategy false", j.enable_client_ads_strategy === false);
   check("preload feed ads false", j.preload_feed_ads === false);
   check("timor untouched by default", j.timor_should_enable_ad === true, JSON.stringify(j.timor_should_enable_ad));
   check("basic mode disable true", j.kBasicModeDisableRewardAdEnabled === true);
-  check("splash switch false", j.splash_ad_switch === false, JSON.stringify(j.splash_ad_switch));
+  check("splash switch false", j.splash_ad_switch === false && j.enable_splash_show === false,
+    JSON.stringify([j.splash_ad_switch, j.enable_splash_show]));
   check("advert_duration untouched", j.advert_duration === 30);
   check("reward_details untouched", j.reward_details.coins === 100);
   check("hide_skip_ad_entry untouched", j.hide_skip_ad_entry === false);

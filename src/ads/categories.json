@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "categories": {
+    "advertising": ["pangle", "gdt", "kuaishou", "baidu", "alibaba", "cn_union", "google", "meta", "tiktok", "oem", "mobile_sdks", "adtech", "retail_ctv_audio", "popunder"],
+    "attribution": ["attribution"],
+    "analytics": ["analytics"],
+    "dns_control": ["httpdns", "doh_public", "doh_public_cn"],
+    "unverified": ["weibo_watchlist", "platform_watchlist"],
+    "protected_conflict": ["app_redline_overlap"]
+  },
+  "policy": {
+    "classification_changes_runtime": false,
+    "unmatched_candidate": "unknown",
+    "shared_root_is_ad_evidence": false,
+    "source_agreement_is_independent_evidence": false,
+    "required_for_admission": ["purpose_evidence", "exception_review", "protected_domain_review", "scope_review", "device_validation", "rollback"]
+  }
+}

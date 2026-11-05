@@ -32,7 +32,10 @@ console.log('\n== 2. 广告位配置 ==');
   const r=run('https://api.qishui.com/luna/ads/config',{
     status_code:0,expires_at:1700000000,
     ad_unit_configs:[{slot_id:'1'}],splash_config:{daily_splash_show_limit:3},
-    feed_ads_config:{enable:true},reward_config:{reward_duration:30},preload:true
+    feed_ads_config:{enable:true},reward_config:{reward_duration:30},preload:true,
+    ad_feed_pre_show:{a:1},ad_information_flow:{b:1},ad_center_page:{c:1},
+    ad_audition_intercept:{d:1},ad_brand_launch_limit:5,
+    ad_charge_config:{e:1},bdp_splash_ad_config:{f:1}
   });
   ck('ad_unit_configs -> []', Array.isArray(r.out.ad_unit_configs)&&r.out.ad_unit_configs.length===0);
   ck('splash_config -> {}', r.out.splash_config && Object.keys(r.out.splash_config).length===0);
@@ -40,6 +43,10 @@ console.log('\n== 2. 广告位配置 ==');
   ck('reward_config -> {}', r.out.reward_config && Object.keys(r.out.reward_config).length===0);
   ck('preload -> false', r.out.preload===false, r.out.preload);
   ck('expires_at 延长', r.out.expires_at>1700000000, r.out.expires_at);
+  ck('新广告配置键清空',
+    ['ad_feed_pre_show','ad_information_flow','ad_center_page','ad_audition_intercept','ad_charge_config','bdp_splash_ad_config']
+      .every(k=>JSON.stringify(r.out[k])==='{}') && r.out.ad_brand_launch_limit===null,
+    JSON.stringify([r.out.ad_feed_pre_show,r.out.ad_brand_launch_limit]));
   console.log(r.logs.join('\n'));
 }
 

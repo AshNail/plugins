@@ -17,8 +17,8 @@ def escape_regex_slashes(pattern):
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 39, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 1, 11, "douyin"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 41, "soda"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 1, 10, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -34,7 +34,8 @@ FAMILY_CHECKS = {
             "settingsClean": 1,
             "skipUpdateCheck": 1,
             "hideDouyinEntry": 1,
-            "hideDouyinTab": 1,
+            "hideDouyinTab": 2,
+            "listenOnly": 1,
             "blockSplashAd": 1,
             "debugLog": 21,
         },
@@ -60,6 +61,7 @@ FAMILY_CHECKS = {
             "splash-v2": "https://ad.zijieapi.com/api/ad/v2/ack/splash/report",
             "luna-check-update": "https://beta-luna.douyin.com/luna/check-update",
             "luna-check-update-slash": "https://api.qishui.com/luna/check-update/",
+            "homepage-combine": "https://api.qishui.com/aweme/homepage/combine/?device_id=x",
         },
     },
     "douyin": {
@@ -408,6 +410,7 @@ BINDING_SAMPLES = {
             "https://api.qishui.com/luna/check-update",
             "https://beta-luna.douyin.com/luna/check-update",
             "https://conf.qishui.com/service/settings/v3/?device_id=x",
+            "https://api.qishui.com/aweme/homepage/combine/?device_id=x",
         ),
     },
     "douyin": {
@@ -439,14 +442,10 @@ BINDING_SAMPLES = {
 SHADOW_ALLOWED_PAIRS = {
     "soda": {
         frozenset(("sanitize.min.js", "reward-observe.min.js")),
-        frozenset(("sanitize.min.js", "welfare-stamp.min.js")),
-        frozenset(("reward-observe.min.js", "welfare-stamp.min.js")),
         frozenset(("block-domains.min.js", "splash-ad.min.js")),
     },
     "douyin": {
         frozenset(("treasure.min.js", "observe.min.js")),
-        frozenset(("treasure.min.js", "welfare-stamp.min.js")),
-        frozenset(("observe.min.js", "welfare-stamp.min.js")),
         frozenset(("clean.min.js", "observe.min.js")),
         frozenset(("block-domains.min.js", "splash-ad.min.js")),
     },
@@ -454,7 +453,7 @@ SHADOW_ALLOWED_PAIRS = {
 
 # ---------------------------------------------------------------------------
 # 脚本安全边界（静态）：插件脚本只做净化/观测，不得发起网络请求、不得执行
-# 动态代码，$notification 只允许出现在 status / daily-reminder。所有脚本
+# 动态代码，$notification 只允许出现在 status 与 qidian 提醒脚本。所有脚本
 # 必须在结束时调用 $done() 释放 Loon 的 JS 资源。
 # ---------------------------------------------------------------------------
 SAFE_SCRIPT_FORBIDDEN = (
@@ -471,17 +470,15 @@ SAFE_DONE_RX = re.compile(r"\$done\s*\(")
 SAFE_NOTIFY_RX = re.compile(r"\$notification\s*(?:\.|\[)\s*[\"']?post")
 SAFE_NOTIFY_ALLOWED = {
     "status.js",
-    "daily-reminder.js",
     # qidian 提醒层（src/apps/qidian.json crons）：cron 本地通知专用脚本，
-    # 与 daily-reminder 同性质——只发通知附 App 内路由，零网络请求。
+    # 只发通知附 App 内路由，零网络请求。
     "sign-reminder.js",
     "welfare-reminder.js",
 }
 
 # 官方 Script API 5.3：`$persistentStore.remove()` **不接受参数**，语义是
 # 「清空通过脚本存储 API 保存的全部数据」。传 key 进去不会只删那一项——
-# 曾经用它清「广告开始时间」，结果每量一次时长就把打卡状态、统计、每日提醒
-# 一起抹掉，而且没有任何报错。删单个键只能写 `write(undefined, key)`（5.1）。
+# 曾经用它清「广告开始时间」，结果每量一次时长就把广告统计一起抹掉，而且没有任何报错。删单个键只能写 `write(undefined, key)`（5.1）。
 SAFE_STORE_WIPE_RX = re.compile(r"\$persistentStore\s*\.\s*remove\s*\(")
 
 # 上面这条要在「去掉注释」的文本上匹配：解释这条规则的注释本身就会写出
@@ -1972,7 +1969,7 @@ def check_ads_family():
                     "(use an exact ad subdomain)"
                 )
 
-    for domain in ("ad.zijieapi.com", "ads.youtube.com", "gdt.qq.com"):
+    for domain in ("ads.youtube.com", "gdt.qq.com"):
         if domain not in exact and domain not in wildcard:
             errors.append(f"{ADS_PLUGIN}: core sample missing: {domain}")
     for domain in ("doubleclick.net", "applovin.com", "pangle.io", "gdtimg.com"):
@@ -2120,12 +2117,11 @@ def check_ads_family():
         if domain in exact or domain in wildcard:
             errors.append(f"{ADS_PLUGIN}: excluded shared host is active: {domain}")
 
-    # 中国六大行精准广告专域守卫（工行、建行、中行、交行、邮储）
+    # 银行精准广告专域守卫；jf365.boc.cn 是中行积分商城，不得加入。
     for domain in (
         "adv.ccb.com",
         "ad.icbc.com.cn",
         "ad.boc.cn",
-        "jf365.boc.cn",
         "ad.bankcomm.com",
         "ad.psbc.com",
     ):

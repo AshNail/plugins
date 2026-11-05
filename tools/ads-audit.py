@@ -241,34 +241,42 @@ def parse_domains(text: str) -> set[str]:
 
 
 def parse_adblock_line(line: str) -> str | None:
-    if line.startswith(("!", "#", "[", "@@")):
-        return None
-    if line.startswith("/") and line.endswith("/"):
-        return None
-    if line.startswith("||"):
-        match = ADBLOCK_RE.match(line)
-        if not match:
-            return None
-        raw = match.group(1)
-        if "*" in raw or "_" in raw:
-            # A wildcard in the middle cannot be represented as a single
-            # [Host] suffix rule; keep the literal base only when clean.
-            return None
-        return normalize_domain(raw)
-    if line.startswith("|http"):
-        match = ADBLOCK_URL_RE.match(line)
+    match = re.fullmatch(r"\|\|([a-zA-Z0-9.-]+)\^", line.strip())
+    return normalize_domain(match.group(1)) if match else None
+
+
+def adblock_exceptions(text: str) -> set[str]:
+    exceptions: set[str] = set()
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("@@"):
+            continue
+        rule = line[2:]
+        match = ADBLOCK_RE.match(rule) or ADBLOCK_URL_RE.match(rule)
         if match:
-            return normalize_domain(match.group(1))
-    return None
+            domain = normalize_domain(match.group(1))
+            if domain:
+                exceptions.add(domain)
+    return exceptions
+
+
+def exclude_exception_conflicts(domains: set[str], exceptions: set[str]) -> set[str]:
+    ancestors = set()
+    for domain in exceptions:
+        labels = domain.split(".")
+        ancestors.update(".".join(labels[i:]) for i in range(len(labels) - 1))
+    result = set()
+    for domain in domains:
+        labels = domain.split(".")
+        if domain in ancestors or any(".".join(labels[i:]) in exceptions for i in range(len(labels) - 1)):
+            continue
+        result.add(domain)
+    return result
 
 
 def parse_adblock(text: str) -> set[str]:
-    out: set[str] = set()
-    for line in text.splitlines():
-        domain = parse_adblock_line(line.strip())
-        if domain:
-            out.add(domain)
-    return out
+    domains = {domain for line in text.splitlines() if (domain := parse_adblock_line(line))}
+    return exclude_exception_conflicts(domains, adblock_exceptions(text))
 
 
 def fetch_source(name: str, source: dict, refresh: bool, offline: bool) -> set[str]:
@@ -428,6 +436,42 @@ def parse_plugin_rules(
                 else:
                     exact.add(domain)
     return exact, wildcard, optional_exact, optional_wildcard, active_globs, optional_globs
+
+
+def load_categories() -> list[dict]:
+    taxonomy = json.loads((ROOT / "src/ads/categories.json").read_text())
+    groups = json.loads((ROOT / "src/ads/domains.json").read_text())["plugins"]["ads"]["groups"]
+    owners: dict[str, str] = {}
+    for category, identifiers in taxonomy["categories"].items():
+        for identifier in identifiers:
+            if identifier in owners:
+                raise RuntimeError("duplicate category assignment")
+            owners[identifier] = category
+    if set(owners) != {group["id"] for group in groups}:
+        raise RuntimeError("category inventory does not match domain groups")
+    return [{**group, "category": owners[group["id"]]} for group in groups]
+
+
+def classify_candidate(domain: str, groups: list[dict], roots: list[str]) -> dict:
+    matched = []
+    for group in groups:
+        for rule in group["rules"]:
+            if not isinstance(rule, str):
+                continue
+            base = rule.lstrip("=*").lstrip(".").lower()
+            hit = domain == base if not rule.startswith(("=", "*.")) else (
+                domain.endswith("." + base) or (rule.startswith("=") and domain == base)
+            )
+            if hit:
+                matched.append(group)
+                break
+    return {
+        "categories": sorted({group["category"] for group in matched}) or ["unknown"],
+        "matched_groups": sorted(group["id"] for group in matched),
+        "classification_basis": "existing-project-group" if matched else "no-purpose-evidence",
+        "shared_infrastructure": protected_root(domain, roots),
+        "auto_admit": False,
+    }
 
 
 def load_protected() -> list[str]:
@@ -597,10 +641,18 @@ def main() -> int:
 
     # Candidates: uncovered, seen in >= min-sources. Annotate shared roots and
     # whether the currently commented optional [Host] groups already cover it.
+    exceptions: set[str] = set()
+    for name in source_domains:
+        if SOURCES[name]["type"] == "adblock":
+            exceptions.update(adblock_exceptions((CACHE_DIR / f"{name}.txt").read_text(encoding="utf-8", errors="replace")))
+    eligible = exclude_exception_conflicts(set(uncovered_counter), exceptions)
+    groups = load_categories()
     candidates = []
-    for domain, count in uncovered_counter.most_common():
-        if count < args.min_sources:
+    for domain, count in sorted(uncovered_counter.items(), key=lambda item: (-item[1], item[0])):
+        if count < args.min_sources or len(candidates) >= max(args.top, 0):
             break
+        if domain not in eligible:
+            continue
         shared = protected_root(domain, roots)
         optional_covered = rule_matches(
             domain, optional_exact, optional_wildcard, optional_globs
@@ -608,11 +660,15 @@ def main() -> int:
         candidates.append(
             {
                 "domain": domain,
+                **classify_candidate(domain, groups, roots),
                 "sources": count,
+                "source_names": sorted(name for name, domains in source_domains.items() if domain in domains),
                 "shared_root": shared,
                 "optional_covered": optional_covered,
+                "status": "needs-purpose-and-exception-review",
                 "suggestion": (
-                    f"exact only (protected root {shared})" if shared else "= domain (apex + wildcard)"
+                    f"manual review; no root wildcard ({shared})" if shared
+                    else "manual review; source agreement does not justify wildcard"
                 ),
             }
         )

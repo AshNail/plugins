@@ -53,11 +53,11 @@ function todayKey() {
     (day.length < 2 ? "0" + day : day);
 }
 
-// 1. Soda 未打卡测试
+// 1. Soda 状态自检基础
 {
   const res = runStatus(sodaStatus, {});
   check("soda: doneOut has title", res.doneOut && res.doneOut.title.includes("汽水音乐"));
-  check("soda: doneOut has summary '未打卡'", res.doneOut && res.doneOut.summary.includes("未打卡"));
+  check("soda: doneOut has summary '状态自检'", res.doneOut && res.doneOut.summary.includes("状态自检"));
   check("soda: notifOut posted", res.notifOut && res.notifOut.title.includes("汽水音乐"));
   check("soda: notif attach openUrl is qishui://", res.notifOut && res.notifOut.attach && res.notifOut.attach.openUrl === "qishui://");
   check("soda: notif attach clipboard 带完整诊断", res.notifOut && res.notifOut.attach &&
@@ -65,22 +65,20 @@ function todayKey() {
     res.notifOut.attach.clipboard.includes("静态层：QUIC 回退 17 域"), res.notifOut && res.notifOut.attach);
 }
 
-// 2. Soda 今日已打卡 + 广告统计
+// 2. Soda 广告统计
 {
   const store = {
-    "soda-welfare-seen": todayKey(),
     "soda-ad-stats": JSON.stringify({ day: todayKey(), n: 5, s: 150 })
   };
   const res = runStatus(sodaStatus, store);
-  check("soda: doneOut marked seen today", res.doneOut && res.doneOut.summary.includes("已打卡"));
   check("soda: content includes stats", res.doneOut && res.doneOut.content.includes("完成 5 次广告"));
 }
 
-// 3. Douyin 未打卡与 openUrl 检查
+// 3. Douyin 状态自检与 openUrl 检查
 {
   const res = runStatus(douyinStatus, {});
   check("douyin: doneOut has title", res.doneOut && res.doneOut.title.includes("抖音"));
-  check("douyin: doneOut has summary '未打卡'", res.doneOut && res.doneOut.summary.includes("未打卡"));
+  check("douyin: doneOut has summary '状态自检'", res.doneOut && res.doneOut.summary.includes("状态自检"));
   check("douyin: notif attach openUrl is snssdk1128://", res.notifOut && res.notifOut.attach && res.notifOut.attach.openUrl === "snssdk1128://");
 }
 
@@ -99,8 +97,7 @@ function todayKey() {
     statusNotify: "silent", rewardSafe: true, splashClean: true, cleanAds: false,
     killRewardAds: false, blockAdDomains: false, blockSplashAd: false,
     settingsClean: false, hideDouyinEntry: false, hideDouyinTab: false,
-    debugLog: false, logTaskTitles: false, dailyReminder: false,
-    reminderCron: "30 20 * * *"
+    debugLog: false, logTaskTitles: false
   };
   const res = runStatus(sodaStatus, {}, args);
   const body = res.doneOut.content;
@@ -116,8 +113,7 @@ function todayKey() {
     statusNotify: "notification", rewardSafe: true, splashClean: true, cleanAds: true,
     killRewardAds: true, blockAdDomains: true, blockSplashAd: true,
     settingsClean: true, hideDouyinEntry: false, hideDouyinTab: false,
-    debugLog: true, logTaskTitles: true, dailyReminder: true,
-    reminderCron: "5 9 * * *"
+    debugLog: true, logTaskTitles: true
   };
   const res = runStatus(sodaStatus, {}, args);
   const body = res.doneOut.content;
@@ -127,7 +123,6 @@ function todayKey() {
   check("soda: 提醒 rewardSafe+blockAdDomains", body.includes("rewardSafe+blockAdDomains"), body);
   check("soda: 提示 cleanAds+debugLog 遮蔽",
     body.includes("cleanAds+debugLog"), body);
-  check("soda: 摘要含每日提醒时间", body.includes("每日提醒(5 9 * * *)"), body);
   check("soda: 通知正文也带冲突提醒", res.notifOut && res.notifOut.body.includes("冲突："),
     JSON.stringify(res.notifOut));
 }
@@ -137,8 +132,7 @@ function todayKey() {
   const args = {
     statusNotify: "silent", treasureMinimal: true, cleanFeedAds: true,
     killRewardAds: true, cleanUpsell: false, cleanActivity: true,
-    blockAdDomains: false, blockSplashAd: true, debugLog: true,
-    dailyReminder: false, reminderCron: "30 20 * * *"
+    blockAdDomains: false, blockSplashAd: true, debugLog: true
   };
   const res = runStatus(douyinStatus, {}, args);
   const body = res.doneOut.content;

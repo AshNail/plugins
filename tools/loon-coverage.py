@@ -175,9 +175,9 @@ CAPABILITIES = [
          why="upsell 响应 gzip 后已 183~191 KB，去压缩会膨胀 5~10 倍"),
 
     # ---------------- 规则层 ----------------
-    dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="open",
+    dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="used",
          probe=r"(?m)^DOMAIN\s*,", href=DOC + "/Rule/domain_rule",
-         why="被 `[Host]` 精确映射覆盖（同一批域名），规则层不需要重复一遍"),
+         why="adfilter 用精确 DOMAIN 拦截 AdNexus/21CN/联通广告等独立域；其余共享域仍由 [Host] 精确映射覆盖"),
     dict(layer="规则层", key="r-suffix", name="`DOMAIN-SUFFIX`", expect="used",
          probe=r"(?m)^DOMAIN-SUFFIX\s*,", href=DOC + "/Rule/domain_rule",
          why="ads 通配层与 app 插件（banks/qidian/x）整域 REJECT 使用；`[Host]` 的 `*.` 只映射 DNS，"
@@ -369,9 +369,9 @@ CAPABILITIES = [
     dict(layer="复写层", key="w-res-json-field", name="`response.json.add/delete/replace`", expect="reject",
          probe=r"then\s+response\.json\.(?:add|delete|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="soda/douyin 的响应层是字段级脚本 + 开关分支；原生 JSON 改写命中后同阶段脚本不执行，会整条废掉「保奖励」判断"),
-    dict(layer="复写层", key="w-res-json-jq", name="`response.json.jq`", expect="open",
+    dict(layer="复写层", key="w-res-json-jq", name="`response.json.jq`", expect="used",
          probe=r"then\s+response\.json\.jq\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="xianyu 可选 MITM 层以注释态落地 15 条（ddgksf2013/fmz200 同域 http-response-jq 证据）；默认不生效，生效项为 0。soda/douyin 因与响应脚本互斥不用"),
+         why="netease 插件用原生 jq 删除网易云广告字段（9 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条"),
     dict(layer="复写层", key="w-res-json-jq-file", name="`response.json.jq_file`", expect="reject",
          probe=r"then\s+response\.json\.jq_file\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="插件资源文件会引入包外依赖；本仓库要求自包含"),

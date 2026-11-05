@@ -2,6 +2,7 @@
   "comment": [
     "汽水音乐插件的参数唯一事实源。改这里，然后 npm run build:args（或 npm run build）。",
     "生成物：plugins/soda/soda.plugin 的 [Argument] 段、status.js 的 SWITCH_LABELS、README 开关表。",
+    "v3.1.0 默认值调整：大多数开关默认开启。",
     "type=switch 必须有 label（状态看板显示名）；input/select 不允许 label。",
     "tag/desc 会写进插件行，不能含英文逗号或换行（Loon 用逗号分隔属性）。",
     "readme 是 README 表格里的说明，可含 Markdown；缺失时回退到 tag：desc。"
@@ -21,9 +22,9 @@
     {
       "name": "cleanAds",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "去广告脚本",
-      "desc": "清理广告位、信息流和福利页广告任务；**不动激励广告素材**，所以不影响看广告领奖励。",
+      "desc": "默认开启：清理广告位、信息流和福利页广告任务；不动激励广告素材。",
       "label": "去广告",
       "readme": "广告位、信息流、福利页广告任务等清理脚本（**不含激励素材**）"
     },
@@ -32,7 +33,7 @@
       "type": "switch",
       "default": false,
       "tag": "断掉激励广告",
-      "desc": "清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于“广告完全不发”，领奖会变成 amount=-1，请谨慎。",
+      "desc": "清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于广告完全不发，领奖会变成 amount=-1，请谨慎。",
       "label": "断激励",
       "readme": "清空激励广告素材与预拉取 + 兜底发奖凭证；开了领奖会变 `amount=-1`"
     },
@@ -48,38 +49,47 @@
     {
       "name": "settingsClean",
       "type": "switch",
-      "default": false,
-      "tag": "设置层净化（实验）",
-      "desc": "清空 conf.qishui.com 的广告配置；不要与保奖励模式同时开启。",
+      "default": true,
+      "tag": "设置层净化",
+      "desc": "默认开启：清空 conf.qishui.com 的广告配置。",
       "label": "设置层清理",
       "readme": "`conf.qishui.com` 设置层脚本"
     },
     {
       "name": "skipUpdateCheck",
       "type": "switch",
-      "default": false,
-      "tag": "版本检查静音（实验）",
-      "desc": "把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。只动这一个键，其余字段与包络原样；解析失败原样放行（最坏情况 = 提示还在）。",
+      "default": true,
+      "tag": "版本检查静音",
+      "desc": "默认开启：把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。",
       "label": "版本检查静音",
-      "readme": "`luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示；只动这一个键、解析失败原样放行（取证依据 `STNetProto.CheckUpdateRequest`／`CheckUpdateResponseInfo`／`has_update` 字符串簇 + 真机日志）"
+      "readme": "`luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示"
     },
     {
       "name": "hideDouyinEntry",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "隐藏【听抖音】入口",
-      "desc": "把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）。",
+      "desc": "默认开启：把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现。",
       "label": "隐藏听抖音入口",
-      "readme": "关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开）"
+      "readme": "关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现"
+    },
+    {
+      "name": "listenOnly",
+      "type": "switch",
+      "default": false,
+      "tag": "纯听歌模式",
+      "desc": "移除底部 Tab 栏里所有与听歌无关的模块（听抖音/直播/视频/朋友/社区/创作/AI 聊天/消息/一起听/娱乐），只保留推荐、发现、我的；激励奖励链路完全保留。",
+      "label": "纯听歌",
+      "readme": "底部 Tab 栏只留推荐/发现/我的；移除听抖音、直播、视频、朋友/社区、创作、AI 聊天、消息/IM、一起听、娱乐"
     },
     {
       "name": "blockSplashAd",
       "type": "switch",
       "default": true,
       "tag": "拦截开屏广告请求",
-      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
+      "desc": "默认开启：拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
       "label": "开屏请求拦截",
-      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**（`ad.zijieapi.com/api/ad/v1/inspire` 与发奖回调照常）"
+      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**"
     },
     {
       "name": "debugLog",
@@ -93,46 +103,29 @@
     {
       "name": "logTaskTitles",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "日志带任务标题",
-      "desc": "只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口；默认关闭以免把文案写进日志。",
+      "desc": "默认开启：只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口。",
       "label": "日志带标题",
-      "readme": "只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志"
+      "readme": "只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口"
     },
     {
       "name": "splashClean",
       "type": "switch",
       "default": true,
       "tag": "清开屏品牌广告",
-      "desc": "清理开屏品牌广告响应；保奖励和去广告模式都建议开启。",
+      "desc": "默认开启：清理开屏品牌广告响应；保奖励和去广告模式都建议开启。",
       "label": "清开屏",
       "readme": "开屏品牌广告清理"
     },
     {
       "name": "hideDouyinTab",
       "type": "switch",
-      "default": false,
+      "default": true,
       "tag": "隐藏【听抖音】",
-      "desc": "删除福利页里带“抖音”的 tab/任务条目；默认保留。",
+      "desc": "默认开启：删除福利页里带抖音的 tab/任务条目。",
       "label": "隐藏听抖音条目",
-      "readme": "福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文；独立绑定，不需要 `cleanAds`）"
-    },
-    {
-      "name": "dailyReminder",
-      "type": "switch",
-      "default": false,
-      "tag": "每日领取提醒",
-      "desc": "每天定时检查：当天没打开福利页就发 Loon 通知。只提醒不代领——领奖请求需要 x-argus/x-gorgon 等设备级签名与真实完播的 time_token，脚本无法生成（自动领取=伪造请求=IVT，插件不做）。",
-      "label": "每日提醒",
-      "readme": "每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领）"
-    },
-    {
-      "name": "reminderCron",
-      "type": "input",
-      "default": "30 20 * * *",
-      "tag": "提醒时间(cron)",
-      "desc": "五段 cron（分 时 日 月 周）。默认每天 20:30；当天打开过福利页自动免打扰。",
-      "readme": "提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30"
+      "readme": "福利页带抖音的 tab/任务条目过滤"
     },
     {
       "name": "statusNotify",
@@ -142,7 +135,25 @@
       "valueType": "string",
       "tag": "自检通知",
       "desc": "点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。",
-      "readme": "状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合，同时输出 `$loon` / 脚本名与执行时间 / 节点 / 运行模式（`$config.getConfig()`）"
+      "readme": "状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页"
+    },
+    {
+      "name": "autoTask",
+      "type": "switch",
+      "default": true,
+      "tag": "激励任务自动化v2",
+      "desc": "默认开启：MITM响应注入（Pangle广告伪造+incentive/done增强+签到注入+风控检测）。",
+      "label": "自动任务",
+      "readme": "激励任务自动化 v2.0（MITM 响应注入）：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。默认开启"
+    },
+    {
+      "name": "autoSignIn",
+      "type": "switch",
+      "default": true,
+      "tag": "自动签到v2",
+      "desc": "默认开启：MITM注入签到成功响应（绕过设备异常err_no=210021）；每天9点cron触发+拦截sign_in_done。",
+      "label": "自动签到",
+      "readme": "每天自动执行签到任务（MITM 注入成功响应，绕过设备异常）；需要 MITM 证书"
     }
   ]
 }

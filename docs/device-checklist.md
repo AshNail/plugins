@@ -1,6 +1,6 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 2.8.7）/ `douyin.plugin`（当前 0.8.6）；`ads.plugin`（当前 2.8.3）见 H 节。
+> 适用：`soda.plugin`（当前 3.1.0）/ `douyin.plugin`（当前 0.8.6）；`ads.plugin`（当前 2.8.5）见 H 节。
 > 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 与全部 App 插件**不再声明 `#!loon_version`**（`#!system` 覆盖 macOS，Loon for Mac 的营销版本号是独立一条线 `0.5.0(1011)`，iOS 口径门槛在 Mac 上语义未定），功能基线仍是 App Store 正式版 **3.5.2(996)**；`DOMAIN-WILDCARD` 仅 TF 3.5.3(1008)+ 有，保持默认注释层。
 > 红线重申：本仓插件**只做净化与观测**——不缩短广告、不加速播放、不改写领奖请求、
 > 不做后台自动观看/自动领取。领奖链路（`incentive/done` 等全部 59 头请求）只读不动。
@@ -15,9 +15,17 @@
       - `https://raw.githubusercontent.com/AshNail/plugins/main/plugins/soda/soda.plugin`
       - `https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plugin`
 - [ ] **排障首查项（本轮文档对差新增）**：某条 `[Host]` 黑洞不生效时，先看订阅是否下发 `[Host]` / `[DNS]` 段——官方《节点订阅》页明写「订阅 Host Map 加载后合并到当前 Host Map，并**优先于主配置**」。顺序口径：Rewrite/规则是「本地 > 插件 > 订阅」，Host Map 里订阅压过主配置，插件 [Host] 与订阅 Host Map 的相对顺序**官方未写**，遇到同名映射冲突属未定义行为，只能真机证实（先换订阅、再怀疑正则）。
+- [x] **主配置通配 Host 压过插件精确黑洞（2026-11-01 macOS 实测）**：主配置写 `*.qq.com = server:119.29.29.29` 等 17 条 `server:` 通配映射时，插件里的 `wxa.wxs.qq.com = 127.0.0.1` 不生效——`curl` 仍拿到真实服务器 302/404/403；删除这 17 条后，同一批主机全部变成 5s 超时黑洞，`wxsnsdy.wxs.qq.com` 直接 `127.0.0.1`。结论：**Host 不是「越精确越优先」**，主配置宽通配会赢；主配置 `[Host]` 应保持精简，指定解析器用 DoH 形态并只写单域，不要写宽带 `server:` 通配。
+- [x] **Remote Rule 镜像全 404（2026-11-01 实测）**：`ws.wenn.in/main/Mirror/rules/loon-{China,Global,Advertising,Privacy,Hijacking,Epic}.list` 六条全部 404。已改为 blackmatrix7 上游 `raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Loon/<类>/<类>.list`，策略与 tag 不变；重启后六份 `.lsr` 重新下载（China 2056 / Global 6218 / Advertising 26870 / Privacy 821 / Hijacking 6734 / Epic 588 字节），DNS 与广告回归正常。从旧 `.lcf` 备份重建配置时注意同步替换这些死 URL。
+- [x] **红线域全量抽测 0 误杀（2026-11-01 实测）**：对 `src/apps/*.json` 的 111 个红线域逐个 `dig`，修复前有 5 个解析到 `127.0.0.1`：`ads.privacy.qq.com`（微信广点通合规入口）、`dns.jd.com` / `janapi.jd.com`（京东 HTTPDNS/数据网关）、`resolver.msg.xiaomi.net`（米家推送/解析）、`fockrt.yuewen.com`（阅文 fock 文件服务）。公开配置和 Mac 私有配置都加了 local `DIRECT` 精确放行，并删掉 `fockrt` 自相矛盾的 REJECT；修复后 111/111 无 DNS 黑洞，5 个域 HTTPS 均返回真实响应（404/200/401）。广告与正常域回归通过。
+- [x] **银行规则误杀清理（2026-11-01 实测）**：公开配置原有 10 条无 banks 插件证据的 REJECT，其中 `creditcard.bankcomm.com`（交行信用卡主站）、`switch.cup.com.cn`（银联支付切换）、`cdn1.mbs.boc.cn`（中行移动银行 CDN）、`ads.95516.com`（插件明确默认关，重试风暴）等可能直接断业务。已全部移除，银行广告只保留 banks 插件证实的 `mbads.paas.cmbchina.com`、`ads.cup.com.cn`、`alliance.com.corpqueue.net` 三条。公开规则 497→487，Mac 私有 535→525。
+- [x] **中银积分365 误杀修复（2026-11-01）**：`jf365.boc.cn` 是官方积分查询/兑换商城（中行公告明确），旧 ads 数据误收。已从 ads cn_union 移除、lint 加负向门禁，ads 升到 2.8.5；公开/私有主配置 `[Host]` 增加显式 DoH 解析，兼容旧插件。实测真实 IP、HTTPS 200。
+- [x] **Fallback 空组修复（2026-11-01）**：策略页曾显示 `Fallback · 暂无可用子策略`，而 Final/Streaming/AI/Developer/Gaming/Social 都把 Fallback 作为可选子策略；已补入订阅节点组 `东京`。重启后策略页显示 10 组 / 31 节点，Fallback 选中 `hy2-main-JP`，无空组。
+- [x] **规则集合核对（2026-11-01）**：规则页显示 8 个集合 / 521 条规则；国内域名 DIRECT、国际域名 Proxy、广告域名 REJECT、隐私保护 REJECT、反劫持 REJECT、Epic Games Proxy，兜底 Final。6 条 Remote Rule 均已加载，不再有 404 空订阅。
+- [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.3`、`soda=2.8.7`、`douyin=0.8.6`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.5`、`soda=2.8.8`、`douyin=0.8.6`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
@@ -99,7 +107,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 
 ## H. ads.plugin（DNS 层 + DOMAIN-WILDCARD 默认注释层）
 
-- [ ] Loon 版本 ≥ **3.5.2(996)**（App Store 正式版即可导入）；插件页版本为 2.8.3
+- [ ] Loon 版本 ≥ **3.5.2(996)**（App Store 正式版即可导入）；插件页版本为 2.8.5
       （此前 2.6.0 把门槛抬到 3.5.3(1008) 会挡住正式版用户；2.7.0 已降回正式版，
       `DOMAIN-WILDCARD` 通配/家族两层改为**默认注释**，正式版用户保持注释、其余全量生效。）
 - [ ] 规则页看不到生效的国内公共 DoH/DoT：`dns.alidns.com`、`doh.pub`、`doh.360.cn` 等 9 条整组为 `# ` 注释，
@@ -121,7 +129,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **Rayjump 的副作用**：`analytics.rayjump.com` 是 Mintegral 的统计通道，拦掉会连它的
       埋点一起断——这正是要的效果，但会让该 App 的「广告收益/填充率」在后台看起来更差，
       不必当故障。
-- [ ] 刷奖励前禁用 `ads.plugin`；纯去广告时再启用（与 soda/douyin 的 `rewardSafe` 互斥）
+- [ ] 刷穿山甲奖励前确认 `ad.zijieapi.com` 不在任何广告插件的 Host 黑洞里（ads.plugin 2.8.4 起已移除）；刷优量汇/快手奖励仍需临时禁用 `ads.plugin`
 - [ ] 误伤广告左标签业务时，删除对应 `DOMAIN-WILDCARD` 行即可单条回滚，无需卸载插件
 - [ ] **不该拦的**：`adtiming.com`、`smaato.com`、`ogury.com` 是官网域，**故意不在清单里**。
       如果你在别处看到有人加，那是猜的——真实请求走 AdTiming 私有端点 / `smaato.net` / `ogury.io`。
@@ -179,9 +187,9 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       默认注释组，域名形式主配置不再被本插件黑洞；车主配置保持域名形式也能正常解析。
       判读要认这个签名：`Host Map` 高频命中 `dns.alidns.com`/`doh.pub` = 本插件旧版本或手动开组，不是 App 在绕过。
       **2026-10-29 的 23 小时窗口升至 17073 + 11239（见 I2）**——这正是 2.8.0 撤回默认的原因。
-- [!] **激励分片与 rewardSafe 的互斥真机成立**：`ads5-normal-hl.zijieapi.com` 被 ads `[Host]` 黑洞 ×8，
-      同时 soda/douyin `[MITM]` 通配也在匹配它——ads 开着时 DNS 先死，`rewardSafe` 救不了「看广告领奖」类任务
-      （攒时长 `ack_time` 不受影响，日志证实正常）。刷激励广告前必须停用 ads.plugin（H 节口径，现已有实锤）。
+- [!] **激励与广告域的按路径拆分（2026-10-31 修正）**：`ads5-normal-hl.zijieapi.com` 等开屏/信息流分片仍被 ads `[Host]` 黑洞；
+      `ad.zijieapi.com` 已移出全局黑洞，由 soda/douyin 的 `blockAdDomains` 按路径放行 `inspire / inspire_preload / marketing_done`。
+      若抓包里这些路径仍是 status 0，先查是否还有别的广告插件在 Host/DNS 层拦 `ad.zijieapi.com`。
 - [x] **HTTPDNS 防绕过（第八轮 REJECT-DROP）真机确证**：`DOMAIN-KEYWORD,httpdns,REJECT-DROP`
       两个窗口合计 156 次命中，目标 `103.37.152.224` / `203.107.1.1` / `119.29.29.98` /
       `180.76.76.112` 的 :80 直连——App 确实在尝试绕开 TUN DNS，且被掐断。**该组保持默认开启正确。**
@@ -239,7 +247,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       那是用户主配置自己的 MITM 名单，不参与本清单判读。
 - [x] **有意的数据缺口**：638 条非广告 luna 请求未绑定；没有“全 luna 都处理”的假宣告。
 
-## J. 13 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
+## J. 17 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
 
 - [ ] 逐个导入 `plugins/<slug>/<slug>.plugin`，装后完全退出并重开目标 App。
 - [ ] **生效判读**：日志里命中域应显示 `Host Map IP:127.0.0.1`（插件 [Host] 的特征字样，区别于主配置的 `Reject domain ... in DNS phase`）。
@@ -252,6 +260,10 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] 红线交叉验证（ads × `jd`/`mijia`）：`src/apps/*.json` 的 `redlines` 把 `dns.jd.com`（京东自建 HTTPDNS）、`union.jd.com`（京东联盟站）与 `resolver.msg.xiaomi.net`（小米推送/米家解析通道，出处是 `mijia.json` 台账「推送/云红线」的 `resolver.msg.*`，不在 `comment` 里）划为绝不进拦截组，`tools/build-ads.py` 因此拒绝把它们放进任何默认生效组，三者现在只存在于 ads 的「与按 App 插件红线冲突的候选」注释组。取证两步：①同时导入 ads + `jd` + `mijia`，确认日志里**没有**这几条的 `Host Map IP:127.0.0.1`，京东搜索/下单/图片正常、米家设备控制与消息推送正常；②逐行取消 `# ` 打开它们后重开这两个 App，观察是否出现「转圈/搜索无结果/白图/设备离线/收不到推送」——若一切正常，说明它们确实回退系统 DNS，可把对应条目挪回默认生效组并同步改该 App 的红线与本清单（挪回去要先删红线，门禁会当场拒绝无红线的激活）。没做完这两步之前，别凭「成熟清单也拦」推断无副作用。
 - [ ] **qidian/xianyu/x/instagram**：预期收益低（内联广告），判读以「遥测域消失 + 业务无恙」为准，不以「广告消失」为准。
 - [ ] **bubei-danci** 不背单词：本插件**没有广告 SDK 组**——官方 SDK 目录 `https://learnywhere.cn/lexis/sdklist` 里没有穿山甲/优量汇/快手/百青藤，变现是酷币与会员内购，所以这里的「去广告」实际是去跟踪。判读：`ns.360wgjs.com`（站外埋点，anti-AD/PiT 等三家清单收录）从日志消失；学习链路 `learnywhere.cn`（API + 例句音频）、`bbdc.cn`、声通评测 `isuntone` 必须无恙。**`umeng` 组默认关**：`umeng.com` 整域拦会把统计 + U-Push + 一键登录一起断（签到提醒、号码认证同断），只在「不在乎推送、只要隐私」时开。
+- [ ] **youtube**：可选 MITM 启用后，推荐/播放 JSON 中广告字段应消失；视频播放、登录、缩略图正常；`googlevideo.com` 不得被 DNS 黑洞或请求拒绝。Mac 当前不执行 response jq，需 iOS/iPad/TV 验证。
+- [ ] **bilibili**：可选 MITM 启用后，开屏/首页信息流广告消失；动态、播放、登录、直播不得异常；`api.bilibili.com`/`biliapi.net` 不得被 DNS 黑洞，VIP/地区/青少年规则不在本插件。
+- [ ] **zhihu**：可选 MITM 启用后，首页/推荐/搜索/回答/评论广告位消失；请求拒绝只命中广告 API，登录、回答正文、图片、会员状态不得异常；`api.zhihu.com`/`www.zhihu.com` 不得被 DNS 黑洞。
+- [ ] **taobao**：DNS 组应命中 h-adashx/ossgw/hudong 等精确广告域；可选 MITM 的 11 条 URL-REGEX 启用后，搜索、下单、购物车、支付必须无恙，`acs.m.taobao.com` 与 `guide-acs.m.taobao.com` 不得被 DNS 黑洞；广告图片路径应返回 1px 图。
 - [ ] **mba-dashi** MBA大师：开屏走穿山甲、课程列表插屏走优量汇（两家 SDK 由官方隐私政策确认）。判读：冷启开屏广告加载失败、课程列表插屏消失即 pangle/gdt 组命中；红线 `www/m/file/video.mbajm.com` 全是讲义、课程、视频链路，绝不允许出现在拦截日志。**代价**：App 内「看广告领课程」依赖这些 SDK——启用即断该活动，属预期而非故障。
 - [ ] **ruankao-tong** 软考通：同为 pangle + gdt（`ixinz` 系）。判读：开屏与课程列表插屏加载失败即命中；红线 `www.ixinz.com` 与 `*.s2.ixinz.com` 是课程/题库内容分发域，不得出现在日志。官方隐私政策只给 SDK 包名不给域名，域名按两家 SDK 公开集成文档补齐（B 级）；题库内容与广告同源不可分，「看广告解锁真题」启用即断。崩溃上报（`shenzhou` / `crash.ixinz`）为第一方自建、网络层无从区分，故不列。
 - [ ] **以上两款共有的口径**：`mba-dashi` / `ruankao-tong` 的 `[Host]`/`[Rule]` 是全设备生效（Loon 无法按 App 限定），同一 SDK 域跨 App 共享黑洞——「按 App 插件」只是分组开关；测试时若别的 App 也报广告加载失败，那是同一批域在起作用，不是插件写错。配合全局 ads 插件的 httpdns 组防绕过。
@@ -263,6 +275,24 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 
 - [ ] **前置**：Loon → 证书管理 → 生成/安装 CA → iOS 设置里「通用→关于→证书信任设置」打开完全信任；无证书时取消注释也无效，先装证书再改规则。
 - [ ] **qidian**：只取消 `[MITM]` 头 + `hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com` + 8 条 `URL-REGEX`（REJECT-DICT）。验证：冷启动开屏广告秒过、书架悬浮广告/每日推荐位消失、我的页内测推广与书架置顶推广消失；正文阅读、听书、评论、支付必须无恙（同主机业务路径不在正则内）。日志应见 `Reject ... by URL-Regex` 且主机仍正常解析。
-- [ ] **meituan**：同法启用 `wmapi/apimobile/p?.meituan.net` 层。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；广告图路径命中后应看到 1px 图（`REJECT-IMG` 200 + GIF，不是 404）且商品图正常；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
+- [ ] **meituan**：MITM 主机 9 个（`wmapi/apimobile/p?.meituan.net/flowplus/img/feedguess/mt-personalcenter/assistify/mop`），响应 jq 8 条（tab/推荐流/我的页/搜索词/AI skills/购物车 banner/启动图），默认全注释、逐条启用。验证：开屏广告消失、启动不再拉 `openscreen?ad/startpicture`；广告图路径命中后应看到 1px 图（`REJECT-IMG` 200 + GIF，不是 404）且商品图正常；下单、支付、地图、外卖全程无恙——任何一步异常即整段回滚（该 App 交易链路敏感，红线高于收益）。
 - [ ] **xianyu**：本层有三块——`# [MITM]`（2 主机）、`# [Rewrite]`（15 条 `response.json.jq`）、`# [Rule]`（2 条 QUIC 回退 + 2 条 `URL-REGEX`，拦 `splash.ads`/`idle.ad.expose`）。建议顺序：先只开 `[MITM]` + QUIC + 两条 `URL-REGEX`，验证开屏广告消失且发布、下单、聊天、扫一扫无恙；再开 `[Rewrite]` 里**一条** `group.myself.banner`（`.data.bannerList = []`，最保守），确认群聊页 banner 消失、消息列表正常、响应仍是合法 JSON；第二步试 `item.recommend`（只删 mamaAD）与三条占位规则（`user.strategy.list` / `search.shade` / `search.activate`）；最后再试「只留 item/业务分区」的激进规则：`home.nextfresh`、`search.search`、`local.home`、`search.discover`、`item.buy.feeds`、`item.recommend.list`，以及最激进的 `user.page.my.adapter`（我的页面只留 head/user/trade 分区）。任一规则导致白屏/接口报错，只重新注释该行即可回滚；整体异常（登录转圈、全局接口报错）则整段恢复注释。**若 jq 规则全无效果，先怀疑 Loon 没执行 jq（响应压缩/内容类型不满足），不要改正则硬试**——mtop 网关被解密本身就改变连接形态，本层对该 App 定位是「实验」。
 - [ ] **共同回滚判据**：银行/支付/门锁等红线域绝不允许进 `[MITM]` hostname；增强层启用后若 App 报「网络异常/证书错误」，说明该 App 实际做了固定或检测，接受现实、整段恢复注释（插件注释已声明此可能）。
+
+## K. MITM 名单收敛与插件 `[General]` DNS（2026-11-02 macOS 实测）
+
+- [x] **主配置与插件 `hostname` 是合并生效**：主配置只写少量主机时，插件声明的 `app.bilibili.com` 仍被解密（TLS 签发者为 Loon CA）；未列入任何名单的 `example.com` 返回真实 Cloudflare 证书。判据用 `openssl s_client` 看 issuer，不要看 `curl` 的 HTTP 状态（被解密与否都可能 200）。
+- [x] **主配置独有主机要逐条找消费方**：从 `[Plugin]` 的启用 URL 算 MD5 映射到 `remotePlugin/<md5>.lpx`，解析每个插件 `[MITM] hostname`（去 `%APPEND%`、跳过 `-` 排除）取并集；主配置里不被并集覆盖、且插件 Rewrite/Script/Rule 文本与主配置 `[Rewrite]/[Script]` 都不引用的主机，才可判孤儿。示例：私有 Mac 配置 50 个正包含 → 18 个（32 个孤儿删除），61 个排除项全部保留；`ad.zijieapi.com`、`beta-api.m.jd.com` 因主配置 Rewrite 命中而保留。
+- [x] **证书验证**：重启隧道后对每个删除项跑 `echo | openssl s_client -connect <host>:443 -servername <host> 2>/dev/null | openssl x509 -noout -issuer`；真实 CA＝已退出解密，`O=Loon`＝仍在名单（检查插件是否声明或配置未重载）。
+- [x] **macOS 重启隧道**：Loon for Mac 不注册 `loon://` scheme，退出 App 也不会重启网络扩展；用 `scutil --nc stop "Loon for Mac"` → `scutil --nc start "Loon for Mac"` 才会重载 `Loon.lcf` 与插件缓存。改动前备份 `Loon.lcf`，回滚即恢复备份后再重启 VPN。
+- [x] **插件 `[General]` 会追加 DNS**：启用插件的 `dns-server` / `doh-server` / `doh3-server` 是追加而非替换。实测 All-in-One 追加了 `h3://223.5.5.5`、`h3://223.6.6.6` 与 `1.12.12.12`，会在主配置已清理 DoH3 后重新引入；排障时先 grep 插件缓存的 `[General]`，再怀疑主配置。若删除缓存里的这些行，先备份 `.lpx`；「更新全部外部资源」会恢复远端版本。
+- [x] **不要用 UI 的 MITM 计数判断主机数**：清理后 TLS issuer 已按主机变化，但首页「MITM 228」计数未同步；以证书签发者与插件缓存名单为准。
+- [x] **只读审计工具**：`python3 tools/mac-mitm-audit.py` 列出主配置独有 MITM 主机及插件缓存/主配置消费证据，`--json` 可机器读取。候选判断是启发式的（如 `(?:beta-)?api.m.jd.com` 这类可选前缀正则），删除前仍要按上一条做证书验证。
+
+## L. 分流结构审计（2026-11-03 macOS 实测）
+
+- [x] **只读工具**：`python3 tools/mac-routing-audit.py` 检查本地 `[Rule]` 的 FINAL 位置、重复行、端口/协议规则是否落在 IP 规则之后、域名是否被更早的宽规则遮蔽、策略组是否未定义；`--json` 机器可读，`--check` 有发现时 exit 1。
+- [x] **现网结果**：Mac 私有配置 540 条本地规则 / 10 个策略组；FINAL 唯一且在末条，0 重复、0 端口/IP 倒序、0 域名遮蔽、0 未定义策略。公开配置 511 条同样全绿。
+- [x] **远程规则**：6 条 `[Remote Rule]` 分别绑 DIRECT / Proxy / REJECT；工具只汇总 policy，不打印远程 URL。
+- [x] **边界**：该工具只做结构检查，不判断业务策略是否最优；`url-test` 只测延迟，不能发现“延迟低但吞吐崩”的节点（2026-11-03 实测：唯一存活 HY2 节点 189ms，但 Cloudflare 下载仅 4–7 KB/s；两条 VLESS 均 Timeout）。节点吞吐问题应更新订阅/换线路，不要改规则顺序。
+- [x] **远程规则集红线审计**：`python3 tools/remote-rules-audit.py` 拉取 blackmatrix7 的 Advertising / Privacy / Hijacking 三套 REJECT 规则，对照 122 条 App 红线并检查本地 DIRECT 覆盖。当前 Advertising 有 3 条京东红线关键词（kepler.jd.com / mapi.m.jd.com / policy.jd.com），均由本地精确 DIRECT 规则覆盖；实测 HTTPS 返回真实 302/403/404。远程清单更新后必须重跑，出现无本地覆盖的红线命中时工具 exit 1，不要删除本地覆盖行。

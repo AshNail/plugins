@@ -1,6 +1,6 @@
 {
-  "version": "2.8.3",
-  "updated": "2026-10-30",
+  "version": "2.8.5",
+  "updated": "2026-11-01",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "openUrl": "https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；零证书、无 MITM/脚本；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.3",
+      "version": "2.8.5",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -214,9 +214,8 @@
         {
           "id": "pangle",
           "title": "穿山甲 / Pangle（字节跳动）",
-          "note": "字节系广告投放、Pangle 海外 SDK、穿山甲联盟 API 与广告素材签名。isnssdk.com 只列广告相关主机，且刻意排除 is.snssdk.com（头条搜索、豆包输入法共用，oisd 因其会断功能而排除）。",
+          "note": "字节系广告投放、Pangle 海外 SDK、穿山甲联盟 API 与广告素材签名。isnssdk.com 只列广告相关主机，且刻意排除 is.snssdk.com（头条搜索、豆包输入法共用，oisd 因其会断功能而排除）。 2026-10-31：ad.zijieapi.com 已移出全局 Host 黑洞——该主机同时承载穿山甲激励广告与发奖回调，DNS 层整域拦截会让抖音/汽水看广告领奖励必然失败；非激励路径改由 douyin/soda 的 blockAdDomains 按路径拦截。",
           "rules": [
-            "ad.zijieapi.com",
             "ads3-normal-hl.zijieapi.com",
             "ads3-normal-lf.zijieapi.com",
             "ads3-normal-lq.zijieapi.com",
@@ -438,7 +437,6 @@
             "adv.ccb.com",
             "ad.icbc.com.cn",
             "ad.boc.cn",
-            "jf365.boc.cn",
             "ad.bankcomm.com",
             "ad.psbc.com",
             "ykad-data.youku.com",
@@ -630,6 +628,7 @@
           "rules": [
             "=applovin.com",
             "=mopub.com",
+            "ssp.api.tappx.com",
             "=unityads.unity3d.com",
             "iads.unity3d.com",
             "mediation.unity3d.com",
@@ -702,6 +701,7 @@
           "rules": [
             "=adnxs.com",
             "=adnxs-simple.com",
+            "delivery.adnuntius.com",
             "=adsrvr.org",
             "=criteo.com",
             "=criteo.net",
@@ -1157,7 +1157,7 @@
         {
           "id": "httpdns",
           "title": "HTTPDNS / 私有 DoH 端点（防绕过）",
-          "note": "覆盖阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。",
+          "note": "覆盖阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。",
           "rules": [
             "httpdns.aliyuncs.com",
             "*.httpdns.aliyuncs.com",
@@ -1172,8 +1172,6 @@
             "httpdns.bilivideo.com",
             "httpdns.pro",
             "kuaishou.httpdns.pro",
-            "httpdns-sdk.n.netease.com",
-            "httpdns.music.163.com",
             "httpdns.c.cdnhwc2.com",
             "httpdns1.cc.cdnhwc5.com",
             "httpdns-browser.platform.dbankcloud.cn",

@@ -1,0 +1,39 @@
+#!name=网易云音乐 · 净化（规则层）
+#!desc=吸纳 ios151/NeteasemusicAd 的 Map Local/URL 事实：广告/推广接口返回空 JSON，并对 9 个响应端点用原生 jq 删除广告字段；不包含上游 JS。需要 Loon 3.5.1(983)+ 与 MITM。
+#!author=AshNail（规则整理；来源 ios151/NeteasemusicAd）
+#!version=1.0.1
+#!homepage=https://github.com/AshNail/plugins
+#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/netease/README.md
+#!icon=https://raw.githubusercontent.com/Keywos/rule/main/tv/app/144px/Netease.png
+#!system=iOS,iPadOS,macOS
+#!date=2026-11-02
+#!tag=网易云音乐,去广告,规则层
+#!type=normal
+
+[Rule]
+# 域名由 ads 插件与公开主配置覆盖；此处只放 MITM/Rewrite。
+
+[Rewrite]
+# 吸收 ios151/NeteasemusicAd 的 Map Local 端点，改为请求阶段返回空 JSON。
+# 首页/发现/我的/收银台/评论区用 Loon 原生 response.json.jq 删除广告字段；
+# Mac 0.5.0 实测 response jq 未执行（请求阶段规则正常），需 iOS/TV 验证。
+request if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/x?e?api\/ad/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(?:side-bar\/mini-program\/music-service\/account|delivery\/(?:batch-deliver|deliver)|moment\/tab\/info\/get|yunbei\/account\/entrance\/get)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/x?eapi\/(?:resource\/comments?\/musiciansaid|community\/friends\/fans-group\/artist\/group\/get|user\/sub\/artist|music\/songshare\/text\/recommend\/get|mine\/applet\/redpoint|resniche\/position\/play\/new\/get)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/search\/default/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/w?e?api\/(?:search\/(?:chart|rcmd\/keyword|specialkeyword)|resource-exposure\/|activity\/bonus\/playpage\/time\/query)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/x?eapi\/(?:mlivestream\/entrance\/playpage|link\/(?:position\/show\/strategy|scene\/show)|ios\/version|v\d\/content\/exposure\/comment\/banner)/i then reject_dict(200)
+request if ${url} ~= /^https?:\/\/interface\d?\.music\.163\.com\/store\/x?e?api\/(?:webconfig|entryconfig)/i then reject_dict(200)
+
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/homepage\/block\/page/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/link\/page\/discovery\/resource\/show/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/link\/position\/show\/resource/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/vipactivity\/app\/cashier\/setting\/get/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/v\d\/resource\/comment\/floor\/get/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/batch/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/v1\/user\/info/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/link\/page\/rcmd\/(?:resource\/show|block\/resource\/multi\/refresh)/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+response if ${url} ~= /^https?:\/\/(ipv4|interface\d?)\.music\.163\.com\/(?:x?e?api|api)\/user\/follow\/users\/mixed\/get/i then response.json.jq(`walk(if type == "object" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)`)
+
+[MITM]
+hostname = music.163.com,interface.music.163.com,interface3.music.163.com,interface9.music.163.com,ipv4.music.163.com

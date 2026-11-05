@@ -72,7 +72,12 @@ const RULES = [
            "searchBanner", "feedWidget",
            "commerceLibraAdConfig", "commerceCommonAdConfig",
            "adnGroupConfig", "splashDspConfig", "preloadDspConfig",
-           "splashMannorConfig", "adIgnorePlayerStatusConfig"],
+           "splashMannorConfig", "adIgnorePlayerStatusConfig",
+           /* 21.4.0 二进制实测的新广告配置容器 */
+           "adFeedPreShow", "adFeedLoudnessConfig", "adInformationFlow",
+           "adCenterPage", "adAuditionIntercept", "adBrandLaunchLimit",
+           "adChargeConfig", "adChargePassiveUnlockConfig",
+           "bdpSplashAdConfig"],
     falsy: ["preload", "enableAds", "enableAd"],
     extendExpiry: EXTEND_EXPIRY
   },
@@ -90,6 +95,10 @@ const RULES = [
            "commerceLibraAdConfig", "commerceCommonAdConfig",
            "adnGroupConfig", "splashDspConfig", "preloadDspConfig",
            "splashMannorConfig", "adIgnorePlayerStatusConfig",
+           "adFeedPreShow", "adFeedLoudnessConfig", "adInformationFlow",
+           "adCenterPage", "adAuditionIntercept", "adBrandLaunchLimit",
+           "adChargeConfig", "adChargePassiveUnlockConfig",
+           "bdpSplashAdConfig",
            "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache"],
     killArrayData: true,
     forceOk: FORCE_OK
@@ -914,26 +923,6 @@ function markHeaders(reason, bodyChanged) {
   }
 }
 
-/*
- * 福利页打卡：Loon 对同一响应只执行第一条命中的脚本，独立的
- * welfare-stamp 绑定会被清理/观测脚本遮蔽。这里让任何胜出的脚本
- * 在 dailyReminder=true 时顺手写下当天日期，独立绑定只作全关兜底。
- */
-function stampWelfare(args) {
-  if (!pflag(args, "dailyReminder", false)) return;
-  try {
-    if (typeof $persistentStore === "undefined" || !$persistentStore ||
-        typeof $persistentStore.write !== "function") return;
-    var d = new Date();
-    var m = String(d.getMonth() + 1);
-    var day = String(d.getDate());
-    var key = d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" +
-      (day.length < 2 ? "0" + day : day);
-    $persistentStore.write(key, "soda-welfare-seen");
-    console.log("[soda] welfare stamp " + key);
-  } catch (e) { /* 存储不可用不影响响应 */ }
-}
-
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -947,7 +936,7 @@ function stampWelfare(args) {
      * 独立主插件没有 $argument，行为保持不变。
      */
     const pluginArgs = pargs([
-      "rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab", "dailyReminder"
+      "rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab"
     ]);
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
     /* 显式打开“断激励广告”时不再受保奖励模式保护（用户主动选择：广告完全不发） */
@@ -956,8 +945,6 @@ function stampWelfare(args) {
     const cleanAds = pflag(pluginArgs, "cleanAds", false);
     const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
     const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
-
-    if (/\/luna\/treasure\/task\/page/.test(url)) stampWelfare(pluginArgs);
 
     if (rewardSafe && !killReward && !isSplash) {
       if (!(hideDouyin && isTreasure)) {
