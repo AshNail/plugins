@@ -1,7 +1,7 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.10
+#!version=2.8.11
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
@@ -372,6 +372,8 @@ pangolin-sdk-toutiao4.com = 127.0.0.1
 pangolin-sdk-toutiao5.com = 127.0.0.1
 *.pangolin-sdk-toutiao5.com = 127.0.0.1
 pangolin16.sgsnssdk.com = 127.0.0.1
+toblog.ctobsnssdk.com = 127.0.0.1
+tobapplog.ctobsnssdk.com = 127.0.0.1
 
 # ============================================================================
 # 腾讯广告 / 优量汇（GDT）
@@ -396,6 +398,10 @@ pingtcss.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
 tencentmind.com = 127.0.0.1
 *.tencentmind.com = 127.0.0.1
+snowflake.qq.com = 127.0.0.1
+mtrace.qq.com = 127.0.0.1
+btrace.qq.com = 127.0.0.1
+mdevstat.qqlive.qq.com = 127.0.0.1
 
 # ============================================================================
 # 快手联盟 / 快手广告
@@ -426,6 +432,8 @@ v2-ad.video.yximgs.com = 127.0.0.1
 v3-ad.video.yximgs.com = 127.0.0.1
 wlog.kuaishou.com = 127.0.0.1
 promotion-partner.kuaishou.com = 127.0.0.1
+log-sdk.ksapisrv.com = 127.0.0.1
+web-trace.ksapisrv.com = 127.0.0.1
 
 # ============================================================================
 # 百度广告 / 百青藤
@@ -460,6 +468,11 @@ fclog.baidu.com = 127.0.0.1
 als.baidu.com = 127.0.0.1
 ecma.bdimg.com = 127.0.0.1
 besc.baidustatic.com = 127.0.0.1
+dxp.baidu.com = 127.0.0.1
+nadvideo2.baidu.com = 127.0.0.1
+fxgate.baidu.com = 127.0.0.1
+adm.baidu.com = 127.0.0.1
+hmma.baidu.com = 127.0.0.1
 
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
@@ -697,6 +710,13 @@ wwads.cn = 127.0.0.1
 *.wwads.cn = 127.0.0.1
 tracklog.58.com = 127.0.0.1
 ad4.on.cc = 127.0.0.1
+ad4.sina.com.cn = 127.0.0.1
+mbdlog.iqiyi.com = 127.0.0.1
+ifacelog.iqiyi.com = 127.0.0.1
+pv.hd.sohu.com = 127.0.0.1
+p.aty.sohu.com = 127.0.0.1
+cpro.zol.com.cn = 127.0.0.1
+ivy.pconline.com.cn = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -887,6 +907,10 @@ ads-drcn.platform.hihonorcloud.com = 127.0.0.1
 metrics-ad-drcn.dt.hihonorcloud.com = 127.0.0.1
 stsdk.vivo.com.cn = 127.0.0.1
 *.stsdk.vivo.com.cn = 127.0.0.1
+cs02-pps-drcn.dbankcdn.com = 127.0.0.1
+ort-stsdk.vivo.com.cn = 127.0.0.1
+monitor-stsdk.vivo.com.cn = 127.0.0.1
+stnetsdk.vivo.com.cn = 127.0.0.1
 
 # ============================================================================
 # 全球移动广告 SDK / 聚合平台
@@ -1010,6 +1034,18 @@ adsmogo.com = 127.0.0.1
 *.adsmogo.com = 127.0.0.1
 creative-serving.com = 127.0.0.1
 *.creative-serving.com = 127.0.0.1
+inmobi.cn = 127.0.0.1
+*.inmobi.cn = 127.0.0.1
+inmobi.net = 127.0.0.1
+*.inmobi.net = 127.0.0.1
+adsmogo.net = 127.0.0.1
+*.adsmogo.net = 127.0.0.1
+adsmogo.mobi = 127.0.0.1
+*.adsmogo.mobi = 127.0.0.1
+chartboosts.com = 127.0.0.1
+*.chartboosts.com = 127.0.0.1
+perf-events.cloud.unity3d.com = 127.0.0.1
+cdp.cloud.unity3d.com = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据

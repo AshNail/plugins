@@ -73,6 +73,8 @@ tiktokpangle-cdn-us.com = 127.0.0.1
 tnc16-alisg.isnssdk.com = 127.0.0.1
 tnc16-useast1a.isnssdk.com = 127.0.0.1
 tnc31-normal-alisg.isnssdk.com = 127.0.0.1
+tobapplog.ctobsnssdk.com = 127.0.0.1
+toblog.ctobsnssdk.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 腾讯广告 / 优量汇（GDT）（置信 A）
@@ -86,4 +88,8 @@ tnc31-normal-alisg.isnssdk.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
+btrace.qq.com = 127.0.0.1
+mdevstat.qqlive.qq.com = 127.0.0.1
+mtrace.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
+snowflake.qq.com = 127.0.0.1

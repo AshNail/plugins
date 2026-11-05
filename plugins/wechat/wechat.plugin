@@ -37,7 +37,11 @@
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
+btrace.qq.com = 127.0.0.1
+mdevstat.qqlive.qq.com = 127.0.0.1
+mtrace.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
+snowflake.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 微信进程内广告素材主机（朋友圈/视频号/小程序）（置信 A）

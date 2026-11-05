@@ -74,6 +74,8 @@ tiktokpangle-cdn-us.com = 127.0.0.1
 tnc16-alisg.isnssdk.com = 127.0.0.1
 tnc16-useast1a.isnssdk.com = 127.0.0.1
 tnc31-normal-alisg.isnssdk.com = 127.0.0.1
+tobapplog.ctobsnssdk.com = 127.0.0.1
+toblog.ctobsnssdk.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 腾讯广告 / 优量汇（GDT）（置信 A）
@@ -87,7 +89,11 @@ tnc31-normal-alisg.isnssdk.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
+btrace.qq.com = 127.0.0.1
+mdevstat.qqlive.qq.com = 127.0.0.1
+mtrace.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
+snowflake.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 快手联盟 / 快手广告（置信 A）
@@ -103,11 +109,13 @@ ali-ad.a.yximgs.com = 127.0.0.1
 gdfp.gifshow.com = 127.0.0.1
 hw-ot-ad.a.yximgs.com = 127.0.0.1
 js-ad.a.yximgs.com = 127.0.0.1
+log-sdk.ksapisrv.com = 127.0.0.1
 promotion-partner.kuaishou.com = 127.0.0.1
 tx-ad.a.yximgs.com = 127.0.0.1
 v1-ad.video.yximgs.com = 127.0.0.1
 v2-ad.video.yximgs.com = 127.0.0.1
 v3-ad.video.yximgs.com = 127.0.0.1
+web-trace.ksapisrv.com = 127.0.0.1
 wlog.kuaishou.com = 127.0.0.1
 
 # ------------------------------------------------------------
@@ -116,6 +124,7 @@ wlog.kuaishou.com = 127.0.0.1
 *.mobads.baidu.com = 127.0.0.1
 *.popin.cc = 127.0.0.1
 *.pos.baidu.com = 127.0.0.1
+adm.baidu.com = 127.0.0.1
 adscdn.baidu.com = 127.0.0.1
 als.baidu.com = 127.0.0.1
 besc.baidustatic.com = 127.0.0.1
@@ -124,14 +133,18 @@ cbjs.baidu.com = 127.0.0.1
 cm.baidu.com = 127.0.0.1
 cpro.baidustatic.com = 127.0.0.1
 dup.baidustatic.com = 127.0.0.1
+dxp.baidu.com = 127.0.0.1
 eclick.baidu.com = 127.0.0.1
 ecma.bdimg.com = 127.0.0.1
 ecmb.bdimg.com = 127.0.0.1
 entry.baidu.com = 127.0.0.1
 fclog.baidu.com = 127.0.0.1
+fxgate.baidu.com = 127.0.0.1
 hao123union.baidu.com = 127.0.0.1
+hmma.baidu.com = 127.0.0.1
 mobads-logs.baidu.com = 127.0.0.1
 mobads-pre-config.cdn.bcebos.com = 127.0.0.1
+nadvideo2.baidu.com = 127.0.0.1
 nsclick.baidu.com = 127.0.0.1
 ubmcmm.baidustatic.com = 127.0.0.1
 ubmcvideo.baidustatic.com = 127.0.0.1
