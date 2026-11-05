@@ -979,6 +979,10 @@ luna 请求——端点真实在跑，由 `api.qishui.com` + `beta-luna.douyin.c
 - **脚本重写**：`src/soda/auto-task.js`（18KB）→ `plugins/soda/scripts/auto-task.min.js`（8.6KB）。
 - **开屏品牌响应清理扩展**：`sanitize.js` 的 `splash-brand` 规则补清 `splash_shake_ad_config` / `shake_ad_config` / `splash_twist_ad_config` / `twist_ad_config` / `motion_ad_config` / `splash_ad_cache_config` / `splash_ad_preload_config` / `splash_ad_early_load_config` 容器，并把对应传感器开关与阈值按原类型置 false / 归 0。回归：`test_ads_surfaces.js` 34 → 36 断言。
 - **致谢**：HAR 423_1793795683001 提供完整请求/响应样本；起点读书 finishWatch 机制启发。
+- ⚠️ **本条的状态请连同 v3.2.0 那条与 8.1 一起读**：上面这组「注入/增强/绕过设备异常」是
+  **绑定与字段形状**的记录（来自 2026-11-05 的 HAR），不是端到端效果的取证。同一天的真机日志里
+  `aweme.snssdk.com` 是固定证书（8/8/8 握手失败），`ad.zijieapi.com` / `api.qishui.com` /
+  `beta-luna.douyin.com` 零流量。另外响应改写只改本机显示、不等于后端入账。
 
 ### v3.0.0（2026-11-05）激励任务自动化 + Bundle ID 适配
 

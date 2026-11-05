@@ -177,6 +177,10 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/u
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/performance_details/ then script("scripts/clean.min.js", {${cleanUpsell}, ${debugLog}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="演出（汽水音乐节）清理"
 
 # ---- 活动入口清理：音乐节（演出）+ 抖音运营活动 ----
+#                真机取证（2026-11-05 20:25:48）：`polaris.zijieapi.com` 固定证书
+#                26 SNI / 26 Match / 26 次握手失败——这条绑定的宿主已被掐断，
+#                当前只算「已注册、固定证书未解除前不生效」，不许写「已清理/已隐藏」。
+#                取证表与止损动作见 README 5.4 与 [MITM] 段的「固定证书止损」。
 response if ${url} ~= /^https?:\/\/polaris\.zijieapi\.com\/luckycat\/activity\/settings\// then script("scripts/clean.min.js", {${cleanActivity}, ${debugLog}}) with debug=${debugLog}, enable=${cleanActivity}, requires_body=true, timeout=10, tag="活动入口清理（音乐节/抖音运营活动）"
 
 # ---- 广告域名拦截：blockAdDomains 开关 ----

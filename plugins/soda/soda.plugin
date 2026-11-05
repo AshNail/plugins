@@ -86,7 +86,7 @@
 rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
 cleanAds = switch,true,tag=去广告脚本,desc=默认开启：清理广告位、信息流和福利页广告任务；不动激励广告素材。
 killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于广告完全不发，领奖会变成 amount=-1，请谨慎。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。
+blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。
 settingsClean = switch,true,tag=设置层净化,desc=默认开启：清空 conf.qishui.com 的广告配置。
 skipUpdateCheck = switch,true,tag=版本检查静音,desc=默认开启：把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。
 hideDouyinEntry = switch,true,tag=隐藏【听抖音】入口,desc=默认开启：把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现。
@@ -302,6 +302,11 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 # ---- 激励任务自动化 v2.0.0（MITM 响应注入方案） ----
 # 核心发现：time_token/nonce 每次动态生成，纯重放不可行；设备已被风控(err_no=210021)
 # 方案：MITM 层拦截广告SDK→伪造完成→增强incentive/done响应→注入签到成功
+# 真机状态（2026-11-05 20:25:48）：这一组四条腿依赖的主机要么零流量（未取证），
+#                要么被固定证书掐断（`aweme.snssdk.com` 8 SNI / 8 Match / 8 握手失败）。
+#                所以本组的能力对外一律只许说「已注册、未取证/未解除前不生效」。
+#                另一条不能省的诚实话：改响应体只改本机显示的数字与状态，不等于后端入账——
+#                金币与权益以 App 内余额为准，不以插件日志为准。取证表见 README 第 -1 节与 8.1。
 
 # Token 捕获：从所有 API 请求中提取认证信息（luna + 签到 + 广告SDK）
 request if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com|aweme\.snssdk\.com|ad\.zijieapi\.com)\// then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, timeout=10, tag="Token捕获：激励自动化v2"
@@ -310,6 +315,8 @@ request if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com|awe
 request if ${url} ~= /^https?:\/\/ad\.zijieapi\.com\/api\/ad\/v1\/inspire(?:_preload)?\// then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="Pangle广告注入：伪造完成"
 
 # 签到注入：拦截 sign_in_done → 返回成功（绕过设备异常210021）
+#                三条腿里 `aweme.snssdk.com` 已取证为固定证书（8/8/8 握手失败）——那条腿结构性失效；
+#                `api.qishui.com` / `beta-luna.douyin.com` 本窗口零流量，既不能算生效也不能算失效。
 request if ${url} ~= /^https?:\/\/(?:aweme\.snssdk\.com|api\.qishui\.com|beta-luna\.douyin\.com)\/.*\/sign_in\/sign_in_done/ then script("scripts/auto-task.min.js", {${autoSignIn}}) with debug=${debugLog}, enable=${autoSignIn}, requires_body=true, timeout=10, tag="签到注入：绕过设备异常"
 
 # incentive/done 响应增强：修改 reward_details.amount 确保金币奖励
