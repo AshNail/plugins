@@ -83,6 +83,28 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       或存在证书固定——删掉插件 `[Rule]` 里那一行即可单域回滚。
 - [ ] **h2 是否友好**：若某次更新后 App 报网络错误，先删 `[MITM]` 的 `h2 = true` 再复测，用于区分
       “h2 兼容问题”与“证书固定”。
+- [ ] **固定证书止损判据（2026-11-05 20:25:48 已取证，逐台数三个计数）**：
+      `SNI`（`Find a tls connection from tun. sni:<host>. alpn:`）/ `Match`
+      （`Match MITM host:`，两种形态 `host(host)` 与 `IP(host)`，括号里都是 SNI）/
+      `fail`（`H2 MITM TLS handshake failed`，签名 `ssl/tls alert certificate unknown`、
+      err 167773206、`0A000416`）。三者**相等**就是固定证书，不是「静默不生效」：
+      `polaris.zijieapi.com` 26/26/26、`aweme.snssdk.com` 8/8/8、`zlink.ugsdk.cn` 6/6/6、
+      `ads5-normal-gl2.zijieapi.com` 5/5/5。同窗口只有 `gspe1-ssl.ls.apple.com` 与
+      `configuration.ls.apple.com` 解密成功且零失败 → Loon CA 已被系统信任，
+      「用户没装证书」这条排除。`ads5-normal-gl2` 的 Match 是靠
+      `[MITM]` 的 `ads?-normal*.zijieapi.com` **通配**命中的 → 「MITM hostname 不支持通配」这条也排除。
+      后果与纪律：这三台（polaris 属抖音侧、aweme 属汽水侧）的连接是我们掐断的，
+      落在它们身上的响应改写一律只许说「已注册、固定证书未解除前不生效」，
+      不许说「已净化 / 已拦截 / 已签到」；`docs/rule-effectiveness.md` 里它们的审计状态不变是**应该的**——
+      那个工具只审 `[Rule]`/`[Host]` 的形状与红线，没有 TLS 语义，固定证书的判定只活在
+      插件注释、两份 README 和本条里。止损动作（默认不执行）：从 `[MITM]` hostname 删掉这些主机，
+      `[Rule]` 对应 QUIC 回退行与只命中它们的绑定一起注释；汽水的 `sign_in_done` / `sign_in_detail`
+      两行不必整行注释，保留 `api.qishui.com` / `beta-luna.douyin.com` 两条腿即可。
+- [ ] **零流量不等于结论**：同窗口 `beta-luna.douyin.com` / `ad.zijieapi.com` /
+      `lianmengapi.snssdk.com` / `praisewindow.ugsdk.cn` / `api.qishui.com` / `conf.qishui.com`
+      一次 SNI 都没有。三个方向都不许推：不是「已生效」，不是「被固定」，也不能反过来当成
+      「插件没用」——福利/激励链路恰好全在这些主机上，所以这一轮日志**无法**给自动化定性，
+      要复测就得真的把 App 的福利页点开（F 段第一条的冷启 3 次不够）。
 - [ ] **⚪ 未文档化 token 取证（第十九轮登记的两个，见 `docs/loon-coverage.md` 传输层）**：
       `h2 = true` 与 `hostname` 行首的 `%APPEND%` 在官方 26 个正文页里**一个都查不到**
       （`MitM` 页参数表只有 `hostname` / `ca-p12` / `ca-passphrase`）。它们仍留在 soda/douyin 的生效行里，

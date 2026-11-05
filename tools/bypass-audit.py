@@ -282,16 +282,29 @@ BYPASSES = [
         id="cert-pinning",
         name="证书固定导致解密失败",
         how="App 校验证书链，`[MITM]` 握手失败 → response 脚本不执行，"
-            "响应体净化整条链路失效。",
+            "响应体净化整条链路失效。2026-11-05 真机日志补了一层症状：握手失败即**整条请求失败**，"
+            "所以固定证书主机上的「拦截」实际是我们把连接掐断了，不是静默不生效。",
         loon="无。官方 MitM 页只列 `hostname` / `ca-p12` / `ca-passphrase`，"
              "没有 `skip-server-cert-verify` 之类的键。",
         expect="na",
-        evidence=[],
+        evidence=[
+            ("plugins/douyin/douyin.plugin", r"固定证书止损", 1),
+            ("plugins/soda/soda.plugin", r"固定证书止损", 1),
+            ("plugins/douyin/README.md", r"固定证书主机清单", 1),
+            ("plugins/soda/README.md", r"固定证书主机清单", 1),
+            ("docs/device-checklist.md", r"固定证书止损判据", 1),
+        ],
         blocked="证书固定是 App 侧的信任链校验，代理侧没有官方开关。"
                 "仓库的做法是把它列为**已知风险并给退路**：受影响时把对应广告域从 "
-                "`[MITM]` 注释掉，退回域名层拦截（见两个插件头部注释第 2 条）。",
-        verify="开启 `blockAdDomains` 后某个 App 完全打不开/白屏，即为该旁路命中；"
-               "删掉 `[MITM]` 里对应域可确认。",
+                "`[MITM]` 注释掉，退回域名层拦截（见两个插件头部注释第 2 条）。"
+                "真机取证的 4 台（polaris 26/26/26、aweme 8/8/8、zlink 6/6/6、"
+                "ads5-normal-gl2 5/5/5）已写进两份 README、两份插件注释与真机清单，"
+                "落在它们身上的绑定一律只许说「已注册、固定证书未解除前不生效」。",
+        verify="逐台数三个计数：SNI（`Find a tls connection from tun. sni:`）/"
+               "Match（`Match MITM host:`，括号里是 SNI）/fail（`H2 MITM TLS handshake failed`，"
+               "签名 `ssl/tls alert certificate unknown`）。三者相等＝固定证书；"
+               "有 SNI 无 Match＝没进解密名单（另一类问题，处置是补 hostname）；"
+               "同窗口 Apple 主机能解密则排除「用户没装证书」。",
     ),
     dict(
         id="local-cache-preload",
