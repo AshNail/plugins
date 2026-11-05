@@ -212,7 +212,6 @@ function injectCommerceInfo(responseBody) {
     if (!resp || resp.status_code !== 0) return responseBody;
 
     const FAR_FUTURE = 4070908800; // 2099-01-01 00:00:00 UTC
-    const now = Math.floor(Date.now() / 1000);
 
     // 1. 音质权益解锁
     if (resp.benefit_base?.quality?.quality_list) {

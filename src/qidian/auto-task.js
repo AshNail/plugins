@@ -150,19 +150,24 @@ const CONFIG = {
 };
 
 // ==========================================
+// 🪵 debugLog 开关（顶层作用域：所有 handler 共用）
+// ==========================================
+// 必须放顶层：handleClientConfig / handleAccountPage / doSignIn / doLottery 等
+// 顶层函数会调用它；放在主 IIFE 里时这些调用会解析成未定义变量，真机表现为
+// ReferenceError → 兜底空 $done() → getconf/账户页净化与签到/抽奖静默失效。
+const DEBUG = (() => {
+  try { return String($argument?.debugLog || "false") === "true"; } catch (e) { return false; }
+})();
+
+function debugLog(msg) {
+  if (DEBUG) console.log("[起点全能助手] [DEBUG] " + msg);
+}
+
+// ==========================================
 // 🚀 主入口
 // ==========================================
 (async () => {
   const E = new Env("起点全能助手");
-
-  // 读取 debugLog 开关
-  const DEBUG = (() => {
-    try { return String($argument?.debugLog || "false") === "true"; } catch (e) { return false; }
-  })();
-
-  function debugLog(msg) {
-    if (DEBUG) E.log("[DEBUG] " + msg);
-  }
 
   // Cron 模式：无 $request → 定时任务
   if (typeof $request === "undefined") {
