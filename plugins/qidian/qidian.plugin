@@ -241,8 +241,9 @@ http-request ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/f
 http-request ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/receiveTaskReward script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点自动领奖
 
 # ---- 广告 SDK 秒播(视频时长 patch 成 1 秒) ----
-http-request ^https://.*\.(gdtimg\.com|gtimg\.cn)/.*\.mp4 script-path=scripts/auto-task.min.js, requires-body=false, timeout=10, tag=起点广告视频替换
-http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/(gdt_inner_view|get_ads) script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点广告SDK秒播
+# 注意:Loon 对复杂正则支持有限,简化为两个独立绑定
+http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/gdt_inner_view script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点广告SDK秒播(gdt_inner_view)
+http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/get_ads script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点广告SDK秒播(get_ads)
 
 # ---- 全局深度净化(22 个端点族) ----
 http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/adv/getadvlistbatch|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/user/getsimplediscover|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/readtime/readpage|v[0-9]+/user/getaccountpage) script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点深度净化
