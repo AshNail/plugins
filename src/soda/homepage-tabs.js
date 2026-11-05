@@ -245,6 +245,12 @@ function walk(node, listenOnly, log, path, depth) {
   const raw = $response.body;
   const url = $request.url;
 
+  if ($argument.debugLog) {
+    console.log("[soda-trace] RESP homepage-tabs url=" + url +
+      " len=" + (raw && raw.length) + " mode=" +
+      (listenOnly ? "listenOnly" : "hideDouyinTab"));
+  }
+
   if (!raw || typeof raw !== "string" || raw.length === 0) {
     $done({});
     return;

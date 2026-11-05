@@ -64,9 +64,12 @@ function pflag(args, name, fallback) {
   try {
     const url = ($request && $request.url) || "";
 
-    const args = pargs(["blockSplashAd"]);
+    const args = pargs(["blockSplashAd", "debugLog"]);
     if (!pflag(args, "blockSplashAd", false)) {
       return $done({});
+    }
+    if (pflag(args, "debugLog", false)) {
+      console.log("[soda-trace] REQ splash-ad url=" + url);
     }
 
     const isSplash =

@@ -62,6 +62,8 @@ console.log("\n[1] flat dict / object config / JSON string config / scalar");
     ad_charge_passive_unlock_config: { t: 1 },
     bdp_splash_ad_config: { u: 1 },
     enable_splash_show: true,
+    daily_splash_show_limit: 3,
+    audible_splash_ad: true,
     switch_show_all_ad: true,
     enable_client_ads_strategy: true,
     preload_feed_ads: true,
@@ -104,8 +106,10 @@ console.log("\n[1] flat dict / object config / JSON string config / scalar");
   check("preload feed ads false", j.preload_feed_ads === false);
   check("timor untouched by default", j.timor_should_enable_ad === true, JSON.stringify(j.timor_should_enable_ad));
   check("basic mode disable true", j.kBasicModeDisableRewardAdEnabled === true);
-  check("splash switch false", j.splash_ad_switch === false && j.enable_splash_show === false,
-    JSON.stringify([j.splash_ad_switch, j.enable_splash_show]));
+  check("splash switch false",
+    j.splash_ad_switch === false && j.enable_splash_show === false &&
+    j.daily_splash_show_limit === 0 && j.audible_splash_ad === false,
+    JSON.stringify([j.splash_ad_switch, j.enable_splash_show, j.daily_splash_show_limit, j.audible_splash_ad]));
   check("advert_duration untouched", j.advert_duration === 30);
   check("reward_details untouched", j.reward_details.coins === 100);
   check("hide_skip_ad_entry untouched", j.hide_skip_ad_entry === false);

@@ -57,7 +57,8 @@ const RULES = [
      */
     kill: ["adLaunchList", "adLaunch", "adLaunches", "adInfo", "adInfos",
            "splash", "brand", "ads", "splashActiveData", "jumpBtnInfo",
-           "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache"],
+           "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache",
+           "splashDspConfig"],
     killArrayData: true,
     forceOk: FORCE_OK
   },
@@ -936,15 +937,21 @@ function markHeaders(reason, bodyChanged) {
      * 独立主插件没有 $argument，行为保持不变。
      */
     const pluginArgs = pargs([
-      "rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab"
+      "rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab", "debugLog"
     ]);
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
     /* 显式打开“断激励广告”时不再受保奖励模式保护（用户主动选择：广告完全不发） */
     const killReward = pflag(pluginArgs, "killRewardAds", false);
     const hideDouyin = pflag(pluginArgs, "hideDouyinTab", false);
     const cleanAds = pflag(pluginArgs, "cleanAds", false);
+    const debugOn = pflag(pluginArgs, "debugLog", false);
     const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
     const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
+
+    if (debugOn) {
+      console.log("[soda-trace] RESP sanitize url=" + url +
+        " len=" + (raw && raw.length) + ceTag($response));
+    }
 
     if (rewardSafe && !killReward && !isSplash) {
       if (!(hideDouyin && isTreasure)) {
@@ -971,6 +978,7 @@ function markHeaders(reason, bodyChanged) {
     }
 
     const rule = RULES.find(function (r) { return r.match.test(url); });
+    if (debugOn) console.log("[soda-trace] rule=" + (rule ? rule.id : "none"));
     if (!rule) return $done({ headers: markHeaders("soda-sanitize;skip=no-rule") });
 
     /*

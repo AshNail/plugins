@@ -18,10 +18,14 @@ console.log('\n== 1. 开屏 ad_launch_list ==');
 {
   const r=run('https://api.qishui.com/luna/advert/splash/brand/retrieve',{
     status_code:0,status_info:'',request_id:'r1',
-    ad_launch_list:[{launch_id:'1',ad_price:10}],ad_launch:{launch_id:'2'}
+    ad_launch_list:[{launch_id:'1',ad_price:10}],ad_launch:{launch_id:'2'},
+    splash_dsp_config:{dsp_id:'d1'}
   });
   ck('ad_launch_list -> []', Array.isArray(r.out.ad_launch_list)&&r.out.ad_launch_list.length===0, r.out.ad_launch_list);
-  ck('ad_launch -> {}', r.out.ad_launch && Object.keys(r.out.ad_launch).length===0, r.out.ad_launch);
+  ck('ad_launch -> {} 且 splash_dsp_config 清空',
+    r.out.ad_launch && Object.keys(r.out.ad_launch).length===0 &&
+    JSON.stringify(r.out.splash_dsp_config)==='{}',
+    JSON.stringify([r.out.ad_launch, r.out.splash_dsp_config]));
   ck('status_code 保留', r.out.status_code===0);
   ck('request_id 保留', r.out.request_id==='r1');
   console.log(r.logs.join('\n'));
