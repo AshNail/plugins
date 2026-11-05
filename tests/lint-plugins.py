@@ -17,7 +17,7 @@ def escape_regex_slashes(pattern):
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 47, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 49, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 1, 10, "douyin"),
 ]
 
@@ -390,6 +390,7 @@ BINDING_SAMPLES = {
             "https://api.qishui.com/luna/commerce/upsells",
             "https://api.qishui.com/luna/commerce/validate_reward",
             "https://api.qishui.com/luna/commerce/v2/upsell?x=1",
+            "https://api.qishui.com/luna/commerce/v2/commerce_info",
             "https://api.qishui.com/luna/treasure/entrance/config",
             "https://api.qishui.com/luna/treasure/task/view",
             "https://api.qishui.com/luna/treasure/task/page",
