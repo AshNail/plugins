@@ -367,6 +367,39 @@ activity_info.douyin_select_*       = 抖音运营活动（选游戏 / 选作者
 签到/翻卡/红包雨等用户自己的活动一个都不碰）。
 `growth/music_festival/performance_details` 的演出列表仍由 `cleanUpsell` 清空。
 
+## 5.4 固定证书主机清单：这几台现在的真实效果是「掐断连接」
+
+2026-11-05 20:25:48 真机日志（iPhone18,4 / iOS 27.2 / Loon 3.5.3(1014)）逐台取证。
+判据是三个计数：**SNI**（这台主机出现过多少个连接）、**Match**（`Match MITM host:` 出现次数，
+即是否进了合并后的解密名单）、**fail**（`H2 MITM TLS handshake failed` 次数，
+统一签名 `ssl/tls alert certificate unknown` / err 167773206 / `0A000416`）。
+
+| 主机 | SNI | Match | 握手失败 | 落在本插件哪条声明上 | 现在的真实效果 |
+|---|---|---|---|---|---|
+| `polaris.zijieapi.com` | 26 | 26 | 26 | `[MITM]` hostname + `cleanActivity` 响应绑定 | 整台主机连不上，`canshow` 改写无从执行 |
+| `zlink.ugsdk.cn` | 6 | 6 | 6 | `[MITM]` + `blockAdDomains` 请求层正则 | 请求被掐断，不是「拦截成功」也不是「放行」 |
+| `ads5-normal-gl2.zijieapi.com` | 5 | 5 | 5 | `[MITM]` 通配 `ads?-normal*.zijieapi.com` | 同上；广告 SDK 直接拿不到连接 |
+
+同一窗口只有两台 Apple 主机解密成功（`gspe1-ssl.ls.apple.com`、`configuration.ls.apple.com`，
+零失败），说明 Loon CA 已被系统信任——**这不是「用户没装证书」，是 App 侧固定证书**。
+`ads5-normal-gl2` 的 Match 行是靠 `ads?-normal*.zijieapi.com` 通配命中的，顺带证伪了
+「MITM hostname 不支持通配」这种说法。
+
+**表述红线**：落在这些主机上的能力，对外只许说「已注册、固定证书未解除前不生效」，
+不许说「已净化 / 已拦截 / 已改写」。5.3 节那套 `cleanActivity` 依赖的就是
+`polaris.zijieapi.com`——它在 2026-10-21 的 HAR 里拿到过 28 KB 明文，当时没固定（或走了别的路径），
+现在这份日志里 26 次全失败，所以那节描述的是**抓包取证到的字段结构**，不是当前真机可依赖的效果。
+
+**归属纪律**：这三台都在本插件自己声明的 hostname 名单里，本插件是充分原因；但 Match 行来自
+合并后的名单，主配置有没有重复声明无法从日志区分（见 `docs/device-checklist.md`
+「别把主配置记在插件头上」）。反过来也别读多：本窗口 `beta-luna.douyin.com` /
+`ad.zijieapi.com` / `lianmengapi.snssdk.com` / `praisewindow.ugsdk.cn` 零流量，
+「日志里没有」既不能当成「已生效」，也不能当成「被固定」。
+
+**止损动作（默认不执行）**：把这些主机从 `[MITM]` hostname 行删掉，`[Rule]` 里对应的 QUIC 回退行
+与 `[Script]` 里只命中它们的绑定一起注释——删掉之后连接恢复正常，只是这些端点重新变成黑盒。
+代价对称，所以要留日志证据再决定，而不是凭「净化没生效」的印象反推。
+
 ## 6.1 版本要求（必读）
 
 本插件用 **Loon 3.5.1(983) 起的新版 Script 语法**：

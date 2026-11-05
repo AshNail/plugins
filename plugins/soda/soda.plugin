@@ -370,6 +370,32 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${
 #                两边各用自己最强的写法，名单靠 lint 校验覆盖关系。
 #                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
 #                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
+# 固定证书止损（2026-11-05 20:25:48 真机日志 · iPhone18,4 / iOS 27.2 / Loon 3.5.3(1014)）：
+#                下面这几台**客户端拒收了 Loon 证书**，签名统一是
+#                `ssl/tls alert certificate unknown`（err 167773206 / 0A000416）：
+#                  aweme.snssdk.com               8 次 SNI /  8 次 Match /  8 次握手失败
+#                  zlink.ugsdk.cn                 6 次 SNI /  6 次 Match /  6 次握手失败
+#                  ads5-normal-gl2.zijieapi.com   5 次 SNI /  5 次 Match /  5 次握手失败
+#                Match 行有两种形态（`host(host)` 与 `IP(host)`），括号里都是 SNI；
+#                ads5-normal-gl2 是靠本插件声明的 `ads?-normal*.zijieapi.com` 通配命中的。
+#                同窗口只有两台 Apple 主机解密成功（gspe1-ssl / configuration.ls.apple.com，
+#                零失败），Loon CA 已被系统信任，所以这不是「用户没装证书」，是 App 侧固定证书。
+#                后果：**不是静默不生效，而是这几台的连接被我们掐断了**——声明进 [MITM]
+#                之后握手失败即整条请求失败。因此点名到它们的绑定只剩「已注册」这一种说法：
+#                  · `sign_in/sign_in_done`（autoSignIn）与 `sign_in/sign_in_detail`（autoTask）
+#                    的正则里 aweme.snssdk.com 那一条腿结构性失效——握手就断了，请求层
+#                    拿不到请求，响应层更拿不到 body。另两条腿 api.qishui.com /
+#                    beta-luna.douyin.com 本窗口零流量，既不能算生效也不能算失效。
+#                  · `blockAdDomains` 请求层正则里的 ads 分片与 zlink.ugsdk.cn 同理。
+#                对外只许说「已注册、固定证书未解除前不生效」，不许说「已净化/已拦截/已签到」。
+#                polaris.zijieapi.com（26 次全失败）不在本插件名单，属抖音侧，见 douyin 插件。
+#                与汽水分片那条取证对照着读：api<n>-<shard>.qishui.com 是「没进名单」
+#                （零 Match、零 certificate unknown），这几台是「进了名单但被拒证」——
+#                症状不同，处置也不同，别混成一类。
+#                止损动作（默认不执行，要就手动）：把这些主机从上面 hostname 行删掉，
+#                对应 [Rule] 的 QUIC 回退行与只命中它们的绑定一起注释——删掉之后连接
+#                恢复正常，只是这些端点重新变成黑盒。签到注入的正则里保留 qishui/luna
+#                两条腿即可，不必整行注释。
 # h2 = true（常开）：未文档化键，社区通行写法。官方 MitM 文档只列三个键，
 #                HTTP/2 解密本就是默认能力，这里保留纯属零成本保险（未知键被忽略）。
 #                若某个 build 把它当非法键导致断网，删掉这一行即可回滚。

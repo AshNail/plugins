@@ -675,6 +675,37 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | 信息流广告整条消失但正常内容也少了 | 该条目命中了 `card.is_ad` 嵌套判定；把 `sanitize.js` 的 `hasNestedAdFlag` 收紧或关掉 |
 | MITM 后无法联网 | 证书固定，退回 L1 |
 
+### 8.1 固定证书主机清单：这几台的真实效果是「掐断连接」
+
+2026-11-05 20:25:48 真机日志（iPhone18,4 / iOS 27.2 / Loon 3.5.3(1014)）逐台取证。
+判据三个计数：**SNI** / **Match**（`Match MITM host:`，即是否进了合并后的解密名单）/
+**fail**（`H2 MITM TLS handshake failed`，统一签名 `ssl/tls alert certificate unknown`、
+err 167773206、`0A000416`）。
+
+| 主机 | SNI | Match | 握手失败 | 落在本插件哪条声明上 | 现在的真实效果 |
+|---|---|---|---|---|---|
+| `aweme.snssdk.com` | 8 | 8 | 8 | `[MITM]` hostname + `sign_in_done`(autoSignIn) / `sign_in_detail`(autoTask) 正则的第一条腿 + QUIC 回退 | 握手就断，签到注入的这条腿拿不到请求，也拿不到 body |
+| `zlink.ugsdk.cn` | 6 | 6 | 6 | `[MITM]` + `blockAdDomains` 请求层正则 | 请求被掐断，不是「拦截成功」也不是「放行」 |
+| `ads5-normal-gl2.zijieapi.com` | 5 | 5 | 5 | `[MITM]` 通配 `ads?-normal*.zijieapi.com` | 同上；广告 SDK 直接拿不到连接 |
+
+同窗口只有两台 Apple 主机解密成功（`gspe1-ssl.ls.apple.com`、`configuration.ls.apple.com`，零失败），
+说明 Loon CA 已被系统信任——**不是「用户没装证书」，是 App 侧固定证书**。
+`ads5-normal-gl2` 的 Match 行是靠通配条目命中的，顺带证伪「MITM hostname 不支持通配」。
+
+**表述红线**：`sign_in/sign_in_done` 与 `sign_in/sign_in_detail` 两条正则里，
+`aweme.snssdk.com` 那条腿现在结构性失效；另两条腿 `api.qishui.com` / `beta-luna.douyin.com`
+在本窗口**零流量**，既不能算生效也不能算失效。所以对外只许说
+「绑定已注册、固定证书未解除前不生效」，不许说「已签到 / 已净化 / 已拦截」。
+第 -1 节那套 v2 响应注入方案描述的是字段结构与绑定形状，不是当前真机可依赖的效果。
+
+**对照读**：`api<n>-<shard>.qishui.com` 是「没进名单」（本窗口 19 次 SNI、0 次 Match、
+0 次 certificate unknown），上面这几台是「进了名单但被拒证」。症状不同、处置不同，别混成一类。
+`polaris.zijieapi.com`（同窗口 26 次全失败）不在本插件名单，属抖音侧。
+
+**止损动作（默认不执行）**：把这些主机从 `[MITM]` hostname 行删掉，`[Rule]` 里对应的 QUIC 回退行
+与只命中它们的绑定一起注释；签到注入那两行**不必整行注释**，保留 qishui/luna 两条腿即可。
+删掉之后连接恢复正常，只是这些端点重新变成黑盒——代价对称，要留日志证据再决定。
+
 ---
 
 ## 9. 继续扩展
