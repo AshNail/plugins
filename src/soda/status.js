@@ -196,6 +196,20 @@ function capabilityLine() {
 }
 
 (function main() {
+  var BLOCK_STATS_KEY = "soda-block-stats";
+  var blockStatsText = "今日暂无拦截记录（待触发）";
+  var rawBlockStats = readStore(BLOCK_STATS_KEY);
+  if (rawBlockStats) {
+    try {
+      var bs = JSON.parse(rawBlockStats);
+      if (bs && bs.day) {
+        blockStatsText = bs.day + "：阻断开屏 " + (bs.splash || 0) + " 次 · 拦截域名 " +
+          (bs.domains || 0) + " 次 · 响应净化 " + (bs.clean || 0) + " 次（今日累计 " + (bs.total || 0) + " 次）" +
+          (bs.last ? " · 最近: " + bs.last : "");
+      }
+    } catch (e) {}
+  }
+
   var statsText = "无广告记录";
   var rawStats = readStore(STATS_KEY);
   if (rawStats) {
@@ -219,14 +233,18 @@ function capabilityLine() {
   }
 
   var summary = "状态自检";
-  var detail = "广告统计：" + statsText + "\n" +
+  var detail = "拦截成效：" + blockStatsText + "\n" +
+               "广告统计：" + statsText + "\n" +
                "开关状态：" + switches;
   if (env) detail += "\n运行环境：" + env;
   detail += "\nLoon 能力：" + capabilityLine();
   detail += "\n静态层：QUIC 回退 18 域 · h2 · 压缩→gzip（常开）";
+  if (isOn(args.debugLog)) {
+    detail += "\n调试模式：✅ 已开启（可在 Loon「日志」按 [soda-AdBlock] 实时查看拦截证据）";
+  }
   for (var w = 0; w < warns.length; w++) detail += "\n" + warns[w];
 
-  console.log("[soda-status] " + summary + " | " + statsText + " | " + switches +
+  console.log("[soda-status] " + summary + " | " + blockStatsText + " | " + statsText + " | " + switches +
     (env ? " | env=" + env : ""));
 
   try {

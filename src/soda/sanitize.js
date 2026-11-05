@@ -924,6 +924,36 @@ function markHeaders(reason, bodyChanged) {
   }
 }
 
+function todayKey() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1);
+  const day = String(d.getDate());
+  return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" + (day.length < 2 ? "0" + day : day);
+}
+
+function recordBlock(type, item) {
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.read !== "function" ||
+        typeof $persistentStore.write !== "function") return;
+    const day = todayKey();
+    const raw = $persistentStore.read("soda-block-stats");
+    let s = null;
+    if (raw) {
+      try { s = JSON.parse(raw); } catch (e) { s = null; }
+    }
+    if (!s || s.day !== day) {
+      s = { day: day, splash: 0, domains: 0, clean: 0, total: 0 };
+    }
+    if (type === "splash") s.splash = (s.splash || 0) + 1;
+    else if (type === "domains") s.domains = (s.domains || 0) + 1;
+    else if (type === "clean") s.clean = (s.clean || 0) + 1;
+    s.total = (s.total || 0) + 1;
+    if (item) s.last = String(item).slice(0, 80);
+    $persistentStore.write(JSON.stringify(s), "soda-block-stats");
+  } catch (e) {}
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -1025,11 +1055,15 @@ function markHeaders(reason, bodyChanged) {
     }
 
     const out = JSON.stringify(obj);
+    recordBlock("clean", rule.id);
     console.log(
       "[soda] " + rule.id + " | " + log.length + " change(s) | " +
       (DRY_RUN ? "DRY_RUN" : (before.length - out.length) + "B smaller") + "\n  " +
       log.join("\n  ")
     );
+    if (debugOn) {
+      console.log("[soda-AdBlock] 🧹 响应净化(" + rule.id + "): 裁切 " + log.length + " 项广告配置 | " + url);
+    }
 
     if (DRY_RUN) {
       return $done({ headers: markHeaders("soda-sanitize;dry-run") });

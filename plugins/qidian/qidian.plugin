@@ -1,7 +1,7 @@
 #!name=起点读书 · 看书激励助手
-#!desc=起点读书看书激励助手 v4.0.0:核心看书+激励。MITM 响应净化(getconf/开屏/发现页/书架/福利中心/账户页/每日导读/广告列表/阅读积分/弹窗红点/新手引导/章末/青少年)+ 自动化(签到/抽奖/激励任务重放/自动领奖)+ 广告SDK秒播。debugLog 开关控制日志注入。前置:需 MITM 证书(magev6.if.qidian.com+h5.if.qidian.com)。
+#!desc=起点读书看书激励助手 v3.1.0:核心看书+激励。自动化(签到/抽奖/激励任务重放/自动领奖) + 响应净化(getconf/开屏/发现页/书架/福利中心/账户页/每日导读/广告列表/阅读积分/弹窗红点/新手引导/章末模块/青少年配置) + 广告SDK秒播。Token 窃取:App 打开时自动捕获 auth headers。自动签到:cron 每天 POST /argus/api/v2/checkin/checkin + 抽奖。激励任务重放:拦截 finishWatch，重放 9/9 和 3/3。自动领奖:拦截 receiveTaskReward + 尝试 6 个领奖端点。响应净化:getconf 30 项覆写 + 10 项删除、开屏/发现页/书架/福利中心/账户页/每日导读/广告列表/阅读积分/弹窗红点/新手引导/章末模块/青少年配置全部净化。广告SDK秒播:视频时长 patch 成 1 秒。前置:需 MITM 证书(magev6.if.qidian.com+h5.if.qidian.com);用户每天至少打开一次 App 刷新 Token。
 #!author=edy
-#!version=4.0.0
+#!version=3.1.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qidian/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d4/0e/59/d40e5977-557a-bb3b-6d33-9011a4b3c820/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
@@ -11,57 +11,45 @@
 #!type=normal
 
 # ========================================================================
-# 起点读书 · 看书激励助手 v4.0.0
+# 起点读书 · 看书激励助手
 # ------------------------------------------------------------------------
-# v4.0.0 重大变更:MITM 增强层从「默认注释」改为「默认启用」。
-# 原因:用户反馈 v3.1.0 及之前版本的广告/激励/签到/我的页净化全部不生效,
-# 根因是整个 MITM 层注释 → auto-task.js 从不执行。
-#
-# 前置条件:
-#   1. Loon 安装并信任 MITM 证书
-#   2. 每天至少打开一次起点 App 刷新 Token(getlogininfo 捕获)
-#
-# 红线(绝不拦截):
-#   magev6.if.qidian.com / mage.if.qidian.com(正文/书架/章节 API)
-#   druid.if.qidian.com(章节目录) / h5.if.qidian.com(H5 容器)
-#   cococdn.qidian.com / bookcover.yuewen.com / *.qidianalipay.com
-#   fockrt.yuewen.com(阅文加密/签名基础设施)
-#
-# 致谢:3kaiu 起点全能助手 Pro 的方案。
-# ========================================================================
-
-[Argument]
-debugLog = switch,false,tag=调试日志,desc=开启后记录所有净化/自动化操作的详细日志;默认关闭。
-
-# ========================================================================
-# L2 域名层:[Host] 黑洞(零证书,纯 DNS 拦截)
+# v3.1.0 优化:聚焦看书+激励核心功能。移除通知推送层(Bark/Telegram/PushPlus)、移除提醒层(sign-reminder/welfare-reminder)、精简发现页白名单(保留书单/专栏/IP专区)、精简广告白名单(只保留激励相关)。
+# 官方声明源:acts.qidian.com/pact/sdk_table.html 列穿山甲(北京巨量引擎)+七巧板通用 SDK(深圳腾讯,程序化广告推送/监测/归因)+腾讯灯塔/Ostar 画像;未声明快手/百青藤/倍孜——未声明的联盟一律不加(纪律同 ads v2.4.0)。
+# 红线（绝不进任何拦截组）：magev6.if.qidian.com（Argus 主 API:章节目录/书架与广告位 adv 同域同主机——黑洞=起点废掉）/ mage.if.qidian.com（同 Argus 接口的旧版主机——enhance 的 URL-REGEX 写作 magev?6? 即旧版也在承载正文/书架，黑洞同样废掉 App）/ druid.if.qidian.com（章节目录）/ h5.if.qidian.com / cococdn.qidian.com / bookcover.yuewen.com / *.qidianalipay.com（广告图床与书城、充值共用）。
+# adv/getadvlistbatch 路径证据:Yu9191 Rewrite 以 reject-200 拦此路径;app2smile/blackmatrix7/fmz200 三源同族路径规则——起点 iOS 未做证书固定,路径级拦截可行,已按纪律放进文末 enhance 层（默认注释，装证书后自行取消注释）。
+# 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
+# 热源层(v1.3.1):QDReader 5.9.482 二进制考古结论——看小说发热主链是 App 内行为,Loon 只能斩高频上报连接;App 内行为靠设置关闭。
+# v2.1.0 非阅读功能阻断层:REA 5.9.482 全量逆向(7508 QD 类+2897 文件清单+Mach-O 依赖+Flutter AssetManifest)——听书/TTS 715 类(QDAudio*/QDTTS*/QDDub*)走独立域名 tts.yuewen.com/tts-qidian.xf-yun.com/tingbook.com/webnovel TTS 族+Argus /argus/api/v1/audio/* 30+ 端点;漫画(QDComic*/QDManga*)走 manhua.pic.cn+/argus/api/Comic/* 15+ 端点;短剧 PiaDrama(QDPiaDramaPlay*)走 /argus/api/v1/circle/getBookMyPiaVideoList;直播(QDAnchor*)走 Anchor 相关端点。全部非阅读域与正文 API(magev6/druid/h5/cococdn/bookcover)零共域——整族黑洞不伤正文;Argus 路径层走 MITM URL-REGEX 精确裁切,同主机正文/书架/章节/充值请求零影响。fockrt.yuewen.com=com.yuewen.fockrt.files 阅文 fock 加密/签名文件服务已登红线绝不拦。v2.1.0 真机日志追加:gatherer.m.qq.com/apmplus.volces.com/noahqd.yuewen.com+游戏中心 game-img/gameapp-1252317822.file.myqcloud.com 双桶+Argus /adv/getadvlist 与 /booksquare/getfloatcard 路径级拦截。
+# 自动化层(v2.1.0):Token 窃取自 App 正常请求(getlogininfo 返回完整用户凭据,getconf/checkin 请求携带 auth headers),存入 $persistentStore(Qidian_Headers)。签到走 /argus/api/v2/checkin/checkin(POST,空 body,复用捕获 headers),该端点不需要 encryptSign(与 /checkin/autocheckin 不同路径),服务端按 Cookie 鉴权。签到后自动调 /checkin/checkinlottery 抽奖。finishWatch 重放:App 每完成 1 次广告观看 POST /argus/api/v{N}/video/adv/finishWatch,脚本拦截后识别 body 中 taskId(TaskMapping:激励视频 1218712929269776384×9,福利任务 1218712929269776388×3),重放 count-1 次(递增 2s 间隔),使用原始 headers+body。致谢:3kaiu 起点全能助手 Pro 的 finishWatch 重放机制与 Token 窃取方案。
+# 自动化层(v2.2.0):新增自动领奖功能。receiveTaskReward:POST /argus/api/v1/video/adv/receiveTaskReward(视频任务领奖,日志实锤 body ~26-298 bytes,不需要 encryptSign)。脚本拦截该请求并保存,后续 cron 自动重放。同时尝试 6 个领奖端点:/argus/api/v1/video/adv/receiveTaskReward、/argus/api/v3/freshman/autoreceive、/argus/api/v1/ontimeredpacket/receivetaskrpaward、/argus/api/v1/ploy/receiverewardsatisfy、/argus/api/v1/dialog/receivetask、/argus/api/v1/dialog/takereward。这些端点均不需要 encryptSign,服务端按 Cookie 鉴权。
+# 响应净化层(v3.0.0):整合 3kaiu 方案的全部响应净化功能。getconf 净化:30 项字段覆写(关广告/追踪/弹窗) + 10 项字段删除(悬浮广告/活动图标/推广模块)。开屏广告:清空 getsplashscreen 返回的 List。发现页:白名单过滤(保留书单/专栏/IP 专区)。书架:悬浮广告 ItemList 清空、置顶运营位 getTopOperation 清空。福利中心:mainPage 净化(删除 MemberExclusiveTaskModule/PrivilegedTaskModule/MoreRewardTab/SurpriseBenefit/LastRewardItems/IndexBannerTabs/BaizeModule/TaskShowData/UserRewardModule/PopFrequency)、mainPageDialog Data 清空。账户页:删除 BenefitButtonList 营销模块。每日导读:dailyrecommend Items 清空。广告列表:getadvlistbatch 批量清空(白名单除外)。阅读积分:readpage TodayReadTime 改满值(7200 秒) + TaskList 全部标记完成(Status=2)。弹窗/红点:popup/batchget、reddot/getdot Data 清空。新手引导:freshman 系列(bookshelfbtn/freshmanGuidePopup)清空。章末模块:showChapterEndModule 清空。青少年配置:young/getconf 清空。广告SDK秒播:视频时长字段(video_duration/video_timelife/duration/play_time/total_time/show_time/max_time)patch 成 1 秒 + 1 秒黑屏 MP4 替换。
+# 本文件由 tools/build-apps.py 从 src/apps/qidian.json 生成，不要手改生成物。
 # ========================================================================
 
 [Rule]
 
 # ------------------------------------------------------------
-# QUIC 回退(MITM 配套):MITM 只解密 TCP,App 走 HTTP/3 时脚本静默失效
-# ------------------------------------------------------------
-AND,((DOMAIN-SUFFIX,magev6.if.qidian.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,mage.if.qidian.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,h5.if.qidian.com),(PROTOCOL,QUIC)),REJECT
-
-# ------------------------------------------------------------
-# 起点/阅文自有广告与统计端点(置信 A)
-# ------------------------------------------------------------
+# 起点/阅文自有广告与统计端点（置信 A）
+# adsite.yuewen.com=官方隐私政策自证「收集设备信息用于广告展示」；adstat.qidian.com=起点 2.5.0 后自有广告统计。qidianad.com=阅文自有广告域(anti-AD 收录,名称+清单双证)。
+# 证据: https://account-protection.originconditions.com/privacy/useragreement/official-app.html
+# 证据: https://acts.qidian.com/pact/sdk_table.html
+# 证据: https://github.com/privacy-protection-tools/anti-AD
 DOMAIN-SUFFIX,adsite.yuewen.com,REJECT
 
 # ------------------------------------------------------------
-# 阅读热源·腾讯侧纯上报域(置信 A)
-# ------------------------------------------------------------
+# 阅读热源·腾讯侧纯上报域（置信 A）
+# REA 热源考古(QDReader 5.9.482 字面 URL),四段家系全收纯上报/遥测端点:腾讯系(YW 日志 unitelogreport/ptunitelogreport/applog/ywlog/path.book+ptbooksp0309+sparta html5、合规 compliance.tdos=PMonitor、Beacon otheve/oth.eve.mdt/oth.str.mdt/ios.rqd、Bugly 两后缀整族(rmonitor 双域)+buglycloud.sgp、h.trace/kv、htrace.wetvinfo=Beacon 海外通道);阅文系(ys.yuewen.com=听书 TTS 报);起点系(monitor.if.qidian.com=NetMonitor R1/R2、path.qidian.com=qdclientlogreportV2);生态 SDK 网关(AMS 广告日志 zhiyan.tencent-cloud.net/collect、liteav vodreport.qcloud.com、极光 stats.jpush.cn、极验 monitor.geetest.com、移动一键登录 log2.cmpassport.com、天翼 collect.ux.21cn.com、支付宝 loggw-exsdk.alipay.com)。全部无推送/无正文/无支付交易 API。
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+# 证据: https://beacon.qq.com
+# 证据: https://bugly.qq.com
 DOMAIN-SUFFIX,bugly.qq.com,REJECT
 DOMAIN-SUFFIX,bugly.tencent.com,REJECT
 
 [Host]
 
 # ------------------------------------------------------------
-# 穿山甲 / Pangle(字节跳动)
-# ------------------------------------------------------------
+# 穿山甲 / Pangle（字节跳动）（置信 A）
+# 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。
 *.pangle-ads.com = 127.0.0.1
 *.pangle.io = 127.0.0.1
 *.pangolin-sdk-toutiao-b.com = 127.0.0.1
@@ -113,8 +101,7 @@ tnc16-useast1a.isnssdk.com = 127.0.0.1
 tnc31-normal-alisg.isnssdk.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 腾讯广告 / 优量汇(GDT)
-# ------------------------------------------------------------
+# 腾讯广告 / 优量汇（GDT）（置信 A）
 *.e.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
 *.gdtimg.com = 127.0.0.1
@@ -127,14 +114,18 @@ adsmind.apdcdn.tc.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 起点/阅文自有广告与统计端点
-# ------------------------------------------------------------
+# 起点/阅文自有广告与统计端点（置信 A）
+# adsite.yuewen.com=官方隐私政策自证「收集设备信息用于广告展示」；adstat.qidian.com=起点 2.5.0 后自有广告统计。qidianad.com=阅文自有广告域(anti-AD 收录,名称+清单双证)。
+# 证据: https://account-protection.originconditions.com/privacy/useragreement/official-app.html
+# 证据: https://acts.qidian.com/pact/sdk_table.html
+# 证据: https://github.com/privacy-protection-tools/anti-AD
 adstat.qidian.com = 127.0.0.1
 qidianad.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 听书/TTS/有声书(非阅读·整族黑洞)
-# ------------------------------------------------------------
+# 听书/TTS/有声书（非阅读·整族黑洞）（置信 A）
+# REA 5.9.482 二进制字面 URL 全量扫描:QDReader 听书/TTS 715 类(QDAudio*/QDTTS*/QDDub*/QDVoice*)走独立域名——tts.yuewen.com(阅文 TTS 平台)、tts-qidian.xf-yun.com(讯飞 TTS 起点专线)、tts.webnovel.com/devtts.webnovel.com(WebNovel TTS 生产/测试)、test-ttsplatform.yuewen.com(TTS 测试环境)、unite-tts-audio-1252317822.file.myqcloud.com(腾讯云 COS TTS 音频存储)、reviewaudio-1252317822.file.myqcloud.com(审核音频存储)、tingbook.com(有声书独立域名,Info.plist ATS 例外独立登记)、videoapi.yuewen.com(视频/音频 API 网关)。全部与正文 API(magev6/druid/h5)零共域;Argus 音频接口 /argus/api/v1/audio/* 30+ 端点走 enhance MITM 路径层。
+# 证据: https://github.com/privacy-protection-tools/anti-AD
 devtts.webnovel.com = 127.0.0.1
 reviewaudio-1252317822.file.myqcloud.com = 127.0.0.1
 test-ttsplatform.yuewen.com = 127.0.0.1
@@ -146,26 +137,29 @@ unite-tts-audio-1252317822.file.myqcloud.com = 127.0.0.1
 videoapi.yuewen.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 漫画(非阅读·整族黑洞)
-# ------------------------------------------------------------
+# 漫画（非阅读·整族黑洞）（置信 A）
+# REA 5.9.482 二进制字面 URL:QDComic*/QDManga* 漫画阅读器走 manhua.pic.cn(Info.plist ATS 例外独立登记,与 bookcover.yuewen.com 书籍封面红线零交叉);Argus 漫画接口 /argus/api/Comic/* 15+ 端点(GetComicInfo/GetContent/GetSectionList/BuyComic/GetVipPageContent 等)走 enhance MITM 路径层。Flutter 路由 /comic/*(comicdetail/comiclib/comicread/comicsquare/comictopic)为 App 内导航,不产生独立域名请求。
 manhua.pic.cn = 127.0.0.1
 
 # ------------------------------------------------------------
-# 短剧/视频/直播(非阅读·整族黑洞)
-# ------------------------------------------------------------
+# 短剧/视频/直播（非阅读·整族黑洞）（置信 A）
+# REA 5.9.482 二进制字面 URL:QDPiaDramaPlay* 短剧(28 类含播放/评论/分享/审核)、QDAnchor* 直播(主播排行/音频分享)、QDMiddlePageVideo* 中插视频——走 vv.video.qq.com/vv6.video.qq.com(腾讯主视频 CDN)、unitevideoservice.sparta.html5.qq.com(统一视频服务);Argus 短剧接口 /argus/api/v1/circle/getBookMyPiaVideoList 走 enhance MITM 路径层。
 unitevideoservice.sparta.html5.qq.com = 127.0.0.1
 vv.video.qq.com = 127.0.0.1
 vv6.video.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 游戏中心(非阅读·整族黑洞)
-# ------------------------------------------------------------
+# 游戏中心（非阅读·整族黑洞）（置信 A）
+# REA 5.9.482 真机日志实锤:QDReader 游戏中心走腾讯云 COS 独立桶(game-img-1252317822.file.myqcloud.com/gameapp-1252317822.file.myqcloud.com,yuewen/game/images/ 路径加载游戏素材)。与正文/封面/阅读图片(qdreaderpic-1252317822/readx-her-1252317822/imgservices-1252317822)零交叉——同桶号 1252317822 但前缀不同,整族黑洞不伤阅读。
 game-img-1252317822.file.myqcloud.com = 127.0.0.1
 gameapp-1252317822.file.myqcloud.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 阅读热源·腾讯侧纯上报域
-# ------------------------------------------------------------
+# 阅读热源·腾讯侧纯上报域（置信 A）
+# REA 热源考古(QDReader 5.9.482 字面 URL),四段家系全收纯上报/遥测端点:腾讯系(YW 日志 unitelogreport/ptunitelogreport/applog/ywlog/path.book+ptbooksp0309+sparta html5、合规 compliance.tdos=PMonitor、Beacon otheve/oth.eve.mdt/oth.str.mdt/ios.rqd、Bugly 两后缀整族(rmonitor 双域)+buglycloud.sgp、h.trace/kv、htrace.wetvinfo=Beacon 海外通道);阅文系(ys.yuewen.com=听书 TTS 报);起点系(monitor.if.qidian.com=NetMonitor R1/R2、path.qidian.com=qdclientlogreportV2);生态 SDK 网关(AMS 广告日志 zhiyan.tencent-cloud.net/collect、liteav vodreport.qcloud.com、极光 stats.jpush.cn、极验 monitor.geetest.com、移动一键登录 log2.cmpassport.com、天翼 collect.ux.21cn.com、支付宝 loggw-exsdk.alipay.com)。全部无推送/无正文/无支付交易 API。
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+# 证据: https://beacon.qq.com
+# 证据: https://bugly.qq.com
 ap-guangzhou.log.zhiyan.tencent-cloud.net = 127.0.0.1
 apmplus.volces.com = 127.0.0.1
 applog.reader.qq.com = 127.0.0.1
@@ -200,8 +194,10 @@ ys.yuewen.com = 127.0.0.1
 ywlog.reader.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 起点自家埋点(B 级,默认关)
-# ------------------------------------------------------------
+# 起点自家埋点（B 级,默认关）（置信 B）
+# tongji/dwtrack.qidian.com=站内统计(anti-AD 收录,拦了只断自家分析);o.if.qidian.com=anti-AD 独家拦但 if 命名空间同时承载内容 API,有误伤可能——先真机测试;qdp.qidian.com=起点推送,拦了断通知。log.1ting.com=听书线日志,无清单背书。monitor.if.qidian.com 与 path.qidian.com 已移入 heat_reporting 默认生效;qdp/upush 属推送通道进本组默认关。
+# 证据: https://github.com/privacy-protection-tools/anti-AD
+# （默认关闭的组：整组注释，取消注释即启用）
 # dwtrack.qidian.com = 127.0.0.1
 # log.1ting.com = 127.0.0.1
 # o.if.qidian.com = 127.0.0.1
@@ -212,44 +208,43 @@ ywlog.reader.qq.com = 127.0.0.1
 
 
 # ========================================================================
-# L4+L5 MITM 增强层(默认启用,需证书)
+# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
 # ------------------------------------------------------------------------
-# v4.0.0 变更:从「默认注释」改为「默认启用」。
-# 起点读书 iOS 未做证书固定,MITM 可行。
-# [Script] 绑定 auto-task.js 处理所有响应净化 + 自动化。
+# 起点读书 iOS 未做证书固定：开屏/书架广告位、听书/漫画/短剧 API 与章节内容同主机 magev6.if.qidian.com，[Host] 黑洞会废掉 App，正解是 MITM 后按路径拦。广告路径规则来自 app2smile / blackmatrix7 / fmz200 三家公开模块;听书/漫画/短剧路径规则来自 REA 5.9.482 二进制字面 URL 全量扫描(/argus/api/v1/audio/* 30+ 端点、/argus/api/Comic/* 15+ 端点、/argus/api/v1/circle/getBookMyPiaVideoList)。源里的 reject-200 对应 Loon 的 REJECT-DICT：200 + {} JSON，默认整段注释、装证书后按需启用。
+# 启用步骤：①Loon 里装并信任证书 →
+#           ②取消 [MITM] 头与其 hostname 行的注释 →
+#           ③取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
+# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
+# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
+# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
+# 证据: https://github.com/app2smile/rules/blob/master/plugin/qidian.plugin
+# 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin
+# 证据: https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
 # ========================================================================
 
-[MITM]
-
-hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com, h5.if.qidian.com
-
-[Script]
-
-# ---- Token 捕获(response 阶段:getlogininfo 返回完整用户凭据) ----
-http-response ^https://h5\.if\.qidian\.com/argus/api/v1/user/getlogininfo script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点Token捕获
-
-# ---- Token 捕获(request 阶段:getconf/checkin 请求携带 auth headers) ----
-http-request ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]/(client/getconf|checkin/) script-path=scripts/auto-task.min.js, requires-body=false, timeout=10, tag=起点Token捕获(补充)
-
-# ---- getconf 响应净化(30 项覆写 + 10 项删除) ----
-http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v1/client/getconf script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点getconf净化
-
-# ---- finishWatch 重放(激励任务自动化核心) ----
-http-request ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/finishWatch script-path=scripts/auto-task.min.js, requires-body=true, timeout=120, tag=起点激励任务重放
-
-# ---- receiveTaskReward 拦截(自动领奖) ----
-http-request ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/receiveTaskReward script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点自动领奖
-
-# ---- 广告 SDK 秒播(视频时长 patch 成 1 秒) ----
-# 注意:Loon 对复杂正则支持有限,简化为两个独立绑定
-http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/gdt_inner_view script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点广告SDK秒播(gdt_inner_view)
-http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/v[0-9]+/video/adv/get_ads script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点广告SDK秒播(get_ads)
-
-# ---- 全局深度净化(22 个端点族) ----
-http-response ^https://(h5|magev6)\.if\.qidian\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/adv/getadvlistbatch|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/user/getsimplediscover|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/readtime/readpage|v[0-9]+/user/getaccountpage) script-path=scripts/auto-task.min.js, requires-body=true, timeout=10, tag=起点深度净化
-
-# ---- 自动签到(cron 每天凌晨 2 点) ----
-cron "11 2 * * *" script-path=scripts/auto-task.min.js, timeout=420, tag=起点自动签到
-
-# ---- 手动签到/自检入口 ----
-generic script-path=scripts/auto-task.min.js, timeout=420, tag=起点手动签到/自检
+# [MITM]
+# ------------------------------------------------------------
+# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
+# hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com
+#
+# [Rule]
+# ------------------------------------------------------------
+# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。
+# QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的
+# URL-REGEX 会静默失效。
+# 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。
+# AND,((DOMAIN-SUFFIX,magev6.if.qidian.com),(PROTOCOL,QUIC)),REJECT
+# AND,((DOMAIN-SUFFIX,mage.if.qidian.com),(PROTOCOL,QUIC)),REJECT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/client/getsplashscreen,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/adv/getadvlistbatch,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getHoverAdv,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getad,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/refresh,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/bookshelf/getTopOperation,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/client/iosad,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/dailyrecommend/getdailyrecommend,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/audio/,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/Comic/,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/circle/getBookMyPiaVideoList,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/adv/getadvlist,REJECT-DICT
+# URL-REGEX,^https?://magev?6?\.if\.qidian\.com/argus/api/v[0-9]/booksquare/getfloatcard,REJECT-DICT

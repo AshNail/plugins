@@ -362,10 +362,41 @@ function markHeaders(reason, bodyChanged) {
   }
 }
 
+function todayKey() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1);
+  const day = String(d.getDate());
+  return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" + (day.length < 2 ? "0" + day : day);
+}
+
+function recordBlock(type, item) {
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.read !== "function" ||
+        typeof $persistentStore.write !== "function") return;
+    const day = todayKey();
+    const raw = $persistentStore.read("douyin-block-stats");
+    let s = null;
+    if (raw) {
+      try { s = JSON.parse(raw); } catch (e) { s = null; }
+    }
+    if (!s || s.day !== day) {
+      s = { day: day, splash: 0, domains: 0, clean: 0, total: 0 };
+    }
+    if (type === "splash") s.splash = (s.splash || 0) + 1;
+    else if (type === "domains") s.domains = (s.domains || 0) + 1;
+    else if (type === "clean") s.clean = (s.clean || 0) + 1;
+    s.total = (s.total || 0) + 1;
+    if (item) s.last = String(item).slice(0, 80);
+    $persistentStore.write(JSON.stringify(s), "douyin-block-stats");
+  } catch (e) {}
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity"]);
+    const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity", "debugLog"]);
+    const debugOn = pflag(args, "debugLog", false);
 
     /* 决定这次请求归哪个开关管：没开的开关一律放行 */
     let mode = null;
@@ -432,7 +463,11 @@ function markHeaders(reason, bodyChanged) {
       return $done({ headers: markHeaders("douyin-clean;noop=no-change") });
     }
 
+    recordBlock("clean", mode);
     console.log("[douyin-clean] " + log.length + " change(s)\n  " + log.join("\n  "));
+    if (debugOn) {
+      console.log("[douyin-AdBlock] 🧹 响应净化(" + mode + "): 裁切 " + log.length + " 项广告配置 | " + url);
+    }
     $done({ body: JSON.stringify(obj), headers: markHeaders("douyin-clean;changed=" + log.length, true) });
   } catch (e) {
     console.log("[douyin-clean] error, passthrough: " + e);

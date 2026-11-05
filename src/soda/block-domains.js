@@ -106,6 +106,36 @@ function hostOf(url) {
   return m ? String(m[1]).toLowerCase() : "";
 }
 
+function todayKey() {
+  var d = new Date();
+  var m = String(d.getMonth() + 1);
+  var day = String(d.getDate());
+  return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" + (day.length < 2 ? "0" + day : day);
+}
+
+function recordBlock(type, item) {
+  try {
+    if (typeof $persistentStore === "undefined" || !$persistentStore ||
+        typeof $persistentStore.read !== "function" ||
+        typeof $persistentStore.write !== "function") return;
+    var day = todayKey();
+    var raw = $persistentStore.read("soda-block-stats");
+    var s = null;
+    if (raw) {
+      try { s = JSON.parse(raw); } catch (e) { s = null; }
+    }
+    if (!s || s.day !== day) {
+      s = { day: day, splash: 0, domains: 0, clean: 0, total: 0 };
+    }
+    if (type === "splash") s.splash = (s.splash || 0) + 1;
+    else if (type === "domains") s.domains = (s.domains || 0) + 1;
+    else if (type === "clean") s.clean = (s.clean || 0) + 1;
+    s.total = (s.total || 0) + 1;
+    if (item) s.last = String(item).slice(0, 80);
+    $persistentStore.write(JSON.stringify(s), "soda-block-stats");
+  } catch (e) {}
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -134,7 +164,11 @@ function hostOf(url) {
       return $done({});
     }
 
+    recordBlock("domains", host);
     console.log("[soda-domains] blocked: " + url);
+    if (debugOn) {
+      console.log("[soda-AdBlock] 🚫 拦截广告域名: " + host + " | " + url);
+    }
     /* 回包形状与 [Rewrite] 的 reject_dict(200) 对齐：200 + application/json + {}。
        文档明确「reject(200,"{}") 返回普通文本；需要 JSON Content-Type 时用
        reject_dict」。广告 SDK 一律按 JSON 解析，空 text/plain 会落进

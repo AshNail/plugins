@@ -159,25 +159,25 @@ request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\/page\/v[0-9]+/ then script("scripts/treasure.min.js", {${treasureMinimal}}) with debug=${debugLog}, enable=${treasureMinimal}, requires_body=true, timeout=10, tag="福利页精简：只留【攒时长 听歌不中断】"
 
 # ---- 信息流 / 广告位广告清理：不影响激励奖励 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}}) with debug=${debugLog}, enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/clean.min.js", {${cleanFeedAds}, ${debugLog}}) with debug=${debugLog}, enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 广告位广告清理：不影响激励奖励"
 
 # ---- 断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/incentive\/(?:config|retrieve)/ then script("scripts/clean.min.js", {${killRewardAds}}) with debug=${debugLog}, enable=${killRewardAds}, requires_body=true, timeout=10, tag="断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/incentive\/(?:config|retrieve)/ then script("scripts/clean.min.js", {${killRewardAds}, ${debugLog}}) with debug=${debugLog}, enable=${killRewardAds}, requires_body=true, timeout=10, tag="断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了"
 
 # ---- 商业化弹窗 / 商城清理 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/upsell/ then script("scripts/clean.min.js", {${cleanUpsell}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="商业化弹窗 / 商城清理"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/upsell/ then script("scripts/clean.min.js", {${cleanUpsell}, ${debugLog}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="商业化弹窗 / 商城清理"
 
 # ---- 演出（汽水音乐节）清理 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/performance_details/ then script("scripts/clean.min.js", {${cleanUpsell}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="演出（汽水音乐节）清理"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/performance_details/ then script("scripts/clean.min.js", {${cleanUpsell}, ${debugLog}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="演出（汽水音乐节）清理"
 
 # ---- 活动入口清理：音乐节（演出）+ 抖音运营活动 ----
-response if ${url} ~= /^https?:\/\/polaris\.zijieapi\.com\/luckycat\/activity\/settings\// then script("scripts/clean.min.js", {${cleanActivity}}) with debug=${debugLog}, enable=${cleanActivity}, requires_body=true, timeout=10, tag="活动入口清理（音乐节/抖音运营活动）"
+response if ${url} ~= /^https?:\/\/polaris\.zijieapi\.com\/luckycat\/activity\/settings\// then script("scripts/clean.min.js", {${cleanActivity}, ${debugLog}}) with debug=${debugLog}, enable=${cleanActivity}, requires_body=true, timeout=10, tag="活动入口清理（音乐节/抖音运营活动）"
 
 # ---- 广告域名拦截：blockAdDomains 开关 ----
-request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${blockAdDomains}}) with debug=${debugLog}, enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
+request if ${url} ~= /^https?:\/\/(?:ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then script("scripts/block-domains.min.js", {${blockAdDomains}, ${debugLog}}) with debug=${debugLog}, enable=${blockAdDomains}, timeout=10, tag="广告域名拦截：blockAdDomains 开关"
 
 # ---- 开屏广告请求拦截：只拦 ads5-*.zijieapi.com/api/ad/...splash/，不碰激励广告 ----
-request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}}) with debug=${debugLog}, enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
+request if ${url} ~= /^https?:\/\/(?:[a-z0-9.-]+\.)?zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/ then script("scripts/splash-ad.min.js", {${blockSplashAd}, ${debugLog}}) with debug=${debugLog}, enable=${blockSplashAd}, timeout=10, tag="拦截开屏广告请求"
 
 # ---- 只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:treasure\/task\/page\/v[0-9]+|advert\/incentive\/(?:config|retrieve|done)|advert\/fallback\/done\/info|ads\/(?:config|retrieve|dsp\/retrieve)|commerce\/v2\/upsell)/ then script("scripts/observe.min.js") with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="只读日志：福利页 / 激励广告 / 兜底凭证 / 信息流广告 / upsell / 发奖"
