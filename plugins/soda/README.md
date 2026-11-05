@@ -69,6 +69,22 @@
   D) 风控检测：hit_risk_control / err_no=210021 → 暂停自动化 60s
 ```
 
+**这四条腿各自的真机状态（2026-11-05 20:25:48 取证，逐台数 SNI / Match / 握手失败）**：
+
+| 腿 | 依赖主机 | 本窗口证据 | 现在能说什么 |
+|---|---|---|---|
+| A Pangle 广告注入 | `ad.zijieapi.com` | 零流量 | 绑定已注册，未取证 |
+| B incentive/done 增强 | `beta-luna.douyin.com` / `api.qishui.com` | 零流量 | 绑定已注册，未取证 |
+| C 签到注入 | `aweme.snssdk.com` | 8 SNI / 8 Match / **8 握手失败** | **这条腿结构性失效**（见 8.1）；`sign_in_done` 正则的另两条腿 `api.qishui.com` / `beta-luna.douyin.com` 本窗口零流量，同样未取证 |
+| D 风控检测 | 同上 | 零流量 | 未取证 |
+
+还有一条不能省的诚实话：B/C 以及同源的 `commerce_info` 权益注入，改的都是**响应体**。
+响应已经由服务端签发，改写只影响客户端显示的数字与状态，**不等于后端入账**——所以
+「注入签到成功」能说的上限是「让本机不再弹设备异常」，金币有没有到账、权益有没有解锁，
+要以 App 内的余额为准，不以插件日志为准。本仓因此从不把这类改写写成「已领取」。
+取证窗口里这些主机要么零流量、要么被固定证书掐断，所以 v2.0 方案目前的准确定性是
+**「字段结构与绑定形状来自 2026-11-05 的 HAR，端到端效果未经真机日志确认」**。
+
 ### 任务清单（task/page/v2 解码）
 
 | ID | key | 名称 | 类型 |
@@ -93,8 +109,8 @@
 
 | 域名 | 用途 | 新增原因 |
 |---|---|---|
-| `aweme.snssdk.com` | 签到 API（sign_in_done / sign_in_detail） | HAR 发现签到走抖音域名 |
-| `ad.zijieapi.com`（已有 MITM） | Pangle 广告注入 | v2.0 方案核心 |
+| `aweme.snssdk.com` | 签到 API（sign_in_done / sign_in_detail） | HAR 发现签到走抖音域名。**但 2026-11-05 真机日志里这台固定证书：8 SNI / 8 Match / 8 握手失败**，落在它身上的签到注入这条腿结构性失效，见 8.1 |
+| `ad.zijieapi.com`（已有 MITM） | Pangle 广告注入 | v2.0 方案核心。同一窗口零流量，未取证 |
 
 ### 致谢
 
@@ -397,6 +413,7 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
   这两项不提供开关——关掉等于让所有脚本看不见流量。回滚方式：删掉对应行。
 - **`[MITM]` 也不能按开关启停**。插件声明 16 条 hostname：luna 的两个已证主机、`conf.qishui.com`、汽水 API 的 7 个分片（v3.2.0 新增）、以及若干广告/SDK 域名；即使 `blockAdDomains` 关闭，这些域名也会被解密。如果开启后激励广告播不了（证书固定），把 `[MITM]` 里那几个广告域名注释掉即可。
 - **v3.2.0 · 汽水 API 分片取证通道**：两份真机日志（2026-10-29 10:39:55 / 2026-11-05 20:25:48）显示承接流量的主机是 `api3-lf`/`api3-hl`/`api5-lf`/`api5-hl`/`api5-lq`/`api3-lq`/`conf5-lf.qishui.com`（10-29 单份 747 次 SNI），而插件原先只写了 `api.qishui.com`（同一份日志 34 次）。这些分片 alpn 只报 `h2,http/1.1`、`*.qishui.com` 相关 6543+198 行里 `certificate unknown` **零次**——不是证书固定，是名单里没有它们，于是 Loon 只能按 SNI 查规则、`url:(null)`，响应脚本永远拿不到 body。v3.2.0 把 7 台补进 `[MITM]`，并按「两边严格对齐」的纪律同步补 7 条 QUIC 回退与 gzip 降级覆盖。**本轮零新增绑定**：绑定仍只写 luna 的两个已证主机（lint 的 luna host parity 锁死），分片解密出来的路径留给下一轮日志裁决，再决定要不要挂脚本。`log.qishui.com` / `log3-lf` / `log5-lf` 是纯上报、无绑定指向，刻意不纳入。
+- **v3.2.0 · 固定证书止损取证**：与上一类症状相反，`aweme.snssdk.com`（8 SNI / 8 Match / 8 握手失败）、`zlink.ugsdk.cn`（6/6/6）、`ads5-normal-gl2.zijieapi.com`（5/5/5，靠 `ads?-normal*` 通配命中）是**进了解密名单但客户端拒证**，签名统一 `ssl/tls alert certificate unknown`。同窗口只有两台 Apple 主机解密成功且零失败，所以「用户没装证书」这条排除。后果不是静默不生效，而是这些主机的连接被我们掐断——落在它们身上的绑定（`sign_in_done` 的 aweme 那条腿、`blockAdDomains` 的 ads 分片与 zlink）只许说「已注册、固定证书未解除前不生效」。取证表与止损动作见 8.1，逐台判据见 `docs/device-checklist.md` F 段，口径也进了 `docs/bypass-audit.md` 第 13 条（`tools/bypass-audit.py` 现在会探测这几处文字，写丢了门禁就红）。**本轮不执行止损**：删 hostname 会让这些端点重新变黑盒，代价对称，等下一轮日志再裁决。
 - **开关冲突保护**：`rewardSafe=true` 时脚本优先保护非开屏端点；但仍建议不要同时打开 `rewardSafe` 与 `cleanAds` / `settingsClean`。
 
 ---
@@ -939,6 +956,12 @@ luna 请求——端点真实在跑，由 `api.qishui.com` + `beta-luna.douyin.c
 ---
 
 ## 11. 版本更新记录
+
+### v3.2.0（2026-11-05）汽水 API 分片取证通道 + 固定证书止损取证
+
+- **分片进 `[MITM]`**：`api3-hl/api3-lf/api3-lq/api5-hl/api5-lf/api5-lq/conf5-lf.qishui.com` 七台补进 hostname 名单（16 条），按「两边严格对齐」同步补 7 条 QUIC 回退（静态层 18→25，`src/common/families.json` 的 `quicCount` 同步）与 gzip 降级覆盖。**零新增绑定**——绑定仍只写 luna 的两个已证主机，由 lint 的 luna host parity 锁死。取证见第 3 节与 `docs/device-checklist.md` I2 的「v3.2.0 待复测」。
+- **固定证书止损取证（只改文档与注释，不改任何生效行）**：`aweme.snssdk.com` 8/8/8、`zlink.ugsdk.cn` 6/6/6、`ads5-normal-gl2.zijieapi.com` 5/5/5（SNI / Match / 握手失败）落在拒证一侧，与分片的「名单外、零 `certificate unknown`」是两类症状。签到注入的 aweme 那条腿、`blockAdDomains` 的 ads 分片与 zlink 从此只许说「已注册、固定证书未解除前不生效」；取证表与止损动作见 8.1，`-1` 节补了四条腿的真机状态表。
+- **门禁**：`tools/bypass-audit.py` 第 13 条（cert-pinning）从「无证据」升级为探测两份插件的「固定证书止损」与两份 README 的「固定证书主机清单」，文字写丢了 `npm run check:bypass` 就红。
 
 ### v3.1.0（2026-11-05）激励任务自动化 v2.0 · MITM 响应注入方案
 

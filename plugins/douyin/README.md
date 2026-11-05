@@ -449,6 +449,7 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 - **开屏品牌响应（`blockSplashAd`）**：新增 `advert/splash/brand/retrieve` 响应绑定，清 `ad_launch*` 与开屏缓存/预加载/提前加载配置、摇一摇/扭一扭/传感器阈值（布尔→false、数值→0，保留原类型），并把 `advert/splash/brand/report` 上报改为 `reject_dict(200)`。激励与发奖链路不在任何一条匹配里。
 - **数值字段按类型归零**：`killContainers` 的 falsy 命中不再一律写 `false`——数值配置（阈值/TTL）归 `0`，数字字符串归 `"0"`，避免模型解码异常。
 - **回归**：`test_douyin_clean.js` 44 → 60 断言（Feed 条目、搜索块/banner、开屏品牌响应、开关关闭放行）；`test_ads_surfaces.js` 34 → 36（汽水开屏缓存/预加载/传感器容器与开关/阈值）。lint 绑定矩阵补开屏品牌、Feed、搜索样本；全量 54 套件 / 1714 断言。
+- **固定证书取证（只改文档与注释，不改任何生效行）**：2026-11-05 20:25:48 真机日志逐台数出 `polaris.zijieapi.com` 26/26/26、`zlink.ugsdk.cn` 6/6/6、`ads5-normal-gl2.zijieapi.com` 5/5/5（SNI / Match / 握手失败），签名 `ssl/tls alert certificate unknown`。所以 `cleanActivity`（依赖 polaris）与 `blockAdDomains` 的 ads 分片、zlink 那几条当前只许说「已注册、固定证书未解除前不生效」——取证表、归属纪律与止损动作见 5.4，`docs/bypass-audit.py` 的第 13 条现在会探测这几处文字（写丢了 `npm run check:bypass` 就红）。生效行一行没动。
 
 ### v0.8.6（2026-10-30）开屏请求拦截默认开
 
