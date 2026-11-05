@@ -102,8 +102,13 @@
 
 | 开关 | 默认 | 作用 |
 |---|---|---|
-| `autoTask` | 关 | MITM 响应注入：Pangle 广告伪造 + incentive/done 增强 + 风控检测 |
-| `autoSignIn` | 关 | 签到注入：拦截 sign_in_done 返回成功 + 每天 9 点 cron |
+| `autoTask` | **开** | MITM 响应注入：Pangle 广告伪造 + incentive/done 增强 + 风控检测。四条腿的真机状态见上方表格——本窗口要么零流量、要么被固定证书掐断 |
+| `autoSignIn` | **开** | 签到注入：拦截 sign_in_done 返回成功 + 每天 9 点 cron。`aweme.snssdk.com` 那条腿已取证为固定证书失效（8/8/8） |
+
+> 这两行自 v3.1.0 起**默认就是开**（早前这份表格写「关」是与 `src/args/soda.json` 不一致，已改正）。
+> 也就是说自动化默认生效这件事本身，还没经过真机端到端确认，而且是全仓唯一两个默认开的自动化开关
+> （App 插件侧的门禁是「自动化不得默认生效」，`tools/build-apps.py` 的 `validate_enhance_active` 会拒；
+> 族插件是手写的，没走这道门禁）。要按那条红线把它们改成默认关，是一次行为变更，等用户点头再做。
 
 ### 新增端点（v3.1.0）
 
@@ -395,8 +400,8 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | `splashClean` | 开 | 开屏品牌广告清理 |
 | `hideDouyinTab` | 开 | 福利页带抖音的 tab/任务条目过滤 |
 | `statusNotify` | `notification` | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页 |
-| `autoTask` | 开 | 激励任务自动化 v2.0（MITM 响应注入）：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。默认开启 |
-| `autoSignIn` | 开 | 每天自动执行签到任务（MITM 注入成功响应，绕过设备异常）；需要 MITM 证书 |
+| `autoTask` | 开 | 激励任务自动化 v2.0（MITM 响应注入）：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。默认开启。**真机状态（2026-11-05 20:25:48）**：这四条腿依赖的主机要么零流量（未取证）、要么被固定证书掐断（`aweme.snssdk.com` 8/8/8）；响应改写只改本机显示、不等于后端入账。取证表见第 -1 节与 8.1 |
+| `autoSignIn` | 开 | 每天自动执行签到任务（MITM 注入成功响应，绕过设备异常）；需要 MITM 证书。**真机状态**：正则覆盖 `aweme.snssdk.com` / `api.qishui.com` / `beta-luna.douyin.com` 三条腿，其中 aweme 已取证为固定证书（8 SNI / 8 Match / 8 握手失败，那条腿结构性失效），另两条腿本窗口零流量未取证。详见 8.1 |
 <!-- <<< GENERATED ARG-TABLE -->
 
 关键限制：

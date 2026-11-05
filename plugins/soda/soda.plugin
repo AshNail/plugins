@@ -97,8 +97,8 @@ logTaskTitles = switch,true,tag=日志带任务标题,desc=默认开启：只读
 splashClean = switch,true,tag=清开屏品牌广告,desc=默认开启：清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
 hideDouyinTab = switch,true,tag=隐藏【听抖音】,desc=默认开启：删除福利页里带抖音的 tab/任务条目。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
-autoTask = switch,true,tag=激励任务自动化v2,desc=默认开启：MITM响应注入（Pangle广告伪造+incentive/done增强+签到注入+风控检测）。
-autoSignIn = switch,true,tag=自动签到v2,desc=默认开启：MITM注入签到成功响应（绕过设备异常 210021）；每天9点cron触发+拦截sign_in_done。
+autoTask = switch,true,tag=激励任务自动化v2,desc=已注册四条腿：Pangle 广告伪造 + incentive/done 增强 + 签到注入 + 风控检测。诚实话：响应改写只改本机显示、不等于后端入账；2026-11-05 真机日志里这些主机零流量或被固定证书掐断——端到端效果未经确认。
+autoSignIn = switch,true,tag=自动签到v2,desc=已注册：命中 sign_in_done 时由本机返回成功响应（绕过设备异常 210021）+ 每天 9 点 cron。真机取证：aweme.snssdk.com 固定证书 8 SNI / 8 Match / 8 握手失败——那条腿结构性失效；qishui 与 luna 两条腿本窗口零流量、既不算生效也不算失效。
 # <<< GENERATED ARGUMENTS
 
 

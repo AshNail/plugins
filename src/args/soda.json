@@ -142,18 +142,18 @@
       "type": "switch",
       "default": true,
       "tag": "激励任务自动化v2",
-      "desc": "默认开启：MITM响应注入（Pangle广告伪造+incentive/done增强+签到注入+风控检测）。",
+      "desc": "已注册四条腿：Pangle 广告伪造 + incentive/done 增强 + 签到注入 + 风控检测。诚实话：响应改写只改本机显示、不等于后端入账；2026-11-05 真机日志里这些主机零流量或被固定证书掐断——端到端效果未经确认。",
       "label": "自动任务",
-      "readme": "激励任务自动化 v2.0（MITM 响应注入）：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。默认开启"
+      "readme": "激励任务自动化 v2.0（MITM 响应注入）：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。默认开启。**真机状态（2026-11-05 20:25:48）**：这四条腿依赖的主机要么零流量（未取证）、要么被固定证书掐断（`aweme.snssdk.com` 8/8/8）；响应改写只改本机显示、不等于后端入账。取证表见第 -1 节与 8.1"
     },
     {
       "name": "autoSignIn",
       "type": "switch",
       "default": true,
       "tag": "自动签到v2",
-      "desc": "默认开启：MITM注入签到成功响应（绕过设备异常 210021）；每天9点cron触发+拦截sign_in_done。",
+      "desc": "已注册：命中 sign_in_done 时由本机返回成功响应（绕过设备异常 210021）+ 每天 9 点 cron。真机取证：aweme.snssdk.com 固定证书 8 SNI / 8 Match / 8 握手失败——那条腿结构性失效；qishui 与 luna 两条腿本窗口零流量、既不算生效也不算失效。",
       "label": "自动签到",
-      "readme": "每天自动执行签到任务（MITM 注入成功响应，绕过设备异常）；需要 MITM 证书"
+      "readme": "每天自动执行签到任务（MITM 注入成功响应，绕过设备异常）；需要 MITM 证书。**真机状态**：正则覆盖 `aweme.snssdk.com` / `api.qishui.com` / `beta-luna.douyin.com` 三条腿，其中 aweme 已取证为固定证书（8 SNI / 8 Match / 8 握手失败，那条腿结构性失效），另两条腿本窗口零流量未取证。详见 8.1"
     }
   ]
 }
