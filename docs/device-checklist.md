@@ -26,7 +26,7 @@
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.13`、`soda=3.2.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.14`、`soda=3.2.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
