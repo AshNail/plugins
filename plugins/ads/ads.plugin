@@ -1,7 +1,7 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.7
+#!version=2.8.8
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
@@ -447,6 +447,11 @@ mobads-pre-config.cdn.bcebos.com = 127.0.0.1
 ecmb.bdimg.com = 127.0.0.1
 cm.baidu.com = 127.0.0.1
 entry.baidu.com = 127.0.0.1
+dup.baidustatic.com = 127.0.0.1
+ubmcmm.baidustatic.com = 127.0.0.1
+ubmcvideo.baidustatic.com = 127.0.0.1
+popin.cc = 127.0.0.1
+*.popin.cc = 127.0.0.1
 
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
@@ -459,6 +464,7 @@ alimama.com = 127.0.0.1
 *.alimama.com = 127.0.0.1
 mmstat.com = 127.0.0.1
 *.mmstat.com = 127.0.0.1
+atanx.alicdn.com = 127.0.0.1
 
 # ============================================================================
 # 中国广告联盟 / 媒体广告位 / 广告监测
@@ -653,6 +659,13 @@ geecradv.com = 127.0.0.1
 *.geecradv.com = 127.0.0.1
 bdad.123pan.cn = 127.0.0.1
 bu1.duba.com = 127.0.0.1
+wa.kuwo.cn = 127.0.0.1
+ark.letv.com = 127.0.0.1
+doubleclick.ctfile.com = 127.0.0.1
+tagtic.cn = 127.0.0.1
+*.tagtic.cn = 127.0.0.1
+xdrig.com = 127.0.0.1
+*.xdrig.com = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -1689,6 +1702,36 @@ leadinfo.net = 127.0.0.1
 *.leadinfo.net = 127.0.0.1
 shareasale.com = 127.0.0.1
 *.shareasale.com = 127.0.0.1
+marinsm.com = 127.0.0.1
+*.marinsm.com = 127.0.0.1
+ensighten.com = 127.0.0.1
+*.ensighten.com = 127.0.0.1
+theadex.com = 127.0.0.1
+*.theadex.com = 127.0.0.1
+adalyser.com = 127.0.0.1
+*.adalyser.com = 127.0.0.1
+leadlander.com = 127.0.0.1
+*.leadlander.com = 127.0.0.1
+myaffiliateprogram.com = 127.0.0.1
+*.myaffiliateprogram.com = 127.0.0.1
+polymorphicads.jp = 127.0.0.1
+*.polymorphicads.jp = 127.0.0.1
+goadservices.com = 127.0.0.1
+*.goadservices.com = 127.0.0.1
+tvpixel.com = 127.0.0.1
+*.tvpixel.com = 127.0.0.1
+leadplace.fr = 127.0.0.1
+*.leadplace.fr = 127.0.0.1
+tapfiliate.com = 127.0.0.1
+*.tapfiliate.com = 127.0.0.1
+awin1.com = 127.0.0.1
+*.awin1.com = 127.0.0.1
+adverticum.net = 127.0.0.1
+*.adverticum.net = 127.0.0.1
+silvermob.com = 127.0.0.1
+*.silvermob.com = 127.0.0.1
+videoadstech.org = 127.0.0.1
+*.videoadstech.org = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告

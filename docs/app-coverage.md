@@ -210,7 +210,7 @@
 | `analytics.twitter.com` | 3: adaway,anti-ad,stevenblack | 已收录·默认关 |
 | `scribe.twitter.com` | 3: anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
 
-## `xianyu` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `xianyu` — 生效黑洞 7 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -220,7 +220,7 @@
 |---|---|---|
 | `fcmatch.youtube.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 缺口 |
 
-## `zhihuifangdong` — 生效黑洞 87 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `zhihuifangdong` — 生效黑洞 91 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 

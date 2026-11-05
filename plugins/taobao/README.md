@@ -20,7 +20,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 | UT 埋点（默认关） | B | 默认关闭 | ut.taobao.com=阿里 UT 埋点；关闭统计不等于去广告，默认关，需要隐私优先再开。 |
 | 淘宝客/联盟归因（默认关） | B | 默认关闭 | tunion-api.m.taobao.com=淘宝联盟 CPS 归因；拦了会影响淘宝客取链/返利，默认关。 |
 | 阿里 AMDC HTTPDNS 调度（默认关） | B | 默认关闭 | amdc.m.taobao.com / amdcopen.m.taobao.com=阿里 HTTPDNS 调度；拦后若 App 无回退可能拖慢建连，默认关。 |
-| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 3 域 / 0 规则。 |
+| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 4 域 / 0 规则。 |
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
@@ -67,4 +67,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/taobao.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 16 条，[Rule] 0 条。
+统计：精确/通配黑洞 17 条，[Rule] 0 条。
