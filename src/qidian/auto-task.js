@@ -791,9 +791,9 @@ function safeJsonParse(body) {
   
   // 处理 Uint8Array / ArrayBuffer
   if (body instanceof Uint8Array || body instanceof ArrayBuffer) {
-    console.log("[起点全能助手] [DEBUG] 响应体是二进制数据，长度: " + (body.byteLength || body.length));
-    // 检测 gzip
     const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
+    console.log("[起点全能助手] [DEBUG] 响应体是二进制数据，长度: " + bytes.length);
+    // 检测 gzip
     if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
       try {
         if (typeof $utils !== "undefined" && $utils.ungzip) {
@@ -806,8 +806,10 @@ function safeJsonParse(body) {
     }
     // 尝试直接转字符串
     try {
-      const str = new TextDecoder().decode(bytes);
-      return JSON.parse(str);
+      if (typeof globalThis.TextDecoder !== "undefined") {
+        const str = new globalThis.TextDecoder().decode(bytes);
+        return JSON.parse(str);
+      }
     } catch (e) {
       console.log("[起点全能助手] [DEBUG] 二进制转字符串失败: " + e.message);
     }
