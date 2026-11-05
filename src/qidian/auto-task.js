@@ -155,14 +155,25 @@ const CONFIG = {
 (async () => {
   const E = new Env("起点全能助手");
 
+  // 读取 debugLog 开关
+  const DEBUG = (() => {
+    try { return String($argument?.debugLog || "false") === "true"; } catch (e) { return false; }
+  })();
+
+  function debugLog(msg) {
+    if (DEBUG) E.log("[DEBUG] " + msg);
+  }
+
   // Cron 模式：无 $request → 定时任务
   if (typeof $request === "undefined") {
+    debugLog("Cron 模式启动");
     await runCronTasks(E);
     E.done();
     return;
   }
 
   const { url, method } = $request;
+  debugLog("请求: " + method + " " + url.substring(0, 120));
 
   // ── A. Token 窃取（response 阶段） ──
   if (url.includes("/user/getlogininfo") && typeof $response !== "undefined") {
@@ -181,6 +192,7 @@ const CONFIG = {
 
   // ── C. getconf 响应净化 ──
   if (url.includes("/client/getconf") && typeof $response !== "undefined") {
+    debugLog("处理 getconf 响应净化");
     handleClientConfig(E, $response);
     return;
   }
@@ -188,6 +200,7 @@ const CONFIG = {
   // ── D. finishWatch 重放 ──
   if (url.includes("/video/adv/finishWatch") && method === "POST" &&
       typeof $response === "undefined") {
+    debugLog("拦截 finishWatch 请求,准备重放");
     await handleReplay(E, $request);
     return;
   }
@@ -226,31 +239,31 @@ const CONFIG = {
   // ── I. 响应净化 ──
   if (typeof $response !== "undefined") {
     // 开屏广告
-    if (path.includes("getsplashscreen")) { handleSplashScreen(E, $response); return; }
+    if (path.includes("getsplashscreen")) { debugLog("处理开屏广告"); handleSplashScreen(E, $response); return; }
     // Deeplink 广告
-    if (path.includes("deeplink/geturl")) { handleDeeplink(E, $response); return; }
+    if (path.includes("deeplink/geturl")) { debugLog("处理 Deeplink 广告"); handleDeeplink(E, $response); return; }
     // 每日导读
-    if (path.includes("dailyrecommend")) { handleDailyRec(E, $response); return; }
+    if (path.includes("dailyrecommend")) { debugLog("处理每日导读"); handleDailyRec(E, $response); return; }
     // 账户页
-    if (path.includes("getaccountpage")) { handleAccountPage(E, $response); return; }
+    if (path.includes("getaccountpage")) { debugLog("处理账户页净化"); handleAccountPage(E, $response); return; }
     // 广告列表
-    if (path.includes("adv/getadvlistbatch")) { handleAdListBatch(E, url, $response); return; }
+    if (path.includes("adv/getadvlistbatch")) { debugLog("处理广告列表"); handleAdListBatch(E, url, $response); return; }
     // 直接击杀广告
     if (CONFIG.RejectPaths.some(p => path.includes(p)) && !CONFIG.AdWhitelist.some(k => url.includes(k))) {
-      handleDirectAdKill(E, url, $response); return;
+      debugLog("直接击杀广告: " + path); handleDirectAdKill(E, url, $response); return;
     }
     // 福利中心主页
     if (path.includes("video/adv/mainPage") && !path.includes("Dialog")) {
-      handleMainPage(E, $response); return;
+      debugLog("处理福利中心主页"); handleMainPage(E, $response); return;
     }
     // 发现页
-    if (path.includes("getsimplediscover")) { handleDiscover(E, $response); return; }
+    if (path.includes("getsimplediscover")) { debugLog("处理发现页"); handleDiscover(E, $response); return; }
     // 书架悬浮广告
-    if (path.includes("getHoverAdv")) { handleHoverAdv(E, $response); return; }
+    if (path.includes("getHoverAdv")) { debugLog("处理书架悬浮广告"); handleHoverAdv(E, $response); return; }
     // 每日阅读积分
-    if (path.includes("readtime/readpage")) { handleReadTime(E, $response); return; }
+    if (path.includes("readtime/readpage")) { debugLog("处理每日阅读积分"); handleReadTime(E, $response); return; }
     // 净化规则
-    if (matchCleanRule(path)) { handleClean(E, path, $response); return; }
+    if (matchCleanRule(path)) { debugLog("匹配净化规则: " + path); handleClean(E, path, $response); return; }
   }
 
   E.done();
@@ -393,13 +406,20 @@ function handleClientConfig(E, response) {
   const obj = safeJsonParse(response.body);
   if (!obj || !obj.Data) { E.done(); return; }
 
-  for (const [k, v] of Object.entries(CONFIG.ClientConfigOverrides)) { obj.Data[k] = v; }
-  CONFIG.DeleteKeys.forEach(k => { delete obj.Data[k]; });
+  const changes = [];
+  for (const [k, v] of Object.entries(CONFIG.ClientConfigOverrides)) {
+    if (obj.Data[k] !== v) changes.push(k + "=" + v);
+    obj.Data[k] = v;
+  }
+  CONFIG.DeleteKeys.forEach(k => {
+    if (obj.Data[k] !== undefined) { changes.push("delete:" + k); delete obj.Data[k]; }
+  });
   obj.Data.NewFeedsDiscover = 0;
   if (obj.Data.CloudSetting && obj.Data.CloudSetting.TeenShowFreq) {
     obj.Data.CloudSetting.TeenShowFreq = "0";
   }
 
+  debugLog("getconf 净化: " + changes.length + " 项变更 [" + changes.slice(0, 5).join(", ") + (changes.length > 5 ? "..." : "") + "]");
   E.log("getconf 净化完成");
   E.done({ body: JSON.stringify(obj) });
 }
@@ -428,7 +448,13 @@ function handleDailyRec(E, response) {
 function handleAccountPage(E, response) {
   const obj = safeJsonParse(response.body);
   if (!obj) { E.done(); return; }
-  if (obj.Data) CONFIG.AccountPageDelKeys.forEach(k => { delete obj.Data[k]; });
+  if (obj.Data) {
+    const deleted = [];
+    CONFIG.AccountPageDelKeys.forEach(k => {
+      if (obj.Data[k] !== undefined) { deleted.push(k); delete obj.Data[k]; }
+    });
+    if (deleted.length > 0) debugLog("账户页删除: " + deleted.join(", "));
+  }
   E.done({ body: JSON.stringify(obj) });
 }
 
@@ -623,6 +649,7 @@ async function runCronTasks(E) {
 }
 
 async function doCheckin(E, headers) {
+  debugLog("开始签到...");
   for (let i = 0; i < CONFIG.CheckinRetry; i++) {
     try {
       const res = await E.fetch({
@@ -635,30 +662,36 @@ async function doCheckin(E, headers) {
         const obj = safeJsonParse(res.body);
         if (obj && obj.Result === 0) {
           const msg = obj.Message || "签到成功";
+          debugLog("签到成功: " + msg);
           if (!CONFIG.SilentMode) E.notify("起点助手", "签到成功", msg);
           else E.log("[静默] 签到成功: " + msg);
           return "ok";
         }
         if (obj && obj.Result === -452000) {
           const msg = obj.Message || "今日已签到";
+          debugLog("今日已签到: " + msg);
           if (!CONFIG.SilentMode) E.notify("起点助手", "今日已签到", msg);
           else E.log("[静默] 今日已签到: " + msg);
           return "ok";
         }
         const msg = obj ? JSON.stringify(obj).slice(0, 200) : "未知错误";
+        debugLog("签到异常: " + msg);
         if (!CONFIG.SilentMode) E.notify("起点助手", "签到异常", msg);
         return "failed";
       }
 
       const code = res ? res.statusCode : 0;
       if (code === 401 || code === 403) {
+        debugLog("Cookie 过期: HTTP " + code);
         if (!CONFIG.SilentMode) E.notify("起点助手", "Cookie 过期", "请打开起点 App 触发 Token 刷新");
         return "expired";
       }
 
+      debugLog("签到 HTTP " + code + ", 重试 " + (i + 1) + "/" + CONFIG.CheckinRetry);
       E.log("签到 HTTP " + code + ", 重试 " + (i + 1) + "/" + CONFIG.CheckinRetry);
       if (i < CONFIG.CheckinRetry - 1) await E.wait(1500);
     } catch (e) {
+      debugLog("签到异常: " + e);
       E.log("签到异常: " + e);
       if (i < CONFIG.CheckinRetry - 1) await E.wait(1500);
     }
@@ -669,6 +702,7 @@ async function doCheckin(E, headers) {
 }
 
 async function doLottery(E, headers) {
+  debugLog("开始抽奖...");
   try {
     const res = await E.fetch({
       url: "https://magev6.if.qidian.com/argus/api/v1/checkin/checkinlottery",
@@ -679,14 +713,21 @@ async function doLottery(E, headers) {
       const obj = safeJsonParse(res.body);
       if (obj && obj.Result === 0) {
         const award = (obj.Data && obj.Data.AwardName) || "成功";
+        debugLog("抽奖成功: " + award);
         E.log("抽奖: " + award);
         if (!CONFIG.SilentMode) E.notify("起点助手", "抽奖", award);
         return;
       }
       const msg = (obj && obj.Message) || "无奖励";
+      debugLog("抽奖: " + msg);
       E.log("抽奖: " + msg);
+    } else {
+      debugLog("抽奖 HTTP " + (res ? res.statusCode : "无响应"));
     }
-  } catch (e) { E.log("抽奖异常: " + e); }
+  } catch (e) {
+    debugLog("抽奖异常: " + e);
+    E.log("抽奖异常: " + e);
+  }
 }
 
 // ==========================================
