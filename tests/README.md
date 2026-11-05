@@ -58,17 +58,17 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 
 `run-all.py` 默认对源码和压缩版各跑一遍；`SODA_SCRIPT_SET=src|dist`（或 `SCRIPT_SET`）由 `tests/load-script.js` 读取，`loadScript(name, family)` 可以加载不同插件族。`lint-plugins.py` 检查每个 App 唯一部署插件（`soda.plugin`、`douyin.plugin`）的 section、域名、Rewrite/Script 行数、正则编译、脚本引用（新版 `script("...")` 与旧 `script-path=`）是否指向存在的 `.min.js`、源码是否存在、压缩脚本能否通过 `node --check`，并确认压缩脚本确实比源码小且行数不超过 5 行。它还会验证：插件没有启用的静态 `[Rule]` 域名、每条脚本都带 `enable=${开关}`、开关默认值正确、`[MITM]` 覆盖 API/设置/广告域名、关键端点能被脚本正则命中、开屏绑定命中 splash 家族但绝不命中激励/发奖端点，以及 `#!name/#!desc/#!author/#!version/#!date` 元数据齐全且 `#!icon` 是 https 链接。参数 schema 由 `src/args/*.json` 单源生成，`node tools/gen-args.js --check` 保证插件 `[Argument]`、`SWITCH_LABELS` 与 README 表无漂移。
 
-**绑定矩阵门禁**：Loon 对同一请求/响应只执行配置顺序里第一条 `enable` 为真的脚本。lint 用真实 URL 样本（soda 26 响应 + 3 请求，douyin 13 响应 + 3 请求）把每条绑定都匹配一遍，确保没有死绑定；同一 URL 上重叠的绑定必须是「同脚本 + 同参数」的等效冗余，或在 `SHADOW_ALLOWED_PAIRS` 允许清单里（清理类抢只读观测、域名拦截抢开屏拦截），否则直接报错。
+**绑定矩阵门禁**：Loon 对同一请求/响应只执行配置顺序里第一条 `enable` 为真的脚本。lint 用真实 URL 样本（soda 37 响应 + 4 请求，douyin 13 响应 + 3 请求）把每条绑定都匹配一遍，确保没有死绑定；同一 URL 上重叠的绑定必须是「同脚本 + 同参数」的等效冗余，或在 `SHADOW_ALLOWED_PAIRS` 允许清单里（清理类抢只读观测、域名拦截抢开屏拦截），否则直接报错。
 
-**分发层门禁**：`check_scheme_links()` 扫 `README.md`、`plugins/*/README.md`、`docs/*.md` 里的每一条 `loon://…` 与 `https://www.nsloon.com/openloon/…`，按官方 `docs/Scheme/` 那一页的两张表建白名单——操作名 `on`/`off`/`editconfig`、`flowmodel=direct|filter|proxy`、`proxymode=tun|mix`、`update?sub=all`，导入资源键 `sub`/`nodelist`/`rules`/`plugin`/`iconset`/`geoip`/`parser`。除语法外还查语义：`import?` 的地址必须是**已 URL 编码**的（出现裸 `://` 即报错，官方明写要先编码），`plugin` 键解码后必须落在 `raw.githubusercontent.com/AshNail/plugins/main/plugins/<slug>/<slug>.plugin`（目录名与文件名不同也算错）且该文件真实存在，Markdown 表格同一行标注的 `` `x.plugin` `` 必须与链接指向的 slug 一致（防徽章复制粘贴忘改），最后要求**每个插件都在自己的 README 里至少链向自己一次**。当前读数：48 条链接、16 个插件自链、0 错误（安装链接与文档引用的官方操作示例混在同一份扫描里，分项不再复述）。
+**分发层门禁**：`check_scheme_links()` 扫 `README.md`、`plugins/*/README.md`、`docs/*.md` 里的每一条 `loon://…` 与 `https://www.nsloon.com/openloon/…`，按官方 `docs/Scheme/` 那一页的两张表建白名单——操作名 `on`/`off`/`editconfig`、`flowmodel=direct|filter|proxy`、`proxymode=tun|mix`、`update?sub=all`，导入资源键 `sub`/`nodelist`/`rules`/`plugin`/`iconset`/`geoip`/`parser`。除语法外还查语义：`import?` 的地址必须是**已 URL 编码**的（出现裸 `://` 即报错，官方明写要先编码），`plugin` 键解码后必须落在 `raw.githubusercontent.com/AshNail/plugins/main/plugins/<slug>/<slug>.plugin`（目录名与文件名不同也算错）且该文件真实存在，Markdown 表格同一行标注的 `` `x.plugin` `` 必须与链接指向的 slug 一致（防徽章复制粘贴忘改），最后要求**每个插件都在自己的 README 里至少链向自己一次**。当前读数：54 条链接、22 个插件自链、0 错误（安装链接与文档引用的官方操作示例混在同一份扫描里，分项不再复述）。
 
-**脚本安全门禁**：`src/*/*.js` 与部署的 `*.min.js` 必须调用 `$done()` 释放 Loon 的 JS 资源；禁止 `$httpClient`、`fetch()`、`XMLHttpRequest`、`WebSocket`、`sendBeacon`、`Function(`、`eval(`、`require(`；`$notification.post` 只允许出现在 `status.js` / `daily-reminder.js`；禁止 `$persistentStore.remove(`（官方语义是清空**全部**脚本数据，不接受 key 参数，删单项只能用 `write(undefined, key)`）。门禁保证插件脚本不会把抓到的响应数据外发，也不会执行动态代码。同时校验部署目录里没有未被任何 `[Script]` 绑定的孤儿 `.min.js`（删除绑定后必须同步删脚本）。
+**脚本安全门禁**：`src/*/*.js` 与部署的 `*.min.js` 必须调用 `$done()` 释放 Loon 的 JS 资源；禁止 `$httpClient`、`fetch()`、`XMLHttpRequest`、`WebSocket`、`sendBeacon`、`Function(`、`eval(`、`require(`（`auto-task.js` 例外：自动化层用 App 自身接口做签到/激励重放，允许网络 API，动态代码仍禁止）；`$notification.post` 只允许出现在 `status.js` / `sign-reminder.js` / `welfare-reminder.js` / `auto-task.js`；禁止 `$persistentStore.remove(`（官方语义是清空**全部**脚本数据，不接受 key 参数，删单项只能用 `write(undefined, key)`）。门禁保证插件脚本不会把抓到的响应数据外发，也不会执行动态代码。同时校验部署目录里没有未被任何 `[Script]` 绑定的孤儿 `.min.js`（删除绑定后必须同步删脚本）。
 
 对单 ads 插件，lint 还会检查 `[General]`/`[Rule]`/`[Host]` 的顺序、General 白名单、DoH 必须使用 IP、Rule 只能 REJECT、默认注释的归因/统计组没有被误启用、共享主域保护名单、旧的三份 ads 文件确实删除，以及生成物与 `src/ads/domains.json` 逐字节一致。`DOMAIN-WILDCARD` 通配层还有独立门禁：插件头 Build ≥1008、30 条模式集合永久锁定、每条 glob 必须是 `DOMAIN-WILDCARD,<glob>,REJECT`（规则行不允许任何参数）、不命中保护名单，并用正/负样本锁定 `*` 跨点语义（`ads.*` 命中 `ads.a.b.com`，不命中 `example.com`/`adsl.example.com`；`advert.*` 不命中 `advertise.example.com`）。
 
 `tests/fixtures/` 里放的是**真实抓包样本**（2026-10-20 HAR）：`douyin_treasure_page.json`（抖音福利页原始响应）、`soda_incentive_done.json`（汽水发奖请求/响应），用于防止“按想象改字段”。
 
-**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1674 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
+**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1678 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
 
 ## 断言分布
 
@@ -100,9 +100,9 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_store_scope.js` | 12 | 存储作用域：删一个键不能动别的键（`welfare-seen` / `ad-stats` 必须存活），禁止 `$persistentStore.remove()`，删除走 `write(undefined,key)` |
 | `test_encoding_guard.js` | 30 | 编码诊断：六个解析 body 的脚本在 `content-encoding: br` 时输出 `ce=br`，`gzip`/`identity`/无头不加噪声，头名大小写与 `gzip, br` 逗号列表，正常 JSON 不被诊断干扰 |
 | `test_check_update.js` | 23 | 版本检查静音：只把 `has_update` / `hasUpdate` 置 false、包络与同形键零接触、无键/非 JSON 原样透传、gzip 解出后同样生效、回写时清掉过期的 `content-encoding` / `content-length` |
-| `test_args_schema.js` | 35 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
+| `test_args_schema.js` | 37 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
 
-合计 **837** 条断言；源码与压缩版各一遍，共 **1674** 条。
+合计 **839** 条断言；源码与压缩版各一遍，共 **1678** 条。
 
 ## 抖音插件（douyin.plugin）
 
@@ -125,7 +125,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 - `hideDouyinTab=true` 时只删除带“抖音”的列表项，其它任务（签到/听歌/看广告任务）保留；该开关有独立 `enable=` 绑定，`cleanAds=false` 时同样生效；
 - 没有 `$argument` 时行为保持不变（脚本可独立运行）；
 - 域名拦截脚本：`blockAdDomains=false` 或 `rewardSafe=true` 时一律放行，其它域名不受影响；
-- lint 验证 14 个参数的默认值（含 `statusNotify` 的 select 候选）、40 条脚本绑定都带 `enable={...}`、同 URL 重叠绑定不会非预期抢占、通用按钮绑定透传全部开关（含 `statusNotify`）、上报 Rewrite 必须使用 `reject_dict(200)`、插件没有静态 `[Rule]` 域名。
+- lint 验证 16 个参数的默认值（含 `statusNotify` 的 select 候选）、47 条脚本绑定都带 `enable={...}`、同 URL 重叠绑定不会非预期抢占、通用按钮绑定透传全部开关（含 `statusNotify`）、上报 Rewrite 必须使用 `reject_dict(200)`、插件没有静态 `[Rule]` 域名。
 
 ## 只读观测与状态自检
 

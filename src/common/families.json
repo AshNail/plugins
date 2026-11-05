@@ -43,7 +43,7 @@
       "notifyBody": "打开汽水 → 福利页完成任务即可领取（攒时长 / 花卡 / 签到）。",
       "appScheme": "qishui://",
       "rewardSafeDefault": true,
-      "quicCount": 17
+      "quicCount": 18
     },
     "douyin": {
       "logTag": "douyin",

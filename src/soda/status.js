@@ -223,7 +223,7 @@ function capabilityLine() {
                "开关状态：" + switches;
   if (env) detail += "\n运行环境：" + env;
   detail += "\nLoon 能力：" + capabilityLine();
-  detail += "\n静态层：QUIC 回退 17 域 · h2 · 压缩→gzip（常开）";
+  detail += "\n静态层：QUIC 回退 18 域 · h2 · 压缩→gzip（常开）";
   for (var w = 0; w < warns.length; w++) detail += "\n" + warns[w];
 
   console.log("[soda-status] " + summary + " | " + statsText + " | " + switches +

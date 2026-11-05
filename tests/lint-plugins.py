@@ -17,7 +17,7 @@ def escape_regex_slashes(pattern):
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 41, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 47, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 1, 10, "douyin"),
 ]
 
@@ -373,6 +373,7 @@ BINDING_SAMPLES = {
             "https://ad.zijieapi.com/api/ad/splash/stock/",
             "https://ad.zijieapi.com/api/ad/v1/inspire/",
             "https://foo.zijieapi.com/api/ad/v2/ack/splash/collect",
+            "https://api.qishui.com/luna/user/sign_in/sign_in_done",
         ),
         "response": (
             "https://api.qishui.com/luna/advert/splash/brand/retrieve",
@@ -411,6 +412,7 @@ BINDING_SAMPLES = {
             "https://beta-luna.douyin.com/luna/check-update",
             "https://conf.qishui.com/service/settings/v3/?device_id=x",
             "https://api.qishui.com/aweme/homepage/combine/?device_id=x",
+            "https://api.qishui.com/luna/user/sign_in/sign_in_detail",
         ),
     },
     "douyin": {
@@ -437,12 +439,17 @@ BINDING_SAMPLES = {
     },
 }
 
-# 允许的“清理/隐藏 + 只读观测 + 打卡兜底”组合：功能上有意让清理优先，
-# 被抢走的观测是诊断信息；settings 与 hide 绑定同脚本同参数，单独放行。
+# 允许的“清理/隐藏 + 只读观测 + 打卡兜底 + 自动化兜底”组合：功能上有意让
+# 清理/观测优先（绑定按配置顺序在前），被抢走的观测是诊断信息；settings 与
+# hide 绑定同脚本同参数，单独放行；auto-task 的注入只在对应清理开关关闭时兜底。
 SHADOW_ALLOWED_PAIRS = {
     "soda": {
         frozenset(("sanitize.min.js", "reward-observe.min.js")),
         frozenset(("block-domains.min.js", "splash-ad.min.js")),
+        frozenset(("auto-task.min.js", "block-domains.min.js")),
+        frozenset(("auto-task.min.js", "splash-ad.min.js")),
+        frozenset(("auto-task.min.js", "sanitize.min.js")),
+        frozenset(("auto-task.min.js", "reward-observe.min.js")),
     },
     "douyin": {
         frozenset(("treasure.min.js", "observe.min.js")),
@@ -466,6 +473,11 @@ SAFE_SCRIPT_FORBIDDEN = (
     ("require(", re.compile(r"\brequire\s*\(")),
     ("fetch(", re.compile(r"\bfetch\s*\(")),
 )
+
+# 自动化层（`auto-task.js`，3kaiu 方案）：用 App 自身的接口做签到/激励任务重放，
+# 需要网络 API；动态代码（Function/eval/require）不受此豁免，仍由上面的名单全量拦截。
+SAFE_NETWORK_ALLOWED = {"auto-task.js"}
+SAFE_NETWORK_LABELS = {"$httpClient", "XMLHttpRequest", "sendBeacon", "fetch("}
 SAFE_DONE_RX = re.compile(r"\$done\s*\(")
 SAFE_NOTIFY_RX = re.compile(r"\$notification\s*(?:\.|\[)\s*[\"']?post")
 SAFE_NOTIFY_ALLOWED = {
@@ -474,6 +486,8 @@ SAFE_NOTIFY_ALLOWED = {
     # 只发通知附 App 内路由，零网络请求。
     "sign-reminder.js",
     "welfare-reminder.js",
+    # 自动化层：任务结果/风控暂停等状态通知。
+    "auto-task.js",
 }
 
 # 官方 Script API 5.3：`$persistentStore.remove()` **不接受参数**，语义是
@@ -550,6 +564,7 @@ QUIC_HOSTS = {
         "api.qishui.com",
         "conf.qishui.com",
         "ad.zijieapi.com",
+        "aweme.snssdk.com",
         "lianmengapi.snssdk.com",
         "zlink.ugsdk.cn",
         "praisewindow.ugsdk.cn",
@@ -1561,12 +1576,15 @@ def check_script_safety():
     problems = 0
     for path in sources + dists:
         rel = path.relative_to(ROOT)
+        source_name = path.name.replace(".min.js", ".js")
         text = path.read_text(encoding="utf-8", errors="ignore")
         if not SAFE_DONE_RX.search(text):
             errors.append(f"{rel}: script never calls $done()")
             problems += 1
         for label, rx in SAFE_SCRIPT_FORBIDDEN:
             if rx.search(text):
+                if label in SAFE_NETWORK_LABELS and source_name in SAFE_NETWORK_ALLOWED:
+                    continue
                 errors.append(f"{rel}: forbidden network/eval API: {label}")
                 problems += 1
         if SAFE_STORE_WIPE_RX.search(SAFE_COMMENT_RX.sub("", text)):
@@ -1575,11 +1593,10 @@ def check_script_safety():
                 "删单个键请用 write(undefined, key)（Script API 5.3）"
             )
             problems += 1
-        source_name = path.name.replace(".min.js", ".js")
         if SAFE_NOTIFY_RX.search(text) and source_name not in SAFE_NOTIFY_ALLOWED:
             errors.append(
                 f"{rel}: $notification.post is only allowed in "
-                "status.js / daily-reminder.js / qidian sign·welfare-reminder.js"
+                "status.js / sign-reminder.js / welfare-reminder.js / auto-task.js"
             )
             problems += 1
     print(

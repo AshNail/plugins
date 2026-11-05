@@ -52,7 +52,7 @@
 # 两层模型（v2.8.0 起）：
 #   L1 运行时层 = [Argument] 开关：只给“用户可能想改主意”的功能。
 #   L2 静态层   = [Rule]/[Rewrite]/[MITM]：传输与协议层，常开、无开关。
-#     · QUIC 强制回退：[MITM] 里这 17 个域拒绝 HTTP/3，逼回 TCP+TLS，
+#     · QUIC 强制回退：[MITM] 里这 18 个域拒绝 HTTP/3，逼回 TCP+TLS，
 #       否则脚本根本看不见流量（MITM 只处理 TCP）。不做全局 QUIC 拒绝。
 #     · h2 = true：零成本保险。官方 MitM 文档只列 hostname/ca-p12/ca-passphrase，
 #       没有 h2（HTTP/2 解密是官方产品页宣称的默认能力）；社区插件通行写，
@@ -98,19 +98,19 @@ splashClean = switch,true,tag=清开屏品牌广告,desc=默认开启：清理�
 hideDouyinTab = switch,true,tag=隐藏【听抖音】,desc=默认开启：删除福利页里带抖音的 tab/任务条目。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
 autoTask = switch,true,tag=激励任务自动化v2,desc=默认开启：MITM响应注入（Pangle广告伪造+incentive/done增强+签到注入+风控检测）。
-autoSignIn = switch,true,tag=自动签到v2,desc=默认开启：MITM注入签到成功响应（绕过设备异常err_no=210021）；每天9点cron触发+拦截sign_in_done。
+autoSignIn = switch,true,tag=自动签到v2,desc=默认开启：MITM注入签到成功响应（绕过设备异常 210021）；每天9点cron触发+拦截sign_in_done。
 # <<< GENERATED ARGUMENTS
 
 
 # ============================================================================
 # 1. [Rule] · 传输层（静态，常开）
 # ----------------------------------------------------------------------------
-# QUIC 强制回退：只对 [MITM] 里这 17 个精确域拒绝 HTTP/3(QUIC)。
+# QUIC 强制回退：只对 [MITM] 里这 18 个精确域拒绝 HTTP/3(QUIC)。
 # 为什么必须常开：脚本只能看见 TCP+TLS；目标域一旦走 HTTP/3，
 # MITM 不生效 → 清洗/拦截脚本“静默看不到流量”，功能像随机失效。
 # 为什么不做全局 PROTOCOL,QUIC,REJECT：那会连视频/通话/直播一起打掉。
 # 代价：首个连接多一次回退（约 100~300ms）；极少数不回退的实现会连不上该接口。
-# 回滚：删掉下面这 17 行，或整段清空（[Rule] 段可留空）。
+# 回滚：删掉下面这 18 行，或整段清空（[Rule] 段可留空）。
 # Pangle 分片族（ads3/ads5 × 5 个后缀）在 [Rule] 里逐个列出：DOMAIN-SUFFIX
 # 不吃通配。对应的 [MITM] 用一条 ads?-normal*.zijieapi.com 覆盖全族——两边
 # 严格对齐，才不会出现「解密了但没回退」的空档。分片清单取自 ads.plugin 的
@@ -160,7 +160,7 @@ AND,((DOMAIN-SUFFIX,beta-luna.douyin.com),(PROTOCOL,QUIC)),REJECT
 # 就是下面 [MITM] 的完整名单，由 lint 逐个域名对账（少一个就报错）。
 # 代价：gzip 比 br 大约 10~20%，只作用于这几个 JSON 接口。
 # ----------------------------------------------------------------------------
-request if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|conf\.qishui\.com|beta-luna\.douyin\.com|ad\.zijieapi\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then request.header.set("Accept-Encoding", "gzip")
+request if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|conf\.qishui\.com|beta-luna\.douyin\.com|ad\.zijieapi\.com|aweme\.snssdk\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then request.header.set("Accept-Encoding", "gzip")
 
 # 开屏广告上报是 fire-and-forget，回 200 + JSON {} 减少 SDK 重试；由 splashClean 开关控制。
 request if ${splashClean} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/advert\/splash\/brand\/report/ then reject_dict(200)

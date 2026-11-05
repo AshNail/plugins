@@ -151,7 +151,7 @@
       "type": "switch",
       "default": true,
       "tag": "自动签到v2",
-      "desc": "默认开启：MITM注入签到成功响应（绕过设备异常err_no=210021）；每天9点cron触发+拦截sign_in_done。",
+      "desc": "默认开启：MITM注入签到成功响应（绕过设备异常 210021）；每天9点cron触发+拦截sign_in_done。",
       "label": "自动签到",
       "readme": "每天自动执行签到任务（MITM 注入成功响应，绕过设备异常）；需要 MITM 证书"
     }

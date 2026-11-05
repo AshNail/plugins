@@ -25,9 +25,6 @@
 | `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
 | `statusNotify` | `notification` | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式） |
-| `skipUpdateCheck` | 关 | `luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示 |
-| `autoTask` | 关 | 自动完成激励任务（听歌/看广告/签到）；需要 MITM 证书 |
-| `autoSignIn` | 关 | 每天自动执行签到任务；需要 MITM 证书 |
 <!-- <<< GENERATED ARG-TABLE -->
 
 > v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：

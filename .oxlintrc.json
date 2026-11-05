@@ -25,6 +25,9 @@
         "src/**/*.js"
       ],
       "globals": {
+        "URL": "readonly",
+        "atob": "readonly",
+        "setTimeout": "readonly",
         "$argument": "readonly",
         "$request": "readonly",
         "$response": "readonly",

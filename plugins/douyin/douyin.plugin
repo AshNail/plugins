@@ -79,9 +79,6 @@ blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com
 blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
 debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
-skipUpdateCheck = switch,false,tag=版本检查静音,desc=把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。只动这一个键，其余字段与包络原样；解析失败原样放行。
-autoTask = switch,false,tag=激励任务自动化,desc=自动完成激励任务（听歌/看广告/签到）；需要 MITM 证书。默认关闭。
-autoSignIn = switch,false,tag=自动签到,desc=每天自动执行签到任务；需要 MITM 证书。默认关闭。
 # <<< GENERATED ARGUMENTS
 
 

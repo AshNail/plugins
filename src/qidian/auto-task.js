@@ -33,6 +33,7 @@
 // ==========================================
 // 🔒 凭据掩码
 // ==========================================
+/** @type {Array<[RegExp, string]>} */
 const MASK_RULES = [
   [/cmfuToken[=:]\s*([A-Za-z0-9_-]{8,})/gi, "cmfuToken=***MASKED***"],
   [/(token|cookie|key|secret)[=:]\s*([A-Za-z0-9_+/=-]{16,})/gi, "$1=***MASKED***"],
@@ -152,7 +153,7 @@ const CONFIG = {
 // ==========================================
 // 🚀 主入口
 // ==========================================
-!(async () => {
+(async () => {
   const E = new Env("起点全能助手");
 
   // Cron 模式：无 $request → 定时任务
@@ -589,7 +590,7 @@ function patchDurationFields(value, keys, nextValue) {
   for (const [key, item] of Object.entries(value)) {
     if (keys.includes(key)) {
       if (typeof item === "number") { value[key] = nextValue; continue; }
-      if (typeof item === "string" && !isNaN(item)) { value[key] = String(nextValue); continue; }
+      if (typeof item === "string" && !isNaN(Number(item))) { value[key] = String(nextValue); continue; }
     }
     patchDurationFields(item, keys, nextValue);
   }

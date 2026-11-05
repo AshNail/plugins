@@ -57,7 +57,9 @@ if (schemas) {
     ["cleanActivity", "活动入口清理"],
     ["debugLog", "只读日志"],
     ["logTaskTitles", "日志带标题"],
-    ["skipUpdateCheck", "版本检查静音"]
+    ["skipUpdateCheck", "版本检查静音"],
+    ["autoTask", "自动任务"],
+    ["autoSignIn", "自动签到"]
   ];
   const labels = args.labelEntries(schemas);
   check("SWITCH_LABELS order/content is pinned", JSON.stringify(labels) === JSON.stringify(expectedLabels),
@@ -68,11 +70,13 @@ if (schemas) {
     soda: {
       rewardSafe: true,
       splashClean: true,
-      cleanAds: false,
+      cleanAds: true,
       killRewardAds: false,
       blockAdDomains: false,
-      settingsClean: false,
-      skipUpdateCheck: false,
+      settingsClean: true,
+      skipUpdateCheck: true,
+      autoTask: true,
+      autoSignIn: true,
       blockSplashAd: true,
       statusNotify: "notification"
     },

@@ -52,21 +52,6 @@
  */
 
 // ==========================================
-// 🔒 凭据掩码
-// ==========================================
-const MASK_RULES = [
-  [/sessionid[=:]\s*([A-Za-z0-9_-]{8,})/gi, "sessionid=***MASKED***"],
-  [/(token|cookie|key|secret|time_token|act_token)[=:]\s*([A-Za-z0-9_+/=-]{16,})/gi, "$1=***MASKED***"],
-];
-
-function maskSecrets(str) {
-  if (typeof str !== "string") return str;
-  let out = str;
-  for (const [re, rep] of MASK_RULES) out = out.replace(re, rep);
-  return out;
-}
-
-// ==========================================
 // ⚙️ 配置
 // ==========================================
 const CONFIG = {
