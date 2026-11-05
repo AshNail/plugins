@@ -248,7 +248,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       那是用户主配置自己的 MITM 名单，不参与本清单判读。
 - [x] **有意的数据缺口**：638 条非广告 luna 请求未绑定；没有“全 luna 都处理”的假宣告。
 
-## J. 17 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
+## J. 15 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
 
 - [ ] 逐个导入 `plugins/<slug>/<slug>.plugin`，装后完全退出并重开目标 App。
 - [ ] **生效判读**：日志里命中域应显示 `Host Map IP:127.0.0.1`（插件 [Host] 的特征字样，区别于主配置的 `Reject domain ... in DNS phase`）。
@@ -262,8 +262,6 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **qidian/xianyu/x/instagram**：预期收益低（内联广告），判读以「遥测域消失 + 业务无恙」为准，不以「广告消失」为准。
 - [ ] **bubei-danci** 不背单词：本插件**没有广告 SDK 组**——官方 SDK 目录 `https://learnywhere.cn/lexis/sdklist` 里没有穿山甲/优量汇/快手/百青藤，变现是酷币与会员内购，所以这里的「去广告」实际是去跟踪。判读：`ns.360wgjs.com`（站外埋点，anti-AD/PiT 等三家清单收录）从日志消失；学习链路 `learnywhere.cn`（API + 例句音频）、`bbdc.cn`、声通评测 `isuntone` 必须无恙。**`umeng` 组默认关**：`umeng.com` 整域拦会把统计 + U-Push + 一键登录一起断（签到提醒、号码认证同断），只在「不在乎推送、只要隐私」时开。
 - [ ] **youtube**：可选 MITM 启用后，推荐/播放 JSON 中广告字段应消失；视频播放、登录、缩略图正常；`googlevideo.com` 不得被 DNS 黑洞或请求拒绝。Mac 当前不执行 response jq，需 iOS/iPad/TV 验证。
-- [ ] **bilibili**：可选 MITM 启用后，开屏/首页信息流广告消失；动态、播放、登录、直播不得异常；`api.bilibili.com`/`biliapi.net` 不得被 DNS 黑洞，VIP/地区/青少年规则不在本插件。
-- [ ] **zhihu**：可选 MITM 启用后，首页/推荐/搜索/回答/评论广告位消失；请求拒绝只命中广告 API，登录、回答正文、图片、会员状态不得异常；`api.zhihu.com`/`www.zhihu.com` 不得被 DNS 黑洞。
 - [ ] **taobao**：DNS 组应命中 h-adashx/ossgw/hudong 等精确广告域；可选 MITM 的 11 条 URL-REGEX 启用后，搜索、下单、购物车、支付必须无恙，`acs.m.taobao.com` 与 `guide-acs.m.taobao.com` 不得被 DNS 黑洞；广告图片路径应返回 1px 图。
 - [ ] **mba-dashi** MBA大师：开屏走穿山甲、课程列表插屏走优量汇（两家 SDK 由官方隐私政策确认）。判读：冷启开屏广告加载失败、课程列表插屏消失即 pangle/gdt 组命中；红线 `www/m/file/video.mbajm.com` 全是讲义、课程、视频链路，绝不允许出现在拦截日志。**代价**：App 内「看广告领课程」依赖这些 SDK——启用即断该活动，属预期而非故障。
 - [ ] **ruankao-tong** 软考通：同为 pangle + gdt（`ixinz` 系）。判读：开屏与课程列表插屏加载失败即命中；红线 `www.ixinz.com` 与 `*.s2.ixinz.com` 是课程/题库内容分发域，不得出现在日志。官方隐私政策只给 SDK 包名不给域名，域名按两家 SDK 公开集成文档补齐（B 级）；题库内容与广告同源不可分，「看广告解锁真题」启用即断。崩溃上报（`shenzhou` / `crash.ixinz`）为第一方自建、网络层无从区分，故不列。
@@ -282,7 +280,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 
 ## K. MITM 名单收敛与插件 `[General]` DNS（2026-11-02 macOS 实测）
 
-- [x] **主配置与插件 `hostname` 是合并生效**：主配置只写少量主机时，插件声明的 `app.bilibili.com` 仍被解密（TLS 签发者为 Loon CA）；未列入任何名单的 `example.com` 返回真实 Cloudflare 证书。判据用 `openssl s_client` 看 issuer，不要看 `curl` 的 HTTP 状态（被解密与否都可能 200）。
+- [x] **主配置与插件 `hostname` 是合并生效**：主配置只写少量主机时，插件声明的 `music.163.com` 仍被解密（TLS 签发者为 Loon CA）；未列入任何名单的 `example.com` 返回真实 Cloudflare 证书。判据用 `openssl s_client` 看 issuer，不要看 `curl` 的 HTTP 状态（被解密与否都可能 200）。
 - [x] **主配置独有主机要逐条找消费方**：从 `[Plugin]` 的启用 URL 算 MD5 映射到 `remotePlugin/<md5>.lpx`，解析每个插件 `[MITM] hostname`（去 `%APPEND%`、跳过 `-` 排除）取并集；主配置里不被并集覆盖、且插件 Rewrite/Script/Rule 文本与主配置 `[Rewrite]/[Script]` 都不引用的主机，才可判孤儿。示例：私有 Mac 配置 50 个正包含 → 18 个（32 个孤儿删除），61 个排除项全部保留；`ad.zijieapi.com`、`beta-api.m.jd.com` 因主配置 Rewrite 命中而保留。
 - [x] **证书验证**：重启隧道后对每个删除项跑 `echo | openssl s_client -connect <host>:443 -servername <host> 2>/dev/null | openssl x509 -noout -issuer`；真实 CA＝已退出解密，`O=Loon`＝仍在名单（检查插件是否声明或配置未重载）。
 - [x] **macOS 重启隧道**：Loon for Mac 不注册 `loon://` scheme，退出 App 也不会重启网络扩展；用 `scutil --nc stop "Loon for Mac"` → `scutil --nc start "Loon for Mac"` 才会重载 `Loon.lcf` 与插件缓存。改动前备份 `Loon.lcf`，回滚即恢复备份后再重启 VPN。

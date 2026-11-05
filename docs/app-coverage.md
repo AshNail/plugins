@@ -11,17 +11,6 @@
 |---|---|---|
 | `ads.95516.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
 
-## `bilibili` — 生效黑洞 0 域；缺口候选 A:1 B:2 C:4（已裁决排除 0 条；已收录但默认关闭 0 条）
-
-| A 候选（≥3 源） | 源 | 状态 |
-|---|---|---|
-| `dataflow.biliapi.com` | 4: adguard-dns,adguard-mobile,anti-ad,hagezi-pro | 缺口 |
-
-| B 候选（2 源） | 源 | 状态 |
-|---|---|---|
-| `data.bilibili.com` | 2: easyprivacy,hagezi-pro | 缺口 |
-| `miniapp.bilibili.com` | 2: anti-ad,hagezi-pro | 缺口 |
-
 ## `bubei-danci` — 生效黑洞 1 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
@@ -230,14 +219,6 @@
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `fcmatch.youtube.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 缺口 |
-
-## `zhihu` — 生效黑洞 0 域；缺口候选 A:2 B:0 C:5（已裁决排除 0 条；已收录但默认关闭 1 条）
-
-| A 候选（≥3 源） | 源 | 状态 |
-|---|---|---|
-| `zhihu-web-analytics.zhihu.com` | 8: adguard-dns,adrules,adwars,anti-ad,awa,easyprivacy,hagezi-pro,stevenblack | 已收录·默认关 |
-| `udd1i5.zhihu.com` | 5: adguard-cn,adguard-dns,adrules,anti-ad,easylist-cn | 缺口 |
-| `crash2.zhihu.com` | 3: anti-ad,awa,hagezi-pro | 缺口 |
 
 ## `zhihuifangdong` — 生效黑洞 87 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
