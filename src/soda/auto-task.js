@@ -666,57 +666,32 @@ if (isRequest) {
   // Token 捕获（所有请求）
   captureTokens($request);
 
-  // ---- Pangle 广告注入 ----
-  if (url.includes("/api/ad/v1/inspire_preload/")) {
-    // 预加载 → 返回空广告列表
-    $done({ response: { status: 200, headers: { "Content-Type": "application/json" }, body: fakeInspirePreloadResponse() } });
-  } else if (url.includes("/api/ad/v1/inspire/")) {
-    // 广告请求 → 返回伪造广告（1秒视频，让 SDK 快速完成）
-    $done({ response: { status: 200, headers: { "Content-Type": "application/json" }, body: fakeInspireResponse(url) } });
-  }
-  // ---- 签到注入 ----
-  else if (url.includes("/sign_in/sign_in_done")) {
-    const fakeResp = fakeSignInResponse();
-    if (fakeResp) {
-      $done({ response: { status: 200, headers: { "Content-Type": "application/json" }, body: fakeResp } });
-    } else {
-      $done({});
-    }
-  }
-  // ---- incentive/done 请求（记录，不拦截） ----
-  else if (url.includes("/luna/advert/incentive/done")) {
-    // 风控检查
-    if (isRiskCooldownActive()) {
-      if (!CONFIG.SilentMode) {
-        log("⏸️ 风控冷却中，跳过 incentive/done");
-      }
-    }
-    // 让请求正常通过，在响应阶段增强
-    $done({});
-  }
-  // ---- listen_music 风控监测 ----
-  else if (url.includes("/treasure/task/listen_music/do_action")) {
-    if (!CONFIG.SilentMode) {
-      log("🎵 听歌任务触发");
-    }
-    $done({});
-  }
+  // ---- Pangle 广告注入（已禁用 - 会导致网络错误） ----
+  // 伪造的响应格式与真实 SDK 不兼容，导致 App 报网络错误
+  // 广告拦截改由 [Host] 层的域名黑名单处理
+
+  // ---- 签到注入（已禁用 - 需要更复杂的实现） ----
+  // 简单的响应替换不足以绕过服务端校验
+
   // ---- 默认放行 ----
-  else {
-    $done({});
-  }
+  $done({});
 }
 
 // ---- 响应阶段 ----
 if (isResponse) {
   const body = $response?.body || "";
 
-  // ---- incentive/done 响应增强 ----
+  // ---- incentive/done 响应观测（只记录，不修改） ----
   if (url.includes("/luna/advert/incentive/done")) {
-    const enhanced = enhanceIncentiveDoneResponse(body, $request?.body);
-    $done({ body: enhanced });
+    try {
+      const data = typeof body === "string" ? JSON.parse(body) : body;
+      if (data?.reward_details) {
+        log(`📊 incentive/done: ${JSON.stringify(data.reward_details).substring(0, 100)}`);
+      }
+    } catch (e) {}
+    $done({});
   }
-  // ---- 激励配置缓存 ----
+  // ---- 激励配置观测 ----
   else if (url.includes("/luna/advert/incentive/config")) {
     cacheIncentiveConfig(body);
     $done({});
@@ -734,26 +709,6 @@ if (isResponse) {
   // ---- 任务页面观测 ----
   else if (url.includes("/treasure/task/page/v2")) {
     observeTaskPage(body);
-    $done({});
-  }
-  // ---- 签到详情观测 ----
-  else if (url.includes("/sign_in/sign_in_detail")) {
-    try {
-      const data = JSON.parse(body);
-      if (data?.data?.sign_in_status) {
-        const s = data.data.sign_in_status;
-        if (!CONFIG.SilentMode) {
-          log(`📅 签到状态: 累计${s.total_sign_times}天, 连续${s.cur_sign_times}天, 今日${s.today_signed ? "已签" : "未签"}`);
-        }
-      }
-    } catch (e) {}
-    $done({});
-  }
-  // ---- fallback/done/info 观测 ----
-  else if (url.includes("/luna/advert/fallback/done/info")) {
-    if (!CONFIG.SilentMode) {
-      log("🔄 fallback 发奖请求");
-    }
     $done({});
   }
   // ---- 默认放行 ----

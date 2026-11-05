@@ -765,8 +765,55 @@ function normalizeHeaders(headers) {
 
 function safeJsonParse(body) {
   if (body === null || body === undefined) return null;
-  if (typeof body === "object") return body; // 已经是对象，直接返回
-  try { return JSON.parse(body); } catch (e) { return null; }
+  if (typeof body === "object" && !(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) return body; // 已经是对象，直接返回
+  
+  // 处理字符串
+  if (typeof body === "string") {
+    // 检测 gzip 魔数 (1f 8b)
+    if (body.length >= 2 && body.charCodeAt(0) === 0x1f && body.charCodeAt(1) === 0x8b) {
+      console.log("[起点全能助手] [DEBUG] 响应体是 gzip 压缩数据，尝试解压");
+      try {
+        if (typeof $utils !== "undefined" && $utils.ungzip) {
+          const decompressed = $utils.ungzip(body);
+          return JSON.parse(decompressed);
+        }
+      } catch (e) {
+        console.log("[起点全能助手] [DEBUG] gzip 解压失败: " + e.message);
+      }
+      return null;
+    }
+    
+    try { return JSON.parse(body); } catch (e) { 
+      console.log("[起点全能助手] [DEBUG] JSON 解析失败: " + e.message + ", body前100字符: " + body.substring(0, 100));
+      return null; 
+    }
+  }
+  
+  // 处理 Uint8Array / ArrayBuffer
+  if (body instanceof Uint8Array || body instanceof ArrayBuffer) {
+    console.log("[起点全能助手] [DEBUG] 响应体是二进制数据，长度: " + (body.byteLength || body.length));
+    // 检测 gzip
+    const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
+    if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+      try {
+        if (typeof $utils !== "undefined" && $utils.ungzip) {
+          const decompressed = $utils.ungzip(body);
+          return JSON.parse(decompressed);
+        }
+      } catch (e) {
+        console.log("[起点全能助手] [DEBUG] 二进制 gzip 解压失败: " + e.message);
+      }
+    }
+    // 尝试直接转字符串
+    try {
+      const str = new TextDecoder().decode(bytes);
+      return JSON.parse(str);
+    } catch (e) {
+      console.log("[起点全能助手] [DEBUG] 二进制转字符串失败: " + e.message);
+    }
+  }
+  
+  return null;
 }
 
 // ==========================================
