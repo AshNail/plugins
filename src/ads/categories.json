@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "categories": {
-    "advertising": ["pangle", "gdt", "kuaishou", "baidu", "alibaba", "cn_union", "google", "meta", "tiktok", "oem", "mobile_sdks", "adtech", "retail_ctv_audio", "popunder"],
+    "advertising": ["pangle", "gdt", "kuaishou", "baidu", "alibaba", "cn_union", "google", "meta", "tiktok", "oem", "mobile_sdks", "adtech", "retail_ctv_audio", "popunder", "adfilter_exact"],
     "attribution": ["attribution"],
     "analytics": ["analytics"],
     "dns_control": ["httpdns", "doh_public", "doh_public_cn"],
