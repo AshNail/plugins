@@ -1,12 +1,12 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.14
+#!version=2.8.15
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06 00:21
+#!date=2026-11-06 00:35
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -761,6 +761,34 @@ imp.go.sohu.com = 127.0.0.1
 gg.kugou.com = 127.0.0.1
 adserviceretry.kugou.com = 127.0.0.1
 apple.www.letv.com = 127.0.0.1
+ggxwb.miguvideo.com = 127.0.0.1
+ggx01.miguvideo.com = 127.0.0.1
+ggx03.miguvideo.com = 127.0.0.1
+ggx10.miguvideo.com = 127.0.0.1
+clog.miguvideo.com = 127.0.0.1
+rich.kuwo.cn = 127.0.0.1
+deliver.kuwo.cn = 127.0.0.1
+g.kuwo.cn = 127.0.0.1
+kwpush.kuwo.cn = 127.0.0.1
+adsfileretry.service.kugou.com = 127.0.0.1
+adsfilebssdlbig.ali.kugou.com = 127.0.0.1
+e-ad-monitor.huya.com = 127.0.0.1
+e-stat.huya.com = 127.0.0.1
+goblin.hupu.com = 127.0.0.1
+adx.hupu.com = 127.0.0.1
+e-goblin.hupu.com = 127.0.0.1
+adse.test.ximalaya.com = 127.0.0.1
+adwbs.ximalaya.com = 127.0.0.1
+adbs.ximalaya.com = 127.0.0.1
+mobwsa.ximalaya.com = 127.0.0.1
+valf.atm.youku.com = 127.0.0.1
+val.atm.youku.com = 127.0.0.1
+l.ykimg.com = 127.0.0.1
+al.autohome.com.cn = 127.0.0.1
+pcmx.autohome.com.cn = 127.0.0.1
+ax.ifeng.com = 127.0.0.1
+deliver.ifeng.com = 127.0.0.1
+dotcounter.douyutv.com = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -1111,6 +1139,13 @@ startappexchange.com = 127.0.0.1
 *.startappexchange.com = 127.0.0.1
 admob-cn.com = 127.0.0.1
 *.admob-cn.com = 127.0.0.1
+cdn.iads.unitychina.cn = 127.0.0.1
+tradplusad.com = 127.0.0.1
+*.tradplusad.com = 127.0.0.1
+tianmu.mobi = 127.0.0.1
+*.tianmu.mobi = 127.0.0.1
+admobile.top = 127.0.0.1
+*.admobile.top = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据

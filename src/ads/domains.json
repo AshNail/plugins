@@ -1,6 +1,6 @@
 {
-  "version": "2.8.14",
-  "updated": "2026-11-06 00:21",
+  "version": "2.8.15",
+  "updated": "2026-11-06 00:35",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "openUrl": "https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.14",
+      "version": "2.8.15",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -635,7 +635,35 @@
             "imp.go.sohu.com",
             "gg.kugou.com",
             "adserviceretry.kugou.com",
-            "apple.www.letv.com"
+            "apple.www.letv.com",
+            "ggxwb.miguvideo.com",
+            "ggx01.miguvideo.com",
+            "ggx03.miguvideo.com",
+            "ggx10.miguvideo.com",
+            "clog.miguvideo.com",
+            "rich.kuwo.cn",
+            "deliver.kuwo.cn",
+            "g.kuwo.cn",
+            "kwpush.kuwo.cn",
+            "adsfileretry.service.kugou.com",
+            "adsfilebssdlbig.ali.kugou.com",
+            "e-ad-monitor.huya.com",
+            "e-stat.huya.com",
+            "goblin.hupu.com",
+            "adx.hupu.com",
+            "e-goblin.hupu.com",
+            "adse.test.ximalaya.com",
+            "adwbs.ximalaya.com",
+            "adbs.ximalaya.com",
+            "mobwsa.ximalaya.com",
+            "valf.atm.youku.com",
+            "val.atm.youku.com",
+            "l.ykimg.com",
+            "al.autohome.com.cn",
+            "pcmx.autohome.com.cn",
+            "ax.ifeng.com",
+            "deliver.ifeng.com",
+            "dotcounter.douyutv.com"
           ]
         },
         {
@@ -893,7 +921,11 @@
             "sdk.adtiming.com",
             "m.adtiming.com",
             "=startappexchange.com",
-            "=admob-cn.com"
+            "=admob-cn.com",
+            "cdn.iads.unitychina.cn",
+            "=tradplusad.com",
+            "=tianmu.mobi",
+            "=admobile.top"
           ]
         },
         {
