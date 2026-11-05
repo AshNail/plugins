@@ -1,7 +1,7 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.9
+#!version=2.8.10
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
@@ -376,7 +376,7 @@ pangolin16.sgsnssdk.com = 127.0.0.1
 # ============================================================================
 # 腾讯广告 / 优量汇（GDT）
 # ----------------------------------------------------------------------------
-# 优量汇投放与竞价、GDT 素材 CDN、腾讯广告点击追踪。qq.com 是共享域，只放 gdt/e/l 三个广告专用子域。
+# 优量汇投放与竞价、GDT 素材 CDN、腾讯广告点击追踪、腾讯智慧营销 MIND 系统。qq.com 是共享域，只放 gdt/e/l 三个广告专用子域。
 # ============================================================================
 gdt.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
@@ -394,6 +394,8 @@ adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
+tencentmind.com = 127.0.0.1
+*.tencentmind.com = 127.0.0.1
 
 # ============================================================================
 # 快手联盟 / 快手广告
@@ -422,6 +424,8 @@ hw-ot-ad.a.yximgs.com = 127.0.0.1
 v1-ad.video.yximgs.com = 127.0.0.1
 v2-ad.video.yximgs.com = 127.0.0.1
 v3-ad.video.yximgs.com = 127.0.0.1
+wlog.kuaishou.com = 127.0.0.1
+promotion-partner.kuaishou.com = 127.0.0.1
 
 # ============================================================================
 # 百度广告 / 百青藤
@@ -609,8 +613,11 @@ tmead.y.qq.com = 127.0.0.1
 tmeadcomm.y.qq.com = 127.0.0.1
 *.tmeadcomm.y.qq.com = 127.0.0.1
 cupid.iqiyi.com = 127.0.0.1
+*.cupid.iqiyi.com = 127.0.0.1
+mesh.if.iqiyi.com = 127.0.0.1
 paopao.iqiyi.com = 127.0.0.1
 sugar.zhihu.com = 127.0.0.1
+udd1i5.zhihu.com = 127.0.0.1
 appcloud2.zhihu.com = 127.0.0.1
 adx.weibo.com = 127.0.0.1
 wax.weibo.com = 127.0.0.1
@@ -680,8 +687,16 @@ da.mgtv.com = 127.0.0.1
 *.da.mgtv.com = 127.0.0.1
 api.cupid.qiyi.com = 127.0.0.1
 iad.g.163.com = 127.0.0.1
+da.netease.com = 127.0.0.1
+pr.nss.netease.com = 127.0.0.1
+gad.netease.com = 127.0.0.1
+ad.bn.netease.com = 127.0.0.1
 yt-adp.nosdn.127.net = 127.0.0.1
 masdk.3g.qq.com = 127.0.0.1
+wwads.cn = 127.0.0.1
+*.wwads.cn = 127.0.0.1
+tracklog.58.com = 127.0.0.1
+ad4.on.cc = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -991,6 +1006,10 @@ nend.net = 127.0.0.1
 *.nend.net = 127.0.0.1
 i2ad.jp = 127.0.0.1
 *.i2ad.jp = 127.0.0.1
+adsmogo.com = 127.0.0.1
+*.adsmogo.com = 127.0.0.1
+creative-serving.com = 127.0.0.1
+*.creative-serving.com = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据

@@ -1,6 +1,6 @@
 # 真机验证清单（重装/更新后照单走）
 
-> 适用：`soda.plugin`（当前 3.1.0）/ `douyin.plugin`（当前 0.9.0）；`ads.plugin`（当前 2.8.9）见 H 节。
+> 适用：`soda.plugin`（当前 3.1.0）/ `douyin.plugin`（当前 0.9.0）；`ads.plugin`（当前 2.8.10）见 H 节。
 > 构建门槛：soda/douyin 需 Loon 3.5.1(983)+，**gzip 响应清理需 988+**（`$utils.ungzip`），低于 988 只记录状态；ads 与全部 App 插件**不再声明 `#!loon_version`**（`#!system` 覆盖 macOS，Loon for Mac 的营销版本号是独立一条线 `0.5.0(1011)`，iOS 口径门槛在 Mac 上语义未定），功能基线仍是 App Store 正式版 **3.5.2(996)**；`DOMAIN-WILDCARD` 仅 TF 3.5.3(1008)+ 有，保持默认注释层。
 > 红线重申：净化/观测层默认生效、零改写；自动化层（签到 / 激励任务重放 / 自动领取 / 广告秒播，
 > 3kaiu 方案）是独立显式开关，默认值见各插件 `[Argument]`，开启前先读插件 README 的副作用说明。
@@ -26,7 +26,7 @@
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.9`、`soda=3.1.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.10`、`soda=3.1.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 

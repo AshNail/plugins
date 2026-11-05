@@ -3301,15 +3301,20 @@ def check_mitm_reach():
     for path in sorted(ROOT.glob("plugins/*/*.plugin")):
         rel = path.relative_to(ROOT)
         slug = path.parent.name
-        enhance = ((apps.get(slug) or {}).get("enhance") or {}).get("mitm_hosts") or []
-        declared = {h.lower() for h in enhance}
+        enh = (apps.get(slug) or {}).get("enhance") or {}
+        declared = {h.lower() for h in (enh.get("mitm_hosts") or [])}
+        active_layer = bool(enh.get("active"))
         rendered = set()
+        live = 0
         for commented, item in mitm_hostname_entries(path):
             rendered.add(item)
-            if slug in apps and not commented:
+            if not commented:
+                live += 1
+            if slug in apps and not commented and not active_layer:
                 fail(
                     f"{rel}: [MITM] hostname {item!r} 是默认生效的——按 App 插件的增强层"
-                    "整段默认注释是仓库纪律（不装证书 = 永不生效）"
+                    "整段默认注释是仓库纪律（不装证书 = 永不生效）；要默认启用就得在 "
+                    "src/apps/<slug>.json 里声明 enhance.active=true，由生成器整段产出"
                 )
             for entry in entries:
                 if not module.mitm_reaches(item, entry):
@@ -3331,11 +3336,16 @@ def check_mitm_reach():
                 f"{rel}: enhance.mitm_hosts 与产物 [MITM] hostname 不等——"
                 f"只在源里有 {sorted(declared - rendered)}，只在产物里有 {sorted(rendered - declared)}"
             )
+        if slug in apps and active_layer and not live:
+            fail(
+                f"{rel}: enhance.active=true 却没有任何生效的 hostname 行——源宣称默认启用，"
+                "产物却还是注释基线（run npm run build:apps）"
+            )
     if not bad:
         print(
             f"mitm reach: {len(list(ROOT.glob('plugins/*/*.plugin')))} plugin(s) 的 hostname 名单"
             f"与 {len(entries)} 条红线交叉，罩住红线 {reachable} 处，全部落在「本 App 自己声明的"
-            "默认注释增强层」里"
+            "增强层」里（注释态按需开，active 层默认生效）"
         )
 
 

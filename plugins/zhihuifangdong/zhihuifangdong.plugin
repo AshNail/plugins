@@ -81,6 +81,7 @@ tnc31-normal-alisg.isnssdk.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
 *.gdtimg.com = 127.0.0.1
 *.l.qq.com = 127.0.0.1
+*.tencentmind.com = 127.0.0.1
 *.ugdtimg.com = 127.0.0.1
 *.ugdturner.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
@@ -102,10 +103,12 @@ ali-ad.a.yximgs.com = 127.0.0.1
 gdfp.gifshow.com = 127.0.0.1
 hw-ot-ad.a.yximgs.com = 127.0.0.1
 js-ad.a.yximgs.com = 127.0.0.1
+promotion-partner.kuaishou.com = 127.0.0.1
 tx-ad.a.yximgs.com = 127.0.0.1
 v1-ad.video.yximgs.com = 127.0.0.1
 v2-ad.video.yximgs.com = 127.0.0.1
 v3-ad.video.yximgs.com = 127.0.0.1
+wlog.kuaishou.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 百度广告 / 百青藤（置信 A）
