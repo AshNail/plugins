@@ -69,7 +69,7 @@
 - `基础设施红线` ← `dns.*`, `blackhole*`, `h5speed.*`, `gia.*`, `gias.*`, `dgstatic.*`, `wl.jd.com`, `policy.*`, `kepler.*`, `union.jd.com`, `cps.*`, `jrclick.*`
 - `C 级单源不收` ← `u.x.jd.com`, `bdsp.x.jd.com`, `du.jd.com`, `nfa.jd.com`, `c-nfa.jd.com`, `firevent.jd.com`, `stat.m.jd.com`, `ads.union.jd.com`, `jzt.jd.com`
 
-## `mba-dashi` — 生效黑洞 60 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `mba-dashi` — 生效黑洞 61 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -85,7 +85,7 @@
 |---|---|---|
 | `dreport.meituan.net` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:14（已裁决排除 140 条；已收录但默认关闭 23 条）
+## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:14（已裁决排除 140 条；已收录但默认关闭 22 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -96,7 +96,6 @@
 | `tracking.intl.miui.com` | 6: adaway,anti-ad,hagezi-pro,hagezi-xiaomi,peterlowe,stevenblack | 已收录·默认关 |
 | `abtest.mistat.xiaomi.com` | 5: adguard-dns,adguard-mobile,adwars,anti-ad,stevenblack | 已收录·默认关 |
 | `activity.browser.intl.miui.com` | 5: adguard-dns,adguard-mobile,anti-ad,hagezi-pro,hagezi-xiaomi | 已收录·默认关 |
-| `data.mistat.xiaomi.com` | 5: adguard-dns,adrules,anti-ad,awa,stevenblack | 已收录·默认关 |
 | `tracking.rus.miui.com` | 5: adaway,adrules,anti-ad,awa,stevenblack | 已收录·默认关 |
 | `api.setting.intl.miui.com` | 4: adguard-dns,hagezi-pro,hagezi-xiaomi,stevenblack | 排除·账号/设备业务 API |
 | `auth.be.sec.miui.com` | 4: adguard-dns,adrules,hagezi-pro,hagezi-xiaomi | 排除·安全族红线 |
@@ -167,17 +166,17 @@
 - `米家业务` ← `*.mihome.xiaomi.net`
 - `MIUI 业务域` ← `app.miui.com`, `feedback.miui.com`, `hybrid.miui.com`, `mcc.miui.com`, `rus.miui.com`, `india.miui.com`, `testit.miui.com`, `privacy.miui.com`, `search.miui.com`, `intl.up.w.xk.miui.com`, `gtglobal.intl.miui.com`, `preload.xiaomi.com`, `*.sms.miui.com`
 
-## `qidian` — 生效黑洞 109 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `qidian` — 生效黑洞 110 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `qdp.qidian.com` | 3: adrules,anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `ruankao-tong` — 生效黑洞 60 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `ruankao-tong` — 生效黑洞 61 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
-## `taobao` — 生效黑洞 13 域；缺口候选 A:0 B:3 C:8（已裁决排除 0 条；已收录但默认关闭 8 条）
+## `taobao` — 生效黑洞 14 域；缺口候选 A:0 B:3 C:8（已裁决排除 0 条；已收录但默认关闭 8 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -196,7 +195,7 @@
 | `textlink.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
 | `v6-adashx.ut.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `wechat` — 生效黑洞 30 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `wechat` — 生效黑洞 31 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|
@@ -210,7 +209,7 @@
 | `analytics.twitter.com` | 3: adaway,anti-ad,stevenblack | 已收录·默认关 |
 | `scribe.twitter.com` | 3: anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
 
-## `xianyu` — 生效黑洞 9 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `xianyu` — 生效黑洞 10 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -220,7 +219,7 @@
 |---|---|---|
 | `fcmatch.youtube.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 缺口 |
 
-## `zhihuifangdong` — 生效黑洞 111 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `zhihuifangdong` — 生效黑洞 118 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 

@@ -1,6 +1,6 @@
 {
-  "version": "2.8.11",
-  "updated": "2026-11-05",
+  "version": "2.8.12",
+  "updated": "2026-11-05 22:49",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "openUrl": "https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.11",
+      "version": "2.8.12",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -353,7 +353,8 @@
             "snowflake.qq.com",
             "mtrace.qq.com",
             "btrace.qq.com",
-            "mdevstat.qqlive.qq.com"
+            "mdevstat.qqlive.qq.com",
+            "wit.qq.com"
           ]
         },
         {
@@ -380,7 +381,9 @@
             "wlog.kuaishou.com",
             "promotion-partner.kuaishou.com",
             "log-sdk.ksapisrv.com",
-            "web-trace.ksapisrv.com"
+            "web-trace.ksapisrv.com",
+            "api.e.kuaishou.com",
+            "ulog-sdk.gifshow.com"
           ]
         },
         {
@@ -416,7 +419,11 @@
             "nadvideo2.baidu.com",
             "fxgate.baidu.com",
             "adm.baidu.com",
-            "hmma.baidu.com"
+            "hmma.baidu.com",
+            "eduad.baidu.com",
+            "drmcmm.baidu.com",
+            "duiwai.baidu.com",
+            "spcode.baidu.com"
           ]
         },
         {
@@ -429,7 +436,8 @@
             "=mmstat.com",
             "atanx.alicdn.com",
             "alimama.alicdn.com",
-            "tns.simba.taobao.com"
+            "tns.simba.taobao.com",
+            "=alimama.cn"
           ]
         },
         {
@@ -592,7 +600,17 @@
             "pv.hd.sohu.com",
             "p.aty.sohu.com",
             "cpro.zol.com.cn",
-            "ivy.pconline.com.cn"
+            "ivy.pconline.com.cn",
+            "d1.sina.com.cn",
+            "d3.sina.com.cn",
+            "d4.sina.com.cn",
+            "d5.sina.com.cn",
+            "p4p.sina.com.cn",
+            "pfp.sina.com.cn",
+            "r.sax.sina.com.cn",
+            "ad.ximalaya.com",
+            "adsebs.ximalaya.com",
+            "xdcs-collector.ximalaya.com"
           ]
         },
         {
@@ -751,7 +769,13 @@
             "cs02-pps-drcn.dbankcdn.com",
             "ort-stsdk.vivo.com.cn",
             "monitor-stsdk.vivo.com.cn",
-            "stnetsdk.vivo.com.cn"
+            "stnetsdk.vivo.com.cn",
+            "api.ad.xiaomi.com",
+            "sdkconfig.ad.xiaomi.com",
+            "data.mistat.xiaomi.com",
+            "adx.ads.oppomobile.com",
+            "data.ads.oppomobile.com",
+            "bdapi.ads.oppomobile.com"
           ]
         },
         {
@@ -787,7 +811,7 @@
             "=bigoads.com",
             "=appodeal.com",
             "applvn.com",
-            "inmobicdn.net",
+            "=inmobicdn.net",
             "tapjoyads.com",
             "ws.tapjoyads.com",
             "startapp.com",
@@ -833,7 +857,12 @@
             "=adsmogo.mobi",
             "=chartboosts.com",
             "perf-events.cloud.unity3d.com",
-            "cdp.cloud.unity3d.com"
+            "cdp.cloud.unity3d.com",
+            "o-sdk.mediation.unity3d.com",
+            "config.uca.cloud.unity3d.com",
+            "data-optout-service.uca.cloud.unity3d.com",
+            "logs.ironsrc.mobi",
+            "=adview.com"
           ]
         },
         {

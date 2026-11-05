@@ -19,7 +19,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 | 阿里广告 SDK 端点（闲鱼净化模块唯一 REJECT 域） | A | 启用 | iyes.youku.com=阿里广告 SDK 端点（apiv4-iyes 为其分片,整域+通配）;anti-AD/AdGuard/hagezi/wool XianYu 模块四源收录。 |
 | 淘宝客/阿里妈妈 API 端点 | B | 启用 | tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、全局 ads 插件的 =alimama.com 整域黑洞罩不到它,故在此精确单列;afpapi.alimama.com 已由 ads 插件 alibaba 组整域覆盖,此处只作按 App 开关的完整起见。DoH 实测 afpapi CNAME 终结于 adsz.wagbridge.tanx.alimama.com(Tanx=阿里妈妈 AdX)。 |
 | 淘宝系 AMDC HTTPDNS 调度（默认关） | B | 默认关闭 | amdc.m/amdcopen.m.taobao.com=阿里 HTTPDNS 调度;闲鱼净化脚本专改 /amdc/mobileDispatch。拦=广告域解析绕过消失,但阿里系 App 若无回退逻辑可能拖慢建连——默认关,验证后再开。 |
-| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 6 域 / 0 规则。 |
+| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 7 域 / 0 规则。 |
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
@@ -98,4 +98,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/xianyu.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 12 条，[Rule] 0 条。
+统计：精确/通配黑洞 13 条，[Rule] 0 条。
