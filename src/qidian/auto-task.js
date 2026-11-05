@@ -1,7 +1,7 @@
 /**
- * 起点读书 · 全能助手 v3.0.0
+ * 起点读书 · 看书激励助手 v3.1.0
  *
- * 整合功能（REA 5.9.482 二进制考古 + 真机日志验证 + 3kaiu 方案）：
+ * 核心功能（看书+激励）：
  *
  * 【自动化层】
  *   Token 窃取：App 打开时自动捕获 auth headers(getlogininfo/getconf/checkin)
@@ -107,9 +107,9 @@ const CONFIG = {
     "AdVideoPositionConfig", "GDT",
   ],
 
-  // 直接 404 拒绝的纯广告端点
+  // 直接 404 拒绝的纯广告端点（保留核心阅读相关）
   RejectPaths: [
-    "checkin/lottery", "push/getdialog",
+    "push/getdialog",
     "booksearch/hotWords", "maintain/playstrip", "young/getconf",
     "followsubscribe/showChapterEndModule", "freshman/bookshelfbtn",
     "freshman/freshmanGuidePopup",
@@ -121,19 +121,18 @@ const CONFIG = {
     "bookshelf/getad", "client/iosad",
   ],
 
-  // 发现页保留白名单
+  // 发现页保留白名单（核心阅读内容）
   DiscoverKeepKeys: [
     "NEW_ZHUANQU",    // IP 专区
     "NEW_ZHUANLAN",   // 专栏
     "NEW_SHUDAN",     // 书单
-    "NEW_DIANDIANQUAN", // 点点圈
   ],
 
   // 账户页删除营销模块
   AccountPageDelKeys: ["BenefitButtonList"],
 
-  // 广告白名单（不拦截的广告位）
-  AdWhitelist: ["ioscheckin", "reward", "video", "flzx", "costume", "buqian", "normaltask", "limitegg", "redpocket"],
+  // 广告白名单（保留激励相关广告位）
+  AdWhitelist: ["reward", "video", "normaltask", "limitegg", "redpocket"],
 
   // 视频秒播时长
   VideoSkipSeconds: 1,
@@ -732,51 +731,5 @@ function Env(name) {
     subtitle = maskSecrets(subtitle);
     body = maskSecrets(body);
     try { $notification.post(title, subtitle, body); } catch (e) {}
-
-    var pushes = [];
-    var barkKey;
-    try { barkKey = $persistentStore.read("Bark_Key"); } catch (e) {}
-    if (barkKey) {
-      pushes.push(this.fetch({
-        url: "https://api.day.app/" + barkKey + "/" +
-          encodeURIComponent(title) + "/" +
-          encodeURIComponent((subtitle ? subtitle + "\n" : "") + body),
-        method: "GET",
-      }).catch(function () {}));
-    }
-
-    var tgToken, tgChatId;
-    try {
-      tgToken = $persistentStore.read("TG_BOT_TOKEN");
-      tgChatId = $persistentStore.read("TG_USER_ID");
-    } catch (e) {}
-    if (tgToken && tgChatId) {
-      pushes.push(this.fetch({
-        url: "https://api.telegram.org/bot" + tgToken + "/sendMessage",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: String(tgChatId),
-          text: title + "\n" + (subtitle ? subtitle + "\n" : "") + body,
-        }),
-      }).catch(function () {}));
-    }
-
-    var pushplusToken;
-    try { pushplusToken = $persistentStore.read("PUSHPLUS_TOKEN"); } catch (e) {}
-    if (pushplusToken) {
-      pushes.push(this.fetch({
-        url: "https://www.pushplus.plus/send",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: String(pushplusToken),
-          title: title,
-          content: (subtitle ? subtitle + "\n" : "") + body,
-        }),
-      }).catch(function () {}));
-    }
-
-    return Promise.allSettled(pushes);
   };
 }
