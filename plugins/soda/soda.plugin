@@ -229,7 +229,7 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 
 # ---- 去广告脚本：商业化弹窗 ----
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/upsells/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：商业化弹窗"
-response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell(?:_sort_decision)?/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell_sort_decision/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：upsell_sort_decision"
 
 # ---- 去广告脚本：福利页只摘 reward_ads ----
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/treasure\/entrance\/config/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：福利页只摘 reward_ads"
@@ -297,7 +297,7 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/growth\/activity_entrance/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/growth\/activity\/finish/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/advert\/fallback\/done\/info/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell_sort_decision/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 
 # ---- 激励任务自动化 v2.0.0（MITM 响应注入方案） ----
 # 核心发现：time_token/nonce 每次动态生成，纯重放不可行；设备已被风控(err_no=210021)

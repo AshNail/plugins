@@ -408,8 +408,18 @@ async function autoReceiveRewards(E, headers) {
 // 🔧 响应净化
 // ==========================================
 function handleClientConfig(E, response) {
+  debugLog("handleClientConfig 开始执行");
   const obj = safeJsonParse(response.body);
-  if (!obj || !obj.Data) { E.done(); return; }
+  if (!obj) {
+    debugLog("handleClientConfig: JSON 解析失败, body 类型: " + typeof response.body);
+    E.done();
+    return;
+  }
+  if (!obj.Data) {
+    debugLog("handleClientConfig: obj.Data 不存在");
+    E.done();
+    return;
+  }
 
   const changes = [];
   for (const [k, v] of Object.entries(CONFIG.ClientConfigOverrides)) {
@@ -430,9 +440,17 @@ function handleClientConfig(E, response) {
 }
 
 function handleSplashScreen(E, response) {
+  debugLog("handleSplashScreen 开始执行");
   const obj = safeJsonParse(response.body);
-  if (!obj) { E.done(); return; }
-  if (obj.Data && Array.isArray(obj.Data.List)) obj.Data.List = [];
+  if (!obj) {
+    debugLog("handleSplashScreen: JSON 解析失败");
+    E.done();
+    return;
+  }
+  if (obj.Data && Array.isArray(obj.Data.List)) {
+    debugLog("handleSplashScreen: 清空 List, 原长度: " + obj.Data.List.length);
+    obj.Data.List = [];
+  }
   E.done({ body: JSON.stringify(obj) });
 }
 
@@ -746,6 +764,8 @@ function normalizeHeaders(headers) {
 }
 
 function safeJsonParse(body) {
+  if (body === null || body === undefined) return null;
+  if (typeof body === "object") return body; // 已经是对象，直接返回
   try { return JSON.parse(body); } catch (e) { return null; }
 }
 
