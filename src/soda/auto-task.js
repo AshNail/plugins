@@ -212,12 +212,18 @@ function injectCommerceInfo(responseBody) {
     if (!resp || resp.status_code !== 0) return responseBody;
 
     const FAR_FUTURE = 4070908800; // 2099-01-01 00:00:00 UTC
+    const changes = [];
+
+    console.log(`[SodaAuto] 💎 commerce_info 响应 intercepted`);
 
     // 1. 音质权益解锁
     if (resp.benefit_base?.quality?.quality_list) {
       resp.benefit_base.quality.quality_list.forEach(q => {
         if (q.key === "lossless" || q.key === "spatial" || q.key === "hi_res") {
-          q.stage = "free";
+          if (q.stage !== "free") {
+            changes.push(`quality.${q.key}:${q.stage}→free`);
+            q.stage = "free";
+          }
           q.expire_time = FAR_FUTURE;
         }
       });
@@ -234,11 +240,13 @@ function injectCommerceInfo(responseBody) {
     // 2. 播放权益延长
     if (resp.benefit_base?.play_track) {
       resp.benefit_base.play_track.expire_time = FAR_FUTURE;
+      changes.push("play_track.expire_time→2099");
     }
 
     // 3. 下载配额
     if (resp.benefit_base?.download) {
       resp.benefit_base.download.quota = 9999;
+      changes.push("download.quota→9999");
     }
 
     // 4. 会员状态注入
@@ -265,6 +273,7 @@ function injectCommerceInfo(responseBody) {
         is_valid: true,
       },
     };
+    changes.push("membership→VIP/SVIP/FreeVIP");
 
     // 5. 激励任务标记完成
     if (resp.incentive) {
@@ -282,6 +291,7 @@ function injectCommerceInfo(responseBody) {
             });
           }
         });
+        changes.push(`incentive.tasks→completed(${resp.incentive.tasks.length})`);
       }
       // 播放权益
       if (resp.incentive.expire_time) {
@@ -296,21 +306,24 @@ function injectCommerceInfo(responseBody) {
         resp.play_entitlements.reward_finished_task_info.all_full = true;
         resp.play_entitlements.reward_finished_task_info.full_day = true;
       }
+      changes.push("play_entitlements→unlocked");
     }
 
     // 7. 活动免费 VIP
     if (resp.activity_free_vip) {
       resp.activity_free_vip.end_date = "2099-01-01";
       resp.activity_free_vip.applied_cnt = 1;
+      changes.push("activity_free_vip→extended");
     }
 
     // 8. 交易信息 - 标记有付费订单（防止弹窗提示开通）
     if (resp.trade) {
       resp.trade.has_paid_order = true;
+      changes.push("trade.has_paid_order→true");
     }
 
-    if (!CONFIG.SilentMode) {
-      console.log(`[SodaAuto] 💎 权益注入: VIP/SVIP/无损/全景声 已解锁`);
+    if (changes.length > 0) {
+      console.log(`[SodaAuto] 💎 权益注入: ${changes.join(", ")}`);
     }
 
     return JSON.stringify(resp);
@@ -333,15 +346,20 @@ function cleanUpsell(responseBody) {
     const resp = typeof responseBody === "string" ? JSON.parse(responseBody) : responseBody;
     if (!resp || resp.status_code !== 0) return responseBody;
 
+    const changes = [];
+    console.log(`[SodaAuto] 🚫 upsell 响应 intercepted`);
+
     // 清空弹窗配置
     if (resp.popup_config) {
       resp.popup_config.popup_frequency_control = { group_gap: 999999, time_interval: 999999 };
+      changes.push("popup_config→disabled");
     }
 
     // 清空 scene_upsells_map 里的广告/营销弹窗
     const sceneMap = resp.scene_upsells_map || resp.sceneUpsellsMap || {};
     for (const scene of Object.keys(sceneMap)) {
       const candidates = sceneMap[scene]?.candidates || [];
+      const before = candidates.length;
       sceneMap[scene].candidates = candidates.filter(c => {
         const name = c?.unique_name || c?.uniqueName || "";
         // 保留奖励相关弹窗，删除广告/营销弹窗
@@ -349,6 +367,9 @@ function cleanUpsell(responseBody) {
         if (name.includes("ads") || name.includes("popup") || name.includes("commerce")) return false;
         return true;
       });
+      if (sceneMap[scene].candidates.length !== before) {
+        changes.push(`scene.${scene}:${before}→${sceneMap[scene].candidates.length}`);
+      }
     }
 
     // 修改 variables 里的倒计时表达式，让权益永不过期
@@ -356,11 +377,17 @@ function cleanUpsell(responseBody) {
       // 让 ad_reward_benefit_countdown 返回一个很大的值
       if (resp.variables.ad_reward_benefit_countdown) {
         resp.variables.ad_reward_benefit_countdown = "999999999999";
+        changes.push("variables.countdown→extended");
       }
+    }
+
+    if (changes.length > 0) {
+      console.log(`[SodaAuto] 🚫 Upsell清理: ${changes.join(", ")}`);
     }
 
     return JSON.stringify(resp);
   } catch (e) {
+    console.log(`[SodaAuto] ⚠️ upsell 清理失败: ${e.message}`);
     return responseBody;
   }
 }
