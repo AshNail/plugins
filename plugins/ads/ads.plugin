@@ -1,7 +1,7 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.12
+#!version=2.8.13
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
@@ -480,6 +480,8 @@ eduad.baidu.com = 127.0.0.1
 drmcmm.baidu.com = 127.0.0.1
 duiwai.baidu.com = 127.0.0.1
 spcode.baidu.com = 127.0.0.1
+iwanad.baidu.com = 127.0.0.1
+baifen.music.baidu.com = 127.0.0.1
 
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
@@ -736,6 +738,14 @@ r.sax.sina.com.cn = 127.0.0.1
 ad.ximalaya.com = 127.0.0.1
 adsebs.ximalaya.com = 127.0.0.1
 xdcs-collector.ximalaya.com = 127.0.0.1
+ads-img-al.xhscdn.com = 127.0.0.1
+t-dsp.pinduoduo.com = 127.0.0.1
+video-dsp.pddpic.com = 127.0.0.1
+gorgon.youdao.com = 127.0.0.1
+a.youdao.com = 127.0.0.1
+adbehavior.ximalaya.com = 127.0.0.1
+adsehera.ximalaya.com = 127.0.0.1
+matwbp.iask.sina.com.cn = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -800,6 +810,7 @@ imasdk.googleapis.com = 127.0.0.1
 ads.youtube.com = 127.0.0.1
 ogads-pa.googleapis.com = 127.0.0.1
 mail-ads.google.com = 127.0.0.1
+fcmatch.youtube.com = 127.0.0.1
 
 # ============================================================================
 # Meta / Audience Network（FAN）
@@ -1837,6 +1848,12 @@ silvermob.com = 127.0.0.1
 *.silvermob.com = 127.0.0.1
 videoadstech.org = 127.0.0.1
 *.videoadstech.org = 127.0.0.1
+adform.com = 127.0.0.1
+*.adform.com = 127.0.0.1
+advangelists.com = 127.0.0.1
+*.advangelists.com = 127.0.0.1
+alenty.com = 127.0.0.1
+*.alenty.com = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告

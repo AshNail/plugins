@@ -60,7 +60,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 15 组、1578 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
+| `[Host]` 核心广告组 | 15 组、1595 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
 | `[Host]` HTTPDNS 组 | 71 条：阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 48 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等海外厂商 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
@@ -71,7 +71,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 可选层（默认注释）：52 条 URL-REGEX + 1 条 jq + `[MITM]` 名单（原 adfilter 并入） | **否**（默认整段注释；启用需 Loon 证书） |
 
-合计：**23 组、1697 条生效 Host（exact 1065 / wildcard 632）、170 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
+合计：**23 组、1714 条生效 Host（exact 1079 / wildcard 635）、170 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 默认注释组（可选开启）
 
@@ -181,7 +181,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（15 组 / 1578 条展开）
+### 核心广告组（15 组 / 1595 条展开）
 
 | 组 | 代表 |
 |---|---|
@@ -455,6 +455,7 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.8.13**（2026-11-05）：**多平台广告生态精准覆盖与 YouTube 缺口清零：落地 14 个高置信商业广告专域**。依据 14 份公开上游审计与平台指纹分析（0 命中 124 条 App 红线）：①Google 与海外组（`google`）补 1 域：YouTube 隐私与广告授权追踪匹配 `fcmatch.youtube.com`（4 源，YouTube 插件上游缺口清零）；②百度广告组（`baidu`）补 2 域：爱玩广告系统 `iwanad.baidu.com`（4 源）、百度音乐商业广告 `baifen.music.baidu.com`（5 源）；③国内媒体与联盟组（`cn_union`）补 8 域：小红书阿里云广告素材图床 `ads-img-al.xhscdn.com`（3 源）、拼多多商业化 DSP 投放 `t-dsp.pinduoduo.com`（3 源）、拼多多视频广告素材 `video-dsp.pddpic.com`（2 源）、网易有道 Gorgon 广告 SDK 引擎 `gorgon.youdao.com`（4 源）、有道商业广告分发 `a.youdao.com`（5 源）、喜马拉雅广告行为追踪 `adbehavior.ximalaya.com`（2 源）、喜马拉雅 Hera 广告系统 `adsehera.ximalaya.com`（2 源）、新浪爱问商业推广 `matwbp.iask.sina.com.cn`（5 源）；④全球广告技术与交易组（`adtech`）补 3 域：欧洲独立数字广告平台全域 `=adform.com`（6 源）、Advangelists 移动程序化变现全域 `=advangelists.com`（6 源）、Alenty 广告可见度与效果验证全域 `=alenty.com`（6 源）。生效 Host 1697→1714（exact 1065→1079 / wildcard 632→635），展开 1867→1884；核心广告组 1578→1595。
 - **2.8.12**（2026-11-05）：**主流商业广告体系与设备变现生态深度覆盖：落地 28 个大厂、OEM 与聚合广告专域**。依据 14 份公开上游审计与平台指纹分析（0 命中 124 条 App 红线）：①腾讯优量汇组（`gdt`）补 1 域：腾讯 WIT 智能营销分析 `wit.qq.com`（4 源）；②快手商业化与联盟组（`kuaishou`）补 2 域：快手磁力引擎开放接口 `api.e.kuaishou.com`（3 源）、快手联盟 SDK 埋点日志 `ulog-sdk.gifshow.com`（3 源）；③百度广告组（`baidu`）补 4 域：百度教育推广 `eduad.baidu.com`（5 源）、富媒体创意管理 `drmcmm.baidu.com`（4 源）、对外商业合作投放 `duiwai.baidu.com`（4 源）、联盟 JS 代码分发 `spcode.baidu.com`（4 源）；④阿里妈妈组（`alibaba`）补 1 域：阿里妈妈国内商业网络全族 `=alimama.cn`（4 源）；⑤手机厂商 OEM 广告组（`oem`）补 6 域：小米官方广告 API `api.ad.xiaomi.com`（6 源）、小米广告 SDK 配置 `sdkconfig.ad.xiaomi.com`（6 源）、小米 MiStat 商业统计 `data.mistat.xiaomi.com`（5 源）、OPPO 移动 ADX 交易平台 `adx.ads.oppomobile.com`（6 源）、OPPO 移动广告分析 `data.ads.oppomobile.com`（6 源）、OPPO 百度联盟广告接口 `bdapi.ads.oppomobile.com`（5 源）；⑥国内媒体与商业联盟组（`cn_union`）补 10 域：新浪商业广告服务器 4 域 `d1.sina.com.cn` / `d3.sina.com.cn` / `d4.sina.com.cn` / `d5.sina.com.cn`（4–5 源）、新浪按效果付费广告网络 `p4p.sina.com.cn`（4 源）、新浪效果广告服务器 `pfp.sina.com.cn`（4 源）、新浪 SAX 广告交换报告 `r.sax.sina.com.cn`（4 源）、喜马拉雅主广告服务 `ad.ximalaya.com`（3 源）、喜马拉雅广告商业系统 `adsebs.ximalaya.com`（3 源）、喜马拉雅埋点收集器 `xdcs-collector.ximalaya.com`（4 源）；⑦全球移动 SDK / 聚合平台组（`mobile_sdks`）升级与补入 6 域：InMobi 素材 CDN 全族升级通配 `=inmobicdn.net`（7 源）、Unity Ads 聚合中枢 SDK `o-sdk.mediation.unity3d.com`（3 源）、Unity 云分析配置 `config.uca.cloud.unity3d.com`（4 源）、Unity 追踪服务 `data-optout-service.uca.cloud.unity3d.com`（5 源）、IronSource 移动端遥测 `logs.ironsrc.mobi`（3 源）、AdView 聚合广告平台全球全族 `=adview.com`（3 源）。生效 Host 1665→1697（exact 1036→1065 / wildcard 629→632），展开 1835→1867；核心广告组 1546→1578。
 - **2.8.11**（2026-11-05）：**主流平台广告生态全域深度匹配：31 个大厂与移动变现 SDK 专域落地**。依据 14 份公开上游审计与平台指纹分析（0 命中 124 条 App 红线）：①穿山甲/GroMore组（`pangle`）补 2 域：GroMore 聚合打点与瀑布日志 `toblog.ctobsnssdk.com`（5 源）、客户端应用日志 `tobapplog.ctobsnssdk.com`（4 源）；②快手商业化与联盟组（`kuaishou`）补 2 域：快手联盟 SDK 打点端点 `log-sdk.ksapisrv.com`（4 源）、快手商业化 Web 转化追踪 `web-trace.ksapisrv.com`（4 源）；③百度广告组（`baidu`）补 5 域：百度 DXP 数据交易平台 `dxp.baidu.com`（4 源）、移动原生视频广告 `nadvideo2.baidu.com`（4 源）、凤巢广告网关 `fxgate.baidu.com`（4 源）、百度广告管理系统 `adm.baidu.com`（4 源）、百度营销分析 `hmma.baidu.com`（4 源）；④腾讯优量汇组（`gdt`）补 4 域：腾讯雪花广告归因追踪 `snowflake.qq.com`（4 源）、移动商业化埋点 `mtrace.qq.com`（5 源）、商业化打点 `btrace.qq.com`（4 源）、腾讯视频设备广告统计 `mdevstat.qqlive.qq.com`（3 源）；⑤国内媒体与联盟组（`cn_union`）补 7 域：新浪商业广告 `ad4.sina.com.cn`（4 源）、爱奇艺移动商业化日志 `mbdlog.iqiyi.com`（4 源）、爱奇艺接口与曝光日志 `ifacelog.iqiyi.com`（4 源）、搜狐高清视频广告曝光 `pv.hd.sohu.com`（5 源）、搜狐 ATY 广告系统 `p.aty.sohu.com`（4 源）、中关村在线 CPRO 联盟广告 `cpro.zol.com.cn`（6 源）、太平洋电脑网 IVY 广告系统 `ivy.pconline.com.cn`（6 源）；⑥厂商 OEM 广告组（`oem`）补 4 域：华为 Petal Ads (PPS) 物料 CDN `cs02-pps-drcn.dbankcdn.com`（4 源）、vivo 广告 SDK 实时跟踪 `ort-stsdk.vivo.com.cn`（5 源）、vivo 广告监控 `monitor-stsdk.vivo.com.cn`（5 源）、vivo 广告网络 `stnetsdk.vivo.com.cn`（4 源）；⑦全球移动 SDK / 聚合平台组（`mobile_sdks`）补 7 域：InMobi 中国商业网络全域 `=inmobi.cn`（6 源）、InMobi 全球商业网络全域 `=inmobi.net`（4 源）、芒果移动广告网络全域 `=adsmogo.net`（6 源）、芒果移动广告移动全域 `=adsmogo.mobi`（6 源）、Chartboost 广告变现集群 `=chartboosts.com`（5 源）、Unity Ads 变现事件上报 `perf-events.cloud.unity3d.com`（8 源）、Unity 商业客户数据平台 `cdp.cloud.unity3d.com`（6 源）。生效 Host 1629→1665（exact 1005→1036 / wildcard 624→629），展开 1799→1835；核心广告组 1510→1546。
 - **2.8.10**（2026-11-05）：**深度根除广告第十六轮探索：主流平台与移动聚合 SDK 14 域覆盖落地**。依据 14 份公开上游审计与深度平台分析（0 命中 124 条 App 红线）：①腾讯优量汇组（`gdt`）补 1 域：腾讯智慧营销 MIND 系统 `=tencentmind.com`（5 源，覆盖 `p.tencentmind.com` 等营销节点）；②快手商业化组（`kuaishou`）补 2 域：快手数据与广告追踪日志 `wlog.kuaishou.com`（5 源）、快手商业化合作推广端点 `promotion-partner.kuaishou.com`（3 源）；③国内联盟与视频媒体组（`cn_union`）升级与补入 10 域：爱奇艺奇速丘比特全系升级为通配 `=cupid.iqiyi.com`（覆盖 `t7z.cupid` 等全节点）、爱奇艺广告追踪 `mesh.if.iqiyi.com`（12 源）、知乎商业化追踪 CDN `udd1i5.zhihu.com`（5 源）、网易广告下发 `da.netease.com`（5 源）、网易 NSS 推广 `pr.nss.netease.com`（5 源）、网易游戏广告系统 `gad.netease.com`（4 源）、网易新闻商业化 `ad.bn.netease.com`（3 源）、万维广告开发者赞助网络 `=wwads.cn`（8 源）、58 同城广告追踪 `tracklog.58.com`（9 源）、东网商业广告 `ad4.on.cc`（12 源）；④全球移动 SDK / 聚合平台组（`mobile_sdks`）补 2 域：芒果移动广告聚合平台 `=adsmogo.com`（5 源）、移动广告素材系统 `=creative-serving.com`（6 源）。生效 Host 1610→1629（exact 991→1005 / wildcard 619→624），展开 1780→1799；核心广告组 1491→1510。
