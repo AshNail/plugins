@@ -405,6 +405,39 @@ async function autoReceiveRewards(E, headers) {
 }
 
 // ==========================================
+// 🔧 响应处理工具函数
+// ==========================================
+/**
+ * 构建响应头，删除 content-encoding 和 content-length
+ * 添加 X-Qidian-Plugin 标记用于诊断
+ */
+function respondHeaders(tag) {
+  const h = Object.assign({}, (typeof $response !== "undefined" && $response.headers) || {});
+  h["X-Qidian-Plugin"] = tag || "qidian-sanitize";
+  
+  // 删除 content-encoding 和 content-length
+  const drop = [];
+  for (const k of Object.keys(h)) {
+    const lk = String(k).toLowerCase();
+    if (lk === "content-encoding" || lk === "content-length") drop.push(k);
+  }
+  for (const k of drop) delete h[k];
+  
+  return h;
+}
+
+/**
+ * 返回修改后的 JSON 响应
+ * 自动处理响应头，确保客户端能正确解析
+ */
+function respondJson(E, obj, tag) {
+  E.done({ 
+    body: JSON.stringify(obj), 
+    headers: respondHeaders(tag) 
+  });
+}
+
+// ==========================================
 // 🔧 响应净化
 // ==========================================
 function handleClientConfig(E, response) {
