@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "candidates": [
+    {
+      "vendor": "AdTonos",
+      "category": "audio-advertising",
+      "hosts": ["play.adtonos.com", "vast.adtonos.com"],
+      "decision": "defer-no-runtime-change",
+      "reviewed": "2026-11-04",
+      "source": "https://www.adtonos.com/",
+      "confirmed": "Vendor describes audio advertising and real-time replacement of broadcast commercial breaks. Local blocklist caches mention these hosts.",
+      "not_confirmed": "Official hostname-specific integration documentation and separation of advertising from programme audio were not obtained.",
+      "risk": "Blocking a combined playback or dynamically stitched stream could interrupt normal radio or podcast audio.",
+      "lookup_results": ["docs.adtonos.com TLS connection failed; reader returned 422", "Direct homepage returned Cloudflare 403; reader obtained public homepage", "Guessed Prebid.js adtonosBidAdapter.js path returned 404; this does not establish absence of an SDK"],
+      "admission_requirements": ["official endpoint-specific documentation or publisher integration source", "verify normal audio is not served by the blocked endpoint", "positive and negative playback tests", "rollback"]
+    }
+  ]
+}

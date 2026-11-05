@@ -72,7 +72,12 @@ const RULES = [
            "searchBanner", "feedWidget",
            "commerceLibraAdConfig", "commerceCommonAdConfig",
            "adnGroupConfig", "splashDspConfig", "preloadDspConfig",
-           "splashMannorConfig", "adIgnorePlayerStatusConfig"],
+           "splashMannorConfig", "adIgnorePlayerStatusConfig",
+           /* 21.4.0 二进制实测的新广告配置容器 */
+           "adFeedPreShow", "adFeedLoudnessConfig", "adInformationFlow",
+           "adCenterPage", "adAuditionIntercept", "adBrandLaunchLimit",
+           "adChargeConfig", "adChargePassiveUnlockConfig",
+           "bdpSplashAdConfig"],
     falsy: ["preload", "enableAds", "enableAd"],
     extendExpiry: EXTEND_EXPIRY
   },
@@ -90,6 +95,10 @@ const RULES = [
            "commerceLibraAdConfig", "commerceCommonAdConfig",
            "adnGroupConfig", "splashDspConfig", "preloadDspConfig",
            "splashMannorConfig", "adIgnorePlayerStatusConfig",
+           "adFeedPreShow", "adFeedLoudnessConfig", "adInformationFlow",
+           "adCenterPage", "adAuditionIntercept", "adBrandLaunchLimit",
+           "adChargeConfig", "adChargePassiveUnlockConfig",
+           "bdpSplashAdConfig",
            "shakeInfo", "twistInfo", "motionInfo", "interactionInfo", "splashCache"],
     killArrayData: true,
     forceOk: FORCE_OK
@@ -123,7 +132,7 @@ const RULES = [
            "recommendAd", "searchBanner", "sponsorCard", "commercialNotice",
            "promotedTrack", "promotedSong"],
     prune: [
-      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|逛街|商城/i }
+      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ],
     dropAdItems: true
   },
@@ -143,7 +152,7 @@ const RULES = [
       /* 金币挂件的广告态：widgetAdReward / reward_ads_cold_start */
       { key: "coinWidgetStateList", match: /widgetad|ad[_-]?reward|reward[_-]?ad|incentive[_-]?ad|watch[_-]?(?:video|ad)|看视频|看广告/i },
       /* 福利页 banner 列表：只摘广告 banner，VIP/宝藏 banner 保留 */
-      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|逛街|商城/i }
+      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ]
   },
   {
@@ -158,12 +167,12 @@ const RULES = [
            "rewardAd", "popupShowAd", "actionPopupShowAd", "popupGainAdEnt",
            "commerceAdTask"],
     prune: [
-      { key: "taskInfos", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|广告|逛街|商城/i },
-      { key: "tasks", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|广告|逛街|商城/i },
-      { key: "taskList", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|广告|逛街|商城/i },
-      { key: "list", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|广告|逛街|商城/i },
-      { key: "data", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|广告|逛街|商城/i },
-      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|逛街|商城/i }
+      { key: "taskInfos", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看视频|看广告|广告/i },
+      { key: "tasks", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看视频|看广告|广告/i },
+      { key: "taskList", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看视频|看广告|广告/i },
+      { key: "list", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看视频|看广告|广告/i },
+      { key: "data", match: /ad[_-]?reward|reward[_-]?ads?|incentive|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看视频|看广告|广告/i },
+      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ]
   },
   {
@@ -182,9 +191,9 @@ const RULES = [
            "popupShowAd", "actionPopupShowAd"],
     falsy: ["migrateFirstAd"],
     prune: [
-      { key: "tasks", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|browse[_-]?mall|treasure[_-]?shop|看广告|看视频|广告|逛街/i },
-      { key: "taskInfos", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|browse[_-]?mall|treasure[_-]?shop|看广告|看视频|广告|逛街/i },
-      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|browse[_-]?mall|treasure[_-]?shop|看视频|看广告|逛街/i }
+      { key: "tasks", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看广告|看视频|广告/i },
+      { key: "taskInfos", match: /ad[_-]?reward|reward[_-]?ads?|incentive[_-]?ad|watch[_-]?(?:video|ad)|commerce[_-]?ad|ad[_-]?(?:snap|task)|看广告|看视频|广告/i },
+      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
     ],
     extraReject: /"sections"\s*:/
   }
@@ -218,25 +227,6 @@ function markerForKeys(keys) {
 /* 信息流条目显式广告标记（dropAdItems 的价值级判据） */
 const AD_ITEM_MARKER =
   '"(?:is[_-]?(?:ad|advert|advertisement|ad[_-]?item|promoted|sponsored|commercial)|ad[_-]?(?:flag|item))"\\s*:\\s*(?:true|1|"1"|"true")';
-
-/*
- * 保奖励模式下仍然可以安全清理的规则：
- *   splash-brand     开屏品牌广告（奖励不依赖）
- *   feed-ads         信息流广告块（奖励不依赖）
- *   upsell           商业化弹窗（奖励不依赖）
- *   treasure-entrance / treasure-task-view / task-page
- *                    福利页里的广告 banner 与“看广告赚金币”任务；
- *                    保留签到、翻卡、红包雨、攒时长等可领任务。
- * 不在名单里的 ads-config / ads / incentive-* 会改动发奖配置，必须放行。
- */
-const REWARD_SAFE_RULES = new Set([
-  "splash-brand",
-  "feed-ads",
-  "upsell",
-  "treasure-entrance",
-  "treasure-task-view",
-  "task-page"
-]);
 
 for (const rule of RULES) {
   const keys = (rule.kill || []).concat(rule.falsy || []);
@@ -470,10 +460,6 @@ function isAdItem(o) {
 const AD_TASK_KEYS = new Set(["music_incentive_ad"]);
 const AD_TASK_TYPE = /incentive[_-]?ad/i;
 const AD_TASK_TITLE = /看广告|看视频|广告/i;
-/* 商城任务与纯广告任务一起摘掉；签到/翻卡/红包雨/宝箱/攒时长不动。 */
-const MALL_TASK_KEYS = new Set(["luna_treasure_shop"]);
-const MALL_TASK_KEY_RE = /browse[_-]?mall|treasure[_-]?shop/i;
-const MALL_TASK_TITLE = /逛街|逛商城|商城/i;
 /* 仅判别 key/task_key 标识串（绝不 stringify 任务体——防 extra.ad_token 误杀）。
  * 家族刻意收窄：裸 /incentive/ 会误杀 luna_incentive_push_permission（打卡提醒，
  * 393 样本实证是正常福利）；/reward[_-]?ads?/ 对 luna_rewards_ads（攒时长）无命中。 */
@@ -495,11 +481,8 @@ function isAdTaskEntry(item) {
     (typeof item.task_key === "string" && item.task_key) || "";
   if (key && AD_TASK_KEYS.has(key)) return true;
   if (key && AD_TASK_KEY_RE.test(key)) return true;
-  if (key && MALL_TASK_KEYS.has(key)) return true;
-  if (key && MALL_TASK_KEY_RE.test(key)) return true;
   if (typeof item.type === "string" && AD_TASK_TYPE.test(item.type)) return true;
-  const title = taskTitleOf(item);
-  return AD_TASK_TITLE.test(title) || MALL_TASK_TITLE.test(title);
+  return AD_TASK_TITLE.test(taskTitleOf(item));
 }
 
 /*
@@ -940,26 +923,6 @@ function markHeaders(reason, bodyChanged) {
   }
 }
 
-/*
- * 福利页打卡：Loon 对同一响应只执行第一条命中的脚本，独立的
- * welfare-stamp 绑定会被清理/观测脚本遮蔽。这里让任何胜出的脚本
- * 在 dailyReminder=true 时顺手写下当天日期，独立绑定只作全关兜底。
- */
-function stampWelfare(args) {
-  if (!pflag(args, "dailyReminder", false)) return;
-  try {
-    if (typeof $persistentStore === "undefined" || !$persistentStore ||
-        typeof $persistentStore.write !== "function") return;
-    var d = new Date();
-    var m = String(d.getMonth() + 1);
-    var day = String(d.getDate());
-    var key = d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" +
-      (day.length < 2 ? "0" + day : day);
-    $persistentStore.write(key, "soda-welfare-seen");
-    console.log("[soda] welfare stamp " + key);
-  } catch (e) { /* 存储不可用不影响响应 */ }
-}
-
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -967,16 +930,13 @@ function stampWelfare(args) {
 
     /*
      * 统一插件开关：保奖励模式优先。
-     * rewardSafe=true 时：
-     *   - 开屏品牌广告照常清理；
-     *   - cleanAds=true 且命中 REWARD_SAFE_RULES 时，信息流/弹窗/福利页
-     *     广告照常清理（不碰激励配置与发奖链路）；
-     *   - 其余会改发奖配置的端点（ads-config / ads / incentive-*）放行；
-     *   - hideDouyinTab=true 且是福利页时只做“听抖音”过滤。
+     * rewardSafe=true 时只允许开屏品牌广告继续处理，其他端点直接放行；
+     * 唯一例外：hideDouyinTab=true 且是福利页端点时，只做“听抖音”过滤，
+     * 不做任何广告裁剪，避免影响奖励任务。
      * 独立主插件没有 $argument，行为保持不变。
      */
     const pluginArgs = pargs([
-      "rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab", "dailyReminder"
+      "rewardSafe", "cleanAds", "killRewardAds", "hideDouyinTab"
     ]);
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
     /* 显式打开“断激励广告”时不再受保奖励模式保护（用户主动选择：广告完全不发） */
@@ -985,22 +945,14 @@ function stampWelfare(args) {
     const cleanAds = pflag(pluginArgs, "cleanAds", false);
     const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
     const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
-    const rule = RULES.find(function (r) { return r.match.test(url); });
 
-    if (/\/luna\/treasure\/task\/page/.test(url)) stampWelfare(pluginArgs);
-
-    if (rewardSafe && !killReward) {
-      if (isSplash) {
-        /* 开屏品牌广告与奖励无关，继续走下面的清理。 */
-      } else if (hideDouyin && isTreasure) {
-        /* 保奖励 + 隐藏听抖音：只删抖音条目，其余原样返回 */
-        return douyinOnly(raw, url);
-      } else if (cleanAds && rule && REWARD_SAFE_RULES.has(rule.id)) {
-        console.log("[soda] rewardSafe=on, safe clean: " + rule.id);
-      } else {
-        console.log("[soda] rewardSafe=on, non-safe passthrough: " + url);
+    if (rewardSafe && !killReward && !isSplash) {
+      if (!(hideDouyin && isTreasure)) {
+        console.log("[soda] rewardSafe=on, non-splash passthrough: " + url);
         return $done({ headers: markHeaders("soda-sanitize;skip=reward-safe") });
       }
+      /* 保奖励 + 隐藏听抖音：只删抖音条目，其余原样返回 */
+      return douyinOnly(raw, url);
     }
 
     /* hideDouyinTab 独立开关：cleanAds 关着时只删抖音条目，不做广告裁剪 */
@@ -1018,6 +970,7 @@ function stampWelfare(args) {
       return $done({ headers: markHeaders("soda-sanitize;skip=not-json" + ceTag($response)) });
     }
 
+    const rule = RULES.find(function (r) { return r.match.test(url); });
     if (!rule) return $done({ headers: markHeaders("soda-sanitize;skip=no-rule") });
 
     /*

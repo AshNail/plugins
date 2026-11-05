@@ -748,14 +748,19 @@ def validate_example(text: str, label: str = "examples/loon.conf", public: bool 
                 err(f"{label}: {key} 缺少官方 example.conf 的保留网段 {missing}")
         if "*.icloud.com" not in split_csv(general_values.get("real-ip", "")):
             err(f"{label}: real-ip 缺少官方示例的 *.icloud.com")
-        if stats["plugins"] < 40:
-            err(f"{label}: 公开全功能配置应自动加载至少 40 个插件，当前 {stats['plugins']}")
+        from urllib.parse import urlsplit
+
+        if any((urlsplit(url).hostname or "").lower() == "kelee.one"
+               or (urlsplit(url).hostname or "").lower().endswith(".kelee.one")
+               for url in plugin_urls):
+            err(f"{label}: 私有基线不能重新引入已移除的可莉插件")
         if stats["rules"] < 400:
             err(f"{label}: 公开全功能配置应包含完整分流规则（>=400），当前 {stats['rules']}")
         if not mitm_hostname:
             err(f"{label}: 公开配置缺少 [MITM] hostname 排除表")
         repo_plugins = {p.stem for p in (ROOT / "plugins").glob("*/*.plugin")}
-        missing_plugins = sorted(repo_plugins - ours)
+        source_only = {"bilibili", "netease", "youtube", "zhihu"}
+        missing_plugins = sorted(repo_plugins - source_only - ours)
         if missing_plugins:
             err(f"{label}: 本仓插件未被自动加载: {missing_plugins}")
     stats["general_keys"] = len(seen_general)

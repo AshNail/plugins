@@ -60,8 +60,8 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 14 组、1376 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
-| `[Host]` HTTPDNS 组 | 73 条：阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
+| `[Host]` 核心广告组 | 14 组、1378 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗 | 是 |
+| `[Host]` HTTPDNS 组 | 71 条：阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 48 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等海外厂商 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
 | `[Rule]` DOMAIN-WILDCARD 通配/家族层 | 41 条 glob（30 广告左标签 + 11 数字分片家族：`ads.*`、`adserver.*`、`ads[0-9]-normal*.zijieapi.com` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域；规则行不带参数 | **否**（需 Loon 3.5.3(1008)+，当前仅 TF；默认注释，`[Host]` 已逐条覆盖这批域，取消注释只是把同族动态子域也一并拒绝） |
@@ -181,7 +181,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（14 组 / 1376 条展开）
+### 核心广告组（14 组 / 1378 条展开）
 
 | 组 | 代表 |
 |---|---|
@@ -200,9 +200,9 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 | 手机厂商广告 SDK | 小米、华为、OPPO/HeyTap、vivo（Android；iOS 不受影响） |
 | 弹窗/Popunder | PropellerAds、PopAds、PopCash、ExoClick、JuicyAds、TrafficJunky、Adsterra、HilltopAds、Clickadu、SpyLog 等 |
 
-### HTTPDNS / 公共 DoH（121 条展开）
+### HTTPDNS / 公共 DoH（119 条展开）
 
-- HTTPDNS/私有 DoH：`*.httpdns.aliyuncs.com`（含阿里《启动接入点》`resolvers-*` 域名兜底）、`httpdns.aliyuncs.com`、`httpdns.qq.com`、`httpdns.baidu.com`、`httpdns.volcengineapi.com`、`httpdns.pro`、`dns.weixin.qq.com` 等 73 条。`dns.jd.com` 与 `resolver.msg.xiaomi.net` 不在这里——它们分别是 `src/apps/jd.json`（京东自建 HTTPDNS）与 `src/apps/mijia.json`（MIUI 推送/消息解析）声明的红线域，见上面「默认注释组（可选开启）」。
+- HTTPDNS/私有 DoH：`*.httpdns.aliyuncs.com`（含阿里《启动接入点》`resolvers-*` 域名兜底）、`httpdns.aliyuncs.com`、`httpdns.qq.com`、`httpdns.baidu.com`、`httpdns.volcengineapi.com`、`httpdns.pro`、`dns.weixin.qq.com` 等 71 条。`dns.jd.com` 与 `resolver.msg.xiaomi.net` 不在这里——它们分别是 `src/apps/jd.json`（京东自建 HTTPDNS）与 `src/apps/mijia.json`（MIUI 推送/消息解析）声明的红线域，见上面「默认注释组（可选开启）」。
 - 公共 DoH：`dns.google`（+`dns64.dns.google`/`8888.google`）、`*.cloudflare-dns.com`（覆盖 security/family/dns64 等全部变体）+ `one.one.one.one` + `1dot1dot1dot1.cloudflare-dns.com`、Quad9 全变体（`dns[.9-12].quad9.net`+`dot.quad9.net`）、`dns[1-3].nextdns.io`+`doh.nextdns.io`、`doh.opendns.com`、AdGuard 新旧域（`=adguard-dns.com` → `adguard-dns.com`+`*.adguard-dns.com` 覆盖 dns/family/unfiltered 变体 + 旧 `dns.adguard.com`）、`doh.cleanbrowsing.org`、Mullvad DoT 族（`dns.mullvad.net`+`*.doh.mullvad.net`+`dot.mullvad.net`）、ControlD（`freedns.controld.com`+`dns.controld.com`+`doh.controld.com`）、`doh.brave.com`、dns.sb（`doh.dns.sb`/`dot.sb`）、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 共 48 条。阿里云/DNSPod/360 的国内入口见「默认注释组」——它们默认生效会把 Loon 自己的 DoH 打到 127.0.0.1。
 - 刻意不拦 `doh.dns.apple.com`，避免影响 iOS/macOS 系统解析。
 

@@ -33,9 +33,11 @@
 - **响应字段清理已吸收**：9 条原生 `response.json.jq` 覆盖首页/发现/我的/收银台/
   评论/`batch`/`v1/user/info`/推荐页/关注推荐；上游 `wyyad.js` 未复制，
   Tab 名称自定义未移植。
-- **原生 jq 清理**：用 Loon `response.json.jq` 删除广告字段；
-  但 Mac 0.5.0 实测 response jq 未执行（请求阶段空响应规则正常），
-  需 iOS/iPad/tvOS 验证。
+- **原生 jq 清理**：2026-11-04 在 Mac 0.5.0(1011) 复测公共 HTTP JSON：精确匹配测试参数的 request `reject_dict(200)` 返回 `{}`，response `response.json.jq` 成功将 `slideshow.title` 改为探针值；未匹配的对照请求保持原样。删除两条临时规则并重连后，响应恢复原样，配置与测试前备份逐字节一致。因此不能再将先前失败概括为“Mac 不执行 response jq”。随后用精确 MITM 域 httpbin.org 重复 HTTPS 三组测试：请求返回空字典、响应标题改写、对照未变，全部 HTTP 200 且 curl 证书校验为 0。移除临时域名和规则并重连后，配置再次与备份逐字节一致，原始响应恢复。匿名 GET `interface.music.163.com/api/homepage/block/page` 返回 JSON、HTTP 200、业务 code 200；`/api/v1/user/info` 返回 HTTP 200 但业务 code 404。上述网易云请求在未添加该站 MITM/改写的情况下执行，仅确认响应格式；九条 jq、App 实际请求、登录播放及其他平台仍待独立验收。
+
+### Mac 匿名首页单接口验证（2026-11-04）
+
+对 `https://interface.music.163.com/api/homepage/block/page` 临时添加精确主机 MITM 与单条 jq。基线响应含 96 处目标字段；启用后 HTTP 200、业务 code 200、TLS 校验通过，目标字段为 0，仍有 15 个内容块。移除测试规则和域名并重连后，配置与备份逐字节一致，匿名响应再次出现 8 个 `adid`。这是前后请求比较，不是同一响应重放；不能证明全部非广告字段逐字节保留，也不代表 App 的 eapi 请求、登录或播放已验证。测试规则未常驻现网，其他八条响应规则未启用。
 
 ## 2. `fkingikelee/fkikelee` 可莉插件镜像
 

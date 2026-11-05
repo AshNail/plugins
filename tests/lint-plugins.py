@@ -17,8 +17,8 @@ def escape_regex_slashes(pattern):
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 39, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 1, 13, "douyin"),
+    ("plugins/soda/soda.plugin", 5, 0, 2, 41, "soda"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 1, 10, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -34,7 +34,8 @@ FAMILY_CHECKS = {
             "settingsClean": 1,
             "skipUpdateCheck": 1,
             "hideDouyinEntry": 1,
-            "hideDouyinTab": 1,
+            "hideDouyinTab": 2,
+            "listenOnly": 1,
             "blockSplashAd": 1,
             "debugLog": 21,
         },
@@ -60,6 +61,7 @@ FAMILY_CHECKS = {
             "splash-v2": "https://ad.zijieapi.com/api/ad/v2/ack/splash/report",
             "luna-check-update": "https://beta-luna.douyin.com/luna/check-update",
             "luna-check-update-slash": "https://api.qishui.com/luna/check-update/",
+            "homepage-combine": "https://api.qishui.com/aweme/homepage/combine/?device_id=x",
         },
     },
     "douyin": {
@@ -67,11 +69,10 @@ FAMILY_CHECKS = {
             "treasureMinimal": 1,
             "cleanFeedAds": 1,
             "killRewardAds": 1,
-            "cleanUpsell": 3,
+            "cleanUpsell": 2,
             "cleanActivity": 1,
             "blockAdDomains": 1,
             "blockSplashAd": 1,
-            "splashClean": 1,
             "debugLog": 2,
         },
         "mitm": [
@@ -116,11 +117,9 @@ ADS_META_KEYS = (
     "openUrl",
     "icon",
     "system",
-    "loon_version",
     "date",
     "tag",
 )
-SYSTEM_TOKENS = {"ios", "ipados", "macos", "tvos", "watchos"}
 ADS_GENERAL_KEYS = {
     "bypass-tun",
     "include-tun",
@@ -242,9 +241,6 @@ ADS_WILDCARD_MUST_MISS = (
     "adunit2.example.com",
 )
 ADS_WILDCARD_MIN_BUILD = 1008
-# 当前 App Store 正式版 = Loon 3.5.2(996)；TestFlight 才是 3.5.3(1008-1011)。
-# 任何插件的 #!loon_version 都不得高于正式版 build，否则真实用户无法导入。
-ADS_APPSTORE_STABLE_BUILD = 996
 
 # 数字分片家族层（第二层 DOMAIN-WILDCARD）：Loon 3.5.3(1008) 起支持 `[...]`
 # 字符类，官方示例含 node[0-9].example.com。这一层只允许 `[0-9]`——数字类
@@ -414,6 +410,7 @@ BINDING_SAMPLES = {
             "https://api.qishui.com/luna/check-update",
             "https://beta-luna.douyin.com/luna/check-update",
             "https://conf.qishui.com/service/settings/v3/?device_id=x",
+            "https://api.qishui.com/aweme/homepage/combine/?device_id=x",
         ),
     },
     "douyin": {
@@ -424,7 +421,6 @@ BINDING_SAMPLES = {
         ),
         "response": (
             "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
-            "https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve",
             "https://beta-luna.douyin.com/luna/ads/config",
             "https://beta-luna.douyin.com/luna/ads/retrieve",
             "https://beta-luna.douyin.com/luna/ads/dsp/retrieve",
@@ -446,14 +442,10 @@ BINDING_SAMPLES = {
 SHADOW_ALLOWED_PAIRS = {
     "soda": {
         frozenset(("sanitize.min.js", "reward-observe.min.js")),
-        frozenset(("sanitize.min.js", "welfare-stamp.min.js")),
-        frozenset(("reward-observe.min.js", "welfare-stamp.min.js")),
         frozenset(("block-domains.min.js", "splash-ad.min.js")),
     },
     "douyin": {
         frozenset(("treasure.min.js", "observe.min.js")),
-        frozenset(("treasure.min.js", "welfare-stamp.min.js")),
-        frozenset(("observe.min.js", "welfare-stamp.min.js")),
         frozenset(("clean.min.js", "observe.min.js")),
         frozenset(("block-domains.min.js", "splash-ad.min.js")),
     },
@@ -461,7 +453,7 @@ SHADOW_ALLOWED_PAIRS = {
 
 # ---------------------------------------------------------------------------
 # 脚本安全边界（静态）：插件脚本只做净化/观测，不得发起网络请求、不得执行
-# 动态代码，$notification 只允许出现在 status / daily-reminder。所有脚本
+# 动态代码，$notification 只允许出现在 status 与 qidian 提醒脚本。所有脚本
 # 必须在结束时调用 $done() 释放 Loon 的 JS 资源。
 # ---------------------------------------------------------------------------
 SAFE_SCRIPT_FORBIDDEN = (
@@ -478,17 +470,15 @@ SAFE_DONE_RX = re.compile(r"\$done\s*\(")
 SAFE_NOTIFY_RX = re.compile(r"\$notification\s*(?:\.|\[)\s*[\"']?post")
 SAFE_NOTIFY_ALLOWED = {
     "status.js",
-    "daily-reminder.js",
     # qidian 提醒层（src/apps/qidian.json crons）：cron 本地通知专用脚本，
-    # 与 daily-reminder 同性质——只发通知附 App 内路由，零网络请求。
+    # 只发通知附 App 内路由，零网络请求。
     "sign-reminder.js",
     "welfare-reminder.js",
 }
 
 # 官方 Script API 5.3：`$persistentStore.remove()` **不接受参数**，语义是
 # 「清空通过脚本存储 API 保存的全部数据」。传 key 进去不会只删那一项——
-# 曾经用它清「广告开始时间」，结果每量一次时长就把打卡状态、统计、每日提醒
-# 一起抹掉，而且没有任何报错。删单个键只能写 `write(undefined, key)`（5.1）。
+# 曾经用它清「广告开始时间」，结果每量一次时长就把广告统计一起抹掉，而且没有任何报错。删单个键只能写 `write(undefined, key)`（5.1）。
 SAFE_STORE_WIPE_RX = re.compile(r"\$persistentStore\s*\.\s*remove\s*\(")
 
 # 上面这条要在「去掉注释」的文本上匹配：解释这条规则的注释本身就会写出
@@ -1313,13 +1303,6 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
         errors.append(f"{fp}: #!icon must be an https URL, got {meta['icon'][:60]}")
     if "openUrl" in meta and not meta["openUrl"].startswith("https://"):
         errors.append(f"{fp}: #!openUrl must be an https URL, got {meta['openUrl'][:60]}")
-    for token in (meta.get("system") or "").split(","):
-        token = token.strip()
-        if token and token.lower() not in SYSTEM_TOKENS:
-            errors.append(
-                f"{fp}: unknown #!system token {token!r}; "
-                f"allowed: {', '.join(sorted(SYSTEM_TOKENS))}（空值表示全部）"
-            )
     print(f"  meta: {meta.get('name', '?')} v{meta.get('version', '?')} icon={meta.get('icon', '-')[:60]}")
 
     schema = load_args_schema(family)
@@ -1861,14 +1844,6 @@ def check_ads_family():
         )
     if len(set(wildcard_patterns)) != len(wildcard_patterns):
         errors.append(f"{ADS_PLUGIN}: duplicate DOMAIN-WILDCARD rule")
-    loon_version = meta.get("loon_version", "")
-    loon_build = re.search(r"\((\d+)\)", loon_version)
-    if not loon_build or int(loon_build.group(1)) > ADS_APPSTORE_STABLE_BUILD:
-        errors.append(
-            f"{ADS_PLUGIN}: #!loon_version={loon_version!r} must not exceed the "
-            f"App Store stable build ({ADS_APPSTORE_STABLE_BUILD}) — TestFlight "
-            "gating blocks real users from importing"
-        )
     glob_regexes = {
         pattern: ads_glob_regex(pattern) for pattern in set(wildcard_patterns)
     }
@@ -1994,9 +1969,7 @@ def check_ads_family():
                     "(use an exact ad subdomain)"
                 )
 
-    # ad.zijieapi.com 已从全局 Host 移出：它同时承载激励广告/发奖回调，
-    # DNS 层整域拦截会让抖音/汽水领奖失败；非激励路径由 App 插件按路径拦。
-    for domain in ("ads5-normal-hl.zijieapi.com", "ads.youtube.com", "gdt.qq.com"):
+    for domain in ("ads.youtube.com", "gdt.qq.com"):
         if domain not in exact and domain not in wildcard:
             errors.append(f"{ADS_PLUGIN}: core sample missing: {domain}")
     for domain in ("doubleclick.net", "applovin.com", "pangle.io", "gdtimg.com"):
@@ -2140,18 +2113,11 @@ def check_ads_family():
 
     # Explicitly excluded shared hosts must never become active by accident.
     # ad.abchina.com 经 EasyList China / AdRules 实证承载农行认证/核心脚本，绝不能拦截。
-    # jf365.boc.cn 是中国银行官方“中银积分365”积分查询/兑换商城，拦了直接损失用户权益。
-    for domain in (
-        "is.snssdk.com",
-        "graph.facebook.com",
-        "branch.io",
-        "ad.abchina.com",
-        "jf365.boc.cn",
-    ):
+    for domain in ("is.snssdk.com", "graph.facebook.com", "branch.io", "ad.abchina.com"):
         if domain in exact or domain in wildcard:
             errors.append(f"{ADS_PLUGIN}: excluded shared host is active: {domain}")
 
-    # 中国六大行精准广告专域守卫（工行、建行、中行、交行、邮储）
+    # 银行精准广告专域守卫；jf365.boc.cn 是中行积分商城，不得加入。
     for domain in (
         "adv.ccb.com",
         "ad.icbc.com.cn",
@@ -2822,18 +2788,11 @@ def check_app_plugins():
             errors.append(f"apps/{slug}: generated plugin missing: {plugin.relative_to(ROOT)} (run npm run build:apps)")
             continue
         meta = parse_meta(plugin)
-        for key in ("name", "desc", "version", "date", "tag", "loon_version", "type"):
+        for key in ("name", "desc", "version", "date", "tag", "type"):
             if not meta.get(key):
                 errors.append(f"apps/{slug}: header missing #{key} in {plugin.relative_to(ROOT)}")
         if meta.get("type") != "normal":
             errors.append(f"apps/{slug}: #!type must be normal, got {meta.get('type')!r}")
-        m_build = re.search(r"\((\d+)\)", meta.get("loon_version", ""))
-        if m_build and int(m_build.group(1)) > ADS_APPSTORE_STABLE_BUILD:
-            errors.append(
-                f"apps/{slug}: #!loon_version={meta.get('loon_version')!r} gates on a "
-                f"TestFlight build (> {ADS_APPSTORE_STABLE_BUILD}); App Store users "
-                "could not import"
-            )
         for key in ("homepage", "openUrl", "icon"):
             val = meta.get(key, "")
             if val and not val.startswith("https://"):
@@ -2868,9 +2827,7 @@ def check_app_plugins():
                     errors.append(
                         f"apps/{slug}: cron script {m.group('script')!r} != crons[].script {want_script!r}"
                     )
-                # Loon requires a quoted cron expression; source JSON stores the bare 5-field value.
-                expr = m.group("expr").strip().strip('"\'')
-                if expr != c.get("cron"):
+                if m.group("expr") != c.get("cron"):
                     errors.append(
                         f"apps/{slug}: cron expr {m.group('expr')!r} != crons[].cron {c.get('cron')!r}"
                     )
@@ -3090,6 +3047,32 @@ def check_no_legacy_syntax():
                     break
     if not hits:
         print("legacy syntax: 0 legacy tokens in active plugin lines")
+
+
+def check_loon_version_gate():
+    """声明 macOS 的插件不得带 `#!loon_version`——只声明 iOS 的（soda/douyin）保留门槛。"""
+    # 官方把该键定义为「最低 Loon 版本」，示例是 iOS 口径的 `3.5.1(978)`；Loon for Mac 的
+    # 营销版本号却是独立一条线（0.1(26) → 0.5.0(1011)，构建号自 991 起才与 iOS 统一）。
+    # Mac 上比的是营销版本还是构建号官方没写，两种读法都会挡掉一部分 Mac 用户；
+    # 不填＝不带最低版本（官方只对 `#!system` 明写「未填写表示全部支持」，这条属推断），
+    # 裁量同 `#!system_version`。
+    gated = []
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        meta = parse_meta(path)
+        if "loon_version" not in meta:
+            continue
+        system = meta.get("system", "").lower()
+        if not system or "mac" in system:
+            errors.append(
+                f"{path.relative_to(ROOT)}: #!system={meta.get('system') or '(未填＝全部平台)'} "
+                f"覆盖 macOS，却声明了 #!loon_version={meta['loon_version']!r}——"
+                "Loon for Mac 的版本号是另一条线（0.5.0(1011)），iOS 口径门槛在 Mac 上语义未定；"
+                "删掉这一行——不填即不带最低版本"
+            )
+        else:
+            gated.append(f"{path.stem}={meta['loon_version']}")
+    if gated:
+        print(f"loon_version gate: kept on iOS-only plugin(s): {', '.join(gated)}")
 
 
 IP_MODE_VALUES = ("v4-only", "dual", "prefer-v4", "prefer-v6", "v6-only")
@@ -3753,6 +3736,7 @@ check_encoding_guard()
 check_script_safety()
 check_bypass_dns_guard()
 check_no_legacy_syntax()
+check_loon_version_gate()
 check_ip_mode_values()
 check_mitm_surface()
 check_mitm_reach()

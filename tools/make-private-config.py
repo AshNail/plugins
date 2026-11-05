@@ -6,11 +6,10 @@ This tool injects those three things from a Loon-exported .lcf, and writes the
 result outside the repository with mode 0600.
 
 It also preserves advanced .lcf settings the public baseline does not define:
-extra [General] keys (include-tun, ssid-trigger, resource-parser, ipasn-url,
-disable-udp-ports, ...), active [Host] maps, [Remote Script], [IP Rewrite],
-and the active [Remote Filter]/[Remote Rule] lines. doq-server is the one
-deliberate exception: the public baseline keeps it off (5,236/5,239 connections
-failed in the 2026-10-29 device log), so it is dropped with a warning.
+extra supported [General] keys, active [Host] maps, [Remote Script], and active
+[Remote Filter]/[Remote Rule] lines. It drops policy-disabled or officially
+deprecated General keys. It also drops [IP Rewrite], which official Loon docs
+allow only inside plugins, not in the main profile.
 
 Security rules:
   * never print a subscription URL, CA blob, or passphrase;
@@ -55,12 +54,15 @@ SECTION_ALIASES = {
     "plugin": "Plugin",
 }
 # The public baseline deliberately keeps DoQ off; see configs/loon.conf.
-GENERAL_DROP = {"doq-server"}
+GENERAL_DROP = {
+    "doq-server",
+    "switch-node-after-failure-times",
+    "force-http-engine-hosts",
+    "skip-first-packet",
+}
 # TV 精简档：只保留零 MITM/零脚本的 Host/Rule 层；插件数量少但都能独立工作。
 TV_PLUGIN_URLS = (
     "https://raw.githubusercontent.com/AshNail/plugins/main/plugins/ads/ads.plugin",
-    "https://kelee.one/Tool/Loon/Lpx/BlockAdvertisers.lpx",
-    "https://kelee.one/Tool/Loon/Lpx/Block_HTTPDNS.lpx",
 )
 # Mac 没有对应 App 或作者明确不支持 macOS 的插件，留在公开配置给 iOS/iPad/TV。
 MAC_PLUGIN_EXCLUDES = (
@@ -221,18 +223,19 @@ def merge_hosts(
 ) -> tuple[str, dict]:
     content = public_text.strip("\n")
     seen = {
-        line.split("=", 1)[0].strip().lower()
+        line.split("=", 1)[0].strip(): line.split("=", 1)[1].strip()
         for line in active_lines(public_text)
         if "=" in line
     }
+    canonical = {key.lower(): value for key, value in seen.items()}
     extras: list[str] = []
     conflicts: list[str] = []
     dropped_resolvers: list[str] = []
     for line in active_lines(lcf_text):
         if "=" not in line:
             continue
-        key = line.split("=", 1)[0].strip().lower()
-        if key in seen:
+        key, value = [part.strip() for part in line.split("=", 1)]
+        if key in seen or (key.lower() in canonical and canonical[key.lower()] != value):
             conflicts.append(key)
             continue
         if (
@@ -245,7 +248,8 @@ def merge_hosts(
             # 单域解析器不影响其他主机，保留给用户自己的节点 DNS 配置。
             dropped_resolvers.append(key)
             continue
-        seen.add(key)
+        seen[key] = value
+        canonical[key.lower()] = value
         extras.append(line)
     if extras:
         content += (
@@ -259,7 +263,31 @@ def merge_hosts(
     }
 
 
+def unique_definitions(content: str, section: str) -> list[str]:
+    definitions: dict[str, str] = {}
+    for line in active_lines(content):
+        name, separator, value = line.partition("=")
+        name = name.strip()
+        if not separator or not name:
+            fail(f"[{section}] 存在无效定义")
+        canonical = name + " = " + value.strip()
+        if name in definitions and definitions[name] != canonical:
+            fail(f"[{section}] 存在同名冲突定义")
+        definitions[name] = canonical
+    return list(definitions.values())
+
+
+def retired_plugin(line: str) -> bool:
+    from urllib.parse import urlsplit
+
+    host = (urlsplit(line.split(",", 1)[0].strip()).hostname or "").lower()
+    return host == "kelee.one" or host.endswith(".kelee.one")
+
+
 def filter_plugins(public_text: str, platform: str) -> str:
+    if platform not in ("all", "ios", "ipados", "macos", "tvos"):
+        fail("不支持的平台")
+    public_text = "\n".join(line for line in active_lines(public_text) if not retired_plugin(line))
     if platform == "tvos":
         kept = [
             line for line in active_lines(public_text)
@@ -285,7 +313,7 @@ def merge_plugins(public_text: str, lcf_text: str, keep_lcf_plugins: bool) -> tu
         url = line.split(",", 1)[0].strip()
         if not url or url in urls:
             continue
-        if keep_lcf_plugins:
+        if keep_lcf_plugins and not retired_plugin(line):
             urls.add(url)
             extras.append(line)
         else:
@@ -410,9 +438,9 @@ def build(
     public_rule = active_lines(public.get("Rule", ""))
     public_plugin_text = filter_plugins(public.get("Plugin", ""), platform)
     public_plugin = active_lines(public_plugin_text)
-    lcf_proxy = active_lines(lcf.get("Proxy", ""))
-    lcf_remote = active_lines(lcf.get("Remote Proxy", ""))
-    lcf_groups = active_lines(lcf.get("Proxy Group", ""))
+    lcf_proxy = unique_definitions(lcf.get("Proxy", ""), "Proxy")
+    lcf_remote = unique_definitions(lcf.get("Remote Proxy", ""), "Remote Proxy")
+    lcf_groups = unique_definitions(lcf.get("Proxy Group", ""), "Proxy Group")
     lcf_mitm = active_lines(lcf.get("MITM", ""))
     lcf_rule = active_lines(lcf.get("Rule", ""))
     ca_lines = [line for line in lcf_mitm if key_of(line) in ("ca-p12", "ca-passphrase")]
@@ -428,8 +456,8 @@ def build(
     general_text, general_stats = merge_general(public.get("General", ""), lcf.get("General", ""))
     if general_stats["dropped"]:
         print(
-            "WARN .lcf [General] 含 doq-server，按公开基线丢弃"
-            "（2026-10-29 日志 5,236/5,239 次建立失败）",
+            "WARN .lcf [General] 丢弃禁用或官方已弃用键："
+            + ", ".join(sorted(set(general_stats["dropped"]))),
             file=sys.stderr,
         )
     if general_stats["extras"]:
@@ -503,14 +531,15 @@ def build(
         allow_no_ca=no_mitm,
     )
     remote_script = active_lines(lcf.get("Remote Script", ""))
-    ip_rewrite = active_lines(lcf.get("IP Rewrite", ""))
-    if no_mitm and (remote_script or ip_rewrite):
+    ip_rewrite_dropped = len(active_lines(lcf.get("IP Rewrite", "")))
+    if ip_rewrite_dropped:
         print(
-            "WARN 零 MITM 精简档丢弃 [Remote Script]/[IP Rewrite]",
+            f"WARN 丢弃 {ip_rewrite_dropped} 条 [IP Rewrite]；官方仅允许插件声明，主配置不支持",
             file=sys.stderr,
         )
+    if no_mitm and remote_script:
+        print("WARN 零 MITM 精简档丢弃 [Remote Script]", file=sys.stderr)
         remote_script = []
-        ip_rewrite = []
     remote_filter = active_lines(lcf.get("Remote Filter", ""))
     remote_rule = active_lines(lcf.get("Remote Rule", ""))
     remote_rule_rewritten = 0
@@ -533,11 +562,6 @@ def build(
             f"WARN 保留 {len(remote_script)} 条 [Remote Script]；远程脚本不经本仓审计",
             file=sys.stderr,
         )
-    if ip_rewrite:
-        print(
-            f"WARN 保留 {len(ip_rewrite)} 条 [IP Rewrite]；仅 Build 1007+ 生效",
-            file=sys.stderr,
-        )
 
     summary = dict(stats)
     summary.update({
@@ -555,7 +579,8 @@ def build(
         "group_types": group_type_counts(lcf_groups),
         "lcf_only_rules": lcf_only_rules,
         "remote_script": len(remote_script),
-        "ip_rewrite": len(ip_rewrite),
+        "ip_rewrite": 0,
+        "ip_rewrite_dropped": ip_rewrite_dropped,
         "remote_filter": len(remote_filter),
         "remote_rule": len(remote_rule),
         "remote_rule_rewritten": remote_rule_rewritten,
@@ -625,12 +650,6 @@ def build(
     for name, extra in (("Remote Filter", remote_filter), ("Remote Rule", remote_rule)):
         if extra:
             parts.append(f"[{name}]\n" + "\n".join(extra))
-
-    if ip_rewrite:
-        parts.append(
-            "[IP Rewrite]\n# 来自 .lcf；仅 Build 1007+ 生效。\n"
-            + "\n".join(ip_rewrite)
-        )
 
     if not no_mitm:
         mitm = [
@@ -759,7 +778,8 @@ def self_test() -> int:
         "dead remote rule must be rewritten to upstream",
     )
     _expect(summary["remote_rule_rewritten"] == 1, "remote rule rewrite count")
-    _expect("[IP Rewrite]" in body, "IP Rewrite not preserved")
+    _expect("[IP Rewrite]" not in body, "main profile must drop plugin-only IP Rewrite")
+    _expect(summary["ip_rewrite_dropped"] == 1, "IP Rewrite drop count")
     hostname_line = next(line for line in body.splitlines() if line.startswith("hostname = "))
     hostname_entries = hostname_line.split("=", 1)[1].split(",")
     _expect("-*.apple.com" not in hostname_entries, "apple blanket exclusion must be dropped")
@@ -781,8 +801,51 @@ def self_test() -> int:
     return 0
 
 
+def with_device_rules(baseline: dict[str, str], device: dict[str, str]) -> dict[str, str]:
+    rules = device.get("Rule", "")
+    if not active_lines(rules):
+        fail("设备配置缺少规则，不能保留设备分流")
+    return {**baseline, "Rule": rules}
+
+
+def with_device_plugins(baseline: dict[str, str], device: dict[str, str]) -> dict[str, str]:
+    plugins = device.get("Plugin", "")
+    if not active_lines(plugins):
+        fail("设备配置缺少插件清单，不能保留设备插件选择")
+    return {**baseline, "Plugin": plugins}
+
+
+def inline_native_modules(body: str, summary: dict) -> tuple[str, dict]:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("inline_native", ROOT / "tools/inline-native.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    original = dict(summary)
+    for slug in ("taobao", "adfilter"):
+        body = module.merge(body, (ROOT / "plugins" / slug / f"{slug}.plugin").read_text(), slug)
+    parts = module.sections(body)
+    summary = {**summary, "plugins": {**summary["plugins"]}}
+    summary["plugins"]["total"] = len(parts.get("Plugin", []))
+    summary["rule_total"] = len(parts.get("Rule", []))
+    summary["rules"] = summary["rule_total"]
+    summary["host_total"] = len(parts.get("Host", []))
+    summary["host_kinds"] = host_kind_counts(parts.get("Host", []))
+    body = body.replace(
+        f"# 插件 {original['plugins']['total']} 个；规则 {original['rule_total']} 条；",
+        f"# 插件 {summary['plugins']['total']} 个；规则 {summary['rule_total']} 条；", 1,
+    ).replace(f"# Host 映射 {original['host_total']} 条；", f"# Host 映射 {summary['host_total']} 条；", 1)
+    return body, summary
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--inline-native", action="store_true",
+                        help="内联淘宝 Host 和广告过滤器域名规则，不启用可选 MITM/脚本")
+    parser.add_argument("--keep-device-rules", action="store_true",
+                        help="使用设备导出的完整 Rule 段，保留例外及其策略名称，不自动混合基线规则")
+    parser.add_argument("--keep-device-plugins", action="store_true",
+                        help="以设备插件清单为准，保留顺序和启停状态，仍执行平台及退役来源过滤")
     parser.add_argument("--lcf", type=Path, help="Loon 导出的 .lcf 备份")
     parser.add_argument("--out", type=Path, help="输出路径（默认 ~/Downloads）")
     parser.add_argument("--force", action="store_true", help="允许覆盖已存在的输出文件")
@@ -791,10 +854,10 @@ def main() -> int:
                         help="保留 .lcf 中不在公开清单里的插件行（可能含失效/未审计插件）")
     parser.add_argument("--keep-host-resolvers", action="store_true",
                         help="保留 .lcf [Host] 的 server: 明文解析映射（可能压过插件广告黑洞）")
-    parser.add_argument("--platform", choices=("all", "macos", "tvos"), default="all",
-                        help="all=全量；macos=排除 iOS 专属插件；tvos=零 MITM/脚本的 TV 精简档")
+    parser.add_argument("--platform", choices=("all", "ios", "ipados", "macos", "tvos"), default="all",
+                        help="ios/ipados=移动端；macos=排除移动端专属插件；tvos=零 MITM/脚本；all=兼容旧入口")
     parser.add_argument("--no-mitm", action="store_true",
-                        help="不输出 [MITM]/CA，并丢弃 [Remote Script]/[IP Rewrite]")
+                        help="不输出 [MITM]/CA，并丢弃 [Remote Script]；IP Rewrite 始终不写入主配置")
     parser.add_argument("--self-test", action="store_true", help="用内存样本自检合并逻辑，不读写文件")
     args = parser.parse_args()
 
@@ -825,15 +888,21 @@ def main() -> int:
     _, lcf_sections = split_sections(lcf_text)
     if "General" not in public_sections or "Rule" not in public_sections:
         fail("configs/loon.conf 缺少 [General]/[Rule]")
+    if args.keep_device_rules:
+        public_sections = with_device_rules(public_sections, lcf_sections)
+    if args.keep_device_plugins:
+        public_sections = with_device_plugins(public_sections, lcf_sections)
 
     body, summary = build(
         public_sections,
         lcf_sections,
-        args.keep_lcf_plugins,
+        args.keep_lcf_plugins and not args.keep_device_plugins,
         args.keep_host_resolvers,
         args.platform,
         args.no_mitm,
     )
+    if args.inline_native:
+        body, summary = inline_native_modules(body, summary)
     if args.dry_run:
         print(f"dry-run: would write {out} (no file written)")
         print(

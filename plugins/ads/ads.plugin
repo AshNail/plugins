@@ -6,7 +6,6 @@
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!loon_version=3.5.2(996)
 #!date=2026-11-01
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
@@ -777,6 +776,7 @@ applovin.com = 127.0.0.1
 *.applovin.com = 127.0.0.1
 mopub.com = 127.0.0.1
 *.mopub.com = 127.0.0.1
+ssp.api.tappx.com = 127.0.0.1
 unityads.unity3d.com = 127.0.0.1
 *.unityads.unity3d.com = 127.0.0.1
 iads.unity3d.com = 127.0.0.1
@@ -895,6 +895,7 @@ adnxs.com = 127.0.0.1
 *.adnxs.com = 127.0.0.1
 adnxs-simple.com = 127.0.0.1
 *.adnxs-simple.com = 127.0.0.1
+delivery.adnuntius.com = 127.0.0.1
 adsrvr.org = 127.0.0.1
 *.adsrvr.org = 127.0.0.1
 criteo.com = 127.0.0.1
@@ -1744,7 +1745,7 @@ magsrv.com = 127.0.0.1
 # ============================================================================
 # HTTPDNS / 私有 DoH 端点（防绕过）
 # ----------------------------------------------------------------------------
-# 覆盖阿里云、腾讯、百度、字节、快手、B站、网易云音乐、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。
+# 覆盖阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。
 # ============================================================================
 httpdns.aliyuncs.com = 127.0.0.1
 *.httpdns.aliyuncs.com = 127.0.0.1
@@ -1759,8 +1760,6 @@ httpdns.push.oppomobile.com = 127.0.0.1
 httpdns.bilivideo.com = 127.0.0.1
 httpdns.pro = 127.0.0.1
 kuaishou.httpdns.pro = 127.0.0.1
-httpdns-sdk.n.netease.com = 127.0.0.1
-httpdns.music.163.com = 127.0.0.1
 httpdns.c.cdnhwc2.com = 127.0.0.1
 httpdns1.cc.cdnhwc5.com = 127.0.0.1
 httpdns-browser.platform.dbankcloud.cn = 127.0.0.1

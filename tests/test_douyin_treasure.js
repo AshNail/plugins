@@ -179,34 +179,14 @@ console.log("\n== 4. treasureMinimal=false：原样放行 ==");
   const r = run(makePage(), { treasureMinimal: false });
   check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
   check("日志说明 passthrough",
-    r.logs.join(" ").includes("both switches off"), r.logs.join(" "));
+    r.logs.join(" ").includes("treasureMinimal=off"), r.logs.join(" "));
 }
 
-console.log("\n== 4b. treasureMinimal=false + cleanUpsell=true：只删广告/逛街任务，保留其余可领任务 ==");
-{
-  const r = run(makePage(), { treasureMinimal: false, cleanUpsell: true });
-  const o = parse(r.out);
-  const keys = o
-    ? o.data.sections.reduce((acc, s) => acc.concat((s.task_group || s.widget_task_group || {}).tasks || []), [])
-        .map((t) => t.key)
-    : [];
-  check("福利页分区保留", o && o.data.sections.length === 4, JSON.stringify(o && o.data.sections.map((s) => s.key)));
-  check("攒时长保留", keys.indexOf("luna_rewards_ads") !== -1, keys.join(","));
-  check("签到保留", keys.indexOf("soda_music_sign_in") !== -1, keys.join(","));
-  check("翻卡保留", keys.indexOf("luna_treasure_flip_card") !== -1, keys.join(","));
-  check("红包雨保留", keys.indexOf("luna_treasure_red_packet_rain") !== -1, keys.join(","));
-  check("开宝箱保留", keys.indexOf("music_ug_treasure") !== -1, keys.join(","));
-  check("逛街任务已删", keys.indexOf("luna_treasure_shop") === -1, keys.join(","));
-  check("看广告任务已删", keys.indexOf("music_incentive_ad") === -1, keys.join(","));
-  check("日志记录删除任务", r.logs.join(" ").indexOf("drop welfare entry") !== -1, r.logs.join(" ").slice(0, 160));
-}
-
-console.log("\n== 5. 没有 $argument：按插件默认（treasureMinimal=false）放行 ==");
+console.log("\n== 5. 没有 $argument：按插件默认（treasureMinimal=true）执行 ==");
 {
   const r = run(makePage());
-  check("不改写响应（默认保福利任务）", !(r.out && r.out.body), JSON.stringify(r.out));
-  check("日志说明 passthrough",
-    r.logs.join(" ").includes("both switches off"), r.logs.join(" "));
+  const o = parse(r.out);
+  check("仍然精简（默认开）", o && o.data.sections.length === 1, JSON.stringify(o));
 }
 
 console.log("\n== 5b. 参数以数组/字符串形式传入也能识别 ==");

@@ -181,7 +181,7 @@ SURFACES = [
         probes=[
             ("plugins/ads/ads.plugin", r"pangolin\.snssdk\.com\s*=\s*127\.0\.0\.1", False),
             ("plugins/soda/soda.plugin", r"incentive/config", False),
-            ("plugins/soda/scripts/block-domains.min.js", r"keep reward ad", False),
+            ("plugins/soda/scripts/block-domains.min.js", r"rewardSafe=on, passthrough", False),
         ],
         limits="对穿山甲可只拦非激励路径：`ad.zijieapi.com` 的 inspire / inspire_preload / "
                "marketing_done 必须放行，其余路径照拦；优量汇/快手等联盟仍与「保奖励」互斥，"

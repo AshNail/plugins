@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "domain": "ssp.api.tappx.com",
+      "scope": "exact",
+      "category": "advertising",
+      "group": "mobile_sdks",
+      "reviewed": "2026-11-04",
+      "purpose_source": "https://raw.githubusercontent.com/prebid/prebid-server/master/adapters/tappx/tappx.go",
+      "source_sha256": "ac2c6e919019c928c44ce4e4047cb602149baf84aa2c51b60f7aac692fbb78ae",
+      "purpose_evidence": "buildEndpointURL uses ssp.api.tappx.com/rtb/v2/ for classic advertising endpoints; MakeRequests POSTs OpenRTB impressions. static/bidder-info/tappx.yaml uses this host for user synchronization.",
+      "upstream_evidence": "anti-AD cache lists exact ssp.api.tappx.com; other cached sources list the parent. Root blocking is not adopted.",
+      "exception_review": "No @@ mentioning tappx in available audit caches; upstream freshness not guaranteed.",
+      "protected_hosts": ["tappx.com", "www.tappx.com", "docs.tappx.com", "vz34906po.pub.tappx.com"],
+      "baseline": "GET https://ssp.api.tappx.com/ returned 204 with TLS validation passing.",
+      "device_validation": "2026-11-04 Mac: current profile exact Host verified by loopback TLS ClientHello probe; listener closed. www.tappx.com and Baidu returned 200, Google 204, TLS verified. No publisher impression, playback or other-platform test; remote plugin cache unchanged.",
+      "rollback": "Remove exact host and rebuild; restore before-tappx-exact.conf for current Mac profile."
+    },
+    {
+      "domain": "delivery.adnuntius.com",
+      "scope": "exact",
+      "category": "advertising",
+      "group": "adtech",
+      "reviewed": "2026-11-04",
+      "purpose_source": "https://docs.adnuntius.com/adnuntius-advertising/requesting-ads/http-api.md",
+      "purpose_evidence": "Official HTTP API uses GET/POST https://delivery.adnuntius.com/i to request ads; examples use /c click tracking and /b delivery frames.",
+      "upstream_evidence": "Local anti-AD, HaGeZi Pro and AdGuard DNS caches contain the parent adnuntius.com; these are corroboration, not independent proof or authority to block the root.",
+      "exception_review": "No @@ rule mentioning adnuntius in available local audit caches; not a guarantee of absence in current upstreams.",
+      "protected_hosts": ["adnuntius.com", "docs.adnuntius.com", "api.adnuntius.com"],
+      "baseline": "Mac HTTPS GET / returned 404 with certificate validation passing before deployment.",
+      "device_validation": "2026-11-04 Mac 0.5.0(1011): exact Host deployed in current profile; temporary loopback listener received TLS ClientHello with delivery.adnuntius.com SNI. Listener closed. docs.adnuntius.com HTTP 200/TLS verified; Baidu 200 and Google 204. No publisher ad-slot or mobile/TV validation; remote plugin cache not updated.",
+      "rollback": "Remove this exact entry, rebuild ads.plugin; restore Mac configuration backup before-adnuntius-exact.conf if deployed locally."
+    }
+  ]
+}

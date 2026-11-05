@@ -52,14 +52,12 @@ console.log("\n== 1. cleanAds · 真样本全量回归（beta-luna task/page/v2�
   const dur = tasksOf(out, "duration_task_section");
   ck("攒时长 luna_rewards_ads 保留", dur.length === 1 && dur[0] === "luna_rewards_ads", dur);
   const gold = tasksOf(out, "gold_task_section");
-  ck("music_incentive_ad + 逛街任务被摘 (8→6)",
-     gold.length === 6 && !gold.includes("music_incentive_ad") &&
-       !gold.includes("luna_treasure_shop"), gold.length);
+  ck("music_incentive_ad 被摘 (8→7)",
+     gold.length === 7 && !gold.includes("music_incentive_ad"), gold.length);
   ck("签到保留", gold.includes("soda_music_sign_in"), gold);
   ck("翻卡保留", gold.includes("luna_treasure_flip_card"), gold);
-  ck("逛街已删", !gold.includes("luna_treasure_shop"), gold);
-  ck("刷视频/红包雨/领现金保留",
-     gold.includes("luna_treasure_draw_duration") &&
+  ck("逛街/刷视频/红包雨/领现金保留",
+     gold.includes("luna_treasure_shop") && gold.includes("luna_treasure_draw_duration") &&
      gold.includes("luna_treasure_red_packet_rain") && gold.includes("luna_treasure_caijing_daily_cash"), gold);
   ck("打卡提醒保留（裸 /incentive/ 前科）", gold.includes("luna_incentive_push_permission"), gold);
   ck("widget 任务保留", tasksOf(out, "widget_task_section").includes("music_ug_treasure"));
@@ -75,7 +73,7 @@ console.log("\n== 1. cleanAds · 真样本全量回归（beta-luna task/page/v2�
   ck("签到 rewards 明细未动", !!signTask && signTask.rewards && signTask.rewards.length === 7);
   ck("sections 标题未动",
      out.data.sections[2].view.title.plain_text === "做任务 赚金币");
-  ck("logs 有摘除记录", r.logs.some((l) => l.indexOf("tasks") !== -1 && l.indexOf("dropped ") !== -1), r.logs.join("|").slice(0, 120));
+  ck("logs 有摘除记录", r.logs.some((l) => l.indexOf("tasks") !== -1 && l.indexOf("1/") !== -1), r.logs.join("|").slice(0, 120));
 }
 
 console.log("\n== 1b. ad_api_preload：只留仍在页面里的任务引用 ==");
@@ -141,18 +139,11 @@ console.log("\n== 4. hideDouyinTab · C 步负样本（无抖音任务 = 零改�
   ck("日志注明 no 抖音 item", r.logs.join("|").indexOf("no 抖音 item found") !== -1, r.logs.join("|").slice(0, 120));
 }
 
-console.log("\n== 5. rewardSafe=true + cleanAds=true：安全规则 task-page 仍清理广告任务 ==");
+console.log("\n== 5. rewardSafe 优先级照旧（无 killReward → non-splash 放行）==");
 {
   const r = run(URL_PAGE, PAGE, { rewardSafe: true, cleanAds: true, hideDouyinTab: false });
-  const out = r.out && r.out.body ? JSON.parse(r.out.body) : null;
-  ck("改写响应", !!out, JSON.stringify(r.out).slice(0, 200));
-  ck("日志注明 safe clean", r.logs.join("|").indexOf("safe clean: task-page") !== -1,
-    r.logs.join("|").slice(0, 160));
-  const tasks = out ? out.data.sections.reduce((acc, s) => acc.concat((s.task_group || {}).tasks || []), []) : [];
-  ck("签到任务保留", tasks.some((t) => t.key === "soda_music_sign_in"),
-    JSON.stringify(tasks.map((t) => t.key)));
-  ck("看广告任务已摘", !tasks.some((t) => t.key === "music_incentive_ad"),
-    JSON.stringify(tasks.map((t) => t.key)));
+  ck("reward-safe 放行", !r.out || !r.out.body, r.out);
+  ck("日志 skip=reward-safe", r.logs.join("|").indexOf("non-splash passthrough") !== -1, r.logs.join("|").slice(0, 120));
 }
 
 console.log("\n== 6. fastReject：无 sections/tasks 的响应跳过解析 ==");

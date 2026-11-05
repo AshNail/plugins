@@ -9,7 +9,7 @@ cd /path/to/loon-plugins
 npm ci
 pip install -r requirements-dev.txt   # ruff（静态门禁）
 npm run build       # 先生成 plugins/soda/scripts/*.min.js
-npm run check       # build + types + oxlint + lint + config + 源码/压缩版测试
+npm run check       # build + types + oxlint + lint + tokens 反向对差 + 源码/压缩版测试
 ```
 
 单独跑：
@@ -44,13 +44,13 @@ npm run coverage    # Loon 能力覆盖/利用率（175 条，探测真实用法
 npm run tokens      # 反向对差：插件有效行 + 文档围栏的 Loon 配置，语法 token 是否都能在官方对应段落查到（例外须登记）
                     # 文档围栏只收「能自证形态」的行：[Section] 段名行 / 大写类型, / 域名 = IPv4 / ```ini 的裸键名
                     # 顺带自证词表地基：正文页清单、全站池、5 条「整站查不到」断言的命中数
-npm run check:config  # examples/loon.conf 严格校验（General 键面/枚举/弃用键、Host 右值、Rule 类型与参数、MITM 禁私钥）
-                    # 逻辑规则按括号递归解析：AND/OR 至少两条子规则、NOT 恰好一条、子规则不许带策略、IP 子规则不得先于域名子规则
-                    # 并双向比对 docs/loon-max-config.md 的基线围栏与 53 行插件外能力台账（五态计数由脚本重算）
-                    # 另校验 docs/loon-routing-host-asn.md：18 类规则 / 8 类 Host Map 矩阵逐类齐全、分流配方恰好一条 FINAL
-                    # 以及 examples/loon-routing.conf：域名 → ASN → GEOIP → 端口 → FINAL 的顺序、IP-ASN 不带 no-resolve
 npm run coverage:write  # 重新生成 docs/loon-coverage.md
 ```
+
+> 2026-11-04 撤下配置层：`configs/loon.conf`、`examples/loon*.conf`、`docs/loon-max-config.md`、
+> `docs/loon-routing-host-asn.md`、`tools/check-loon-config.py`、`tools/make-private-config.py` 与
+> `npm run check:config` 一并删除——本仓库只分发独立去广告插件，不再下发主配置、分流规则或
+> 私有配置生成器。历史实现可从 git 记录找回。
 
 `check:ruff` 检查 `tools/` 与 `tests/` 的 Python，只选高信号规则：E9（语法/运行时错误）、F（未定义名、未使用导入/变量、f-string 无占位符）、W605（正则字符串非法转义）、B006（可变默认参数）、B023（闭包捕获循环变量）。不跑 formatter，也不开 C4/UP/SIM 等风格规则——历史脚本会一次产生数百条与正确性无关的改写噪音。ruff 版本钉在 `requirements-dev.txt`，`pyproject.toml` 的 `target-version` 按仓库仍支持的 Python 3.9 设定。
 
@@ -60,7 +60,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 
 **绑定矩阵门禁**：Loon 对同一请求/响应只执行配置顺序里第一条 `enable` 为真的脚本。lint 用真实 URL 样本（soda 26 响应 + 3 请求，douyin 13 响应 + 3 请求）把每条绑定都匹配一遍，确保没有死绑定；同一 URL 上重叠的绑定必须是「同脚本 + 同参数」的等效冗余，或在 `SHADOW_ALLOWED_PAIRS` 允许清单里（清理类抢只读观测、域名拦截抢开屏拦截），否则直接报错。
 
-**分发层门禁**：`check_scheme_links()` 扫 `README.md`、`plugins/*/README.md`、`docs/*.md` 里的每一条 `loon://…` 与 `https://www.nsloon.com/openloon/…`，按官方 `docs/Scheme/` 那一页的两张表建白名单——操作名 `on`/`off`/`editconfig`、`flowmodel=direct|filter|proxy`、`proxymode=tun|mix`、`update?sub=all`，导入资源键 `sub`/`nodelist`/`rules`/`plugin`/`iconset`/`geoip`/`parser`。除语法外还查语义：`import?` 的地址必须是**已 URL 编码**的（出现裸 `://` 即报错，官方明写要先编码），`plugin` 键解码后必须落在 `raw.githubusercontent.com/AshNail/plugins/main/plugins/<slug>/<slug>.plugin`（目录名与文件名不同也算错）且该文件真实存在，Markdown 表格同一行标注的 `` `x.plugin` `` 必须与链接指向的 slug 一致（防徽章复制粘贴忘改），最后要求**每个插件都在自己的 README 里至少链向自己一次**。当前读数：38 条链接（25 条安装链接 + 13 条文档引用的官方操作示例）、16 个插件自链、0 错误。
+**分发层门禁**：`check_scheme_links()` 扫 `README.md`、`plugins/*/README.md`、`docs/*.md` 里的每一条 `loon://…` 与 `https://www.nsloon.com/openloon/…`，按官方 `docs/Scheme/` 那一页的两张表建白名单——操作名 `on`/`off`/`editconfig`、`flowmodel=direct|filter|proxy`、`proxymode=tun|mix`、`update?sub=all`，导入资源键 `sub`/`nodelist`/`rules`/`plugin`/`iconset`/`geoip`/`parser`。除语法外还查语义：`import?` 的地址必须是**已 URL 编码**的（出现裸 `://` 即报错，官方明写要先编码），`plugin` 键解码后必须落在 `raw.githubusercontent.com/AshNail/plugins/main/plugins/<slug>/<slug>.plugin`（目录名与文件名不同也算错）且该文件真实存在，Markdown 表格同一行标注的 `` `x.plugin` `` 必须与链接指向的 slug 一致（防徽章复制粘贴忘改），最后要求**每个插件都在自己的 README 里至少链向自己一次**。当前读数：48 条链接、16 个插件自链、0 错误（安装链接与文档引用的官方操作示例混在同一份扫描里，分项不再复述）。
 
 **脚本安全门禁**：`src/*/*.js` 与部署的 `*.min.js` 必须调用 `$done()` 释放 Loon 的 JS 资源；禁止 `$httpClient`、`fetch()`、`XMLHttpRequest`、`WebSocket`、`sendBeacon`、`Function(`、`eval(`、`require(`；`$notification.post` 只允许出现在 `status.js` / `daily-reminder.js`；禁止 `$persistentStore.remove(`（官方语义是清空**全部**脚本数据，不接受 key 参数，删单项只能用 `write(undefined, key)`）。门禁保证插件脚本不会把抓到的响应数据外发，也不会执行动态代码。同时校验部署目录里没有未被任何 `[Script]` 绑定的孤儿 `.min.js`（删除绑定后必须同步删脚本）。
 
@@ -68,7 +68,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 
 `tests/fixtures/` 里放的是**真实抓包样本**（2026-10-20 HAR）：`douyin_treasure_page.json`（抖音福利页原始响应）、`soda_incentive_done.json`（汽水发奖请求/响应），用于防止“按想象改字段”。
 
-**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1760 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
+**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1674 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
 
 ## 断言分布
 
@@ -77,32 +77,32 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_sanitize2.js` | 19 | 通用字段清洗、包络保留、非目标端点不误伤 |
 | `test_prune.js` | 13 | `incentive/config` 的 `advert_sources` / `feed_advert_config` / `preload` |
 | `test_taskinfos.js` | 1 | `task_infos` 广告任务裁剪（保留签到/听歌/逛商城） |
-| `test_ads_surfaces.js` | 33 | 开屏、广告位、DSP、兜底、卡片、增长入口、upsell |
-| `test_soda_upsell_v2.js` | 58 | soda `upsell_map`：真实 93 弹窗样本删除广告/商城实体、奖励弹窗保留、排序/冷启动/频控同步、只带 `upsell_map` 的响应也能命中；rewardSafe+cleanAds 下作为安全规则仍清理 |
+| `test_ads_surfaces.js` | 34 | 开屏、广告位、DSP、兜底、卡片、增长入口、upsell、新增广告配置容器（ad_feed_pre_show / ad_information_flow / bdp_splash_ad_config 等） |
+| `test_soda_upsell_v2.js` | 56 | soda `upsell_map`：真实 93 弹窗样本删除广告/商城实体、奖励弹窗保留、排序/冷启动/频控同步、只带 `upsell_map` 的响应也能命中 |
 | `test_treasure_prune2.js` | 15 | 福利任务、banner、弹窗、金币挂件、`commerce_ad_task` / `ad_snap` |
 | `test_settings.js` | 85 | TTKitchen 设置层、BDADSDK 形态、可选 `i`/`is` 主机、AGGRESSIVE/DRY_RUN/INJECT_MISSING |
 | `test_feed_flags.js` | 17 | `is_advertisement` / `ad_flag` / `adItem` / `card.is_ad` / promoted / sponsored / commercial |
 | `test_feed_expand.js` | 16 | 扩展 feed 端点、`search-block` 仅 `banner_list` 场景 |
 | `test_reward_observe.js` | 101 | 激励链路只读观测：计数、任务摘要、进度字段、发奖字段、upsell 入口变量、隐私过滤、大响应放行 |
-| `test_block_domains.js` | 70 | 广告域名拦截脚本：开关关闭不拦、激励路径（inspire/inspire_preload/marketing_done）永远放行、非激励路径返回 200 + JSON `{}`、非广告域名不拦；7 条必中 / 4 条必不中样本锁定 Pangle 分片 glob |
+| `test_block_domains.js` | 44 | 广告域名拦截脚本：开关关闭不拦、`rewardSafe` 放行、非广告域名不拦、返回 200 + JSON `{}`；7 条必中 / 4 条必不中样本锁定 Pangle 分片 glob |
 | `test_douyin_upsell.js` | 46 | 真实 93 弹窗样本：广告/商城弹窗被删、奖励与兜底弹窗保留、variables 不动、排序/冷启动引用同步清理、频控表只删同名项 |
 | `test_splash_ad.js` | 22 | 开屏广告请求拦截（soda/douyin 共享源双家族）：splash/ 与 vN/(ack/)splash/ 全家族被拦、返回 JSON `{}`、inspire / inspire_preload / 发奖回调绝不拦、开关关闭放行 |
 | `test_soda_douyin_entry.js` | 17 | 【听抖音】入口：设置层 anchor_luna_to_douyin* 置 0、不动其它设置、保奖励模式下也能生效、与清广告配置互不干扰、`settingsClean+hideDouyinEntry` 同开一次跑完 |
 | `test_douyin_activity.js` | 19 | polaris 活动配置（真实样本 181 个活动）：音乐节/抖音运营活动 canshow 置 false、其它活动不动、开关关闭原样放行 |
 | `test_soda_kill_reward.js` | 12 | 断激励广告：显式 killRewardAds 才清激励素材（保奖励模式下也能清）、只开 cleanAds 时素材保持原样、广告位配置照常清理 |
+| `test_soda_homepage_tabs.js` | 29 | 底部 Tab 栏过滤：`listenOnly` 只留推荐/发现/我的、移除听抖音/直播/视频/朋友/社区/创作/AI 聊天/消息/一起听；`hideDouyinTab` 只移听抖音；奖励条目永久保护；深层嵌套与 schema 匹配；非 JSON 放行 |
 | `test_soda_task_titles.js` | 7 | 只读日志带任务标题：默认不打文案、开关打开后带 title、view.title 形态也能取到 |
-| `test_douyin_treasure.js` | 48 | 抖音福利页精简：默认关闭并保留全部任务；开启后只留攒时长模块、其余分区全部移除、`migrate_first_ad` 关闭、广告预拉取只留保留任务引用、参数对象/数组/字符串三种形态都识别、**真实抓包样本**回归 |
-| `test_douyin_clean.js` | 52 | 抖音广告配置/商业化弹窗/演出/品牌开屏清理：广告源与素材清空、`ads/retrieve` 的 `ad_launch*` / `ads_blocks` / `ads_info` 清理、商城与广告弹窗删除、`splash/brand/retrieve` 品牌开屏字段清空、排序/冷启动/频控同名项同步清理、音乐节列表清空 |
-| `test_soda_task_page_v2.js` | 34 | `treasure/task/page/v2` 结构化任务判别：摘除看广告/逛街任务、保留签到/翻卡/红包雨/宝箱/攒时长、预拉取只留保留任务引用、rewardSafe+cleanAds 安全清理、**真实样本**回归 |
-| `test_unified_args.js` | 32 | 聚合插件开关：rewardSafe 优先保护发奖端点、开屏/信息流/弹窗安全清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目且独立于 `cleanAds` |
-| `test_status.js` | 48 | Generic 状态脚本：汽水/抖音打卡摘要、广告统计、开关看板与冲突提醒、奖励排障提示、脚本抢占提示、Loon 环境诊断（`$loon`/`$script`/`$environment`/`$config`/`$utils.ungzip`，含缺失与拼写兼容）、通知 attach openUrl、`statusNotify=silent` 不弹通知 |
-| `test_welfare_stamp.js` | 10 | 打卡副作用：胜出脚本写 `soda-/douyin-welfare-seen`、`dailyReminder=off` 不写、cron 读取后抑制或触发通知、treasure→reminder 端到端 |
+| `test_douyin_treasure.js` | 38 | 抖音福利页精简：只留攒时长模块、其余分区全部移除、`migrate_first_ad` 关闭、广告预拉取只留保留任务引用、开关关闭原样放行、参数对象/数组/字符串三种形态都识别、**真实抓包样本**回归 |
+| `test_douyin_clean.js` | 44 | 抖音广告配置/商业化弹窗/演出清理：广告源与素材清空、`ads/retrieve` 的 `ad_launch*` / `ads_blocks` / `ads_info` 清理、商城与广告弹窗删除、排序/冷启动/频控同名项同步清理、音乐节列表清空 |
+| `test_soda_task_page_v2.js` | 31 | `treasure/task/page/v2` 结构化任务判别：只摘激励广告任务、保留签到/翻卡/攒时长、预拉取只留保留任务引用、真实样本回归 |
+| `test_unified_args.js` | 27 | 聚合插件开关：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目且独立于 `cleanAds` |
+| `test_status.js` | 44 | Generic 状态脚本：广告统计、开关看板与冲突提醒、脚本抢占提示、Loon 环境诊断（`$loon`/`$script`/`$environment`/`$config`/`$utils.ungzip`，含缺失与拼写兼容）、通知 attach openUrl、`statusNotify=silent` 不弹通知 |
 | `test_store_scope.js` | 12 | 存储作用域：删一个键不能动别的键（`welfare-seen` / `ad-stats` 必须存活），禁止 `$persistentStore.remove()`，删除走 `write(undefined,key)` |
 | `test_encoding_guard.js` | 30 | 编码诊断：六个解析 body 的脚本在 `content-encoding: br` 时输出 `ce=br`，`gzip`/`identity`/无头不加噪声，头名大小写与 `gzip, br` 逗号列表，正常 JSON 不被诊断干扰 |
 | `test_check_update.js` | 23 | 版本检查静音：只把 `has_update` / `hasUpdate` 置 false、包络与同形键零接触、无键/非 JSON 原样透传、gzip 解出后同样生效、回写时清掉过期的 `content-encoding` / `content-length` |
-| `test_args_schema.js` | 40 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
+| `test_args_schema.js` | 35 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
 
-合计 **880** 条断言；源码与压缩版各一遍，共 **1760** 条。
+合计 **837** 条断言；源码与压缩版各一遍，共 **1674** 条。
 
 ## 抖音插件（douyin.plugin）
 

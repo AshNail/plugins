@@ -1,0 +1,10 @@
+{
+  "source": "git HEAD:docs/app-coverage.md before conservative Adblock parser migration, 2026-11-04",
+  "purpose": "Preserve previously recorded protected-domain evidence independently of regenerated candidate rankings. Historical list occurrences are not new blocking recommendations.",
+  "records": [
+    {"domain": "gias.jd.com", "sources": ["adrules", "easyprivacy"], "decision": "基础设施红线"},
+    {"domain": "h5speed.m.jd.com", "sources": ["adrules", "easyprivacy"], "decision": "基础设施红线"},
+    {"domain": "wl.jd.com", "sources": ["adrules", "easyprivacy"], "decision": "基础设施红线"},
+    {"domain": "app.chat.xiaomi.net", "sources": ["adrules", "easyprivacy"], "decision": "推送/云红线"}
+  ]
+}

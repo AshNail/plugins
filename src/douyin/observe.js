@@ -234,7 +234,7 @@ function adElapsedSeconds() {
     /*
      * 只清这一个键：官方 API 文档 5.3 写明 `$persistentStore.remove()` **不接受参数**，
      * 作用是「清空通过脚本存储 API 保存的全部数据」。传进去的 key 会被忽略，
-     * 于是每量一次广告时长，就把 welfare-seen / ad-stats / 每日提醒等其它键一起抹了。
+     * 于是每量一次广告时长，就把 ad-stats 等其它键一起抹了。
      * 删单个键的唯一写法是 `write(undefined, key)`（官方 5.1）。
      */
     if (typeof $persistentStore.write === "function") {
@@ -294,41 +294,8 @@ function observeAdPlatform(obj, url) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 通用工具：插件参数 / 响应体解码 / 诊断标记                          */
+/* 通用工具：响应体解码 / 诊断标记                                     */
 /* ------------------------------------------------------------------ */
-/* Loon 插件参数：兼容对象 / 位置数组 / "k=v" 字符串三种形态 */
-function pargs(keys) {
-  var o = {}, r;
-  try { r = (typeof $argument === "undefined") ? null : $argument; } catch (e) { r = null; }
-  if (r === null || r === undefined) return null;
-  var t = Object.prototype.toString.call(r);
-  if (t === "[object Object]") {
-    for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k];
-    return o;
-  }
-  if (t === "[object Array]") {
-    for (var i = 0; i < r.length && keys && i < keys.length; i++) o[keys[i]] = r[i];
-    return o;
-  }
-  if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
-    }
-    return o;
-  }
-  return null;
-}
-
-function pflag(args, name, fallback) {
-  if (!args || !(name in args)) return fallback;
-  var v = args[name];
-  if (v === true || v === "true" || v === 1 || v === "1") return true;
-  if (v === false || v === "false" || v === 0 || v === "0") return false;
-  return fallback;
-}
-
 /* Uint8Array -> UTF-8 字符串（不依赖 TextDecoder） */
 function utf8(bytes) {
   var out = "", i = 0, n = bytes.length;
@@ -399,27 +366,9 @@ function ceTag(resp) {
   }
 }
 
-/* 福利页打卡：debugLog 单独开启时由观测脚本补写，避免依赖被遮蔽的 stamp 绑定 */
-function stampWelfare(args) {
-  if (!pflag(args, "dailyReminder", false)) return;
-  try {
-    if (typeof $persistentStore === "undefined" || !$persistentStore ||
-        typeof $persistentStore.write !== "function") return;
-    var d = new Date();
-    var m = String(d.getMonth() + 1);
-    var day = String(d.getDate());
-    var key = d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" +
-      (day.length < 2 ? "0" + day : day);
-    $persistentStore.write(key, "douyin-welfare-seen");
-    console.log("[douyin-reward] welfare stamp " + key);
-  } catch (e) { /* 存储不可用不影响响应 */ }
-}
-
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const args = pargs(["dailyReminder"]);
-    if (/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) stampWelfare(args);
     const raw = readBody($response);
     if (typeof raw !== "string" || raw.length === 0) return $done({});
     const head = raw.trimStart().slice(0, 1);

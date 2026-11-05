@@ -51,12 +51,12 @@ if (schemas) {
     ["settingsClean", "设置层清理"],
     ["hideDouyinEntry", "隐藏听抖音入口"],
     ["hideDouyinTab", "隐藏听抖音条目"],
+    ["listenOnly", "纯听歌"],
     ["treasureMinimal", "福利页精简"],
     ["cleanUpsell", "弹窗/演出清理"],
     ["cleanActivity", "活动入口清理"],
     ["debugLog", "只读日志"],
     ["logTaskTitles", "日志带标题"],
-    ["dailyReminder", "每日提醒"],
     ["skipUpdateCheck", "版本检查静音"]
   ];
   const labels = args.labelEntries(schemas);
@@ -68,25 +68,22 @@ if (schemas) {
     soda: {
       rewardSafe: true,
       splashClean: true,
-      cleanAds: true,
+      cleanAds: false,
       killRewardAds: false,
-      blockAdDomains: true,
+      blockAdDomains: false,
       settingsClean: false,
-      dailyReminder: false,
       skipUpdateCheck: false,
       blockSplashAd: true,
       statusNotify: "notification"
     },
     douyin: {
-      treasureMinimal: false,
-      cleanFeedAds: true,
+      treasureMinimal: true,
+      cleanFeedAds: false,
       killRewardAds: false,
-      cleanUpsell: true,
-      cleanActivity: true,
-      blockAdDomains: true,
+      cleanUpsell: false,
+      cleanActivity: false,
+      blockAdDomains: false,
       blockSplashAd: true,
-      splashClean: true,
-      dailyReminder: false,
       statusNotify: "notification"
     }
   };
@@ -97,8 +94,6 @@ if (schemas) {
         byName.get(name).default === pinned[family][name],
         byName.get(name) && byName.get(name).default);
     }
-    check(`${family}: reminder cron default`,
-      byName.get("reminderCron") && byName.get("reminderCron").default === "30 20 * * *");
     check(`${family}: statusNotify select values`,
       byName.get("statusNotify") &&
       JSON.stringify(byName.get("statusNotify").values) === '["notification","silent"]');

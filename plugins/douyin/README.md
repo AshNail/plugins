@@ -16,18 +16,18 @@
 <!-- >>> GENERATED ARG-TABLE from src/args/douyin.json -- do not edit (npm run build:args) -->
 | 开关/参数 | 默认 | 作用 |
 |---|---|---|
-| `treasureMinimal` | 关 | 默认关：保留签到/翻卡/红包雨/宝箱/攒时长等可领任务；开启后只保留【攒时长 听歌不中断】 |
-| `cleanFeedAds` | 开 | 默认开：清掉信息流/广告位广告容器（**不影响激励奖励**） |
+| `treasureMinimal` | 开 | 福利页只保留【攒时长 听歌不中断】 |
+| `cleanFeedAds` | 关 | 清掉信息流/广告位广告容器（**不影响激励奖励**） |
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
-| `cleanUpsell` | 开 | 默认开：删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表，以及福利页看广告/逛街任务 |
-| `cleanActivity` | 开 | 默认开：把 polaris 活动配置里的汽水音乐节与抖音运营活动置为不展示 |
-| `blockAdDomains` | 开 | 默认开：广告/归因域名拦截（MITM + `http-request` 脚本）；**激励链路永远放行** |
-| `splashClean` | 开 | 清理 luna 品牌开屏响应；与 `blockSplashAd` 请求拦截组成开屏双层 |
-| `blockSplashAd` | 开 | 默认开：拦穿山甲开屏请求，**不碰激励广告**与发奖回调；品牌开屏响应由 `splashClean` 清理 |
+| `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
+| `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
+| `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
+| `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
-| `dailyReminder` | 关 | 每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领） |
-| `reminderCron` | `30 20 * * *` | 提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30 |
 | `statusNotify` | `notification` | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式） |
+| `skipUpdateCheck` | 关 | `luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示 |
+| `autoTask` | 关 | 自动完成激励任务（听歌/看广告/签到）；需要 MITM 证书 |
+| `autoSignIn` | 关 | 每天自动执行签到任务；需要 MITM 证书 |
 <!-- <<< GENERATED ARG-TABLE -->
 
 > v0.2.0 起原来的 `cleanAds` 拆成 `cleanFeedAds` / `killRewardAds`：
@@ -76,7 +76,7 @@ sslocal://luckydog/activity_task
 
 `ad_type=ads_get_duration` + `luna_watch_ads_settle_vip` 说明：**看一次广告结算一段 VIP 时长**。所以：
 
-- `killRewardAds=true` → 这个模块拿不到时长；`blockAdDomains=true` 已按路径放行激励链路，不再破坏奖励；
+- `cleanAds=true` 或 `blockAdDomains=true` → 这个模块拿不到时长；
 - 想“又去广告又想攒时长”在链路层是矛盾的（除非广告服务端自己下发兜底时长，那是 App 的补偿逻辑，不是插件能造出来的）。
 
 ---
@@ -198,7 +198,7 @@ POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 tim
 > 副标题“再看3次提前解锁下一天”），30 秒换一天不中断，这已经是最划算的路径。
 > 签到则是**纯听歌 30 秒**、不看广告（但目前被服务端设备风控挡着，见 §2）。
 
-合规可行的只有两种：要么**广告完全不看**（本插件 `killRewardAds` 走的路，此时也不能领对应奖励），
+合规可行的只有两种：要么**广告完全不看**（本插件 `cleanFeedAds` / `killRewardAds` / `blockAdDomains` 走的路，此时也不能领对应奖励），
 要么**完整看完**再领。本插件的原则是：前者可以，后者不造假。
 
 ### 3.4 开屏广告请求拦截（`blockSplashAd`，默认开）
@@ -248,9 +248,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
 
 1. Loon → 插件 → URL 导入上面的地址；
 2. Loon → 设置 → MITM → 生成证书 → 安装并信任；
-3. 插件默认不开 `treasureMinimal`（保留全部福利任务），去广告与活动清理默认打开；
-4. 如果抖音提示网络异常，说明 `beta-luna.douyin.com` 有证书固定，停用 `[Script]` / `[MITM]` 即可回滚；
-5. **更新后行为没变**：Loon 可能缓存远程脚本，删除插件重新导入（或清理 Loon 脚本缓存）后再试，确认插件详情页版本为 `0.9.0`。
+3. 插件默认只开 `treasureMinimal`（福利页精简），其余按需打开；
+4. 如果抖音提示网络异常，说明 `beta-luna.douyin.com` 有证书固定，停用 `[Script]` / `[MITM]` 即可回滚。
 
 ---
 
@@ -355,7 +354,7 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 但 `$argument` 里没有开关值，于是脚本走了“放行”分支，表现为**插件装了却完全没效果**
 （2026-10-20 的实测：福利页响应仍是 4 个分区，一条没删）。
 换成新版语法后开关以布尔值透传，脚本里另外做了对象/数组/字符串三种形态的兼容解析，
-取不到时按插件声明的默认值兜底（`treasureMinimal` 默认关）。
+取不到时按插件声明的默认值兜底（`treasureMinimal` 默认开）。
 
 ## 6.2 真实样本回归
 
@@ -380,14 +379,6 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 ---
 
 ## 7. 版本更新记录
-
-### v0.9.0（2026-10-31）默认改为“去广告 + 保奖励 + 福利任务全保留”
-
-- **默认值**：`treasureMinimal` 改为默认关，福利页保留签到/翻卡/红包雨/宝箱/攒时长等可领任务；`cleanFeedAds`、`cleanUpsell`、`cleanActivity`、`blockAdDomains`、`blockSplashAd`、`splashClean` 默认开。`cleanUpsell` 同时摘掉福利页的看广告/逛街任务。
-- **激励链路保护**：`blockAdDomains` 改为按路径拦截，`inspire` / `inspire_preload` / `incentive/marketing/done` 永远放行；`killRewardAds` 仍是唯一会主动断奖励的开关。
-- **开屏双层**：新增 `splashClean`，清理 `beta-luna.douyin.com/luna/advert/splash/brand/retrieve` 的品牌开屏响应；与 `blockSplashAd` 的穿山甲 splash 请求拦截组成“请求 + 响应”双层。
-- **跨插件**：`ads.plugin` 2.8.4 起把 `ad.zijieapi.com` 移出全局 Host 黑洞，否则激励广告在 DNS 阶段就被打死，`blockAdDomains` 的路径放行也无法生效。
-- **边界不变**：`sign_in_done` 的 `210021 设备异常` 仍是服务端风控；不看满 30 秒直接领奖仍是广告欺诈，本插件不做。
 
 ### v0.8.6（2026-10-30）开屏请求拦截默认开
 
@@ -475,7 +466,7 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 
 ### v0.7.8（2026-10-27）修复福利页打卡被精简脚本遮蔽
 
-- Loon 对同一响应只执行配置顺序里第一条条件为真的 Response Script。`treasureMinimal` 开启时排在 `welfare-stamp` 之前，因此打卡逻辑已内置进 treasure/observe；默认关闭后由独立 welfare-stamp 兜底。
+- Loon 对同一响应只执行配置顺序里第一条条件为真的 Response Script。`treasureMinimal` 默认开启且排在 `welfare-stamp` 之前，导致打卡脚本永远轮不到、`dailyReminder` 每天误报。
 - 打卡逻辑内置进 `treasure.js` 与 `observe.js`：命中 `treasure/task/page/vN` 且 `dailyReminder=true` 时写入 `douyin-welfare-seen`；独立 `welfare-stamp` 绑定只在两者都关时兜底。
 - 状态看板新增 `treasureMinimal+debugLog` 遮蔽提示；lint 新增绑定矩阵，同 URL 多绑定只允许同脚本同参数或显式白名单组合。
 - 回归：新增 `test_welfare_stamp.js` 10 条；全量 46 套件 / 1376 断言。
@@ -528,7 +519,8 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
   `src/douyin/`（生成物，勿手改）再压缩；源码一处改动，两个家族同步生效。
 - **编译产物逐字节等价**：生成后 `plugins/douyin/scripts/` 里 3 个对应
   `.min.js` 与重构前完全一致（`git diff` 零差异），无行为变化。
-  block-domains 已不再区分 rewardSafe：激励路径永远放行，非激励路径照拦。
+  douyin 无 rewardSafe 概念 → `families.json` `rewardSafeDefault=false`
+  已由测试断言锁定（`blockAdDomains=开` 且未显式传 rewardSafe 时照旧拦截）。
 - **名单四处一致性锁**：lint 新增两项守卫——① 按 families.json 重新展开
   共享脚本并与 `src/<family>/` 生成物逐字节比对；② 把 `BLOCKED_HOSTS`
   与插件的 `[Script]` 正则、`[MITM]` 两处名单强校验（注释里的静态严格模式已删除）。

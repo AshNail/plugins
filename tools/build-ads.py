@@ -48,11 +48,13 @@ SOURCE = ROOT / "src/ads/domains.json"
 PROTECTED = ROOT / "src/ads/protected-roots.json"
 OUT_DIR = ROOT / "plugins/ads"
 TARGET = "127.0.0.1"
-# 版本门槛 = App Store 正式版基线：Loon 3.5.2(996)。
 # DOMAIN-WILDCARD 自 3.5.3(1008)（当前仅 TestFlight）起提供，低版本对未知规则类型
 # 是「跳过还是整段报错」官方文档未详述——因此两层通配默认注释输出，
 # 3.5.2 用户不受任何影响，3.5.3+ 用户逐行去掉 '# ' 即可启用。
-LOON_VERSION = "3.5.2(996)"
+# 插件头不写 #!loon_version：本插件 `#!system` 含 macOS，而 Loon for Mac 的营销版本号是
+# 独立的一条线（0.1(26) → 0.5.0(1011)，构建号 991 起才与 iOS 统一），iOS 口径的版本门槛
+# 在 Mac 上语义未定，写了可能挡住 Mac 用户；不填即不带最低版本（属推断——官方只对 `#!system`
+# 明写「未填写表示全部支持」），裁量同 `#!system_version`。
 WILDCARD_MIN_BUILD = 1008
 
 # Loon plugin [General] only supports this whitelist. Anything else is ignored
@@ -580,7 +582,6 @@ def render_plugin(
         lines.append(f"#!openUrl={plugin['openUrl']}")
     lines.append(f"#!icon={plugin['icon']}")
     lines.append(f"#!system={plugin['system']}")
-    lines.append(f"#!loon_version={LOON_VERSION}")
     lines.append(f"#!date={meta['updated']}")
     lines.append(f"#!tag={plugin['tag']}")
     lines.append("#!type=normal")

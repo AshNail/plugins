@@ -188,15 +188,13 @@ console.log("\n== 8. 没有广告弹窗：不写 body ==");
   check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
 }
 
-console.log("\n== 9. rewardSafe=true + cleanAds=true：upsell 属于安全规则，仍然清理 ==");
+console.log("\n== 9. rewardSafe=true：upsell 放行 ==");
 {
   const r = run(real, { rewardSafe: true, cleanAds: true });
-  const out = r.out && r.out.body ? JSON.parse(r.out.body) : null;
-  const names = out ? Object.keys(out.upsell_map || {}) : [];
-  check("改写响应", !!out, JSON.stringify(r.out).slice(0, 300));
-  check("广告/商城弹窗已删", names.indexOf("browse_mall_popup_acc_amount") === -1, names.join(","));
-  check("奖励弹窗保留", names.indexOf("reward_video_load_fail_compensate") !== -1, names.join(","));
-  check("激励配置未被本次改写触碰", !!(out && out.status_code === 0), JSON.stringify(out && out.status_code));
+  check("不改写响应", !(r.out && r.out.body), JSON.stringify(r.out));
+  check("标记 reward-safe",
+    !!(r.out && r.out.headers && /reward-safe/.test(r.out.headers["X-Soda-Plugin"] || "")),
+    JSON.stringify(r.out));
 }
 
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +

@@ -2,9 +2,9 @@
 
 > 所属：Loon 插件仓库 · 插件族 `soda`（[仓库总览](../../README.md)）
 > 部署目录：`plugins/soda/`；源码目录：`src/soda/`
-> 目标：汽水音乐 iOS 20.5.0（`com.luna.music`）
-> 类型：Loon 插件（聚合开关 / 字段级响应改写 / 诊断脚本）
-> 取证：Ghidra 全量分析 + ARM64 `ADRP+ADD` 字符串引用扫描（详见配套逆向报告）
+> 目标：汽水音乐 iOS 21.4.0（`com.soda.music`，Bundle ID 已从 `com.luna.music` 变更）
+> 类型：Loon 插件（聚合开关 / 字段级响应改写 / 诊断脚本 / 激励任务自动化）
+> 取证：Ghidra 全量分析 + ARM64 `ADRP+ADD` 字符串引用扫描 + REA 21.4.0 逆向（详见配套逆向报告）
 
 **版本要求**：本插件使用 **Loon 3.5.1(983) 起的新版 Script 语法**
 （`script("...", {${开关名}})` + `with enable=${开关名}`）。
@@ -13,7 +13,12 @@
 **gzip 响应体解析依赖 `$utils.ungzip`（Loon 3.5.1(988) 起提供）**：983–987 仍可安装，
 但压缩响应的端点会跳过清理，只记录状态；完整去广告效果请升级到 988+。状态看板会直接显示当前 build 是否具备该能力。
 
-**v2.2.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】全部通过 Loon `[Argument]` 开关控制：`rewardSafe`、`cleanAds`、`blockAdDomains`、`settingsClean`、`debugLog`、`splashClean`、`hideDouyinTab`。默认 `rewardSafe=true` + `cleanAds=true` + `blockAdDomains=true`：清理开屏/信息流/弹窗，但激励配置与发奖链路原样保留。旧的 `SodaClean` / `SodaClean-Reward` / `SodaClean-Reward-Debug` / `SodaClean-Settings` 独立插件已合并进本插件，不再单独安装。
+**v3.1.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】、**激励任务自动化 v2.0（MITM 响应注入）**全部通过 Loon `[Argument]` 开关控制。默认 `rewardSafe=true`，只清开屏品牌广告。
+
+**v3.1.0 核心变更（2026-11-05）**：
+- **激励任务自动化升级为 v2.0**：从"请求重放"改为"MITM 响应注入"。HAR 深度分析发现 `time_token`/`nonce` 每次动态生成，纯重放不可行；设备已被风控标记（`err_no=210021`）。新方案：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。
+- **新增端点**：`aweme.snssdk.com`（签到 API）加入 `[Rule]` QUIC 回退 + `[MITM]`。
+- **风控检测**：检测 `hit_risk_control` / `err_no=210021` → 暂停自动化 60 秒。
 
 > 以下 v1.x / 0.x 段落保留为历史设计记录；当前安装和使用只看 `soda.plugin`。
 
@@ -30,6 +35,65 @@
 **v1.5 已包含**：信息流 `is_advertisement` / `is_ad_item` / `ad_flag` / `adItem` 与 `card.is_ad` 嵌套判定；信息流端点扩展 `playlist/search` / `discover/mix`；福利任务/ banner 增加 `ad_reward` 变体；福利页 `banner_list` 广告项裁剪；新增**设置层实验插件** `SodaClean-Settings.plugin`，通过 `conf.qishui.com/service/settings/v3/` 清空 `commerce_ad_config` / `feed_reward_ad_config` / `reward_ad_fallback_config` / `splash_ad_early_load_config` 等 TTKitchen 配置。
 
 **v1.4 已包含**：开屏 `ad_launch_list` / `ad_launch`、信息流 `ads_blocks` / `ads_info` / `is_ad`、广告位配置 `ad_unit_configs` / `splash_config` / `feed_ads_config` / `reward_config`、DSP 上报 `reject_dict(200)`、金币挂件 `widgetAdReward` 广告态。字段地址与描述符见《汽水音乐_20.5.0_开屏与信息流广告_字段取证与净化方案.md》。
+
+---
+
+## -1. 激励任务自动化 v2.0（v3.1.0 · MITM 响应注入方案）
+
+### 核心发现（2026-11-05 HAR + 二进制逆向实锤）
+
+| 发现 | 证据 | 影响 |
+|---|---|---|
+| `time_token` 每次动态生成 | HAR 解码 incentive/done POST body，6 次请求 6 个不同 token（base64, ~88 chars） | **纯重放不可行** |
+| `nonce` 每次随机 | 同上，~16 chars 随机串 | 请求绑定单次广告会话 |
+| `transaction_id` UUID v4 | 每次唯一 | 幂等键，重放被拒 |
+| sign_in_done 返回 `err_no=210021` | HAR 3 次签到请求全部返回"设备异常" | **服务端设备级风控** |
+| listen_music 触发 `scene=hit_risk_control` | 日志 16:40:41 | 行为分析风控存在 |
+| incentive/config `day_max_cnt=9999` | HAR 解码 config 响应 | 服务端无实际次数限制 |
+| `rit_identity=73009` / `rit=1000` | 日志 + HAR | 两个广告源，Pangle 穿山甲 |
+| 金币奖励 `amount=1800` | HAR 解码 incentive/done 响应 | 可注入 |
+
+### 方案：MITM 响应注入（不再重放请求）
+
+```
+旧方案 v1.0（已废弃）：拦截 incentive/done → 重放请求
+新方案 v2.0（当前）：
+  A) Pangle 广告注入：拦截 ad.zijieapi.com/api/ad/v1/inspire → 返回伪造广告（1秒视频）
+  B) incentive/done 响应增强：修改 reward_details.amount 确保金币奖励
+  C) 签到注入：拦截 sign_in_done → 返回成功（绕过 err_no=210021）
+  D) 风控检测：hit_risk_control / err_no=210021 → 暂停自动化 60s
+```
+
+### 任务清单（task/page/v2 解码）
+
+| ID | key | 名称 | 类型 |
+|---|---|---|---|
+| 600585 | soda_music_sign_in | 签到得金币 | sign_in |
+| 600572 | music_incentive_ad | 看广告赚金币 | ad |
+| 601232 | luna_treasure_draw_duration | 连续刷视频赚金币 | ad |
+| 600625 | luna_treasure_red_packet_rain | 红包雨 | action |
+| 601839 | luna_incentive_push_permission | 每天提醒我来赚金币 | action |
+| 600662 | luna_treasure_flip_card | 翻卡赢金币 | action |
+| 601921 | luna_treasure_caijing_daily_cash | 每日领现金 | action |
+| 600590 | luna_rewards_ads | 攒时长听歌不中断 | duration |
+
+### 开关说明
+
+| 开关 | 默认 | 作用 |
+|---|---|---|
+| `autoTask` | 关 | MITM 响应注入：Pangle 广告伪造 + incentive/done 增强 + 风控检测 |
+| `autoSignIn` | 关 | 签到注入：拦截 sign_in_done 返回成功 + 每天 9 点 cron |
+
+### 新增端点（v3.1.0）
+
+| 域名 | 用途 | 新增原因 |
+|---|---|---|
+| `aweme.snssdk.com` | 签到 API（sign_in_done / sign_in_detail） | HAR 发现签到走抖音域名 |
+| `ad.zijieapi.com`（已有 MITM） | Pangle 广告注入 | v2.0 方案核心 |
+
+### 致谢
+
+起点读书 finishWatch 重放机制启发；HAR 423_1793795683001 提供完整请求/响应样本。
 
 ---
 
@@ -296,21 +360,22 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 <!-- >>> GENERATED ARG-TABLE from src/args/soda.json -- do not edit (npm run build:args) -->
 | 开关/参数 | 默认 | 作用 |
 |---|---|---|
-| `rewardSafe` | 开 | 默认开：保奖励。`sanitize` 只清理开屏/信息流/弹窗与福利页广告条目，`ads-config`/`incentive-*` 等发奖端点放行；`settings` 直接放行 |
-| `cleanAds` | 开 | 默认开：清理广告位、信息流、弹窗与福利页看广告/逛街任务（**不含激励素材/发奖链路**），可与保奖励同开 |
+| `rewardSafe` | 开 | 保奖励优先；`sanitize` 对非开屏端点直接放行，`settings` 直接放行，域名拦截脚本也放行 |
+| `cleanAds` | 开 | 广告位、信息流、福利页广告任务等清理脚本（**不含激励素材**） |
 | `killRewardAds` | 关 | 清空激励广告素材与预拉取 + 兜底发奖凭证；开了领奖会变 `amount=-1` |
-| `blockAdDomains` | 开 | 默认开：`block-domains.js` 拦截广告/归因域名；**激励链路永远放行**，与 rewardSafe 无关 |
-| `settingsClean` | 关 | `conf.qishui.com` 设置层脚本 |
-| `skipUpdateCheck` | 关 | `luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示；只动这一个键、解析失败原样放行（取证依据 `STNetProto.CheckUpdateRequest`／`CheckUpdateResponseInfo`／`has_update` 字符串簇 + 真机日志） |
-| `hideDouyinEntry` | 关 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现（服务端配置驱动，不动广告配置，可与保奖励同开） |
-| `blockSplashAd` | 开 | 默认开：拦穿山甲开屏请求，**不碰激励广告**（`inspire` 与发奖回调照常）；品牌开屏响应由 `splashClean` 清理 |
+| `blockAdDomains` | 关 | `block-domains.js`：`http-request` 拦截 `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com` 等广告/归因域名 |
+| `settingsClean` | 开 | `conf.qishui.com` 设置层脚本 |
+| `skipUpdateCheck` | 开 | `luna/check-update` 响应的 `has_update` → `false`，静音「发现新版本」提示 |
+| `hideDouyinEntry` | 开 | 关掉设置层 `anchor_luna_to_douyin` / `_mv` → 汽水里的【听抖音】入口不再出现 |
+| `listenOnly` | 关 | 底部 Tab 栏只留推荐/发现/我的；移除听抖音、直播、视频、朋友/社区、创作、AI 聊天、消息/IM、一起听、娱乐 |
+| `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告** |
 | `debugLog` | 关 | 只读观测脚本（记录响应，不修改内容） |
-| `logTaskTitles` | 关 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口；默认关闭，避免把文案写进日志 |
+| `logTaskTitles` | 开 | 只读日志里额外打印任务标题（`听抖音`/`签到得金币`…），用来定位福利页入口 |
 | `splashClean` | 开 | 开屏品牌广告清理 |
-| `hideDouyinTab` | 关 | 福利页带“抖音”的 tab/任务条目过滤（**只按标题字段匹配**，不扫正文；独立绑定，不需要 `cleanAds`） |
-| `dailyReminder` | 关 | 每天 cron 时间检查：当天没打开福利页就发 Loon 通知（只提醒不代领） |
-| `reminderCron` | `30 20 * * *` | 提醒时间，五段 cron（分 时 日 月 周），默认每天 20:30 |
-| `statusNotify` | `notification` | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页（Loon `[Argument]` `select` 类型）；结果页汇总当前开关并提示冲突组合，同时输出 `$loon` / 脚本名与执行时间 / 节点 / 运行模式（`$config.getConfig()`） |
+| `hideDouyinTab` | 开 | 福利页带抖音的 tab/任务条目过滤 |
+| `statusNotify` | `notification` | 状态自检按钮的通知模式：`notification` 弹通知并带 `openUrl`，`silent` 只写日志和结果页 |
+| `autoTask` | 开 | 激励任务自动化 v2.0（MITM 响应注入）：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。默认开启 |
+| `autoSignIn` | 开 | 每天自动执行签到任务（MITM 注入成功响应，绕过设备异常）；需要 MITM 证书 |
 <!-- <<< GENERATED ARG-TABLE -->
 
 关键限制：
@@ -319,15 +384,14 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
   所以“域名拦截”改用 `http-request` 脚本实现（`blockAdDomains` 开关）：
   - 开关关闭 → 脚本不执行，流量零影响；
   - 开关打开 → 返回 200 空响应，广告 SDK 拿不到广告；
-  - 激励路径（inspire / inspire_preload / marketing_done）永远放行；
-    `rewardSafe` 不再让整段拦截失效，非激励广告照拦。
+  - `rewardSafe=true` → 脚本内部直接放行，激励广告照常播放。
   - HTTP/3 不再是漏洞：v2.8.0 起 `[Rule]` 常开 QUIC 强制回退（见下），这些域只会走 TCP+TLS。
   - 仍依赖 MITM：所以它不能替代 `ads.plugin` 的 DNS 层，两者互补。
 - **静态传输层（常开，无开关）**：`[Rule]` 对这 17 个广告域名做 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT`，
   把 HTTP/3 逼回 TCP；`[MITM]` 另写 `h2 = true`（未文档化键，零成本冗余，见下）。
   这两项不提供开关——关掉等于让所有脚本看不见流量。回滚方式：删掉对应行。
 - **`[MITM]` 也不能按开关启停**。插件声明 `api.qishui.com, conf.qishui.com` 与 5 个广告域名；即使 `blockAdDomains` 关闭，这些域名也会被解密。如果开启后激励广告播不了（证书固定），把 `[MITM]` 里那 5 个广告域名注释掉即可。
-- **开关分工**：保奖励只保护发奖端点；`cleanAds` 可与 `rewardSafe` 同开（只走安全规则），`settingsClean` 仍会被保奖励拦截。
+- **开关冲突保护**：`rewardSafe=true` 时脚本优先保护非开屏端点；但仍建议不要同时打开 `rewardSafe` 与 `cleanAds` / `settingsClean`。
 
 ---
 
@@ -336,13 +400,13 @@ const INJECT_MISSING = false;  // true = 响应缺失时补空配置
 | 层 | 内容 | 默认 | MITM |
 |---|---|---|---|
 | **L0** | 传输层：17 条 QUIC 回退（8 个 `[MITM]` 条目，含 Pangle 10 个分片）+ `h2` | ✅ 常开（无开关） | 是（前置条件） |
-| **L1** | `ad.zijieapi.com` 按路径拦截（激励路径除外）、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com`（Pangle 分片族）、`zlink.ugsdk.cn`、`praisewindow.ugsdk.cn`（App Store 评分）→ 拦截 | ✅（`blockAdDomains` 默认开） | 是（脚本） |
+| **L1** | `ad.zijieapi.com`、`lianmengapi.snssdk.com`、`ads?-normal*.zijieapi.com`（Pangle 分片族）、`zlink.ugsdk.cn`、`praisewindow.ugsdk.cn`（App Store 评分）→ 拦截 | ⬜（`blockAdDomains` 开关） | 是（脚本） |
 | **L2** | 字段级裁剪（见 3.2） | ✅ 部分（`cleanAds` 开关） | 是 |
 | **L2.5** | 设置层：`conf.qishui.com/service/settings/v3/`；可选 `is.snssdk.com` / `i.snssdk.com` | ⬜（`settingsClean` 开关） | 是 |
 | **L3** | 埋点 `mon/log/applog.zijieapi.com`、`log.qishui.com`、风控 `timon` | ⬜ | 否 |
 
 L0 常开：它不拦任何业务流量，只决定“脚本能不能看见流量”。关掉它，L1/L2/L2.5 会随机失效。
-L1 默认开启：激励路径永远放行；非激励广告照拦。
+L1 默认关闭：广告域名被拦后，激励广告就播不了，保奖励模式必须放行。
 L3 默认关闭：拦 `timon` / `gurd` 可能影响登录与风控校验。
 
 > 跨插件分层：L1 的 5 条里，`ad.zijieapi.com` / `lianmengapi.snssdk.com` /
@@ -487,8 +551,8 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\
 
 使用注意：
 
-- 可与 `rewardSafe` 同时启用；`cleanAds` 的安全规则也可同开；
-- **不要**同时开 `settingsClean`：设置层清理会被 `rewardSafe` 拦截；
+- 可与 `rewardSafe` 同时启用；这是推荐的排障组合；
+- **不要**同时开 `cleanAds` / `settingsClean`：清理脚本会先改掉激励字段，日志看到的是“已清空”的假象；
 - 排障完成后关闭 `debugLog`，避免长期打印日志。
 
 ### 5.6 20.5.0 奖励字段补全（Swift 元数据）
@@ -525,17 +589,16 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 ```
 
 5. Loon → 设置 → MITM → 生成证书 → 安装并信任；
-6. `soda.plugin` 的 `[MITM]` 已声明 `api.qishui.com` + `conf.qishui.com` + 5 个广告域名。开关关闭时这些域名仍会被解密，但脚本不执行或直接放行。
-7. **更新后行为没变**：Loon 可能缓存远程脚本，删除插件重新导入（或清理 Loon 脚本缓存）后再试，确认插件详情页版本为 `2.9.0`。
+6. `soda.plugin` 的 `[MITM]` 已声明 `api.qishui.com` + `conf.qishui.com` + 5 个广告域名。`settingsClean` / `blockAdDomains` 关闭时，这些域名仍会被解密，但脚本直接放行。
 
 聚合插件的开关：
 
 | 开关 | 默认 | 作用 |
 |---|---|---|
-| `rewardSafe` | 开 | 保奖励：只保护发奖端点；开屏/信息流/弹窗可按安全规则清理 |
-| `cleanAds` | 开 | 去广告脚本：开屏、信息流、弹窗与福利页广告任务（**不动激励素材/发奖链路**） |
+| `rewardSafe` | 开 | 保奖励优先；非开屏端点直接放行，域名拦截也放行 |
+| `cleanAds` | 关 | 去广告脚本：广告位、信息流、福利页广告任务（**不动激励素材**） |
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，领奖会变 `amount=-1`） |
-| `blockAdDomains` | 开 | 广告/归因域名拦截（MITM + `http-request` 脚本）；**激励链路永远放行** |
+| `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本；QUIC 已由静态层强制回退，不再漏 HTTP/3） |
 | `settingsClean` | 关 | 设置层净化；不要与 `rewardSafe` 同开 |
 | `debugLog` | 关 | 只读日志，可与保奖励同开 |
 | `splashClean` | 开 | 清理开屏品牌广告 |
@@ -543,15 +606,14 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 推荐组合：
 
-- **去广告+保奖励（默认）**：`rewardSafe=开`、`cleanAds=开`、`blockAdDomains=开`；开屏/信息流/弹窗清理，激励与发奖保留。
+- **正常领奖励（默认）**：`rewardSafe=开`，其余默认；只清开屏品牌广告。
 - **排障**：在保奖励基础上打开 `debugLog`，日志搜 `[soda-reward]`。
-- **纯领奖励**：`rewardSafe=开`，`cleanAds` 可关。
-- **强力去广告**：`rewardSafe=关`、`cleanAds=开`、`killRewardAds=开`。
-- **强力去广告**：关 `rewardSafe` 后仍可开 `blockAdDomains`；激励路径会自动放行。
+- **去广告**：`rewardSafe=关`、`cleanAds=开`、`splashClean=开`。
+- **强力去广告**：再加 `blockAdDomains=开`；若激励广告因此播不了，把 `[MITM]` 里 5 个广告域名注释掉。
 - **隐藏听抖音**：`hideDouyinTab=开`（独立生效，不需要 `cleanAds`；`rewardSafe` 同开时只删抖音条目，不做广告裁剪）。
-- **强力域名拦截**：`blockAdDomains=开` 即可；HTTP/3 已由 `[Rule]` 的 QUIC 回退覆盖，不需要再手改静态规则。
+- **强力域名拦截**：关闭 `rewardSafe` 后开 `blockAdDomains` 即可；HTTP/3 已由 `[Rule]` 的 QUIC 回退覆盖，不需要再手改静态规则。
 
-> Loon 的 `[Rule]` 不能按开关关闭，所以域名拦截改用脚本实现（`blockAdDomains`）：开关关闭时零影响；开关打开时只放行激励路径。
+> Loon 的 `[Rule]` 不能按开关关闭，所以域名拦截改用脚本实现（`blockAdDomains`）：开关关闭时零影响，`rewardSafe=true` 时自动放行。
 > 唯一需要静态层兜的是传输协议：v2.8.0 起 8 个 MITM 域常开 QUIC 回退，脚本才能稳定看见流量。
 
 > 【听抖音】默认保留。它属于福利页的正常任务条目，`hideDouyinTab` 打开后只删除带“抖音”字样的列表项，不动签到 / 听歌 / 分享 / 金币 / 逛商城 / 翻牌 / 引导。字段定位以你提供的珠宝页 HAR 为准。
@@ -572,8 +634,8 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | SDK 设置层是否命中（可选） | 启用 `is.snssdk.com` 后搜 `[soda-settings]`；若断网/广告 SDK 初始化失败，停用该行 |
 | 包络是否保留 | 日志里 `status_code` 不应缺失 |
 | App 是否异常 | 福利页、播放页、会员页各走一遍 |
-| 保奖励模式是否生效 | 只装 `soda.plugin`；默认 `rewardSafe=true`，奖励任务应保留，开屏品牌广告与信息流/弹窗应减少，激励广告能正常加载 |
-| 去广告脚本是否生效 | 默认 `cleanAds=开` 即生效；开屏/信息流/福利页广告任务应减少 |
+| 保奖励模式是否生效 | 只装 `soda.plugin`；默认 `rewardSafe=true`，奖励任务应保留，开屏品牌广告应消失，信息流/DSP/商业弹窗可能仍在 |
+| 去广告脚本是否生效 | `rewardSafe=关`、`cleanAds=开`；开屏/信息流/福利页广告任务应减少 |
 | 域名拦截是否生效 | `blockAdDomains=开`；Loon 日志搜 `[soda-domains] blocked`；若某次仍无日志，先看 Loon 规则日志里 QUIC 回退是否命中 |
 | 【听抖音】是否消失 | `hideDouyinTab=开`；福利页不再出现“听抖音”条目，签到/听歌/分享仍在 |
 | 奖励是否正常到账 | 完整看完激励视频，确认金币/畅听/翻牌等奖励到账；不要跳过广告或伪造回调 |
@@ -581,9 +643,9 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 本地回归：`npm run check`（build + lint + coverage + 源码/压缩版测试）。单独跑：`python3 tests/run-all.py`（26 套 / 798 条断言，源码与压缩版各一遍，共 1596 条）；`python3 tests/lint-plugins.py` 检查 1 个聚合插件。
 
-建议顺序（严格去广告）：**先确认保奖励模式 → 开 cleanAds → 开 blockAdDomains → 确认领奖正常后再考虑 killRewardAds**，每一步观察一天。
+建议顺序（严格去广告）：**先确认保奖励模式 → 关闭 rewardSafe → 开 cleanAds → 最后开 blockAdDomains**，每一步观察一天。
 
-保奖励模式可与 `cleanAds` 同开；不要开 `settingsClean`，需要排障时再开 `debugLog`。
+保奖励模式不要开 `cleanAds` / `settingsClean`；只保留 `splashClean`，需要排障时再开 `debugLog`。
 
 ---
 
@@ -641,7 +703,7 @@ loon-plugins/
 ├── plugins/
 │   └── soda/                       # 汽水音乐插件族（部署目录）
 │       ├── README.md               # 本文件
-│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.9.0）
+│       ├── soda.plugin             # 唯一部署插件（聚合开关版 v2.8.7）
 │       └── scripts/                # 压缩后的部署脚本
 │           ├── sanitize.min.js
 │           ├── settings.min.js
@@ -649,8 +711,6 @@ loon-plugins/
 │           ├── splash-ad.min.js
 │           ├── status.min.js
 │           ├── block-domains.min.js   # ← 与 douyin 同源（src/common 生成）
-│           ├── daily-reminder.min.js  # ← 与 douyin 同源（src/common 生成）
-│           └── welfare-stamp.min.js   # ← 与 douyin 同源（src/common 生成）
 ├── src/
 │   ├── common/                     # soda/douyin 共享脚本单一来源 + families.json
 │   └── soda/                       # 可读源码（共享脚本为生成物）
@@ -660,8 +720,6 @@ loon-plugins/
 │       ├── splash-ad.js            # ← src/common 生成，勿手改
 │       ├── status.js               # ← src/common 生成，勿手改
 │       ├── block-domains.js        # ← src/common 生成，勿手改
-│       ├── daily-reminder.js       # ← src/common 生成，勿手改
-│       └── welfare-stamp.js        # ← src/common 生成，勿手改
 ├── tools/
 │   └── build.js                    # src/common 家族展开 + src -> plugins 压缩构建
 ├── tests/                          # 脚本层回归测试（26 套 / 798 条断言 × 2 = 1596）
@@ -720,7 +778,7 @@ JSON」都只写 `skip=not-json`，排查方向会完全错。`gzip` / `identity
 
 `amount = -1` + `expire_time` = 这笔奖励**没发**（广告素材被清空 → 广告没播 → 领不到）。
 **要领奖就别开 `killRewardAds`**（它会把 `incentive/config` 的 `preload`/`vids` 和
-`incentive/retrieve` 的素材表一起清掉）。`cleanAds` 在 `rewardSafe` 下只走安全规则，不动激励配置与发奖链路。
+`incentive/retrieve` 的素材表一起清掉）。`cleanAds` 也会影响发放路径，同样要慎开。
 
 ### 2.1 观测器现在认识“新版福利页”的任务对象
 
@@ -845,13 +903,25 @@ luna 请求——端点真实在跑，由 `api.qishui.com` + `beta-luna.douyin.c
 
 ## 11. 版本更新记录
 
-### v2.9.0（2026-10-31）默认改为“去广告 + 保奖励”
+### v3.1.0（2026-11-05）激励任务自动化 v2.0 · MITM 响应注入方案
 
-- **默认值**：`cleanAds`、`blockAdDomains` 改为默认开；`rewardSafe` 仍默认开，`killRewardAds` / `settingsClean` 仍默认关。`cleanAds` 摘掉福利页的看广告/逛街任务，保留签到/翻卡/红包雨/宝箱/攒时长。
-- **保奖励下也能去广告**：`sanitize` 在 `rewardSafe=true` 时允许清理开屏、信息流、弹窗、福利页广告任务（`splash-brand` / `feed-ads` / `upsell` / `treasure-*` / `task-page`），但放行 `ads-config`、`ads`、`incentive-*` 等会改发奖配置的端点。
-- **激励链路保护**：`blockAdDomains` 改为按路径拦截，`inspire` / `inspire_preload` / `incentive/marketing/done` 永远放行，与 `rewardSafe` 无关。
-- **跨插件**：`ads.plugin` 2.8.4 起把 `ad.zijieapi.com` 移出全局 Host 黑洞；非激励路径由本插件按路径补漏。
-- **状态看板**：`rewardSafe+cleanAds` / `rewardSafe+blockAdDomains` 不再报冲突；新增 `treasureMinimal` 和激励 DNS 黑洞排障提示。
+- **方案升级**：从"请求重放"改为"MITM 响应注入"。HAR 深度分析发现 `time_token`/`nonce` 每次动态生成，纯重放不可行；设备已被风控标记（`err_no=210021`）。
+- **Pangle 广告注入**：拦截 `ad.zijieapi.com/api/ad/v1/inspire` → 返回伪造广告（1 秒视频），让客户端认为广告已播放完成。
+- **incentive/done 响应增强**：修改 `reward_details.amount` 确保金币奖励（默认 1800）。
+- **签到注入**：拦截 `aweme.snssdk.com/.../sign_in_done` → 返回成功响应（绕过设备异常）。
+- **风控检测**：检测 `hit_risk_control` / `err_no=210021` → 暂停自动化 60 秒。
+- **新增端点**：`aweme.snssdk.com`（签到 API）加入 `[Rule]` QUIC 回退 + `[MITM]`。
+- **脚本重写**：`src/soda/auto-task.js`（18KB）→ `plugins/soda/scripts/auto-task.min.js`（8.6KB）。
+- **致谢**：HAR 423_1793795683001 提供完整请求/响应样本；起点读书 finishWatch 机制启发。
+
+### v3.0.0（2026-11-05）激励任务自动化 + Bundle ID 适配
+
+- **新增 `autoTask` 开关（默认关）**：激励任务自动化功能。基于 REA 21.4.0 逆向分析 + 真机日志验证，自动完成听歌任务、看广告任务。参考起点读书的 finishWatch 重放机制，拦截 `/luna/advert/incentive/done` 等端点并自动重放。
+- **新增 `autoSignIn` 开关（默认关）**：自动签到功能。每天自动执行签到任务（`/luna/treasure/task/sign_in/do_action`）。
+- **Token 捕获**：从请求 headers 中提取认证信息（sessionid/token/cookie），存储到 `$persistentStore`，供自动化脚本复用。
+- **Bundle ID 适配**：支持 21.4.0 版本的 Bundle ID 变化（`com.luna.music` → `com.soda.music`）。
+- **新增脚本** `src/soda/auto-task.js`（13KB）→ `plugins/soda/scripts/auto-task.min.js`（7KB）。
+- **致谢**：起点读书插件的 finishWatch 重放机制与 Token 窃取方案。
 
 ### v2.8.7（2026-10-30）版本检查静音 + 开屏请求拦截默认开
 
@@ -994,7 +1064,7 @@ luna 请求——端点真实在跑，由 `api.qishui.com` + `beta-luna.douyin.c
 ### v2.6.9（2026-10-27）状态自检升级为开关看板
 
 - Generic 按钮现在透传全部开关（`rewardSafe` / `cleanAds` / `killRewardAds` / `blockAdDomains` / `blockSplashAd` / `settingsClean` / `hideDouyin*` / `debugLog` / `dailyReminder` / `reminderCron` 等），结果页与通知新增「开关状态」摘要。
-- 冲突组合给出显式提醒：`killRewardAds`、`rewardSafe+settingsClean`、`treasureMinimal`；`rewardSafe+cleanAds` / `rewardSafe+blockAdDomains` 已改为安全组合，不再报警。`dailyReminder` 打开时带出 cron 时间。
+- 冲突组合给出显式提醒：`killRewardAds`、`rewardSafe+cleanAds`、`rewardSafe+settingsClean`、`rewardSafe+blockAdDomains`；`dailyReminder` 打开时带出 cron 时间。
 - lint 锁定 generic 绑定必须透传全部声明开关，防止后续新增开关只进插件、不进状态页。
 - 回归：`test_status.js` 29 条断言（含默认组合无冲突、冲突逐条命中、通知正文带警告）；全量 44 套件 / 1336 断言。
 

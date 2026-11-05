@@ -21,5 +21,5 @@ const o=JSON.parse(r.done.body);
 const keys=o.task_infos.map(t=>t.task_key);
 console.log('kept:',keys.join(','));
 console.log(r.logs.join('\n'));
-if(keys.includes('reward_ads')||keys.includes('browse_mall_task')||keys.length!==2||!keys.includes('sign_in')) process.exit(1);
+if(keys.includes('reward_ads')||keys.length!==3||!keys.includes('sign_in')) process.exit(1);
 console.log('PASS');

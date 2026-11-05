@@ -14,11 +14,7 @@
  *     - 开关关闭时脚本根本不执行，流量不受影响；
  *     - 开关打开时回 200 + application/json + {}（与 [Rewrite] 的
  *       reject_dict(200) 同形状），广告 SDK 拿不到广告也不会去重试；
- *     - 激励广告路径（inspire / inspire_preload / marketing/done）
- *       永远放行：这几条是发奖链路，拦掉只会让奖励失败，不属于“去广告”。
- *       即使 rewardSafe=false、blockAdDomains=true，也绝不拦。
- *       allowlist 覆盖所有被拦主机，防止服务端把激励请求切到 lianmengapi
- *       等兄弟域后又被误杀。
+ *     - rewardSafe=true 时脚本内部直接放行，激励广告照常播放。
  *
  * 已知限制：
  *   1. HTTPS 必须先 MITM 解密才能匹配到域名，所以 [MITM] 里要声明这些域名。
@@ -27,19 +23,15 @@
  *      如果哪天删了那些回退规则，本脚本会重新出现“部分请求看不见”的情况。
  *   3. 被拦的域名在 App 侧可能表现为「广告加载失败」，App 自身的补偿逻辑
  *      （例如赠送时长）由 App 决定，插件不伪造任何奖励。
- *   4. 全局 DNS 黑洞（例如 ads.plugin 里的 Host 映射）发生在脚本之前，
- *      本脚本无法挽救；启用本插件保奖励模式前，先把 ad.zijieapi.com
- *      从其它广告插件的 Host/REJECT 名单里移出。
  *
  * 与 ads.plugin 的分层：
- *   lianmengapi.snssdk.com 与 ads?-normal*.zijieapi.com（Pangle 分片族）
- *   同时被 ads.plugin 的 [Host] DNS 层 + DOMAIN-WILDCARD 家族层拦截；
- *   ad.zijieapi.com 自 2026-10-31 起已从 ads.plugin 移出，由本脚本按
- *   路径区分激励与非激励流量。ads.plugin 仍是独立 DNS 兜底层，两者可共存。
+ *   下面 5 条里的 ad.zijieapi.com / lianmengapi.snssdk.com 与
+ *   ads?-normal*.zijieapi.com（Pangle 分片族）已同时被 ads.plugin 的
+ *   [Host] DNS 层 + DOMAIN-WILDCARD 家族层拦截；本脚本是 App 内 MITM 层的
+ *   兜底与精准控制（ads.plugin 刷奖励时要关）。
  */
 
 /* 被拦截的广告 / 归因域名（lint 会校验：本数组 = [Script] 正则 = [MITM] 超集） */
-/* ad.zijieapi.com 同时承载激励广告与发奖回调，不能整域拦；下面按路径放行。 */
 /* ------------------------------------------------------------------ */
 /* Loon 插件参数（每个脚本独立内置）                                  */
 /* ------------------------------------------------------------------ */
@@ -114,34 +106,20 @@ function hostOf(url) {
   return m ? String(m[1]).toLowerCase() : "";
 }
 
-/* 激励链路只认这三条路径（穿山甲 inspire / 预拉取 / 发奖回调）。
-   路径匹配与主机无关：服务端换兄弟域时分片规则仍会命中，但发奖不会断。 */
-const REWARD_PATH_RX =
-  /^\/api\/(?:ad\/v1\/inspire(?:_preload)?|incentive\/marketing\/done)(?:\/|$|\?)/i;
-
-function pathOf(url) {
-  const m = String(url || "").match(/^https?:\/\/[^/]+(\/[^?#]*)?/i);
-  return m && m[1] ? m[1] : "/";
-}
-
-function isRewardRequest(url) {
-  return REWARD_PATH_RX.test(pathOf(url));
-}
-
 (function main() {
   try {
     const url = ($request && $request.url) || "";
 
-    const args = pargs(["blockAdDomains"]);
+    const args = pargs(["blockAdDomains", "rewardSafe"]);
 
     /* 只有明确打开 blockAdDomains 才拦截，避免被误挂到别的规则上 */
     if (!pflag(args, "blockAdDomains", false)) {
       return $done({});
     }
 
-    /* 激励广告/发奖回调永远放行：拦截它们只会让奖励失败，不是去广告。 */
-    if (isRewardRequest(url)) {
-      console.log("[soda-domains] keep reward ad, passthrough: " + url);
+    /* 保奖励模式：激励广告必须能正常加载，直接放行（soda 默认开 / douyin 默认关） */
+    if (pflag(args, "rewardSafe", true)) {
+      console.log("[soda-domains] rewardSafe=on, passthrough: " + url);
       return $done({});
     }
 

@@ -16,11 +16,14 @@
     "settingsClean",
     "hideDouyinEntry",
     "hideDouyinTab",
+    "listenOnly",
     "treasureMinimal",
     "cleanUpsell",
     "cleanActivity",
     "debugLog",
     "logTaskTitles",
-    "dailyReminder"
+    "skipUpdateCheck",
+    "autoTask",
+    "autoSignIn"
   ]
 }

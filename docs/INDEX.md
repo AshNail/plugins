@@ -6,6 +6,7 @@
 
 | 文档 | 用途 |
 |---|---|
+| [新手导览](onboarding.md) | 从零到导入即用：准备、导入、订阅、验证、FAQ、更新/卸载——给完全没碰过 Loon 的人 |
 | [项目 README](../README.md) | 项目结构、Loon 段落映射、插件目录、构建与验证入口 |
 | [Loon 原生优先](loon-native-first.md) | 为什么优先 `[Host]`/`[Rule]`，脚本与 MITM 的边界 |
 | [Loon 全功能清单](loon-feature-checklist.md) | 以 Loon 官方能力为索引的仓库落地清单 |

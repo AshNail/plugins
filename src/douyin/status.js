@@ -6,23 +6,14 @@
  *
  * 用途：
  *   在 Loon 插件列表或脚本列表中点击「插件状态检查」按钮时手动执行，
- *   实时汇总打卡状态、广告统计、App 唤醒入口，无需等待定时任务。
+ *   实时汇总广告统计、App 唤醒入口，无需等待定时任务。
  *   同时输出 Loon 运行环境（$loon / $script / $environment /
  *   $config.getConfig()），方便判断脚本是否运行在预期版本与模式下。
  *   通知模式由 [Argument] statusNotify 的 select 控制：
  *   notification 弹通知并带 openUrl，silent 只写日志与结果页。
  */
 
-var SEEN_KEY = "douyin-welfare-seen";
 var STATS_KEY = "douyin-ad-stats";
-
-function dayKey() {
-  var d = new Date();
-  var m = String(d.getMonth() + 1);
-  var day = String(d.getDate());
-  return d.getFullYear() + "-" + (m.length < 2 ? "0" + m : m) + "-" +
-    (day.length < 2 ? "0" + day : day);
-}
 
 function readStore(key) {
   try {
@@ -51,13 +42,15 @@ var SWITCH_LABELS = [
   ["settingsClean", "设置层清理"],
   ["hideDouyinEntry", "隐藏听抖音入口"],
   ["hideDouyinTab", "隐藏听抖音条目"],
+  ["listenOnly", "纯听歌"],
   ["treasureMinimal", "福利页精简"],
   ["cleanUpsell", "弹窗/演出清理"],
   ["cleanActivity", "活动入口清理"],
   ["debugLog", "只读日志"],
   ["logTaskTitles", "日志带标题"],
-  ["dailyReminder", "每日提醒"],
   ["skipUpdateCheck", "版本检查静音"],
+  ["autoTask", "自动任务"],
+  ["autoSignIn", "自动签到"],
 ];
 /* <<< GENERATED SWITCH_LABELS */
 
@@ -87,12 +80,7 @@ function switchSummary(args) {
   for (var i = 0; i < SWITCH_LABELS.length; i++) {
     var key = SWITCH_LABELS[i][0];
     if (!isOn(args[key])) continue;
-    var label = SWITCH_LABELS[i][1];
-    /* 每日提醒带上当前 cron，省得再去插件参数里翻。 */
-    if (key === "dailyReminder" && args.reminderCron) {
-      label += "(" + args.reminderCron + ")";
-    }
-    on.push(label);
+    on.push(SWITCH_LABELS[i][1]);
   }
   return on.join("、") || "全部默认";
 }
@@ -102,11 +90,14 @@ function switchWarnings(args) {
   if (isOn(args.killRewardAds)) {
     out.push("⚠️ 冲突：killRewardAds —— 激励广告完全不发，相关奖励会失效");
   }
-  if (isOn(args.rewardSafe) && isOn(args.settingsClean)) {
-    out.push("⚠️ 冲突：rewardSafe+settingsClean —— 设置层清理会被保奖励拦截");
+  if (isOn(args.rewardSafe) && isOn(args.cleanAds)) {
+    out.push("⚠️ 冲突：rewardSafe+cleanAds —— 脚本只保护非开屏端点，建议只开一种");
   }
-  if (isOn(args.treasureMinimal)) {
-    out.push("ℹ️ 福利页精简已开：签到/翻卡/红包雨等入口会被移除；要全部保留请关掉");
+  if (isOn(args.rewardSafe) && isOn(args.settingsClean)) {
+    out.push("⚠️ 冲突：rewardSafe+settingsClean —— 设置层清理会被放行");
+  }
+  if (isOn(args.rewardSafe) && isOn(args.blockAdDomains)) {
+    out.push("⚠️ 冲突：rewardSafe+blockAdDomains —— 域名拦截会被放行");
   }
   if (isOn(args.treasureMinimal) && isOn(args.killRewardAds)) {
     out.push("⚠️ 冲突：treasureMinimal+killRewardAds —— 福利页只剩攒时长，但激励已断");
@@ -205,10 +196,6 @@ function capabilityLine() {
 }
 
 (function main() {
-  var today = dayKey();
-  var seen = readStore(SEEN_KEY);
-  var seenToday = (seen === today);
-
   var statsText = "无广告记录";
   var rawStats = readStore(STATS_KEY);
   if (rawStats) {
@@ -231,15 +218,12 @@ function capabilityLine() {
     );
   }
 
-  var summary = seenToday ? "今日已打卡" : "今日未打卡";
-  var detail = "福利打卡：" + (seenToday ? "✅ 正常（" + seen + "）" : "⚠️ 尚未打卡") + "\n" +
-               "广告统计：" + statsText + "\n" +
+  var summary = "状态自检";
+  var detail = "广告统计：" + statsText + "\n" +
                "开关状态：" + switches;
   if (env) detail += "\n运行环境：" + env;
   detail += "\nLoon 能力：" + capabilityLine();
   detail += "\n静态层：QUIC 回退 16 域 · h2 · 压缩→gzip（常开）";
-  detail += "\n奖励排障：看广告领奖失败时，确认 ad.zijieapi.com/api/ad/v1/inspire* 未被其它广告插件在 DNS/Host 层黑洞（抓包里 status 0 即是此因）";
-  detail += "\n共存提醒：同时安装 soda/douyin 插件时，清理开关只在一个插件里开；Loon 同一响应只跑第一条命中的脚本";
   for (var w = 0; w < warns.length; w++) detail += "\n" + warns[w];
 
   console.log("[douyin-status] " + summary + " | " + statsText + " | " + switches +
