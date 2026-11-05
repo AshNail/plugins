@@ -450,7 +450,7 @@
     - **为什么做 `check-update`**：20.5.0 主二进制里 `luna/check-update` 与 `STNetProto.CheckUpdateRequest` / `CheckUpdateResponseInfo` / `has_update` 同簇；2026-10-29 真机日志里 `check-update/` 是 638 条非广告 luna 请求之一。它是只读查询，不参与支付/权益/结算。
     - **脚本边界**：新增 `src/soda/check-update.js`，绑定 `enable=${skipUpdateCheck}`（默认关，实验）。只把归一化后的 `has_update` / `hasUpdate` 置 false；包络、`media_result` 与同形键（`check_update_info` / `force_update_ts_ms` 等）零接触。无键、非 JSON、ungzip 失败一律原样放行（最坏情况 = 提示还在）；回写时删掉过期的 `content-encoding` / `content-length`，诊断头 `X-Soda-Plugin` 每个分支都带 `skip=` / `ce=`。
     - **绑定与测试**：`api.qishui.com` / `beta-luna.douyin.com` 双主机各一条响应绑定；`BINDING_SAMPLES["soda"]["response"]` 补两条回放样本，lint 的 `luna host parity` 仍全双主机。新增 `tests/test_check_update.js` 23 断言（src/dist 双跑）：深层置 false、包络与同形键保留、三条放行路径、gzip 路径、过期头清理、回滚常量存在。
-    - **默认值调整**：`blockSplashAd` 在 soda/douyin 两个家族统一默认开，满足 schema 的「同名共享开关类型/默认值/label 一致」约束；只拦穿山甲开屏素材与登记家族，`inspire*` 与发奖回调不匹配，回滚只需关开关。汽水 2.8.7、抖音 0.8.6。
+    - **默认值调整**：`blockSplashAd` 在 soda/douyin 两个家族统一默认开，满足 schema 的「同名共享开关类型/默认值/label 一致」约束；只拦穿山甲开屏素材与登记家族，`inspire*` 与发奖回调不匹配，回滚只需关开关。汽水 2.8.7、抖音 0.9.0。
     - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；`test_args_schema` 39 断言、17 个开关 label。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 21 relative link(s)`）、`device checklist: J section covers all 15/15 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
 
 67. [x] **第四十三轮：公开仓库交叉核对；微博 4 个多源广告主机 + 2 个 dig 解析端点落地，白名单/单源/支付域拒收**

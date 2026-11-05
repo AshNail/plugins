@@ -68,7 +68,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 
 `tests/fixtures/` 里放的是**真实抓包样本**（2026-10-20 HAR）：`douyin_treasure_page.json`（抖音福利页原始响应）、`soda_incentive_done.json`（汽水发奖请求/响应），用于防止“按想象改字段”。
 
-**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1678 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
+**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1714 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
 
 ## 断言分布
 
@@ -77,7 +77,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_sanitize2.js` | 19 | 通用字段清洗、包络保留、非目标端点不误伤 |
 | `test_prune.js` | 13 | `incentive/config` 的 `advert_sources` / `feed_advert_config` / `preload` |
 | `test_taskinfos.js` | 1 | `task_infos` 广告任务裁剪（保留签到/听歌/逛商城） |
-| `test_ads_surfaces.js` | 34 | 开屏、广告位、DSP、兜底、卡片、增长入口、upsell、新增广告配置容器（ad_feed_pre_show / ad_information_flow / bdp_splash_ad_config 等） |
+| `test_ads_surfaces.js` | 36 | 开屏、广告位、DSP、兜底、卡片、增长入口、upsell、新增广告配置容器（ad_feed_pre_show / ad_information_flow / bdp_splash_ad_config 等）、开屏缓存/预加载/传感器配置清空 |
 | `test_soda_upsell_v2.js` | 56 | soda `upsell_map`：真实 93 弹窗样本删除广告/商城实体、奖励弹窗保留、排序/冷启动/频控同步、只带 `upsell_map` 的响应也能命中 |
 | `test_treasure_prune2.js` | 15 | 福利任务、banner、弹窗、金币挂件、`commerce_ad_task` / `ad_snap` |
 | `test_settings.js` | 85 | TTKitchen 设置层、BDADSDK 形态、可选 `i`/`is` 主机、AGGRESSIVE/DRY_RUN/INJECT_MISSING |
@@ -93,7 +93,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_soda_homepage_tabs.js` | 29 | 底部 Tab 栏过滤：`listenOnly` 只留推荐/发现/我的、移除听抖音/直播/视频/朋友/社区/创作/AI 聊天/消息/一起听；`hideDouyinTab` 只移听抖音；奖励条目永久保护；深层嵌套与 schema 匹配；非 JSON 放行 |
 | `test_soda_task_titles.js` | 7 | 只读日志带任务标题：默认不打文案、开关打开后带 title、view.title 形态也能取到 |
 | `test_douyin_treasure.js` | 38 | 抖音福利页精简：只留攒时长模块、其余分区全部移除、`migrate_first_ad` 关闭、广告预拉取只留保留任务引用、开关关闭原样放行、参数对象/数组/字符串三种形态都识别、**真实抓包样本**回归 |
-| `test_douyin_clean.js` | 44 | 抖音广告配置/商业化弹窗/演出清理：广告源与素材清空、`ads/retrieve` 的 `ad_launch*` / `ads_blocks` / `ads_info` 清理、商城与广告弹窗删除、排序/冷启动/频控同名项同步清理、音乐节列表清空 |
+| `test_douyin_clean.js` | 60 | 抖音广告配置/商业化弹窗/演出清理：广告源与素材清空、`ads/retrieve` 的 `ad_launch*` / `ads_blocks` / `ads_info` 清理、商城与广告弹窗删除、排序/冷启动/频控同名项同步清理、音乐节列表清空、信息流条目精准删除（`is_ad`/`is_promoted`/嵌套赞助）、搜索 `block_type` 广告块与 banner 裁剪、开屏品牌响应素材/缓存/传感器清理、开关关闭放行 |
 | `test_soda_task_page_v2.js` | 31 | `treasure/task/page/v2` 结构化任务判别：只摘激励广告任务、保留签到/翻卡/攒时长、预拉取只留保留任务引用、真实样本回归 |
 | `test_unified_args.js` | 27 | 聚合插件开关：`rewardSafe` 优先放行非开屏端点、开屏仍清理、无参数时行为不变、设置层保护、`hideDouyinTab` 只删抖音条目且独立于 `cleanAds` |
 | `test_status.js` | 44 | Generic 状态脚本：广告统计、开关看板与冲突提醒、脚本抢占提示、Loon 环境诊断（`$loon`/`$script`/`$environment`/`$config`/`$utils.ungzip`，含缺失与拼写兼容）、通知 attach openUrl、`statusNotify=silent` 不弹通知 |
@@ -102,7 +102,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_check_update.js` | 23 | 版本检查静音：只把 `has_update` / `hasUpdate` 置 false、包络与同形键零接触、无键/非 JSON 原样透传、gzip 解出后同样生效、回写时清掉过期的 `content-encoding` / `content-length` |
 | `test_args_schema.js` | 37 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
 
-合计 **839** 条断言；源码与压缩版各一遍，共 **1678** 条。
+合计 **857** 条断言；源码与压缩版各一遍，共 **1714** 条。
 
 ## 抖音插件（douyin.plugin）
 

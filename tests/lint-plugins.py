@@ -18,7 +18,7 @@ def escape_regex_slashes(pattern):
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
     ("plugins/soda/soda.plugin", 5, 0, 2, 49, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 1, 10, "douyin"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 2, 11, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -72,7 +72,7 @@ FAMILY_CHECKS = {
             "cleanUpsell": 2,
             "cleanActivity": 1,
             "blockAdDomains": 1,
-            "blockSplashAd": 1,
+            "blockSplashAd": 2,
             "debugLog": 2,
         },
         "mitm": [
@@ -89,6 +89,9 @@ FAMILY_CHECKS = {
             "incentive-config": "https://beta-luna.douyin.com/luna/advert/incentive/config",
             "incentive-retrieve": "https://beta-luna.douyin.com/luna/advert/incentive/retrieve",
             "ads-dsp": "https://beta-luna.douyin.com/luna/ads/dsp/retrieve",
+            "splash-brand": "https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve",
+            "feed-song-tab": "https://beta-luna.douyin.com/luna/feed/song-tab",
+            "search-track": "https://beta-luna.douyin.com/luna/search/track",
             "upsell": "https://beta-luna.douyin.com/luna/commerce/v2/upsell",
             "music-festival": "https://beta-luna.douyin.com/luna/growth/music_festival/performance_details",
         },
@@ -421,12 +424,16 @@ BINDING_SAMPLES = {
             "https://ad.zijieapi.com/api/ad/splash/stock/",
             "https://ad.zijieapi.com/api/ad/v1/inspire/",
             "https://foo.zijieapi.com/api/ad/v2/ack/splash/collect",
+            "https://beta-luna.douyin.com/luna/advert/splash/brand/report",
         ),
         "response": (
             "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
             "https://beta-luna.douyin.com/luna/ads/config",
             "https://beta-luna.douyin.com/luna/ads/retrieve",
             "https://beta-luna.douyin.com/luna/ads/dsp/retrieve",
+            "https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve",
+            "https://beta-luna.douyin.com/luna/feed/song-tab",
+            "https://beta-luna.douyin.com/luna/search/track",
             "https://beta-luna.douyin.com/luna/advert/incentive/config",
             "https://beta-luna.douyin.com/luna/advert/incentive/retrieve",
             "https://beta-luna.douyin.com/luna/advert/incentive/done",

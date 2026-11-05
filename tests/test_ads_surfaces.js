@@ -19,13 +19,32 @@ console.log('\n== 1. 开屏 ad_launch_list ==');
   const r=run('https://api.qishui.com/luna/advert/splash/brand/retrieve',{
     status_code:0,status_info:'',request_id:'r1',
     ad_launch_list:[{launch_id:'1',ad_price:10}],ad_launch:{launch_id:'2'},
-    splash_dsp_config:{dsp_id:'d1'}
+    splash_dsp_config:{dsp_id:'d1'},
+    splash_shake_ad_config:{enabled:true},shake_ad_config:{a:1},
+    splash_twist_ad_config:{b:1},twist_ad_config:{c:1},motion_ad_config:{d:1},
+    splash_ad_cache_config:{ttl:60},splash_ad_preload_config:{e:1},
+    splash_ad_early_load_config:{f:1},
+    enable_splash_shake:true,shake_ad_switch:true,twist_ad_switch:true,
+    splash_shake_sensitivity:0.8,splash_acceleration_threshold:12,
+    splash_rotation_threshold:0.4,splash_cache_enable:true,
+    enable_splash_ad_preload:true
   });
   ck('ad_launch_list -> []', Array.isArray(r.out.ad_launch_list)&&r.out.ad_launch_list.length===0, r.out.ad_launch_list);
   ck('ad_launch -> {} 且 splash_dsp_config 清空',
     r.out.ad_launch && Object.keys(r.out.ad_launch).length===0 &&
     JSON.stringify(r.out.splash_dsp_config)==='{}',
     JSON.stringify([r.out.ad_launch, r.out.splash_dsp_config]));
+  ck('开屏缓存/预加载/传感器配置容器清空',
+    ['splash_shake_ad_config','shake_ad_config','splash_twist_ad_config','twist_ad_config',
+     'motion_ad_config','splash_ad_cache_config','splash_ad_preload_config','splash_ad_early_load_config']
+      .every(k=>r.out[k]&&Object.keys(r.out[k]).length===0),
+    JSON.stringify(r.out.splash_ad_cache_config));
+  ck('开屏开关置 false、阈值归零',
+    r.out.enable_splash_shake===false && r.out.shake_ad_switch===false &&
+    r.out.twist_ad_switch===false && r.out.splash_cache_enable===false &&
+    r.out.enable_splash_ad_preload===false && r.out.splash_shake_sensitivity===0 &&
+    r.out.splash_acceleration_threshold===0 && r.out.splash_rotation_threshold===0,
+    JSON.stringify([r.out.enable_splash_shake,r.out.splash_shake_sensitivity]));
   ck('status_code 保留', r.out.status_code===0);
   ck('request_id 保留', r.out.request_id==='r1');
   console.log(r.logs.join('\n'));

@@ -49,6 +49,21 @@ const MALL_UPSELLS = [
   "browse_mall_popup_acc_amount"
 ];
 
+const FEED_CONTENT_PATH = /\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/;
+
+const SPLASH_AD_CONTAINERS = [
+  "splashshakeadconfig", "shakeadconfig", "splashtwistadconfig", "twistadconfig",
+  "motionadconfig", "splashadcacheconfig", "splashadpreloadconfig",
+  "splashadearlyloadconfig"
+];
+const SPLASH_AD_SWITCHES = [
+  "enablesplashshake", "enableshakead", "enableshake", "enablesplashtwist",
+  "enabletwistad", "enabletwist", "enablemotionad", "shakeadswitch", "twistadswitch",
+  "splashshakesensitivity", "shakesensitivity", "splashaccelerationthreshold",
+  "splashrotationthreshold", "splashcacheenable", "splashcacheenabled",
+  "enableadpreload", "enablesplashadpreload", "splashadpreload", "splashadearlyload"
+];
+
 /* kill/falsy 里的键名都是“归一化后”的形式：小写且去掉 _ 与 - */
 const KILL_CONTAINERS = {
   "incentive-config": {
@@ -69,8 +84,23 @@ const KILL_CONTAINERS = {
            "adngroupconfig", "commercelibraadconfig", "commercecommonadconfig",
            "feedrewardadentrance", "searchbanner", "feedwidget",
            "audioad", "midrollad", "pausead", "recommendad", "sponsorcard",
-           "commercialnotice", "interstitialad", "popupad", "bannerad"],
-    falsy: ["preload", "enableads", "enablead"]
+           "commercialnotice", "interstitialad", "popupad", "bannerad"]
+      .concat(SPLASH_AD_CONTAINERS),
+    falsy: ["preload", "enableads", "enablead"].concat(SPLASH_AD_SWITCHES)
+  },
+  "splash-brand": {
+    kill: ["adlaunchlist", "adlaunch", "adlaunches", "adinfo", "adinfos", "ads",
+           "splash", "brand", "splashactivedata", "jumpbtninfo", "shakeinfo",
+           "twistinfo", "motioninfo", "interactioninfo", "splashcache", "splashdspconfig"]
+      .concat(SPLASH_AD_CONTAINERS),
+    falsy: ["preload", "enableads", "enablead"].concat(SPLASH_AD_SWITCHES)
+  },
+  "feed-content": {
+    kill: ["adsblocks", "adsinfo", "adinfo", "addata", "adextra", "videoendad",
+           "feedads", "feedrewardadentrance", "audioad", "midrollad", "midrollads",
+           "pausead", "recommendad", "searchbanner", "sponsorcard", "commercialnotice",
+           "promotedtrack", "promotedsong", "interstitialad", "popupad", "bannerad"],
+    falsy: ["enableads", "enablead", "enablefeedads"]
   }
 };
 
@@ -86,6 +116,14 @@ function emptyLike(v) {
   if (Array.isArray(v)) return [];
   if (isPlainObject(v)) return {};
   return null;
+}
+
+function offLike(v) {
+  if (typeof v === "number") return 0;
+  if (typeof v === "string") {
+    return v.trim() !== "" && isFinite(Number(v)) ? "0" : "false";
+  }
+  return false;
 }
 
 /* 递归清空广告容器（只处理 kill/falsy 名单里的键） */
@@ -109,11 +147,119 @@ function killContainers(node, spec, log, path, depth) {
       continue;
     }
     if (spec.falsy.indexOf(nk) !== -1) {
-      node[k] = false;
-      log.push(path + "." + k + " -> false");
+      const after = offLike(val);
+      node[k] = after;
+      log.push(path + "." + k + " -> " + JSON.stringify(after));
       continue;
     }
     killContainers(val, spec, log, path + "." + k, depth + 1);
+  }
+}
+
+function isAdFlag(v) {
+  return v === true || v === 1 || v === "1" || v === "true";
+}
+
+function hasNestedAdFlag(o) {
+  for (const k of Object.keys(o)) {
+    const nk = normalizeKey(k);
+    if (nk !== "card" && nk !== "adinfo" && nk !== "adsinfo" &&
+        nk !== "addata" && nk !== "adsdata" && nk !== "adblock" && nk !== "adsblock") {
+      continue;
+    }
+    const v = o[k];
+    if (!isPlainObject(v)) continue;
+    for (const kk of Object.keys(v)) {
+      const nn = normalizeKey(kk);
+      if ((nn === "isad" || nn === "isadvert" || nn === "isadvertisement" ||
+           nn === "isaditem" || nn === "aditem" || nn === "adflag" ||
+           nn === "ispromoted" || nn === "promoted" ||
+           nn === "issponsored" || nn === "sponsored" ||
+           nn === "iscommercial" || nn === "commercialad") && isAdFlag(v[kk])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isAdItem(o) {
+  let hasAd = false;
+  let hasMedia = false;
+  for (const k of Object.keys(o)) {
+    const nk = normalizeKey(k);
+    const v = o[k];
+    if ((nk === "isad" || nk === "isadvert" || nk === "isadvertisement" ||
+         nk === "isaditem" || nk === "aditem" || nk === "adflag" ||
+         nk === "ispromoted" || nk === "promoted" ||
+         nk === "issponsored" || nk === "sponsored" ||
+         nk === "iscommercial" || nk === "commercialad") && isAdFlag(v)) {
+      return true;
+    }
+    if (nk === "blocktype" && typeof v === "string" &&
+        /^(?:ads?|advert(?:isement|ising)?|commercial|promot(?:ed|ion)|sponsored)(?:[_-]|$)/i.test(v)) {
+      return true;
+    }
+    if (nk === "adinfo" || nk === "addata" || nk === "adextra" ||
+        nk === "commercialdata" || nk === "promoteddata") {
+      hasAd = true;
+    }
+    if (nk === "video" || nk === "liveroom" || nk === "media" ||
+        nk === "track" || nk === "song" || nk === "aweme" ||
+        nk === "roomdata" || nk === "audio" || nk === "music" ||
+        nk === "artist" || nk === "album") {
+      hasMedia = true;
+    }
+  }
+  if (!hasAd && hasNestedAdFlag(o)) hasAd = true;
+  return hasAd && !hasMedia;
+}
+
+const AD_BANNER_RE = /ad[_-]?reward|reward[_-]?ad|ads?[_-]?banner|ad[_-]?snap|incentive[_-]?ad|advert(?:isement|ising)?|commercial|promoted|sponsored|看视频|看广告/i;
+const AD_BANNER_FIELDS = ["bannertype", "type", "key", "name", "schema", "title", "text"];
+
+function isAdBanner(item) {
+  if (typeof item === "string") return AD_BANNER_RE.test(item);
+  if (!isPlainObject(item)) return false;
+  if (isAdItem(item)) return true;
+  for (const k of Object.keys(item)) {
+    if (AD_BANNER_FIELDS.indexOf(normalizeKey(k)) === -1) continue;
+    const v = item[k];
+    if (typeof v === "string" && AD_BANNER_RE.test(v)) return true;
+  }
+  return false;
+}
+
+function dropAdItems(node, log, path, depth) {
+  if (depth > 14 || !node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    const kept = [];
+    for (let i = 0; i < node.length; i++) {
+      const item = node[i];
+      if (isPlainObject(item) && isAdItem(item)) {
+        log.push(path + "[" + i + "] : dropped ad item");
+        continue;
+      }
+      kept.push(item);
+      dropAdItems(item, log, path + "[" + i + "]", depth + 1);
+    }
+    if (kept.length !== node.length) {
+      node.length = 0;
+      for (let i = 0; i < kept.length; i++) node.push(kept[i]);
+    }
+    return;
+  }
+  for (const k of Object.keys(node)) {
+    const nk = normalizeKey(k);
+    const val = node[k];
+    if ((nk === "bannerlist" || nk === "banners") && Array.isArray(val)) {
+      const kept = val.filter(function (item) { return !isAdBanner(item); });
+      if (kept.length !== val.length) {
+        log.push(path + "." + k + " : dropped " + (val.length - kept.length) + " ad banner(s)");
+        node[k] = kept;
+      }
+    }
+    dropAdItems(node[k], log, path + "." + k, depth + 1);
   }
 }
 
@@ -395,15 +541,19 @@ function recordBlock(type, item) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity", "debugLog"]);
+    const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity", "debugLog", "blockSplashAd"]);
     const debugOn = pflag(args, "debugLog", false);
 
     /* 决定这次请求归哪个开关管：没开的开关一律放行 */
     let mode = null;
     if (/\/luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
       if (pflag(args, "killRewardAds", false)) mode = "incentive";
+    } else if (/\/luna\/advert\/splash\/brand\/retrieve/.test(url)) {
+      if (pflag(args, "blockSplashAd", false)) mode = "splash-brand";
     } else if (/\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) {
       if (pflag(args, "cleanFeedAds", false)) mode = "feed-ads";
+    } else if (FEED_CONTENT_PATH.test(url)) {
+      if (pflag(args, "cleanFeedAds", false)) mode = "feed-content";
     } else if (/\/luna\/commerce\/v2\/upsell/.test(url)) {
       if (pflag(args, "cleanUpsell", false)) mode = "upsell";
     } else if (/\/luna\/growth\/music_festival\/performance_details/.test(url)) {
@@ -423,8 +573,8 @@ function recordBlock(type, item) {
       return $done({ headers: markHeaders("douyin-clean;skip=no-body") });
     }
     /* 广告位/信息流端点也可能返回大体积响应；没有广告标记就不解析。 */
-    if (mode === "feed-ads" &&
-        !/ad|splash|feed|reward|search|commercial|interstitial|popup|banner|shake|twist|motion|interaction|audio|midroll|pause|recommend|sponsor|enable/i.test(raw)) {
+    if ((mode === "feed-ads" || mode === "feed-content") &&
+        !/ad|splash|feed|reward|search|commercial|interstitial|popup|banner|shake|twist|motion|interaction|audio|midroll|pause|recommend|sponsor|promot|block[_-]?type|enable/i.test(raw)) {
       return $done({ headers: markHeaders("douyin-clean;noop=no-marker") });
     }
     const head = raw.trimStart().slice(0, 1);
@@ -450,6 +600,11 @@ function recordBlock(type, item) {
       }
     } else if (mode === "feed-ads") {
       killContainers(obj, KILL_CONTAINERS["ads-config"], log, "$", 0);
+    } else if (mode === "feed-content") {
+      killContainers(obj, KILL_CONTAINERS["feed-content"], log, "$", 0);
+      dropAdItems(obj, log, "$", 0);
+    } else if (mode === "splash-brand") {
+      killContainers(obj, KILL_CONTAINERS["splash-brand"], log, "$", 0);
     } else if (mode === "upsell") {
       handleUpsell(obj, log);
     } else if (mode === "music-festival") {

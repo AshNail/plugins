@@ -19,6 +19,7 @@
 - **激励任务自动化升级为 v2.0**：从"请求重放"改为"MITM 响应注入"。HAR 深度分析发现 `time_token`/`nonce` 每次动态生成，纯重放不可行；设备已被风控标记（`err_no=210021`）。新方案：拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。
 - **新增端点**：`aweme.snssdk.com`（签到 API）加入 `[Rule]` QUIC 回退 + `[MITM]`。
 - **风控检测**：检测 `hit_risk_control` / `err_no=210021` → 暂停自动化 60 秒。
+- **开屏品牌响应清理扩展**：补清开屏缓存/预加载/提前加载配置与摇一摇/扭一扭/传感器阈值（`splash_*_ad_config` 族），与 `settings.js` 的设置层对齐。
 
 > 以下 v1.x / 0.x 段落保留为历史设计记录；当前安装和使用只看 `soda.plugin`。
 
@@ -912,6 +913,7 @@ luna 请求——端点真实在跑，由 `api.qishui.com` + `beta-luna.douyin.c
 - **风控检测**：检测 `hit_risk_control` / `err_no=210021` → 暂停自动化 60 秒。
 - **新增端点**：`aweme.snssdk.com`（签到 API）加入 `[Rule]` QUIC 回退 + `[MITM]`。
 - **脚本重写**：`src/soda/auto-task.js`（18KB）→ `plugins/soda/scripts/auto-task.min.js`（8.6KB）。
+- **开屏品牌响应清理扩展**：`sanitize.js` 的 `splash-brand` 规则补清 `splash_shake_ad_config` / `shake_ad_config` / `splash_twist_ad_config` / `twist_ad_config` / `motion_ad_config` / `splash_ad_cache_config` / `splash_ad_preload_config` / `splash_ad_early_load_config` 容器，并把对应传感器开关与阈值按原类型置 false / 归 0。回归：`test_ads_surfaces.js` 34 → 36 断言。
 - **致谢**：HAR 423_1793795683001 提供完整请求/响应样本；起点读书 finishWatch 机制启发。
 
 ### v3.0.0（2026-11-05）激励任务自动化 + Bundle ID 适配

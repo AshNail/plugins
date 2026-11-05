@@ -17,12 +17,12 @@
 | 开关/参数 | 默认 | 作用 |
 |---|---|---|
 | `treasureMinimal` | 开 | 福利页只保留【攒时长 听歌不中断】 |
-| `cleanFeedAds` | 关 | 清掉信息流/广告位广告容器（**不影响激励奖励**） |
+| `cleanFeedAds` | 关 | 清掉信息流/搜索/广告位广告容器与广告条目（**不影响激励奖励**） |
 | `killRewardAds` | 关 | 断掉激励广告素材与预拉取（= 广告完全不发，奖励也没了） |
 | `cleanUpsell` | 关 | 删商业化弹窗、逛商城弹窗、汽水音乐节（演出）列表 |
 | `cleanActivity` | 关 | 把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示 |
 | `blockAdDomains` | 关 | 广告/归因域名拦截（MITM + `http-request` 脚本） |
-| `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调 |
+| `blockSplashAd` | 开 | 拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族）+ 清理开屏品牌响应素材/缓存/预加载/传感器配置，**不碰激励广告**与发奖回调 |
 | `debugLog` | 关 | 只读日志，前缀 `[douyin-reward]`（含穿山甲广告配置、领奖回调、广告耗时实测） |
 | `statusNotify` | `notification` | 状态自检按钮通知模式：`notification` 弹通知并带 `openUrl`；`silent` 只写日志和结果页（Loon `[Argument]` `select`）；结果页汇总当前开关、提示冲突组合，并输出 Loon 环境（`$loon` / 脚本 / 节点 / 运行模式） |
 <!-- <<< GENERATED ARG-TABLE -->
@@ -212,6 +212,37 @@ POST ad.zijieapi.com/api/incentive/marketing/done         领奖回调（带 tim
 
 需要 `ad.zijieapi.com` / `ads?-normal*.zijieapi.com`（Pangle 分片族）在 `[MITM]`（本插件已声明）。如果开启后抖音启动异常，先改回关即可。
 
+同一开关还接管**响应侧**：
+
+```text
+beta-luna.douyin.com/luna/advert/splash/brand/retrieve   开屏品牌素材 → 清 ad_launch*、shake/twist/motion/interaction、
+                                                          缓存/预加载/提前加载配置与传感器阈值（按原类型归 0/false）
+beta-luna.douyin.com/luna/advert/splash/brand/report     品牌上报 → reject_dict(200)，减少 SDK 重试
+```
+
+激励/发奖链路（`advert/incentive/*`、`advert/fallback/done/info`、`incentive/marketing/done`）不在上面任何一条里。
+
+### 3.5 信息流 / 搜索广告条目（`cleanFeedAds`）
+
+除了 `ads/config|retrieve|dsp/retrieve` 这类广告专用接口，`cleanFeedAds` 现在也绑定真实内容响应（与汽水同一套已取证端点）：
+
+```text
+/luna/feed/  /luna/v2/feed/  /luna/playlist/(feed/|detail|related_media|search)
+/luna/search/track  /luna/search-block  /luna/search-categories
+/luna/media/(assistant/)related  /luna/video_playlist/detail
+/luna/me/discover  /luna/discover/mix  /luna/featured-content/list  /luna/card
+```
+
+条目级只删「有明确广告证据」的对象：
+
+- 显式标记：`is_ad` / `is_advert(isement)` / `is_ad_item` / `ad_flag` / `is_promoted` / `is_sponsored` / `is_commercial`（含 `1` / `"true"` 形态）——即使带媒体字段也删；
+- 嵌套标记：`card.is_ad` / `ad_info.is_sponsored` 这类容器里的推广位；
+- 纯广告载荷：条目只有 `ad_info` / `ad_data` / `ad_extra` 之类的广告对象、没有任何 `track/video/song/media/music` 等媒体字段；
+- 搜索块：`block_type` 以 `ad / advert / commercial / promoted / sponsored` 开头的结果块；
+- banner：`banner_list` / `banners` 里按 `banner_type / title / key` 命中的广告 banner，**系统公告类 banner 保留**。
+
+带媒体的正常条目（song / video / track）即使携带 `ad_info` / `ads_blocks` 也保留，只是这些广告字段被清空。响应里没有任何广告标记时直接放行，不对大体积 Feed 做无谓 `JSON.parse`。
+
 ---
 
 ## 4. 商城 / 演出去哪了
@@ -256,9 +287,9 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/douyin/douyin.plu
 |---|---|
 | 福利页是否只剩攒时长 | 打开福利页，只应看到【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱都消失 |
 | 攒时长是否仍可点 | 按钮应能进入看广告结算流程（`ad_type=ads_get_duration`） |
-| 广告是否还在 | `killRewardAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空；`cleanFeedAds` 只影响信息流广告 |
+| 广告是否还在 | `killRewardAds` 打开后，日志搜 `[douyin-clean]`，`advert_sources` / `ad_infos_map` 应为空；`cleanFeedAds` 只影响信息流/搜索/广告位（含条目级 `is_ad` / `block_type` / banner 裁剪），不碰激励 |
 | 弹窗/演出是否消失 | `cleanUpsell` 打开后，`upsell_map` 里不应再有 `*ads*` 与 `browse_mall_popup_acc_amount`；音乐节列表为空 |
-| 开屏广告是否还在 | `blockSplashAd` 打开后冷启，日志应出现 `[douyin-splash] blocked`；激励广告仍能正常加载 |
+| 开屏广告是否还在 | `blockSplashAd` 打开后冷启，日志应出现 `[douyin-splash] blocked`；开屏品牌响应（`advert/splash/brand/retrieve`）应带 `X-Soda-Plugin: douyin-clean;changed=N`，`ad_launch_list` 为空；激励广告仍能正常加载 |
 | 状态看板 | 点「插件状态自检」：结果页含「开关状态」摘要与「运行环境」行（Loon 版本/脚本/节点/运行模式）；`treasureMinimal` 与 `killRewardAds` 同开时出现冲突提醒 |
 | 链路取证 | `debugLog` 打开后，日志搜 `[douyin-reward]` |
 
@@ -376,6 +407,15 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 ---
 
 ## 7. 版本更新记录
+
+### v0.9.0（2026-11-05）响应级覆盖补齐：真实 Feed/搜索条目 + 开屏品牌响应
+
+依据两份广告攻防指南做分层覆盖审计后补齐三处缺口（只扩已有开关，不新增参数）：
+
+- **信息流/搜索条目级清理（`cleanFeedAds`）**：清理绑定从 `ads/config|retrieve|dsp/retrieve` 扩到与汽水同一套已取证内容端点（`feed/`、`playlist/*`、`search/track`、`search-block`、`search-categories`、`media/related`、`video_playlist/detail`、`me/discover`、`discover/mix`、`featured-content/list`、`card`）。条目级只删有明确广告证据的对象（`is_ad` / `is_promoted` / `is_sponsored` / `is_commercial`、嵌套 `card.is_ad`、纯 `ad_info` 载荷、搜索 `block_type=advert*`、banner 列表里的广告位）；带 `track/video/song/media` 的正常条目即使挂着 `ad_info` / `ads_blocks` 也只清字段不删条目，系统公告 banner 保留。无广告标记的大响应直接放行，不做无谓 `JSON.parse`。
+- **开屏品牌响应（`blockSplashAd`）**：新增 `advert/splash/brand/retrieve` 响应绑定，清 `ad_launch*` 与开屏缓存/预加载/提前加载配置、摇一摇/扭一扭/传感器阈值（布尔→false、数值→0，保留原类型），并把 `advert/splash/brand/report` 上报改为 `reject_dict(200)`。激励与发奖链路不在任何一条匹配里。
+- **数值字段按类型归零**：`killContainers` 的 falsy 命中不再一律写 `false`——数值配置（阈值/TTL）归 `0`，数字字符串归 `"0"`，避免模型解码异常。
+- **回归**：`test_douyin_clean.js` 44 → 60 断言（Feed 条目、搜索块/banner、开屏品牌响应、开关关闭放行）；`test_ads_surfaces.js` 34 → 36（汽水开屏缓存/预加载/传感器容器与开关/阈值）。lint 绑定矩阵补开屏品牌、Feed、搜索样本；全量 54 套件 / 1714 断言。
 
 ### v0.8.6（2026-10-30）开屏请求拦截默认开
 

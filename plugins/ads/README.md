@@ -60,7 +60,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 15 组、1398 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
+| `[Host]` 核心广告组 | 15 组、1430 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
 | `[Host]` HTTPDNS 组 | 71 条：阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
 | `[Host]` 公共 DoH 组 | 48 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等海外厂商 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
@@ -71,7 +71,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 可选层（默认注释）：52 条 URL-REGEX + 1 条 jq + `[MITM]` 名单（原 adfilter 并入） | **否**（默认整段注释；启用需 Loon 证书） |
 
-合计：**23 组、1517 条生效 Host（exact 933 / wildcard 584）、170 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
+合计：**23 组、1549 条生效 Host（exact 950 / wildcard 599）、170 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 默认注释组（可选开启）
 
@@ -181,7 +181,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（15 组 / 1398 条展开）
+### 核心广告组（15 组 / 1430 条展开）
 
 | 组 | 代表 |
 |---|---|
@@ -455,6 +455,7 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.8.7**（2026-11-05）：**全网覆盖第十三轮探索：新增 17 个高置信移动 SDK 与程序化广告专域**。依据 14 份公开上游审计与 redline 判定（0 命中 124 条 App 红线）：①国内联盟/媒体组（`cn_union`）补 6 域：瑞狮网络 `=vlion.cn`、章鱼移动 `=zhangyuyidong.cn`、Scupio 酷比 `=scupio.com`、极策广告 GeeCR `=geecradv.com`、123网盘广告展示分发 `bdad.123pan.cn`、金山毒霸弹窗与推广 `bu1.duba.com`；②全球广告技术/SDK 组（`adtech`）补 11 域：威朋 Vpon Mobile Ads `=vm5apis.com`、Aralego Mobile SSP/DSP `=aralego.com`、Umbel 移动定向与数据平台 `=umbel.com`、Clickyab 数字广告网络 `=clickyab.com`、ClickTracks 点击归因 `=clicktracks.com`、Bizible/Adobe 广告转化归因 `=bizible.com`、Eulerian Technologies 欧洲跨渠道 DMP `=eulerian.net`、HubSpot Ads Pixel `=hsadspixel.net`、Kissmetrics 移动广告转化追踪 `=kissmetrics.com`、Leadinfo 访客重定向 `=leadinfo.net`、ShareASale/Awin 联盟营销网关 `=shareasale.com`。生效 Host 1517→1549（exact 933→950 / wildcard 584→599），展开 1687→1719；核心广告组 1398→1430。
 - **2.8.6**（2026-11-05）：**adfilter 插件并入**。独立插件 `adfilter.plugin`（可莉广告过滤器的原生子集）整体合入：①DNS 子集进默认生效组（新组「原 adfilter：精确广告域」，实际新增 6 个主机——adnxs 族已被交易/SSP 组 `=adnxs.com` 覆盖）：21CN 广告位、联通 `m1.ad.10010.com`、Pixiv 广告位 `open-pixon.ads-pixiv.net`；②52 条 API 级 URL-REGEX + 1 条 jq 作为默认注释的可选层并入（配套 `[MITM]` 名单同注释，启用需证书）；③`plugins/adfilter` 目录删除。生效 Host 1497→1503（exact 919→925 / wildcard 578 不变）、核心广告组 14→15 组（1378→1384 条展开）。
 - **2.8.5**（2026-11-01）：**修复中行积分商城误杀**。`jf365.boc.cn` 是中国银行官方「中银积分365」积分查询/兑换商城（官方公告明确 https://jf365.boc.cn），不是广告域；已从 cn_union 组移除，并在 lint 中新增负向门禁，任何重新把它放进生效 Host 的改动都会失败。生效 Host 1498→1497（exact 920→919 / wildcard 578 不变）、核心广告组 1377→1376。
 - **2.8.3**（2026-10-30）：**全网公开清单交叉核对：16 个国内平台广告专域 + Google 中国 2 域生效，12 个埋点端点进默认关统计组；功能混装与低源候选单独观察**。把 anti-AD、AWAvenue、AdRules、HaGeZi PRO、fmz200 五份缓存清单按**精确域名**（不再用子串，`mobilead.kuwo.cn` 不会再把 `ad.kuwo.cn` 算成命中）逐个计数，只收 ≥3 源且语义自证的条目。进 cn_union：腾讯音乐 `adcdn/adclick/adexpo.tencentmusic.com`（音频广告素材/点击/曝光）、腾讯视频 `adstextview.qq.com`、喜马拉雅 `adse.ximalaya.com`/`adse.wsa.ximalaya.com`、酷狗 `adsfile.bssdlbig.kugou.com`/`ads.service.kugou.com`、小红书 `ads-img-qc`/`ads-video-qc`/`ads-video-al.xhscdn.com`、新浪 `adbox.sina.com.cn`、搜狐 `go.sohu.com`、中华网 `union.china.com.cn`、高德 `optimus-ads.amap.com`、蜻蜓 `ad-cdn.qingting.fm`；进 google：`=googleadsserving.cn`、`=doubleclick-cn.net`。进默认关统计组：新浪 `sbeacon.sina.com.cn`、搜狐 `track/aty.sohu.com`、阿里 `adashbc/adashxgc.ut.taobao.com`、腾讯 `stat.y.qq.com`/`monitor.music.qq.com`、火山 `mssdk.volces.com`、高德 `logs/dualstack-logs.amap.com`、酷狗 `log.web.kugou.com`、阿里云 `log.aliyuncs.com`。新组 `platform_watchlist`（默认注释）收 7 条：`sdkconfig.video.qq.com`、`sdkapp.mobile.sina.cn`、`rs.sinajs.cn` 三条虽 3 源但兼作 SDK 配置/共享静态资源，语义存疑；`ad.qq.com`（2 源）、`ad.kuwo.cn`（1 源）、`ad.qingting.fm`（2 源）、`ad.csdn.net`（1 源）证据不足。拒收：`ads.95516.com`（banks 插件已记录 REJECT 后 `analytics.95516.com` 重试风暴 + anti-AD `@@` 例外，且属银联主域红线）、`report.meituan.com`（已由美团 1.2.4 telemetry 组覆盖）、`log.snssdk.com`（仅 2 源）。生效 Host 1479→1499（exact 903→921 / wildcard 576→578）、默认注释 147→166、核心广告组 1358→1378、组数 21→22；HTTPDNS 73、公共 DoH 48 不变。

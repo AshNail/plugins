@@ -22,10 +22,10 @@
       "name": "cleanFeedAds",
       "type": "switch",
       "default": false,
-      "tag": "信息流广告清理",
-      "desc": "清掉 ads/config、ads/retrieve、ads/dsp/retrieve 的信息流广告容器；不影响激励广告与奖励。",
+      "tag": "信息流/搜索广告清理",
+      "desc": "清掉信息流/搜索/广告位响应里的广告容器与明确广告条目（is_ad/is_promoted 等）；保留正常媒体、系统公告与激励奖励。",
       "label": "清信息流广告",
-      "readme": "清掉信息流/广告位广告容器（**不影响激励奖励**）"
+      "readme": "清掉信息流/搜索/广告位广告容器与广告条目（**不影响激励奖励**）"
     },
     {
       "name": "killRewardAds",
@@ -67,10 +67,10 @@
       "name": "blockSplashAd",
       "type": "switch",
       "default": true,
-      "tag": "拦截开屏广告请求",
-      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。",
+      "tag": "开屏请求与品牌响应清理",
+      "desc": "拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族），并清理开屏品牌响应（advert/splash/brand/retrieve）的素材、缓存、预加载与摇一摇/扭一扭配置；不影响激励广告与奖励。",
       "label": "开屏请求拦截",
-      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族），**不碰激励广告**与发奖回调"
+      "readme": "拦掉穿山甲开屏广告请求（`splash/` 与 `vN/(ack/)splash/` 全家族）+ 清理开屏品牌响应素材/缓存/预加载/传感器配置，**不碰激励广告**与发奖回调"
     },
     {
       "name": "debugLog",

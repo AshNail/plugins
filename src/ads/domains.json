@@ -1,5 +1,5 @@
 {
-  "version": "2.8.6",
+  "version": "2.8.7",
   "updated": "2026-11-05",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.6",
+      "version": "2.8.7",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -408,7 +408,7 @@
         {
           "id": "cn_union",
           "title": "中国广告联盟 / 媒体广告位 / 广告监测",
-          "note": "AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。2026-10-30 频道补充：ems.youku.com（优酷广告端点，4 源）、adapi.izuiyou.com（皮皮搞笑广告 API，5 源）、ubixioe.com（第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue #33），均精确域或整域广告专域。2026-10-30 公开仓库补充：sdkapp.uve.weibo.com / adimg.uve.weibo.com / biz.weibo.com / alitui.weibo.com（微博 SDK 广告配置、广告图床、开屏广告与阿里妈妈推广位，分别 3/3/3/3+ 源）；均为精确主机，刻意不写 =uve.weibo.com——RuCu6 微博插件对该域显式 DIRECT，整域会误伤正常接口。同日再补 ad.maoyan.com（猫眼广告专域，AWAvenue 精确 + hagezi 通配 + fmz200/blackmatrix7 主机规则）与 ads-shopping.shouqianba.com（收钱吧小程序广告域，anti-AD + AWAvenue + hagezi），两者均为广告专用子域。2026-10-30 第十一轮按精确域比对五份公开清单，再补 16 个 ≥3 源国内媒体/工具广告专域：腾讯音乐 adcdn/adclick/adexpo（音频广告素材、点击、曝光）、腾讯视频 adstextview（广告文本位）、喜马拉雅 adse/adse.wsa（音频广告服务）、酷狗 adsfile.bssdlbig/ads.service（广告文件与投放服务）、小红书 ads-img-qc/ads-video-qc/ads-video-al（广告图/视频 CDN）、新浪 adbox（广告位）、搜狐 go（广告跳转）、中华网 union（广告联盟）、高德 optimus-ads（地图广告引擎）、蜻蜓 ad-cdn（音频广告 CDN）。全部精确主机；媒体主域仍不整域封禁。",
+          "note": "AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。2026-10-30 频道补充：ems.youku.com（优酷广告端点，4 源）、adapi.izuiyou.com（皮皮搞笑广告 API，5 源）、ubixioe.com（第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue #33），均精确域或整域广告专域。2026-10-30 公开仓库补充：sdkapp.uve.weibo.com / adimg.uve.weibo.com / biz.weibo.com / alitui.weibo.com（微博 SDK 广告配置、广告图床、开屏广告与阿里妈妈推广位，分别 3/3/3/3+ 源）；均为精确主机，刻意不写 =uve.weibo.com——RuCu6 微博插件对该域显式 DIRECT，整域会误伤正常接口。同日再补 ad.maoyan.com（猫眼广告专域，AWAvenue 精确 + hagezi 通配 + fmz200/blackmatrix7 主机规则）与 ads-shopping.shouqianba.com（收钱吧小程序广告域，anti-AD + AWAvenue + hagezi），两者均为广告专用子域。2026-10-30 第十一轮按精确域比对五份公开清单，再补 16 个 ≥3 源国内媒体/工具广告专域：腾讯音乐 adcdn/adclick/adexpo（音频广告素材、点击、曝光）、腾讯视频 adstextview（广告文本位）、喜马拉雅 adse/adse.wsa（音频广告服务）、酷狗 adsfile.bssdlbig/ads.service（广告文件与投放服务）、小红书 ads-img-qc/ads-video-qc/ads-video-al（广告图/视频 CDN）、新浪 adbox（广告位）、搜狐 go（广告跳转）、中华网 union（广告联盟）、高德 optimus-ads（地图广告引擎）、蜻蜓 ad-cdn（音频广告 CDN）。全部精确主机；媒体主域仍不整域封禁。2026-11 第十三轮全网覆盖探索补入：vlion.cn（瑞狮网络，移动广告投放与SSP平台，5 源）、zhangyuyidong.cn（章鱼移动，移动应用广告聚合与变现平台，5 源）、scupio.com（Scupio酷比，移动原生与信息流广告SDK，4 源）、geecradv.com（极策广告GeeCR，移动广告网络，4 源）、bdad.123pan.cn（123网盘广告展示分发端点，5 源）、bu1.duba.com（金山毒霸弹窗与推广位分发端点，7 源）。",
           "rules": [
             "=adview.cn",
             "=domob.cn",
@@ -529,7 +529,13 @@
             "go.sohu.com",
             "union.china.com.cn",
             "optimus-ads.amap.com",
-            "ad-cdn.qingting.fm"
+            "ad-cdn.qingting.fm",
+            "=vlion.cn",
+            "=zhangyuyidong.cn",
+            "=scupio.com",
+            "=geecradv.com",
+            "bdad.123pan.cn",
+            "bu1.duba.com"
           ]
         },
         {
@@ -762,7 +768,7 @@
         {
           "id": "adtech",
           "title": "全球广告交易 / SSP / DSP / 验证 / 数据",
-          "note": "Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。2026-10 再补 27 个 6 源交易/网络与共享根精确主机：vidcpm、knorex、m32.media、hueadsxml、media6degrees、tribalfusion、simpli.fi、fastclick、ncaudienceexchange、lucidmedia、jumptap、tradeadexchange、industrybrains、pointroll、vdopia、venturead、creativecdn（RTB House）、blogherads、webads.co.nz、pushnami、retagro、h-bid，以及 bat.bing.net（Bing Ads UET）、pix.revjet.com、beap-bc/ganon/3p-udc.yahoo.com（Yahoo 广告交换/数据）；跳过 ns1p.net（无语义）、adlog.com.com（无上下文）与 gmads.net（带 sat1.de 白名单例外）。2026-10 再补 13 个 4–7 源广告专域：TenMax 台湾 RTB/原生广告（tenmax.io）、Bid Run 程序化平台（bid.run）、Geniee SSP 五域（genieessp/genieesspv/gsspat/gsspcln/gssprt）、Speee 广告投放（speee-ad.jp）、EuroAds 丹麦联盟（euroads.dk）、WebAds 欧洲媒体网络（webads.eu）、SelectMedia 视频 SSP（selectmedia.asia）、Seznam SSP（ssp.seznam.cz）、TargetADS 广告验证（targetads.io）；跳过 hottraffic.nl / mediatraffic.com.ua / pabidding.io（公开身份未能核实）与 pebfvv.icu（随机域，生命周期不确定）。2026-11 第十二轮审计根据多源交叉核对（6 源）补 7 个程序化与展示广告专域：360yield（Improve Digital / Azerion 旗下 SSP/RTB 交易平台）、aaxads（AAX 广告交换平台）、acuityplatform（AcuityAds/illumin 程序化平台）、adexchangeprediction（程序化广告预测）、adoptum（Adoptum 移动广告网络）、altitude-arena（游戏内广告投放网络）与 3p-geo.yahoo.com（Yahoo 广告定向/地理数据精确主机）。",
+          "note": "Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。2026-10 再补 27 个 6 源交易/网络与共享根精确主机：vidcpm、knorex、m32.media、hueadsxml、media6degrees、tribalfusion、simpli.fi、fastclick、ncaudienceexchange、lucidmedia、jumptap、tradeadexchange、industrybrains、pointroll、vdopia、venturead、creativecdn（RTB House）、blogherads、webads.co.nz、pushnami、retagro、h-bid，以及 bat.bing.net（Bing Ads UET）、pix.revjet.com、beap-bc/ganon/3p-udc.yahoo.com（Yahoo 广告交换/数据）；跳过 ns1p.net（无语义）、adlog.com.com（无上下文）与 gmads.net（带 sat1.de 白名单例外）。2026-10 再补 13 个 4–7 源广告专域：TenMax 台湾 RTB/原生广告（tenmax.io）、Bid Run 程序化平台（bid.run）、Geniee SSP 五域（genieessp/genieesspv/gsspat/gsspcln/gssprt）、Speee 广告投放（speee-ad.jp）、EuroAds 丹麦联盟（euroads.dk）、WebAds 欧洲媒体网络（webads.eu）、SelectMedia 视频 SSP（selectmedia.asia）、Seznam SSP（ssp.seznam.cz）、TargetADS 广告验证（targetads.io）；跳过 hottraffic.nl / mediatraffic.com.ua / pabidding.io（公开身份未能核实）与 pebfvv.icu（随机域，生命周期不确定）。2026-11 第十二轮审计根据多源交叉核对（6 源）补 7 个程序化与展示广告专域：360yield（Improve Digital / Azerion 旗下 SSP/RTB 交易平台）、aaxads（AAX 广告交换平台）、acuityplatform（AcuityAds/illumin 程序化平台）、adexchangeprediction（程序化广告预测）、adoptum（Adoptum 移动广告网络）、altitude-arena（游戏内广告投放网络）与 3p-geo.yahoo.com（Yahoo 广告定向/地理数据精确主机）。2026-11 第十三轮全网覆盖探索补入 11 个全球移动程序化/DSP/SSP/转化追踪专域（均 ≥6 源）：vm5apis.com（威朋 Vpon Mobile Ads，亚洲移动广告SDK核心API，7 源）、aralego.com（Aralego 移动程序化广告SSP/DSP，6 源）、umbel.com（Umbel 移动受众定向与广告数据平台，7 源）、clickyab.com（Clickyab 数字广告与移动变现网络，6 源）、clicktracks.com（ClickTracks 广告点击与归因系统，6 源）、bizible.com（Bizible/Adobe 广告转化与多触点归因追踪，6 源）、eulerian.net（Eulerian Technologies 欧洲跨渠道广告归因DMP，6 源）、hsadspixel.net（HubSpot Ads Pixel 广告定向追踪像素，6 源）、kissmetrics.com（Kissmetrics 移动与广告转化追踪，6 源）、leadinfo.net（Leadinfo 访客识别与广告重定向，6 源）、shareasale.com（ShareASale/Awin 联盟广告与营销网关，6 源）。",
           "rules": [
             "=adnxs.com",
             "=adnxs-simple.com",
@@ -1121,7 +1127,18 @@
             "=acuityplatform.com",
             "=adexchangeprediction.com",
             "=adoptum.net",
-            "=altitude-arena.com"
+            "=altitude-arena.com",
+            "=vm5apis.com",
+            "=aralego.com",
+            "=umbel.com",
+            "=clickyab.com",
+            "=clicktracks.com",
+            "=bizible.com",
+            "=eulerian.net",
+            "=hsadspixel.net",
+            "=kissmetrics.com",
+            "=leadinfo.net",
+            "=shareasale.com"
           ]
         },
         {

@@ -159,6 +159,105 @@ console.log("\n== 4b. cleanFeedAds：ads/retrieve 清广告对象与配置 ==");
   check("ads/retrieve: 非广告字段保留", o && o.data && o.data.title === "normal-feed");
 }
 
+console.log("\n== 4c. cleanFeedAds：真实 Feed 条目只删明确广告 ==");
+{
+  const body = {
+    status_code: 0,
+    data: [
+      { id: "explicit", is_ad: true, track: { id: "t1" } },
+      { id: "promoted", is_promoted: 1, song: { id: "s" } },
+      { id: "pure-ad", ad_info: { brand: "X" }, title: "广告" },
+      { id: "nested", card: { is_sponsored: true } },
+      { id: "song", track: { id: "t2" }, ad_info: { x: 1 } },
+      { id: "video", video: { vid: "v" }, ads_blocks: [{ id: "ad" }] },
+      { id: "normal", title: "ok" }
+    ],
+    audio_ad: { duration: 15 },
+    mid_roll_ad: [{ ad_id: "m" }],
+    pause_ad: { id: "p" }
+  };
+  const r = run("https://beta-luna.douyin.com/luna/feed/song-tab", body, { cleanFeedAds: true });
+  const o = parse(r.out);
+  const ids = o && o.data.map(function (x) { return x.id; }).join(",");
+  check("显式 is_ad / is_promoted 条目被删", ids === "song,video,normal", ids);
+  check("纯广告载荷与嵌套赞助条目被删", ids === "song,video,normal");
+  check("带媒体条目保留且 ad_info 清空",
+    o && o.data[0].id === "song" && Object.keys(o.data[0].ad_info).length === 0, JSON.stringify(o && o.data[0]));
+  check("带媒体条目保留且 ads_blocks 清空",
+    o && o.data[1].id === "video" && o.data[1].ads_blocks.length === 0, JSON.stringify(o && o.data[1]));
+  check("贴片容器清空",
+    o && Object.keys(o.audio_ad).length === 0 && o.mid_roll_ad.length === 0 &&
+      Object.keys(o.pause_ad).length === 0, JSON.stringify(o));
+  check("包络保留", o && o.status_code === 0);
+}
+
+console.log("\n== 4d. cleanFeedAds：搜索块与 banner 精准裁剪 ==");
+{
+  const body = {
+    status_code: 0,
+    data: [
+      { id: "ad", block_type: "advert_card", title: "推广" },
+      { id: "ok", block_type: "track", track: { id: "t" } }
+    ],
+    banner_list: [
+      { id: "ad-b", banner_type: "ads_banner" },
+      { id: "notice", banner_type: "system_notice", title: "系统公告" }
+    ],
+    search_banner: { ad_url: "x" }
+  };
+  const r = run("https://beta-luna.douyin.com/luna/search-block", body, { cleanFeedAds: true });
+  const o = parse(r.out);
+  check("block_type 广告块被删", o && o.data.length === 1 && o.data[0].id === "ok", JSON.stringify(o && o.data));
+  check("广告 banner 删除、系统公告保留",
+    o && o.banner_list.length === 1 && o.banner_list[0].id === "notice", JSON.stringify(o && o.banner_list));
+  check("search_banner 清空", o && Object.keys(o.search_banner).length === 0, JSON.stringify(o));
+}
+
+console.log("\n== 4e. blockSplashAd：开屏品牌响应清理素材/缓存/传感器 ==");
+{
+  const body = {
+    status_code: 0,
+    request_id: "r1",
+    ad_launch_list: [{ launch_id: "1" }],
+    ad_launch: { launch_id: "2" },
+    splash_shake_ad_config: { enabled: true },
+    splash_ad_cache_config: { ttl: 60 },
+    splash_ad_preload_config: { on: true },
+    splash_ad_early_load_config: { a: 1 },
+    enable_splash_shake: true,
+    splash_shake_sensitivity: 0.8,
+    splash_acceleration_threshold: 12,
+    splash_cache_enable: 1,
+    reward_details: { coin: 100 }
+  };
+  const r = run("https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve", body,
+    { blockSplashAd: true });
+  const o = parse(r.out);
+  check("ad_launch_list -> []",
+    o && Array.isArray(o.ad_launch_list) && o.ad_launch_list.length === 0, JSON.stringify(o));
+  check("ad_launch -> {}", o && Object.keys(o.ad_launch).length === 0);
+  check("开屏缓存/预加载/传感器容器清空",
+    ["splash_shake_ad_config", "splash_ad_cache_config", "splash_ad_preload_config",
+     "splash_ad_early_load_config"].every(function (k) {
+      return o && Object.keys(o[k]).length === 0;
+    }), JSON.stringify(o));
+  check("开关与阈值按类型归零",
+    o && o.enable_splash_shake === false && o.splash_shake_sensitivity === 0 &&
+      o.splash_acceleration_threshold === 0 && o.splash_cache_enable === 0, JSON.stringify(o));
+  check("包络与奖励字段不动", o && o.status_code === 0 && o.request_id === "r1" &&
+    o.reward_details.coin === 100);
+}
+
+console.log("\n== 4f. 开关关闭：品牌响应与 Feed 原样放行 ==");
+{
+  const brand = run("https://beta-luna.douyin.com/luna/advert/splash/brand/retrieve",
+    { status_code: 0, ad_launch_list: [{ launch_id: "1" }] }, { blockSplashAd: false });
+  check("品牌响应不改写", !(brand.out && brand.out.body), JSON.stringify(brand.out));
+  const feed = run("https://beta-luna.douyin.com/luna/feed/song-tab",
+    { status_code: 0, data: [{ id: "1", is_ad: true }] }, { cleanFeedAds: false });
+  check("Feed 不改写", !(feed.out && feed.out.body), JSON.stringify(feed.out));
+}
+
 console.log("\n== 5. cleanUpsell：删广告弹窗与商城弹窗，保留其它 ==");
 {
   const body = {
