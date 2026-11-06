@@ -118,22 +118,44 @@ const CONFIG = {
     "followsubscribe/showChapterEndModule", "freshman/bookshelfbtn",
     "freshman/freshmanGuidePopup",
     "message/getpushedmessagelist", "dailyrecommend/recommendBook",
-    "bookshelf/getTopOperation",
+    "bookshelf/getTopOperation", "booksquare/getfloatcard",
     "popup/batchget", "ploy/getactivitylist",
     "message/pullOperationPush", "message/pullSocialPush",
     "video/adv/reportDialog", "interaction/getclassicbookinfo",
     "bookshelf/getad", "client/iosad",
   ],
 
-  // 发现页保留白名单（核心阅读内容）
+  // 发现页保留白名单（核心阅读内容：HAR 440 实证 Data.Items 同时含 NEW_* 频道宫格与 DISCOVER_* 顶栏 tab 两族）
   DiscoverKeepKeys: [
-    "NEW_ZHUANQU",    // IP 专区
-    "NEW_ZHUANLAN",   // 专栏
-    "NEW_SHUDAN",     // 书单
+    "NEW_ZHUANQU",       // IP 专区（宫格）
+    "NEW_ZHUANLAN",      // 专栏（宫格）
+    "NEW_SHUDAN",        // 书单（宫格）
+    "DISCOVER_TUIJIAN",  // 推荐（顶部 tab 栏）
+    "DISCOVER_ZHUANLAN", // 专栏（顶部 tab 栏）
+    "DISCOVER_SHUDAN",   // 书单（顶部 tab 栏）
   ],
 
-  // 账户页删除营销模块
-  AccountPageDelKeys: ["BenefitButtonList"],
+  // 账户页删除营销模块（HAR 440 逐键解码：9 项推广/装扮/活动卡）
+  AccountPageDelKeys: [
+    "BenefitButtonList",
+    "ActiveActionUrl",
+    "DianNiangUrl",
+    "DianNiangWorldImage",
+    "DianNiangWorldSwitch",
+    "SchoolImage",
+    "SchoolText",
+    "SchoolUrl",
+    "PursueBookCard",
+  ],
+
+  // 账户页功能区保留白名单（13 项里只留 5 项用户自产/已购内容，其余会员/装扮/卡牌/游戏/积分商城移除）
+  AccountPageKeepFunctions: [
+    "mypagenew_WOFABUDE",
+    "mypagenew_GUANZHUSHOUCANG",
+    "mypagenew_WODEQUANDING",
+    "mypagenew_LIULANJILU",
+    "mypagenew_WODEDINGZHI",
+  ],
 
   // 激励类广告任务条目：文案命中就只剥这一条，不碰模块本身。
   // 「做任务得白泽宇航员装扮」「完成1个广告任务得奖励」既不是独立模块名，
@@ -192,7 +214,25 @@ function debugLog(msg) {
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.1";
+const ANCHOR_BUILD = "3.5.2";
+
+// 必须在主入口 IIFE 之前声明：const 没有变量提升，放在 IIFE 之后会在同步响应路径触发 TDZ ReferenceError
+const CLEAN_RULES = {
+  "video/adv/mainPageDialog": ["Data"],
+  "reddot/getdot": ["Data"],
+  "checkin/checkinexchangepage": ["Data.Goods"],
+};
+
+function extractPath(url) {
+  if (typeof url !== "string") return "";
+  const noHost = url.replace(/^https?:\/\/[^/?#]+/, "");
+  const q = noHost.indexOf("?");
+  const h = noHost.indexOf("#");
+  let end = noHost.length;
+  if (q !== -1 && q < end) end = q;
+  if (h !== -1 && h < end) end = h;
+  return noHost.slice(0, end);
+}
 
 function anchor(msg) {
   try { console.log("[起点锚点] b=" + ANCHOR_BUILD + " " + msg); } catch (e) {}
@@ -276,10 +316,10 @@ function anchorBody(response) {
     return;
   }
 
-  // ── C. getconf 响应净化 ──
+  // ── C. getconf / getconfSpecify 响应净化 ──
   if (url.includes("/client/getconf") && typeof $response !== "undefined") {
     debugLog("处理 getconf 响应净化");
-    handleClientConfig(E, $response);
+    handleClientConfig(E, $response, url);
     return;
   }
 
@@ -311,10 +351,9 @@ function anchorBody(response) {
     return;
   }
 
-  // 解析 URL
-  let urlObj;
-  try { urlObj = new URL(url); } catch (e) { E.done(); return; }
-  const path = urlObj.pathname;
+  // 解析 URL 路径（纯字符串提取，不依赖 WebAPI new URL）
+  const path = extractPath(url);
+  if (!path) { E.done(); return; }
 
   // ── H. 直接拒绝纯广告端点 ──
   if (typeof $response === "undefined" && CONFIG.RejectPaths.some(p => path.includes(p))) {
@@ -525,7 +564,7 @@ function respondJson(E, obj, tag) {
 // ==========================================
 // 🔧 响应净化
 // ==========================================
-function handleClientConfig(E, response) {
+function handleClientConfig(E, response, url) {
   const obj = safeJsonParse(response.body);
   if (!obj) {
     anchor("getconf parsed=0 reason=parse-fail" + anchorBody(response));
@@ -538,20 +577,24 @@ function handleClientConfig(E, response) {
     return;
   }
 
+  const isSpecify = typeof url === "string" && url.includes("getconfSpecify");
   const changes = [];
   for (const [k, v] of Object.entries(CONFIG.ClientConfigOverrides)) {
+    if (isSpecify && !(k in obj.Data)) continue;
     if (obj.Data[k] !== v) changes.push(k + "=" + v);
     obj.Data[k] = v;
   }
   CONFIG.DeleteKeys.forEach(k => {
     if (obj.Data[k] !== undefined) { changes.push("delete:" + k); delete obj.Data[k]; }
   });
-  obj.Data.NewFeedsDiscover = 0;
+  if (!isSpecify || "NewFeedsDiscover" in obj.Data) {
+    obj.Data.NewFeedsDiscover = 0;
+  }
   if (obj.Data.CloudSetting && obj.Data.CloudSetting.TeenShowFreq) {
     obj.Data.CloudSetting.TeenShowFreq = "0";
   }
 
-  anchor("getconf parsed=1 changes=" + changes.length + "（此行出现=复写未接管 getconf，脚本仍在净化）");
+  anchor("getconf parsed=1 changes=" + changes.length);
   debugLog("getconf 净化: " + changes.length + " 项变更 [" + changes.slice(0, 5).join(", ") + (changes.length > 5 ? "..." : "") + "]");
   respondJson(E, obj, "qidian-sanitize");
 }
@@ -598,6 +641,18 @@ function handleAccountPage(E, response) {
     CONFIG.AccountPageDelKeys.forEach(k => {
       if (obj.Data[k] !== undefined) { deleted.push(k); delete obj.Data[k]; }
     });
+    if (Array.isArray(obj.Data.FunctionButtonList)) {
+      const before = obj.Data.FunctionButtonList.length;
+      const kept = obj.Data.FunctionButtonList.filter(
+        item => item && CONFIG.AccountPageKeepFunctions.includes(item.PositionMark)
+      );
+      if (kept.length > 0 || before === 0) {
+        obj.Data.FunctionButtonList = kept;
+      }
+    }
+    if (obj.Data.FreshManGuideSwitch !== undefined) {
+      obj.Data.FreshManGuideSwitch = 0;
+    }
     const pruned = [];
     pruneAdTaskItems(obj.Data, pruned);
     anchor("账户页 deleted=[" + deleted.join(",") + "] 任务条目=" + pruned.length +
@@ -645,6 +700,7 @@ function handleMainPage(E, response) {
     "MemberExclusiveTaskModule", "PrivilegedTaskModule", "MoreRewardTab",
     "LastRewardItems", "IndexBannerTabs",
     "BaizeModule", "TaskShowData", "UserRewardModule", "PopFrequency",
+    "ActivityCenterModule", "CharityModule",
   ];
   // SurpriseBenefit 不再删：起点 Pro 源码自己标注它是「限时福利」，属真实奖励。
   const removed = [];
@@ -743,12 +799,6 @@ function handleAdSkip(E, response) {
     .replace(/"max_time":\s*\d+/g, '"max_time":' + s);
   E.done({ body });
 }
-
-const CLEAN_RULES = {
-  "video/adv/mainPageDialog": ["Data"],
-  "reddot/getdot": ["Data"],
-  "checkin/checkinexchangepage": ["Data.Goods"],
-};
 
 function matchCleanRule(path) {
   return Object.keys(CLEAN_RULES).some(k => path.includes(k));

@@ -461,6 +461,9 @@ BIND_KINDS = {"request", "response", "cron", "generic"}
 # response.json.* / reject_* 都由引擎完成解压与终止响应，脚本链的 gzip 面整个消失。
 REWRITE_STAGES = {"request", "response"}
 REWRITE_TERMINATE_RE = re.compile(r"^reject_(dict|array|img|video)\((200|204|404)\)$")
+REWRITE_REQ_HEADER_RE = re.compile(
+    r'^request\.header\.set\("Accept-Encoding",\s*"gzip"\)$'
+)
 REWRITE_JSON_RE = re.compile(
     r"^response\.json\.(?P<kind>replace|delete|jq)\((?P<args>.*)\)$", re.S
 )
@@ -737,11 +740,12 @@ def check_json_action(action: str, where: str) -> None:
 
 def render_rewrite_rule(item: dict) -> str:
     """一条 active [Rewrite] 规则。开关前置成 `${gate} == true` 条件（插件参数在
-    新语法里就是这么消费的），正则按 Loon 字面量要求把裸 `/` 转义。"""
-    return (
-        f'{item["stage"]} if ${{{item["gate"]}}} == true && ${{url}} ~= '
-        f'/{escape_regex_slashes(item["url"])}/ then {item["action"]}'
-    )
+    新语法里就是这么消费的；无 gate 的基础设施规则如 Accept-Encoding 降级只按 URL 匹配），
+    正则按 Loon 字面量要求把裸 `/` 转义。"""
+    cond = f'${{url}} ~= /{escape_regex_slashes(item["url"])}/'
+    if item.get("gate"):
+        cond = f'${{{item["gate"]}}} == true && {cond}'
+    return f'{item["stage"]} if {cond} then {item["action"]}'
 
 
 def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dict]) -> list[str]:
@@ -794,9 +798,11 @@ def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dic
             if not item.get(key):
                 raise BuildError(f"{where_i}: 缺 {key}（每条复写都要能自证出处）")
         gate = item.get("gate")
-        if gate not in names:
-            raise BuildError(f"{where_i}: gate {gate!r} 不在 enhance.arguments 里")
         action = item.get("action", "")
+        is_req_header = REWRITE_REQ_HEADER_RE.match(action) is not None
+        if gate is not None or not is_req_header:
+            if gate not in names:
+                raise BuildError(f"{where_i}: gate {gate!r} 不在 enhance.arguments 里")
         if REWRITE_JSON_RE.match(action):
             if stage != "response":
                 raise BuildError(f"{where_i}: response.json.* 只能挂在 response 侧")
@@ -807,26 +813,30 @@ def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dic
                     f"{where_i}: reject_* 在 request 侧终止响应（两侧脚本都不执行），"
                     "不许挂在 response 侧"
                 )
+        elif is_req_header:
+            if stage != "request":
+                raise BuildError(f"{where_i}: request.header.set 只能挂在 request 侧")
         else:
             raise BuildError(
                 f"{where_i}: action 不在白名单（response.json.replace|delete|jq / "
-                f"reject_dict|array|img|video）: {action!r}"
+                f"reject_dict|array|img|video / request.header.set Accept-Encoding）: {action!r}"
             )
-        for b in bindings:
-            if b.get("kind") not in ("request", "response"):
-                continue
-            same_side = b["kind"] == stage
-            kills = REWRITE_TERMINATE_RE.match(action) is not None
-            if not (same_side or kills):
-                continue
-            if endpoint in b.get("pattern", ""):
-                if not b.get("probe"):
-                    raise BuildError(
-                        f"{where_i}: 端点 {endpoint!r} 同时被 [Script] 绑定 "
-                        f"{b.get('id')!r}（{b['kind']}）覆盖——复写命中会静默压掉脚本。"
-                        "要留它当探针就给绑定加 probe=true，否则把绑定删掉。"
-                    )
-                touched_probe.add(b["id"])
+        if not is_req_header:
+            for b in bindings:
+                if b.get("kind") not in ("request", "response"):
+                    continue
+                same_side = b["kind"] == stage
+                kills = REWRITE_TERMINATE_RE.match(action) is not None
+                if not (same_side or kills):
+                    continue
+                if endpoint in b.get("pattern", ""):
+                    if not b.get("probe"):
+                        raise BuildError(
+                            f"{where_i}: 端点 {endpoint!r} 同时被 [Script] 绑定 "
+                            f"{b.get('id')!r}（{b['kind']}）覆盖——复写命中会静默压掉脚本。"
+                            "要留它当探针就给绑定加 probe=true，否则把绑定删掉。"
+                        )
+                    touched_probe.add(b["id"])
         lines.append(render_rewrite_rule(item))
     for b in bindings:
         if b.get("probe") and b["id"] not in touched_probe:

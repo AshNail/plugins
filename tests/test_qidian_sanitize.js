@@ -128,6 +128,106 @@ function parse(out) {
     check("其余业务字段保留", j && j.Data.Keep === 7);
   }
 
+  console.log("\n[7] CLEAN_RULES TDZ 回归（reddot/getdot · mainPageDialog · checkinexchangepage）");
+  {
+    const reddotBody = JSON.stringify({ Result: 0, Data: { Dots: [1, 2] } });
+    const { out: r1 } = await run("https://magev6.if.qidian.com/argus/api/v1/reddot/getdot", reddotBody, { utils: realUtils });
+    const j1 = parse(r1);
+    check("reddot/getdot 不触发 TDZ 异常且成功删除 Data", j1 && j1.Data === undefined && j1.Result === 0, JSON.stringify(r1));
+
+    const exchBody = JSON.stringify({ Result: 0, Data: { Goods: [{ id: 1 }], Balance: 100 } });
+    const { out: r2 } = await run("https://h5.if.qidian.com/argus/api/v3/checkin/checkinexchangepage", exchBody, { utils: realUtils });
+    const j2 = parse(r2);
+    check("checkinexchangepage 删除 Data.Goods 并保留 Balance", j2 && j2.Data && j2.Data.Goods === undefined && j2.Data.Balance === 100, JSON.stringify(r2));
+  }
+
+  console.log("\n[8] 发现页 getsimplediscover 双族白名单（NEW_* 宫格 + DISCOVER_* 顶栏 tab）");
+  {
+    const discBody = JSON.stringify({
+      Result: 0,
+      Data: {
+        Items: [
+          { KeyName: "NEW_ZHUANQU" },
+          { KeyName: "NEW_ZHUANLAN" },
+          { KeyName: "NEW_SHUDAN" },
+          { KeyName: "NEW_YOUXI" },
+          { KeyName: "DISCOVER_TUIJIAN" },
+          { KeyName: "DISCOVER_ZHUANLAN" },
+          { KeyName: "DISCOVER_SHUDAN" },
+          { KeyName: "DISCOVER_SHUTIE" },
+          { KeyName: "DISCOVER_CAIDAN" },
+        ],
+      },
+    });
+    const { out } = await run("https://magev6.if.qidian.com/argus/api/v1/user/getsimplediscover", discBody, { utils: realUtils });
+    const j = parse(out);
+    const keys = j && j.Data && j.Data.Items ? j.Data.Items.map(i => i.KeyName) : [];
+    check("发现页保留 6 项（3 宫格 + 3 顶栏 tab）", keys.length === 6 && keys.includes("DISCOVER_TUIJIAN") && !keys.includes("DISCOVER_SHUTIE"), JSON.stringify(keys));
+  }
+
+  console.log("\n[9] 账户页 getaccountpage 9 键删除 + FunctionButtonList 13→5 + FreshManGuideSwitch=0");
+  {
+    const accBody = JSON.stringify({
+      Result: 0,
+      Data: {
+        BenefitButtonList: [1],
+        ActiveActionUrl: "x",
+        DianNiangUrl: "x",
+        DianNiangWorldImage: "x",
+        DianNiangWorldSwitch: 1,
+        SchoolImage: "x",
+        SchoolText: "x",
+        SchoolUrl: "x",
+        PursueBookCard: {},
+        FreshManGuideSwitch: 1,
+        FunctionButtonList: [
+          { PositionMark: "mypagenew_WOFABUDE" },
+          { PositionMark: "mypagenew_GUANZHUSHOUCANG" },
+          { PositionMark: "mypagenew_WODEQUANDING" },
+          { PositionMark: "mypagenew_LIULANJILU" },
+          { PositionMark: "mypagenew_WODEDINGZHI" },
+          { PositionMark: "mypagenew_VIPCENTER" },
+          { PositionMark: "mypagenew_GAMECENTER" },
+        ],
+        UserBasicInfo: { NickName: "reader" },
+      },
+    });
+    const { out } = await run("https://magev6.if.qidian.com/argus/api/v3/user/getaccountpage", accBody, { utils: realUtils });
+    const j = parse(out);
+    check("9 个营销键全部删除", j && j.Data.BenefitButtonList === undefined && j.Data.PursueBookCard === undefined && j.Data.DianNiangWorldSwitch === undefined);
+    check("FunctionButtonList 过滤保留 5 项", j && Array.isArray(j.Data.FunctionButtonList) && j.Data.FunctionButtonList.length === 5);
+    check("FreshManGuideSwitch 置为数值 0", j && j.Data.FreshManGuideSwitch === 0);
+    check("UserBasicInfo 保留", j && j.Data.UserBasicInfo && j.Data.UserBasicInfo.NickName === "reader");
+  }
+
+  console.log("\n[10] 福利中心 mainPage 删 ActivityCenterModule/CharityModule、保 SurpriseBenefit、剪任务条目");
+  {
+    const mainBody = JSON.stringify({
+      Result: 0,
+      Data: {
+        SurpriseBenefit: { Title: "限时福利" },
+        ActivityCenterModule: { a: 1 },
+        CharityModule: { b: 2 },
+        MemberExclusiveTaskModule: { c: 3 },
+        DailyBenefitModule: {
+          RotateText: ["x"],
+          TaskList: [
+            { Title: "完成1个广告任务得奖励" },
+            { Title: "做任务得白泽宇航员装扮" },
+            { Title: "看视频得章节卡" },
+          ],
+        },
+        BookList: [{ Name: "广告任务专区" }],
+      },
+    });
+    const { out } = await run("https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage", mainBody, { utils: realUtils });
+    const j = parse(out);
+    check("ActivityCenterModule 与 CharityModule 已删", j && j.Data.ActivityCenterModule === undefined && j.Data.CharityModule === undefined);
+    check("SurpriseBenefit 限时福利保留", j && j.Data.SurpriseBenefit && j.Data.SurpriseBenefit.Title === "限时福利");
+    check("广告任务/白泽装扮条目被剪除且正常任务保留", j && j.Data.DailyBenefitModule.TaskList.length === 1 && j.Data.DailyBenefitModule.TaskList[0].Title === "看视频得章节卡");
+    check("书籍条目不误伤", j && j.Data.BookList[0].Name === "广告任务专区");
+  }
+
   console.log("\nPASS=" + pass + " FAIL=" + fail);
   process.exit(fail ? 1 : 0);
 })();

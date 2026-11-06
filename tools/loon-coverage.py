@@ -563,8 +563,10 @@ CAPABILITIES = [
          probe=r"with[^\n]*\btimeout\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-body", name="`requires_body`", expect="used",
          probe=r"with[^\n]*\brequires_body\s*=", href=DOC + "/Script/script_v2"),
-    dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="used",
-         probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2"),
+    dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="open",
+         probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2",
+         why="处理的全部是 JSON 文本（压缩协商在 `[Rewrite]` 统一压成 `gzip`，由引擎解压成 UTF-8 字符串后交脚本；"
+             "开 `binary_body_mode=true` 会让 `$response.body` 变成 `Uint8Array` 且要求 `$done({body})` 回传字节流，反而破坏字符串 JSON 改写）"),
     dict(layer="脚本属性", key="o-img", name="`img_url`", expect="used",
          probe=r"with[^\n]*\bimg_url\s*=", href=DOC + "/Script/script_v2"),
 
