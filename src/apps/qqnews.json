@@ -1,17 +1,15 @@
 {
   "slug": "qqnews",
-  "name": "腾讯新闻 · 广告字段清理（原生 jq）",
-  "desc": "不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件用 Loon 原生 response.json.jq 双规则清理——列表接口 adList 置空、专题/频道 widget_list 过滤 widget_type=ad_list；零 JS、零默认生效、不装证书永不生效。",
-  "version": "1.0.0",
+  "name": "腾讯新闻 · 广告字段清理（原生复写）",
+  "desc": "不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。",
+  "version": "1.1.0",
   "date": "2026-11-06",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,腾讯新闻",
   "comment": [
-    "红线（绝不进任何拦截组）：news.ssp.qq.com 是腾讯新闻开屏页与频道配置接口主机；r.inews.qq.com 是腾讯新闻要闻/频道/专题/评论接口主机，正文与广告同主机——DNS 黑洞整域 = 新闻页白屏重试。本插件只做「装证书后按需启用」的 JSON 广告字段清理，默认无任何生效条目。",
-    "本插件不黑洞任何域；MITM 与 [Rewrite] 整段默认注释，装证书后按需启用。",
-    "证据：app2smile/rules（MIT License）公开插件 qqnews.plugin + 脚本 js/qq-news.js 的广告处置逻辑（adList→null；widget_list 过滤 widget_type=ad_list），本插件不复制其远程脚本、改用 Loon 原生 response.json.jq 重写实现等价效果。app2smile 标记为「弃用/待验证」的 getTwentyFourHourNews、getQQNewsListItems、gw/event/list 端点一律不收。",
-    "未在 2026-11-06 用 iOS 真机逐端点验证；Mac 当前不执行 response jq，启用后请先在非主力设备验证。",
-    "可选 REJECT-DICT 只命中 news.ssp.qq.com/app（app2smile 同路径），返回 200 + {}；与 jq 层二选一即可，不推荐同时启用。"
+    "红线（绝不进任何拦截组）：news.ssp.qq.com 是腾讯新闻开屏页与频道配置接口主机；r.inews.qq.com 是腾讯新闻要闻/频道/专题/评论接口主机，正文与广告同主机——DNS 黑洞整域 = 新闻页白屏重试。本插件不做 [Host] 整域黑洞，只做路径级与字段级 Loon 原生 [Rewrite] v2 清理（需装 Loon 证书）。",
+    "v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 3 条原生复写规则 + 配套 QUIC 回退，解决远程订阅插件无法手工取消 # 注释导致 0 生效的问题；列表接口 adList 改用原生 response.json.replace(\"adList\", null)，不依赖 jq 即可在 iOS/macOS 全平台置空。",
+    "证据：app2smile/rules（MIT License）公开插件 qqnews.plugin + 脚本 js/qq-news.js 的广告处置逻辑（adList→null；widget_list 过滤 widget_type=ad_list），本插件不复制其远程脚本、改用 Loon 原生 [Rewrite] v2（reject_dict / response.json.replace / response.json.jq）实现等价效果。app2smile 标记为「弃用/待验证」的 getTwentyFourHourNews、getQQNewsListItems、gw/event/list 端点一律不收。"
   ],
   "redlines": [
     {
@@ -30,33 +28,59 @@
   "sdks": [],
   "groups": [],
   "enhance": {
-    "intro": "腾讯新闻的广告与正文共用 HTTPS JSON（news.ssp.qq.com、r.inews.qq.com），不可 DNS 黑洞。下列 2 条 response.json.jq 采用 Loon 原生 jq：①列表类接口（开屏/要闻/财经/地方专区）adList 广告数组置空；②专题详情/频道信息流（gw/page/event_detail、channel_feed）的 data.widget_list 过滤 widget_type=ad_list。不复制 app2smile 的远程脚本。另附 1 条可选 REJECT-DICT（news.ssp.qq.com/app 整个开屏配置接口返回空字典，比 jq 更激进：未经真机逐端点验证，确认 App 行为正常后再启用）。整段默认注释，启用需安装证书。",
+    "active": true,
+    "intro": "腾讯新闻的广告与正文共用 HTTPS JSON（news.ssp.qq.com、r.inews.qq.com），不可 DNS 黑洞。本层默认启用 Loon 原生 [Rewrite] v2 复写（由 cleanAds 开关控制，零 JS 脚本）：① news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 直接终止；② 列表类接口（开屏/要闻/财经/地方专区）用原生 response.json.replace 将 adList 置为 null；③ 专题详情/频道信息流（gw/page/event_detail、channel_feed）用原生 response.json.jq 过滤 widget_type=ad_list。",
     "sources": [
       "https://github.com/app2smile/rules/blob/master/plugin/qqnews.plugin",
       "https://github.com/app2smile/rules/blob/master/js/qq-news.js"
     ],
+    "arguments": [
+      {
+        "name": "cleanAds",
+        "default": "true",
+        "tag": "同域开屏与信息流去广告（默认开）",
+        "desc": "启用 Loon 原生 [Rewrite] v2 引擎复写：news.ssp.qq.com/app 开屏配置请求 reject_dict(200) 终止；列表接口 adList 置 null；专题/频道信息流过滤 widget_type 为 ad_list 的广告组件。需已安装并信任 Loon 证书。"
+      }
+    ],
+    "quic_fallback": true,
     "mitm_hosts": [
       "news.ssp.qq.com",
       "r.inews.qq.com"
     ],
-    "rewrite_json": [
+    "rewrite": [
       {
-        "url": "^https?://(news\\.ssp\\.qq\\.com/app|r\\.inews\\.qq\\.com/(getQQNewsUnreadList|getTagFeedList|news_feed/hot_module_list))(\\?.*)?$",
-        "sample": "https://r.inews.qq.com/getTagFeedList",
-        "jq": ".adList = null",
-        "note": "开屏/要闻/财经/地方专区等列表接口：adList 广告数组置空（app2smile qq-news.js 分支，忽略缺失字段）",
+        "id": "kill-ssp-app",
+        "group": "请求阶段直接终止（reject_dict(200)）：独立开屏配置路径",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "news.ssp.qq.com/app",
+        "url": "^https://news\\.ssp\\.qq\\.com/app(\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "开屏配置接口直接返回 200 + 空字典",
+        "source": "https://github.com/app2smile/rules/blob/master/plugin/qqnews.plugin"
+      },
+      {
+        "id": "clean-list-adlist",
+        "group": "响应字段级净化（response.json.replace / response.json.jq）：保留正文包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "r.inews.qq.com/",
+        "url": "^https://r\\.inews\\.qq\\.com/(getQQNewsUnreadList|getTagFeedList|news_feed/hot_module_list)(\\?|$)",
+        "action": "response.json.replace(\"adList\", null)",
+        "note": "要闻/财经/地方专区等列表接口：adList 广告数组置 null（原生标量替换，全平台生效）",
         "source": "https://github.com/app2smile/rules/blob/master/js/qq-news.js"
       },
       {
-        "url": "^https?://r\\.inews\\.qq\\.com/gw/page/(event_detail|channel_feed)(\\?.*)?$",
-        "sample": "https://r.inews.qq.com/gw/page/channel_feed",
-        "jq": "if (.data.widget_list? != null) then .data.widget_list |= map(select(.widget_type != \"ad_list\")) else . end",
-        "note": "专题详情/频道信息流：data.widget_list 过滤 widget_type=ad_list 的广告 widget（app2smile qq-news.js removeAdList()）",
+        "id": "clean-feed-widget",
+        "group": "响应字段级净化（response.json.replace / response.json.jq）：保留正文包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "gw/page/",
+        "url": "^https://r\\.inews\\.qq\\.com/gw/page/(event_detail|channel_feed)(\\?|$)",
+        "action": "response.json.jq(\"if (.data.widget_list? != null) then .data.widget_list |= map(select(.widget_type != \\\"ad_list\\\")) else . end\")",
+        "note": "专题详情/频道信息流：data.widget_list 过滤 widget_type=ad_list 的广告组件",
         "source": "https://github.com/app2smile/rules/blob/master/js/qq-news.js"
       }
-    ],
-    "url_regex": [
-      "URL-REGEX,^https://news\\.ssp\\.qq\\.com/app(\\?.*)?$,REJECT-DICT"
     ]
   },
   "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f9/23/e4/f923e456-9789-ebf6-7c18-caaacd244133/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg"

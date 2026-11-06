@@ -1,7 +1,7 @@
-#!name=腾讯新闻 · 广告字段清理（原生 jq）
-#!desc=不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件用 Loon 原生 response.json.jq 双规则清理——列表接口 adList 置空、专题/频道 widget_list 过滤 widget_type=ad_list；零 JS、零默认生效、不装证书永不生效。
+#!name=腾讯新闻 · 广告字段清理（原生复写）
+#!desc=不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.0.0
+#!version=1.1.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qqnews/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f9/23/e4/f923e456-9789-ebf6-7c18-caaacd244133/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg
@@ -11,55 +11,76 @@
 #!type=normal
 
 # ========================================================================
-# 腾讯新闻 · 广告字段清理（原生 jq）
+# 腾讯新闻 · 广告字段清理（原生复写）
 # ------------------------------------------------------------------------
-# 红线（绝不进任何拦截组）：news.ssp.qq.com 是腾讯新闻开屏页与频道配置接口主机；r.inews.qq.com 是腾讯新闻要闻/频道/专题/评论接口主机，正文与广告同主机——DNS 黑洞整域 = 新闻页白屏重试。本插件只做「装证书后按需启用」的 JSON 广告字段清理，默认无任何生效条目。
-# 本插件不黑洞任何域；MITM 与 [Rewrite] 整段默认注释，装证书后按需启用。
-# 证据：app2smile/rules（MIT License）公开插件 qqnews.plugin + 脚本 js/qq-news.js 的广告处置逻辑（adList→null；widget_list 过滤 widget_type=ad_list），本插件不复制其远程脚本、改用 Loon 原生 response.json.jq 重写实现等价效果。app2smile 标记为「弃用/待验证」的 getTwentyFourHourNews、getQQNewsListItems、gw/event/list 端点一律不收。
-# 未在 2026-11-06 用 iOS 真机逐端点验证；Mac 当前不执行 response jq，启用后请先在非主力设备验证。
-# 可选 REJECT-DICT 只命中 news.ssp.qq.com/app（app2smile 同路径），返回 200 + {}；与 jq 层二选一即可，不推荐同时启用。
+# 红线（绝不进任何拦截组）：news.ssp.qq.com 是腾讯新闻开屏页与频道配置接口主机；r.inews.qq.com 是腾讯新闻要闻/频道/专题/评论接口主机，正文与广告同主机——DNS 黑洞整域 = 新闻页白屏重试。本插件不做 [Host] 整域黑洞，只做路径级与字段级 Loon 原生 [Rewrite] v2 清理（需装 Loon 证书）。
+# v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 3 条原生复写规则 + 配套 QUIC 回退，解决远程订阅插件无法手工取消 # 注释导致 0 生效的问题；列表接口 adList 改用原生 response.json.replace("adList", null)，不依赖 jq 即可在 iOS/macOS 全平台置空。
+# 证据：app2smile/rules（MIT License）公开插件 qqnews.plugin + 脚本 js/qq-news.js 的广告处置逻辑（adList→null；widget_list 过滤 widget_type=ad_list），本插件不复制其远程脚本、改用 Loon 原生 [Rewrite] v2（reject_dict / response.json.replace / response.json.jq）实现等价效果。app2smile 标记为「弃用/待验证」的 getTwentyFourHourNews、getQQNewsListItems、gw/event/list 端点一律不收。
 # 本文件由 tools/build-apps.py 从 src/apps/qqnews.json 生成，不要手改生成物。
 # ========================================================================
+
+
+# ========================================================================
+# 开关（源：src/apps/<slug>.json 的 enhance.arguments；改开关改源后 npm run build:apps）
+# ------------------------------------------------------------------------
+# 净化类默认开、自动化类默认关——finishWatch 重放、代领奖、广告时长 patch 都是
+# 「代打卡/伪造完成」，不默认生效，也不随净化开关一起被打开。
+# ========================================================================
+
+[Argument]
+
+cleanAds = switch,true,tag=同域开屏与信息流去广告（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：news.ssp.qq.com/app 开屏配置请求 reject_dict(200) 终止；列表接口 adList 置 null；专题/频道信息流过滤 widget_type 为 ad_list 的广告组件。需已安装并信任 Loon 证书。
+
+[Rule]
+
+# ------------------------------------------------------------
+# QUIC 回退（增强层配套 · 拒的是 HTTP/3 协议，回落 TCP 后正文不受影响）
+# MITM 只解密 TCP；App 走 HTTP/3 时下面这些主机的响应脚本会静默收不到。本组只对 PROTOCOL,QUIC 生效，同一主机的 TCP 请求（正文/书架/章节）零影响。
+AND,((DOMAIN-SUFFIX,news.ssp.qq.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,r.inews.qq.com),(PROTOCOL,QUIC)),REJECT
 
 [Host]
 
 
 # ========================================================================
-# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
+# 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 # ------------------------------------------------------------------------
-# 腾讯新闻的广告与正文共用 HTTPS JSON（news.ssp.qq.com、r.inews.qq.com），不可 DNS 黑洞。下列 2 条 response.json.jq 采用 Loon 原生 jq：①列表类接口（开屏/要闻/财经/地方专区）adList 广告数组置空；②专题详情/频道信息流（gw/page/event_detail、channel_feed）的 data.widget_list 过滤 widget_type=ad_list。不复制 app2smile 的远程脚本。另附 1 条可选 REJECT-DICT（news.ssp.qq.com/app 整个开屏配置接口返回空字典，比 jq 更激进：未经真机逐端点验证，确认 App 行为正常后再启用）。整段默认注释，启用需安装证书。
-# 启用步骤：①Loon 里装并信任证书 →
-#           ②取消 [MITM] 头与其 hostname 行的注释 →
-#           ③取消 [Rewrite] 头及其下所需 response.json.jq 行的注释 →
-#           ④取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
-# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
-# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
-# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
-# 证据: https://github.com/app2smile/rules/blob/master/plugin/qqnews.plugin
-# 证据: https://github.com/app2smile/rules/blob/master/js/qq-news.js
+# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——
+# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，
+# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。
+# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，
+# 解密不等于拦截。
 # ========================================================================
 
-# [MITM]
+[MITM]
+
+hostname = %APPEND% news.ssp.qq.com, r.inews.qq.com
+
+
+# ========================================================================
+# 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
+# ------------------------------------------------------------------------
+# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；
+# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，
+# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、
+# reject_* 自己终止响应，gzip 面整个消失。
+# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，
+# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。
+# ========================================================================
+
+[Rewrite]
+
 # ------------------------------------------------------------
-# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
-# hostname = %APPEND% news.ssp.qq.com, r.inews.qq.com
-#
-# [Rewrite]
+# 请求阶段直接终止（reject_dict(200)）：独立开屏配置路径
 # ------------------------------------------------------------
-# 下列响应 JSON 改写必须放在 [Rewrite] 段：取消本行（# [Rewrite]）与所需行的注释才生效。
-# response.json.jq 是 Loon 原生 jq：只删广告字段/节点、保留 mtop 包络；
-# 与 Response Script 互斥（body rewrite 命中后脚本不执行），本层不含脚本。
-# 来源 https://github.com/app2smile/rules/blob/master/js/qq-news.js：开屏/要闻/财经/地方专区等列表接口：adList 广告数组置空（app2smile qq-news.js 分支，忽略缺失字段）
-# response if ${url} ~= /^https?:\/\/(news\.ssp\.qq\.com\/app|r\.inews\.qq\.com\/(getQQNewsUnreadList|getTagFeedList|news_feed\/hot_module_list))(\?.*)?$/ then response.json.jq(`.adList = null`)
-# 来源 https://github.com/app2smile/rules/blob/master/js/qq-news.js：专题详情/频道信息流：data.widget_list 过滤 widget_type=ad_list 的广告 widget（app2smile qq-news.js removeAdList()）
-# response if ${url} ~= /^https?:\/\/r\.inews\.qq\.com\/gw\/page\/(event_detail|channel_feed)(\?.*)?$/ then response.json.jq(`if (.data.widget_list? != null) then .data.widget_list |= map(select(.widget_type != "ad_list")) else . end`)
-#
-# [Rule]
+# kill-ssp-app: 开屏配置接口直接返回 200 + 空字典（来源 https://github.com/app2smile/rules/blob/master/plugin/qqnews.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/news\.ssp\.qq\.com\/app(\?|$)/ then reject_dict(200)
+
 # ------------------------------------------------------------
-# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。
-# QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的
-# URL-REGEX / response.json.jq 会静默失效。
-# 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。
-# AND,((DOMAIN-SUFFIX,news.ssp.qq.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,r.inews.qq.com),(PROTOCOL,QUIC)),REJECT
-# URL-REGEX,^https://news\.ssp\.qq\.com/app(\?.*)?$,REJECT-DICT
+# 响应字段级净化（response.json.replace / response.json.jq）：保留正文包络
+# ------------------------------------------------------------
+# clean-list-adlist: 要闻/财经/地方专区等列表接口：adList 广告数组置 null（原生标量替换，全平台生效）（来源 https://github.com/app2smile/rules/blob/master/js/qq-news.js）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/r\.inews\.qq\.com\/(getQQNewsUnreadList|getTagFeedList|news_feed\/hot_module_list)(\?|$)/ then response.json.replace("adList", null)
+
+# clean-feed-widget: 专题详情/频道信息流：data.widget_list 过滤 widget_type=ad_list 的广告组件（来源 https://github.com/app2smile/rules/blob/master/js/qq-news.js）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/r\.inews\.qq\.com\/gw\/page\/(event_detail|channel_feed)(\?|$)/ then response.json.jq("if (.data.widget_list? != null) then .data.widget_list |= map(select(.widget_type != \"ad_list\")) else . end")

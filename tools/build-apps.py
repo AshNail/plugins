@@ -505,16 +505,17 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
     """active 层的源侧校验：返回绑定行（同时供生成与 lint 对账复用）。"""
     arguments = enh.get("arguments") or []
     bindings = enh.get("bindings") or []
-    if not arguments or not bindings:
-        raise BuildError(f"{where}: enhance.active 需要 arguments 与 bindings 两段都不为空")
+    rewrites = enh.get("rewrite") or []
+    if not arguments or not (bindings or rewrites):
+        raise BuildError(f"{where}: enhance.active 需要 arguments，且 bindings 与 rewrite 至少有一段不为空")
     if enh.get("scripts"):
         raise BuildError(
             f"{where}: enhance.active 用结构化 bindings，不再接受旧的注释态 scripts 字符串"
         )
     if enh.get("rewrite_json"):
         raise BuildError(
-            f"{where}: enhance.active 与 response.json.jq 互斥"
-            "（官方：Response Body Rewrite 命中时同阶段脚本不执行，active 层已经挂了 Response Script）"
+            f"{where}: enhance.active 与 rewrite_json 互斥"
+            "（默认生效复写请放入 enhance.rewrite）"
         )
     names: list[str] = []
     for a in arguments:
@@ -528,8 +529,8 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
         if not a.get("tag") or not a.get("desc"):
             raise BuildError(f"{where}: 开关 {name!r} 缺 tag/desc")
         names.append(name)
-    if "debugLog" not in names:
-        raise BuildError(f"{where}: active 层必须有 debugLog 开关（所有绑定都接 with debug=）")
+    if bindings and "debugLog" not in names:
+        raise BuildError(f"{where}: active 脚本层必须有 debugLog 开关（所有绑定都接 with debug=）")
     lines: list[str] = []
     for b in bindings:
         bid = b.get("id", "?")
@@ -921,7 +922,8 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
         "",
     ]
     out += render_rewrite_section(enh, where)
-    if not has_cron_section:
+    bindings = enh.get("bindings") or []
+    if bindings and not has_cron_section:
         out += [
             "# " + "=" * 72,
             "# 脚本层（绑定行由 enhance.bindings 生成，lint 逐行对账）",
@@ -933,7 +935,7 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
             "[Script]",
             "",
         ]
-    for b in enh.get("bindings", []):
+    for b in bindings:
         note = b.get("note")
         if note:
             out.append(f'# {b["id"]}: {note}')
@@ -966,6 +968,8 @@ def render_enhance(enh: dict, where: str, roots: set[str], active: bool = False)
     for h in mitm_hosts:
         if h.lower() in roots:
             raise BuildError(f"{where}: enhance MITM 命中共享主域 {h!r}")
+    if active and not (url_rules or rewrite_json or scripts):
+        return []
     for r in url_rules:
         kind = r.split(",", 1)[0]
         if kind != "URL-REGEX":
@@ -1052,7 +1056,7 @@ def render_enhance(enh: dict, where: str, roots: set[str], active: bool = False)
             out.append(f"# 来源 {item['source']}：{item['note']}")
             out.append(
                 f"# response if ${{url}} ~= /{escape_regex_slashes(item['url'])}/"
-                f" then response.json.jq(`{item['jq']}`)"
+                f" then response.json.jq({json.dumps(item['jq'], ensure_ascii=False)})"
             )
     if url_rules:
         out.append("#")

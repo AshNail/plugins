@@ -1,17 +1,16 @@
 {
   "slug": "taobao",
-  "name": "淘宝 · 去广告（原生规则层）",
-  "desc": "淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，需可选 MITM 后按 URL 精确拒绝。11 条路径来自可莉淘宝插件的 request reject 事实，改写为 Loon 原生 URL-REGEX + REJECT-DICT；不包含上游 JS，交易/登录/支付红线不动。",
-  "version": "1.1.0",
-  "date": "2026-11-03",
+  "name": "淘宝 · 去广告（原生复写层）",
+  "desc": "淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——10 条广告 mtop 路径在 request 阶段 reject_dict(200) 终止，开屏大图路径用 reject_img(200) 返回 1px 透明图；不包含上游 JS，交易/登录/支付红线不动。前置：同域复写层需已安装并信任 Loon 证书。",
+  "version": "1.2.0",
+  "date": "2026-11-06",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,淘宝,阿里",
   "comment": [
     "红线：*.taobao.com / *.tmall.com / *.alicdn.com 整族承载登录、订单、购物车、商品图与播放；本插件只做精确广告子域和广告路径，绝不做 DOMAIN-SUFFIX 整域。",
-    "acs.m.taobao.com 与 guide-acs.m.taobao.com 是 mtop 主网关，交易与广告同域；DNS 层不黑洞它们，只在可选 MITM 层按 11 条广告 API 路径返回 200 空字典。",
-    "可莉淘宝插件的 11 条 request reject 是原生 reject_dict，本插件改写为 URL-REGEX REJECT-DICT；上游两条 response script（开屏 cloudvideo / poplayer 模板）依赖 JS，本插件不复制、不依赖。",
-    "证据基线：可莉淘宝插件规则事实 + blackmatrix7 Advertising + anti-AD；淘宝 IPA 10.68.10 的 mtop 广告前缀已在公开主配置有独立证据。路径规则未在 2026-11-03 逐条真机复测，启用后先验搜索、下单、购物车、支付。",
-    "DNS 组默认生效；MITM 增强层默认整段注释，装并信任 Loon 证书后逐条启用。",
+    "acs.m.taobao.com 与 guide-acs.m.taobao.com 是 mtop 主网关，交易与广告同域；DNS 层不黑洞它们，只在 MITM + [Rewrite] v2 层按 10 条广告 API 路径返回 200 空字典。",
+    "v1.2.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 10 条 reject_dict(200) + 1 条 reject_img(200) 规则及 4 台解密主机的 QUIC 回退，解决注释态增强层在订阅插件下无法直接开启的问题。",
+    "证据基线：可莉淘宝插件规则事实 + blackmatrix7 Advertising + anti-AD；淘宝 IPA 10.68.10 的 mtop 广告前缀已在公开主配置有独立证据。",
     "红线补充：h5api.m.taobao.com 是 H5 交易/登录接口；login.taobao.com 是淘宝登录入口；passport.taobao.com 是淘宝账号/通行证；sec.taobao.com 是淘宝风控/安全接口；gw.alicdn.com 是图片/素材 CDN；img.alicdn.com 与 heic.alicdn.com 是商品图 CDN。"
   ],
   "redlines": [
@@ -154,29 +153,149 @@
     }
   ],
   "enhance": {
-    "intro": "淘宝 iOS 的开屏/推荐/活动广告入口与交易共用 acs.m.taobao.com、guide-acs.m.taobao.com，不能黑洞整域。下列 11 条 URL-REGEX 来自可莉淘宝插件的 request reject 事实，改写为 Loon 原生 REJECT-DICT（200 + 空字典）；广告图片路径用 REJECT-IMG。上游两条 response script（cloudvideo、poplayer 模板）需要 JS，本插件不包含。默认整段注释，装证书后逐条启用，先验搜索/下单/购物车/支付。",
+    "active": true,
+    "intro": "淘宝 iOS 的开屏/推荐/活动广告入口与交易共用 acs.m.taobao.com、guide-acs.m.taobao.com，不能黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 开关控制，零 JS 脚本）：10 条广告 mtop 路径在 request 阶段直接 reject_dict(200) 返回空字典；开屏全屏广告图路径用 reject_img(200) 返回 1px 透明 GIF。",
     "sources": [
       "https://kelee.one/",
       "https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list"
     ],
+    "arguments": [
+      {
+        "name": "cleanAds",
+        "default": "true",
+        "tag": "mtop 同域广告与开屏素材拦截（默认开）",
+        "desc": "启用 Loon 原生 [Rewrite] v2 引擎复写：acs.m.taobao.com / guide-acs.m.taobao.com 的 10 条广告 mtop 路径在 request 阶段直接 reject_dict(200) 终止；gw/heic.alicdn.com 开屏推广大图路径用 reject_img(200) 返回 1px 透明图。需已安装并信任 Loon 证书。"
+      }
+    ],
+    "quic_fallback": true,
     "mitm_hosts": [
       "acs.m.taobao.com",
       "guide-acs.m.taobao.com",
       "gw.alicdn.com",
       "heic.alicdn.com"
     ],
-    "url_regex": [
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.fliggy\\.crm\\.screen\\.(?:allresource|predict),REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alibaba\\.advertisementservice\\.getadv,REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alimama\\.etao\\.config\\.query/.+?etao_advertise,REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alimusic\\.common\\.mobileservice\\.startinit,REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.etao\\.noah\\.query/.+tao_splash,REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.film\\.mtopadvertiseapi\\.queryadvertise,REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.o2o\\.ad\\.gateway\\.get,REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.idle\\.home\\.welcome,REJECT-DICT",
-      "URL-REGEX,^https://acs\\.m\\.taobao\\.com/gw/mtop\\.trip\\.activity\\.querytmsresources,REJECT-DICT",
-      "URL-REGEX,^https://guide-acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.(?:volvo\\.secondfloor\\.getconfig|wireless\\.home\\.newface\\.awesome\\.get),REJECT-DICT",
-      "URL-REGEX,^https://(?:gw|heic)\\.alicdn\\.com/imgextra/i\\d/\\d*/.+?-\\d-(?:octopus|tps)-(?:1080|1125)-\\d{4}\\.(?:jpg|png)_(?:1\\d{3}|9\\d{2})x(?:\\d|1\\d{3}|9\\d{2})q[59]0,REJECT-IMG"
+    "rewrite": [
+      {
+        "id": "kill-fliggy-screen",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.fliggy.crm.screen.",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.fliggy\\.crm\\.screen\\.(?:allresource|predict)",
+        "action": "reject_dict(200)",
+        "note": "飞猪频道弹屏与营销资源拉取",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-alibaba-getadv",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.alibaba.advertisementservice.getadv",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alibaba\\.advertisementservice\\.getadv",
+        "action": "reject_dict(200)",
+        "note": "阿里通用广告服务拉取接口",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-etao-advertise",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.alimama.etao.config.query/",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alimama\\.etao\\.config\\.query/.+?etao_advertise",
+        "action": "reject_dict(200)",
+        "note": "阿里妈妈一淘广告配置拉取",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-alimusic-startinit",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.alimusic.common.mobileservice.startinit",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alimusic\\.common\\.mobileservice\\.startinit",
+        "action": "reject_dict(200)",
+        "note": "启动初始化营销配置接口",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-tao-splash",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.etao.noah.query/",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.etao\\.noah\\.query/.+tao_splash",
+        "action": "reject_dict(200)",
+        "note": "淘宝 noah 开屏广告查询接口",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-film-advertise",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.film.mtopadvertiseapi.queryadvertise",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.film\\.mtopadvertiseapi\\.queryadvertise",
+        "action": "reject_dict(200)",
+        "note": "淘票票/影视模块广告查询接口",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-o2o-ad",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.o2o.ad.gateway.get",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.o2o\\.ad\\.gateway\\.get",
+        "action": "reject_dict(200)",
+        "note": "本地生活 O2O 广告网关拉取接口",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-idle-welcome",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.home.welcome",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.idle\\.home\\.welcome",
+        "action": "reject_dict(200)",
+        "note": "闲置频道欢迎弹窗营销接口",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-trip-tms",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.trip.activity.querytmsresources",
+        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.trip\\.activity\\.querytmsresources",
+        "action": "reject_dict(200)",
+        "note": "出行活动 TMS 营销资源查询接口",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-guide-secondfloor",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "guide-acs.m.taobao.com/gw/mtop.taobao.",
+        "url": "^https://guide-acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.(?:volvo\\.secondfloor\\.getconfig|wireless\\.home\\.newface\\.awesome\\.get)",
+        "action": "reject_dict(200)",
+        "note": "首页二楼活动配置与开屏引导拉取",
+        "source": "https://kelee.one/"
+      },
+      {
+        "id": "kill-splash-img",
+        "group": "请求阶段透明图替换（reject_img(200)）：共享图床开屏大图路径",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": ".alicdn.com/imgextra/",
+        "url": "^https://(?:gw|heic)\\.alicdn\\.com/imgextra/i\\d/\\d*/.+?-\\d-(?:octopus|tps)-(?:1080|1125)-\\d{4}\\.(?:jpg|png)_(?:1\\d{3}|9\\d{2})x(?:\\d|1\\d{3}|9\\d{2})q[59]0",
+        "action": "reject_img(200)",
+        "note": "淘宝开屏全屏尺寸（1080/1125）octopus/tps 推广图返回 200 + 1px 透明 GIF",
+        "source": "https://kelee.one/"
+      }
     ]
   },
   "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/4f/52/d9/4f52d982-e707-ea87-6c93-a8cea98268ec/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg"

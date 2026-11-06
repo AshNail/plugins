@@ -1,8 +1,8 @@
 # 哔哩哔哩 · 去广告与精简
 
-> 哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；开屏/导航栏/首页推荐流广告走可选增强层（原生 response.json.jq 置空与过滤卡片，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。
+> 哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏/导航栏/首页推荐流/搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.0.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.1.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -17,35 +17,39 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | 哔哩哔哩自建遥测 / 播放器埋点 / HTTPDNS 接口 | A | 启用 | dataflow.biliapi.com（4源，官方移动端数据流/遥测）、httpdns.bilivideo.com（3源，HTTPDNS 解析端点）、data.bilibili.com（2源，数据埋点上报）、tracker.chat.bilibili.com（1源，聊天/直播埋点）、ali-web-player-tracker.biliapi.net（1源，阿里播放器埋点）、hw-v2-web-player-tracker.biliapi.net（1源，华为播放器埋点）。DNS 映射 127.0.0.1 阻断。 |
+| QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 1 条。 |
 
-## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
+## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
-哔哩哔哩 iOS 的开屏广告、导航栏推广、首页推荐流广告卡片与核心业务 API 共用 app.bilibili.com，不可 DNS 黑洞整域。下列 4 条 response.json.jq 采用 Loon 原生 jq：①开屏配置 data.show 置空；②顶部与底部导航栏过滤会员购与游戏中心；③首页推荐流过滤商业广告卡片（cm_v2/cm_double_v9）与游戏卡片；④搜索广场过滤推广与游戏。另附 1 条可选 REJECT-DICT（splash 接口直接返回空字典）。整段默认注释，启用需安装证书。
+哔哩哔哩 iOS 的开屏广告、导航栏推广、首页推荐流广告卡片与核心业务 API 共用 app.bilibili.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 与 slimNav 开关控制，零 JS 脚本）：① 开屏接口 x/v2/splash/(list|show) 在 request 阶段直接 reject_dict(200) 终止；② 首页推荐流过滤商业广告卡片（cm_v2/cm_double_v9）与游戏卡片；③ 搜索广场过滤热搜中的推广与游戏；④ 顶部与底部导航栏过滤会员购/发布与游戏中心。
 
-- 解密主机（`[MITM] hostname`，1 个，注释态，取消注释才解密）：`app.bilibili.com`
-- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，1 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 与 `response.json.jq` 都会静默失效；启用本层时应连同这些行一起取消注释。
-- 路径级规则（`URL-REGEX`，1 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
+- 解密主机（`[MITM] hostname`，1 个，本层已默认生效）：`app.bilibili.com`
+- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，1 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
 
-```text
-# URL-REGEX,^https://app\.bilibili\.com/x/v2/splash/(list|show)(\?.*)?$,REJECT-DICT
-```
+### 开关（`[Argument]`）
 
-- 响应 JSON 改写（`response.json.jq`，4 条，注释态）：MITM 解密后按公开模块的 jq 只删广告字段/节点、保留 mtop 包络；与 Response Script 二选一（本层不含脚本）。建议逐条启用、真机确认后再加下一条。
+| 开关 | 默认 | 作用 |
+|---|---|---|
+| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：开屏 splash/(list|show) 请求直接 reject_dict(200) 终止；推荐信息流过滤商业广告卡片（cm_v2/cm_double_v9）与推广游戏；搜索广场过滤游戏与广告推广。需已安装并信任 Loon 证书。 |
+| `slimNav` | true | 过滤底部导航栏「会员购/发布」与顶部导航栏「游戏中心」。 |
 
-```text
-# 来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin：开屏广告：置空 data.show 广告配置
-# response if ${url} ~= /^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/(list|show)(\?.*)?$/ then response.json.jq(`if (.data.show? != null) then .data.show = null else . end`)
-# 来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin：导航栏精简：过滤底栏会员购/发布与顶栏游戏中心
-# response if ${url} ~= /^https?:\/\/app\.bilibili\.com\/x\/resource\/show\/tab\/v\d+(\?.*)?$/ then response.json.jq(`(if (.data.bottom? != null) then .data.bottom |= map(select(.name != "会员购" and .tab_id != "会员购Bottom" and .name != "发布")) else . end) | (if (.data.top? != null) then .data.top |= map(select(.name != "游戏中心")) else . end)`)
-# 来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin：推荐信息流：过滤商业广告卡片与推广游戏
-# response if ${url} ~= /^https?:\/\/app\.bilibili\.com\/x\/v2\/feed\/index(\?.*)?$/ then response.json.jq(`if (.data.items? != null) then .data.items |= map(select(.card_type != "cm_v2" and .card_type != "cm_double_v9" and .card_goto != "game" and (.banner_item? == null or (.banner_item | all(.type != "ad"))))) else . end`)
-# 来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin：搜索广场：过滤热搜词中的游戏与广告推广
-# response if ${url} ~= /^https?:\/\/app\.bilibili\.com\/x\/v2\/search\/square(\?.*)?$/ then response.json.jq(`if (.data? != null) then .data |= map(select(.type != "game" and .type != "ad")) else . end`)
-```
+### 净化复写（`[Rewrite]`）
 
-启用步骤：①Loon 装并信任证书 → ②取消插件内 `[MITM]` 头与 hostname 行注释 → ③取消 `[Rewrite]` 头与所需 `response.json.jq` 行的注释 → ④取消 `[Rule]` 头、QUIC 回退行与所需规则行的注释（`# [Rule]` 必须一起取消，否则规则会落在上一段的末尾而不生效）。
+| 规则 | 阶段 | 动作 | 开关 | 行为 |
+|---|---|---|---|---|
+| `kill-splash` | request | `reject_dict` | `cleanAds` | 开屏广告列表与展示接口直接返回 200 + 空字典 |
+| `clean-feed-index` | response | `response.json.jq` | `cleanAds` | 推荐信息流：过滤商业广告卡片（cm_v2/cm_double_v9）、推广游戏与横幅广告 |
+| `clean-search-square` | response | `response.json.jq` | `cleanAds` | 搜索广场：过滤热搜词中的游戏与广告推广 |
+| `clean-nav-tab` | response | `response.json.jq` | `slimNav` | 导航栏精简：过滤底栏会员购/发布与顶栏游戏中心 |
+
+> 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
+
+> 全层由 `src/apps/bilibili.json` 的 `enhance` 整段生成（`tools/build-apps.py`），lint 逐行对账产物——直接改生成物会在下一次构建被覆盖。
+
+前提与步骤：①Loon 装并信任证书（本层已默认解密这些主机） → ②要自动化就把 `[Argument]` 里的对应开关改成 true（默认关的那几个） → ③确认可用：冷启动后看日志里复写装载计数（`Reload rewrites:`）与脚本侧锚点行，再用探针绑定判断复写是否接管（探针消失 = 复写命中）。
 
 > 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。
+> 反过来说：本层已经默认写在生效配置里，**证书没装好时这些主机的 TLS 会失败**——不是「没生效」而是「连不上」。装好证书再评估，或直接把 `[MITM]` 那两行注释掉退回零证书形态。
 
 证据：
 - https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin
@@ -60,8 +64,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 - 哔哩哔哩开放平台业务共享根域 *.biliapi.com，禁止整域通配。
 - 哔哩哔哩流媒体 CDN 业务共享根域 *.bilivideo.com，禁止整域通配。
 - 哔哩哔哩静态图片与封面共享根域 *.hdslb.com，禁止整域通配。
-- 能力天花板与原生设计：dataflow.biliapi.com、data.bilibili.com、tracker.chat.bilibili.com、ali-web-player-tracker.biliapi.net、hw-v2-web-player-tracker.biliapi.net、httpdns.bilivideo.com 六个自建遥测与 HTTPDNS 域走 [Host] 127.0.0.1 零证书黑洞；开屏与信息流商业广告位走可选增强层 Loon 原生 response.json.jq，零 JS 脚本。
-- 证据：app2smile/rules、ddgksf2013、Adblock4limbo 公开规则库的 Bilibili 广告处置逻辑。本插件不搬运远程 JS，采用 Loon 原生 response.json.jq 与 REJECT-DICT 重写实现等价效果。整段默认注释，安装证书后按需启用。
+- 能力天花板与原生设计：dataflow.biliapi.com、data.bilibili.com、tracker.chat.bilibili.com、ali-web-player-tracker.biliapi.net、hw-v2-web-player-tracker.biliapi.net、httpdns.bilivideo.com 六个自建遥测与 HTTPDNS 域走 [Host] 127.0.0.1 零证书黑洞；开屏与信息流商业广告位走 Loon 原生 [Rewrite] v2（reject_dict(200) + response.json.jq），零 JS 脚本。
+- v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（开屏与信息流去广告）与 slimNav（导航栏精简）两个开关驱动 4 条原生复写规则 + app.bilibili.com 的 QUIC 回退，解决注释态增强层在订阅插件下无法直接开启的问题。
 
 ## 证据与验证
 
@@ -69,4 +73,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/bilibili.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 6 条，[Rule] 0 条。
+统计：精确/通配黑洞 6 条，[Rule] 1 条。

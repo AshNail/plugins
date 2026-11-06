@@ -1,12 +1,12 @@
 #!name=美团 · 去广告
-#!desc=美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞。首页轮播/信息流/开屏素材与业务同域同 CDN——DNS 层收益约 25-35%，其余是「加载失败留白」。交易、支付、骑手调度零接触。零证书。
+#!desc=美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.2.4
+#!version=1.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/meituan/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/cc/1f/5d/cc1f5dcb-92b6-0e0b-6f08-7a40e16e49d0/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-10-30
+#!date=2026-11-06
 #!tag=去广告,美团,点评
 #!type=normal
 
@@ -15,14 +15,40 @@
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：appsec-mobile.meituan.com（mtgsig 签名+设备指纹上报，拦=触发下单/支付风控，无任何黑名单收录）/ api-unionid.meituan.com（统一账号）/ api-map.meituan.net（地图瓦片）/ shark.dianping.com（Pike 长连通道，核弹模块 S9 也误伤它）/ ddplus(+quic).meituan.net（TitansX/Picasso 动态模板包）/ mrn.meituan.net 与 beauty-*.meituan.net（VOD/直播拉流）/ assistify.meituan.com（零证据，暂判 CORE）/ awp-assets 与 awps-assets（H5 容器与活动混装）/ apimobile.meituan.com / paymp / i.meituan.com。
 # 拒收条目（取证否决）：meituan.xn / meituan.yoga / meituangov.cn / meituancdn.cc——AliDNS 无解析或非美团主体，来源可疑，写了也不会命中。
-# 能力天花板（如实）：开屏走 wmapi/mapi 主 API 路径与 s3plus 共享存储，首页轮播走 p*.meituan.net / img.meituan.net 共享图床的 /bizad|/wmbanner|/adunion 路径——DNS 层不可分；成熟方案（blackmatrix7/wool）全部用 Map Local/reject-dict 即直接证据。可 DNS 切断的只有第三方 ADN + impdsp/mads + 遥测。
+# 能力天花板（如实）：开屏走 wmapi/mapi 主 API 路径与 s3plus 共享存储，首页轮播走 p*.meituan.net / img.meituan.net 共享图床的 /bizad|/wmbanner|/adunion 路径——DNS 层不可分；成熟方案（blackmatrix7/wool）全部用 Map Local/reject-dict 即直接证据。本插件对独立 ADN + impdsp/mads 走 DNS 黑洞，对同域开屏/广告图/热词走 Loon 原生 [Rewrite] v2（reject_dict / reject_img / response.json.jq）。
 # iOS 与 Android 差异：官方《接入第三方SDK目录》标注腾讯营销联盟/BeiZi/天璇/快手联盟/酷盈/PolyGamma 仅 Android——本插件 iOS 侧不挂 pangle/gdt/kuaishou 组，避免无收益死规则。
 # 只走精确域,不做 DOMAIN-SUFFIX 整域——美团交易规则依赖 *.meituan.com/*.meituan.net 深层子域（含 *.mtgsig 防刷签名路径）。
 # 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
-# 频道补充(2026-10-30)：吸收『广告必须死』频道 2024-10 模块里本仓库未覆盖的两条广告图片路径——flowplus.meituan.net 的 linglong 素材与 img.meituan.net/bizad/bizad_brandCpt_ 品牌 CPT 图，均用 REJECT-IMG 放进可选增强层，默认注释。s3plus 的 blk_conf JSON 与 brandcpt-vedio/waimai-alita zip 不收：s3plus 是共享存储，扩大 MITM 面换不来确定的广告收益，且本仓库已有 p*.meituan.net 的开屏/轮播路径覆盖。
-# 公开仓库补充(2026-10-30)：blackmatrix7 AdvertisingScript 的 img.meituan.net/(adunion|display|dpmobile|midas)/ 图片路径已有 MITM 主机、无需新增解密域，补为第三条默认注释 REJECT-IMG；与 bizad 路径同属共享图床的广告目录段，只按路径拦、不整域。
+# v1.3.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（默认开：开屏 reject_dict(200)、4 条共享图床广告目录 reject_img(200)、4 条搜索热词与启动图/Banner jq 置空）与 slimUI（默认关：底部 Tab 与推荐流精简）双开关控制 15 条原生复写规则 + 配套 QUIC 回退。
 # 本文件由 tools/build-apps.py 从 src/apps/meituan.json 生成，不要手改生成物。
 # ========================================================================
+
+
+# ========================================================================
+# 开关（源：src/apps/<slug>.json 的 enhance.arguments；改开关改源后 npm run build:apps）
+# ------------------------------------------------------------------------
+# 净化类默认开、自动化类默认关——finishWatch 重放、代领奖、广告时长 patch 都是
+# 「代打卡/伪造完成」，不默认生效，也不随净化开关一起被打开。
+# ========================================================================
+
+[Argument]
+
+cleanAds = switch,true,tag=开屏与广告图/热词/Banner 净化（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：wmapi 开屏接口 reject_dict(200) 终止；共享图床广告目录路径 reject_img(200) 返回 1px GIF；搜索热词、购物车顶部 Banner 与启动图通过 response.json.jq 置空。需已安装并信任 Loon 证书。
+slimUI = switch,false,tag=底部 Tab 与推荐流精简（默认关）,desc=隐藏底部 video/xiaotuan Tab（只留首页与我的）、清空购物车/个人中心推荐流与 AI 技能配置。默认关，按需开启。
+
+[Rule]
+
+# ------------------------------------------------------------
+# QUIC 回退（增强层配套 · 拒的是 HTTP/3 协议，回落 TCP 后正文不受影响）
+# MITM 只解密 TCP；App 走 HTTP/3 时下面这些主机的响应脚本会静默收不到。本组只对 PROTOCOL,QUIC 生效，同一主机的 TCP 请求（正文/书架/章节）零影响。
+AND,((DOMAIN-SUFFIX,apimobile.meituan.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,assistify.meituan.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,feedguess.meituan.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,flowplus.meituan.net),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,img.meituan.net),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,mop.meituan.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,mt-personalcenter.meituan.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,wmapi.meituan.com),(PROTOCOL,QUIC)),REJECT
 
 [Host]
 
@@ -116,71 +142,83 @@ s3plus-pre.51ping.com = 127.0.0.1
 
 
 # ========================================================================
-# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
+# 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 # ------------------------------------------------------------------------
-# 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），正解是 MITM 后按路径 reject。下列规则来自 blackmatrix7 AllInOne/AdvertisingScript 与 fmz200 blockAds 公开模块（reject 语义），默认整段注释、装证书后按需启用。素材图 p[0-9].meituan.net 与商品图共用 CDN，只按广告路径段拦，不整域拦。图片路径用规则层 REJECT-IMG（200 + 1px GIF）：图片加载器拿到合法图像不会走「破损图→重试」分支，比 404 更安静。2026-10-30 再补频道 2024-10 的两条图片路径（flowplus linglong / img.meituan.net bizad）与 blackmatrix7 的 img.meituan.net 广告目录路径（adunion/display/dpmobile/midas），同样默认注释；flowplus 与 img.meituan.net 都是共享素材主机，启用后这两台的图片流量都会进 MITM（只有广告路径被 REJECT-IMG 拒绝），介意解密面就只开 wmapi/apimobile 的 JSON 规则或跳过本层。
-# 启用步骤：①Loon 里装并信任证书 →
-#           ②取消 [MITM] 头与其 hostname 行的注释 →
-#           ③取消 [Rewrite] 头及其下所需 response.json.jq 行的注释 →
-#           ④取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
-# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
-# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
-# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
-# 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin
-# 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin
-# 证据: https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module
-# 证据: https://t.me/GitCube
-# 证据: https://t.me/Aa28413761
-# 证据: https://t.me/Nzmgs
-# 证据: https://github.com/ZenmoFeiShi/Qx
+# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——
+# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，
+# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。
+# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，
+# 解密不等于拦截。
 # ========================================================================
 
-# [MITM]
+[MITM]
+
+hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net, flowplus.meituan.net, img.meituan.net, feedguess.meituan.com, mt-personalcenter.meituan.com, assistify.meituan.com, mop.meituan.com
+
+
+# ========================================================================
+# 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
+# ------------------------------------------------------------------------
+# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；
+# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，
+# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、
+# reject_* 自己终止响应，gzip 面整个消失。
+# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，
+# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。
+# ========================================================================
+
+[Rewrite]
+
 # ------------------------------------------------------------
-# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
-# hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p?.meituan.net, flowplus.meituan.net, img.meituan.net, feedguess.meituan.com, mt-personalcenter.meituan.com, assistify.meituan.com, mop.meituan.com
-#
-# [Rewrite]
+# 请求阶段直接终止（reject_dict(200)）：wmapi 开屏广告配置
 # ------------------------------------------------------------
-# 下列响应 JSON 改写必须放在 [Rewrite] 段：取消本行（# [Rewrite]）与所需行的注释才生效。
-# response.json.jq 是 Loon 原生 jq：只删广告字段/节点、保留 mtop 包络；
-# 与 Response Script 互斥（body rewrite 命中后脚本不执行），本层不含脚本。
-# 来源 https://t.me/Nzmgs：隐藏 video/xiaotuan 底部 tab，只保留 homepage/mine；来自 Nzmgs MT.snippet 的字段事实，默认注释。
-# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/aggroup\/indexTab/ then response.json.jq(`.data.resource.tabArea |= map(select(.tabName == "homepage" or .tabName == "mine"))`)
-# 来源 https://t.me/Nzmgs：清空购物车/个人中心推荐流；来自 Nzmgs MT.snippet，默认注释。
-# response if ${url} ~= /^https?:\/\/feedguess\.meituan\.com\/lycoris\/scene\/(?:gwc_feed1_2265|personalcenter_2154)/ then response.json.jq(`.data = [] | .bottom = true | .ext.forbidByExp = true`)
-# 来源 https://t.me/Nzmgs：我的页去掉交叉推荐；来自 Nzmgs MT.snippet，默认注释。
-# response if ${url} ~= /^https?:\/\/mt-personalcenter\.meituan\.com\/usercenter\/display/ then response.json.jq(`.children |= map(select(.name != "mine_cross_recommend"))`)
-# 来源 https://t.me/Nzmgs：清空搜索默认词与热词；来自 Nzmgs MT.snippet，默认注释。
-# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/defaultword/ then response.json.jq(`.searchIntroduceResponse.defaultWordRes.defaultWordItems = [] | .searchIntroduceResponse.HotWordInfos = []`)
-# 来源 https://t.me/Nzmgs：去掉搜索热词推荐与 AI 气泡；来自 Nzmgs MT.snippet，默认注释。
-# response if ${url} ~= /^https?:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/hotword\/city\/divide\/hotrecommend\// then response.json.jq(`(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != "EntranceHotwordsV2Hotwords" and .pageName != "EntranceHotwordsV2ContentCard")) | .data.aiSearchBubble.bubbleTexts = []`)
-# 来源 https://t.me/Nzmgs：清空 AI 技能配置（data 内嵌 JSON 的 skills 对象）；解析失败保持原样；来自 Nzmgs MT.snippet，默认注释。
-# response if ${url} ~= /^https?:\/\/assistify\.meituan\.com\/assistant\/getAppClientHornConfig/ then response.json.jq(`.data |= (. as $orig | if type == "string" then (try (fromjson | if type == "object" and (.skills | type) == "object" then .skills = {} else . end | tojson) catch $orig) else . end)`)
-# 来源 https://t.me/Nzmgs：清空购物车入口顶部 banner（topBannerArea）；来自 Nzmgs MT.snippet，默认注释。
-# response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/mop\/entry\/shoppingCartEntry/ then response.json.jq(`walk(if type == "object" and (.topBannerArea? | type) == "array" then .topBannerArea = [] else . end)`)
-# 来源 https://t.me/Nzmgs：清空 mop 启动图（startupPicArea）；来自 Nzmgs MT.snippet，默认注释。
-# response if ${url} ~= /^https?:\/\/mop\.meituan\.com\/api\/entryModule\/startupPicture/ then response.json.jq(`walk(if type == "object" and (.startupPicArea? | type) == "array" then .startupPicArea = [] else . end)`)
-#
-# [Rule]
+# kill-openscreen: 美团外卖/主站 openscreen 开屏广告请求返回 200 + 空字典（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/wmapi\.meituan\.com\/api\/v[0-9]\/openscreen\?ad/ then reject_dict(200)
+
+# kill-startpicture: wmapi 启动图广告请求返回 200 + 空字典（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/wmapi\.meituan\.com\/api\/v[0-9]\/startpicture/ then reject_dict(200)
+
+# kill-loadinfo: wmapi 启动加载广告信息请求返回 200 + 空字典（来源 https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/wmapi\.meituan\.com\/api\/v[0-9]\/loadInfo\?/ then reject_dict(200)
+
 # ------------------------------------------------------------
-# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。
-# QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的
-# URL-REGEX / response.json.jq 会静默失效。
-# 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。
-# AND,((DOMAIN-SUFFIX,wmapi.meituan.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,apimobile.meituan.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,flowplus.meituan.net),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,img.meituan.net),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,feedguess.meituan.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,mt-personalcenter.meituan.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,assistify.meituan.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,mop.meituan.com),(PROTOCOL,QUIC)),REJECT
-# 通配主机无法用 DOMAIN-SUFFIX 表达，QUIC 回退需另行处理: p?.meituan.net
-# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/openscreen\?ad,REJECT-DICT
-# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/startpicture,REJECT-DICT
-# URL-REGEX,^https?://wmapi\.meituan\.com/api/v[0-9]/loadInfo\?,REJECT-DICT
-# URL-REGEX,^https?://p[0-9]\.meituan\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\.jpg,REJECT-IMG
-# URL-REGEX,^https?://flowplus\.meituan\.net/v1/mss_[^/]+/linglong/[^/]+\.jpg,REJECT-IMG
-# URL-REGEX,^https?://img\.meituan\.net/bizad/bizad_brandCpt_[^/]+\.jpg,REJECT-IMG
-# URL-REGEX,^https?://img\.meituan\.net/(adunion|display|dpmobile|midas)/[A-Za-z0-9_-]+\.(?:gif|jpg|jpg\.webp)$,REJECT-IMG
+# 请求阶段透明图替换（reject_img(200)）：共享图床广告目录段
+# ------------------------------------------------------------
+# kill-img-p-cdn: p[0-9].meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图返回 200 + 1px GIF（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/p[0-9]\.meituan\.net\/(bizad|wmbanner|brandCpt)\/[a-zA-Z0-9]+\.jpg/ then reject_img(200)
+
+# kill-img-flowplus: flowplus.meituan.net 玲珑推广素材图返回 200 + 1px GIF（来源 https://t.me/GitCube）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/flowplus\.meituan\.net\/v1\/mss_[^\/]+\/linglong\/[^\/]+\.jpg/ then reject_img(200)
+
+# kill-img-brandcpt: img.meituan.net 品牌 CPT 广告图返回 200 + 1px GIF（来源 https://t.me/GitCube）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/img\.meituan\.net\/bizad\/bizad_brandCpt_[^\/]+\.jpg/ then reject_img(200)
+
+# kill-img-adunion: img.meituan.net 广告联盟/展示广告目录图片返回 200 + 1px GIF（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/img\.meituan\.net\/(adunion|display|dpmobile|midas)\/[A-Za-z0-9_-]+\.(?:gif|jpg|jpg\.webp)$/ then reject_img(200)
+
+# ------------------------------------------------------------
+# 响应字段级净化（response.json.jq）：热词、启动图与界面精简
+# ------------------------------------------------------------
+# clean-search-defaultword: 清空搜索默认词与热词（来源 https://t.me/Nzmgs）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/defaultword/ then response.json.jq(".searchIntroduceResponse.defaultWordRes.defaultWordItems = [] | .searchIntroduceResponse.HotWordInfos = []")
+
+# clean-search-hotrecommend: 去掉搜索热词推荐与 AI 气泡（来源 https://t.me/Nzmgs）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/apimobile\.meituan\.com\/group\/v1\/deal\/searchpage\/hotword\/city\/divide\/hotrecommend\// then response.json.jq("(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != \"EntranceHotwordsV2Hotwords\" and .pageName != \"EntranceHotwordsV2ContentCard\")) | .data.aiSearchBubble.bubbleTexts = []")
+
+# clean-cart-banner: 清空购物车入口顶部 banner（topBannerArea）（来源 https://t.me/Nzmgs）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/mop\.meituan\.com\/mop\/entry\/shoppingCartEntry/ then response.json.jq("walk(if type == \"object\" and (.topBannerArea? | type) == \"array\" then .topBannerArea = [] else . end)")
+
+# clean-mop-startuppic: 清空 mop 启动图（startupPicArea）（来源 https://t.me/Nzmgs）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/mop\.meituan\.com\/api\/entryModule\/startupPicture/ then response.json.jq("walk(if type == \"object\" and (.startupPicArea? | type) == \"array\" then .startupPicArea = [] else . end)")
+
+# slim-indextab: 隐藏 video/xiaotuan 底部 tab，只保留 homepage/mine（来源 https://t.me/Nzmgs）
+response if ${slimUI} == true && ${url} ~= /^https:\/\/apimobile\.meituan\.com\/aggroup\/indexTab/ then response.json.jq(".data.resource.tabArea |= map(select(.tabName == \"homepage\" or .tabName == \"mine\"))")
+
+# slim-feedguess: 清空购物车/个人中心推荐流（来源 https://t.me/Nzmgs）
+response if ${slimUI} == true && ${url} ~= /^https:\/\/feedguess\.meituan\.com\/lycoris\/scene\/(?:gwc_feed1_2265|personalcenter_2154)/ then response.json.jq(".data = [] | .bottom = true | .ext.forbidByExp = true")
+
+# slim-usercenter: 我的页去掉交叉推荐模块（来源 https://t.me/Nzmgs）
+response if ${slimUI} == true && ${url} ~= /^https:\/\/mt-personalcenter\.meituan\.com\/usercenter\/display/ then response.json.jq(".children |= map(select(.name != \"mine_cross_recommend\"))")
+
+# slim-hornconfig: 清空 AI 技能配置（data 内嵌 JSON 的 skills 对象）（来源 https://t.me/Nzmgs）
+response if ${slimUI} == true && ${url} ~= /^https:\/\/assistify\.meituan\.com\/assistant\/getAppClientHornConfig/ then response.json.jq(".data |= (. as $orig | if type == \"string\" then (try (fromjson | if type == \"object\" and (.skills | type) == \"object\" then .skills = {} else . end | tojson) catch $orig) else . end)")

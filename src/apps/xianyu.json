@@ -1,9 +1,9 @@
 {
   "slug": "xianyu",
-  "name": "闲鱼 · 去广告（能力有限）",
-  "desc": "闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名，九家主流黑名单 goofish 零命中即侧证）。DNS 层只能补阿里广告 SDK 端点 iyes.youku.com、淘宝客 Tunion 归因接口与 AMDC 调度——零证书收益≈0-5%；信息流同域广告需可选 MITM 层用 Loon 原生 response.json.jq 删字段，默认注释。",
-  "version": "1.5.0",
-  "date": "2026-10-30",
+  "name": "闲鱼 · 去广告（原生复写层）",
+  "desc": "闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。",
+  "version": "1.6.0",
+  "date": "2026-11-06",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,闲鱼,阿里",
   "comment": [
@@ -12,7 +12,7 @@
     "证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。",
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。",
     "第二轮取证复检(2026-10-28)：mma.alimama.com 实测 NXDOMAIN(网传『阿里妈妈端点』不存在,禁凭品牌造域);开屏素材无 alicdn 之外的独立 CDN(墨鱼 GoofishAds.conf 亦无单独素材域);h-adashx.ut.taobao.com=阿里 UT/AdashX 埋点,全阿里系 App 共享,属全局 ads 插件的决策面,不进本按 App 插件。",
-    "频道补充(2026-10-30)：吸收『广告必须死』频道 2024-10 闲鱼插件里本仓库未覆盖的 4 个模块——首页顶部标签 home.whale.modulet、这些宝贝超好卖 item.resell.recommendorhotcate、我的页 topic.banner、闲鱼币推荐 idlehome.idle.coin.nextfresh，统一用 URL-REGEX + REJECT-DICT（200 + 空字典）放进可选增强层，默认整段注释；2024 路径未在 2026 复测，逐条开、出现白屏就回滚。频道同插件里的 splash.ads / item.recommend / user.strategy.list / 搜索系路径本仓库已有更细的 jq 版本，不重复收录。"
+    "v1.6.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（默认开：6 条开屏/曝光/推广模块 request reject_dict(200) + 8 条商品推荐 mamaAD / 悬浮球 / 搜索暗词 / 省钱 Tab / 群聊圈子 Banner jq 剥离）与 cleanFeed（默认关：7 条激进信息流/我的页精简，其中 search.discover 与 item.buy.feeds 升级为原生 response.json.delete）双开关控制 21 条原生复写规则 + 配套 QUIC 回退。"
   ],
   "redlines": [
     {"domain": "goofish.com", "kind": "family", "quote": "*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能", "why": "闲鱼主域整族=核心功能"},
@@ -71,129 +71,263 @@
     }
   ],
   "enhance": {
-    "intro": "闲鱼 iOS 未做证书固定：开屏/曝光计数是 mtop 主网关 acs.m.goofish.com 的路径名（splash.ads / idle.ad.expose），信息流广告则在同域 API 的 JSON 字段里（nextfresh 分区 / item.recommend 的 bizType=mamaAD）。黑洞整网关=废掉 App，正解是 MITM 后按路径 reject，或用 Loon 原生 response.json.jq 只删广告字段、保留 mtop 包络。下列 jq 来自 ddgksf2013 GoofishAds 与 fmz200 blockAds 两个公开模块（后者已在用同域 http-response-jq），默认整段注释；建议逐条启用、真机确认后再加下一条。fmz200 的 circle.visited（最近访问）与 fun.follow.often.visit（常访问）更像功能/历史而非广告，刻意不收。2026-10-30 再补频道 2024-10 插件的 4 个模块级 reject-dict（home.whale.modulet / item.resell.recommendorhotcate / topic.banner / idlehome.idle.coin.nextfresh），它们不是整域 REJECT，不触发本插件 acs.m.goofish.com 红线；2024 路径未复测，放在最后供逐条验证。",
+    "active": true,
+    "intro": "闲鱼 iOS 未做证书固定：开屏/曝光计数是 mtop 主网关 acs.m.goofish.com / g-acs.m.goofish.com 的路径名（splash.ads / idle.ad.expose），信息流广告则在同域 API 的 JSON 字段里（nextfresh 分区 / item.recommend 的 bizType=mamaAD）。黑洞整网关=废掉 App，本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（零 JS 脚本）：cleanAds（默认开）拦截纯广告路径并剥离 mamaAD 卡片、悬浮球、搜索暗词与各处 Banner；cleanFeed（默认关）提供激进的信息流仅留商品与我的页精简。",
     "sources": [
       "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf",
       "https://github.com/fmz200/wool_scripts/blob/main/Surge/module/blockAds.module",
       "https://t.me/GitCube",
       "https://t.me/Aa28413761"
     ],
+    "arguments": [
+      {
+        "name": "cleanAds",
+        "default": "true",
+        "tag": "mtop 同域开屏与广告位净化（默认开）",
+        "desc": "启用 Loon 原生 [Rewrite] v2 引擎复写：splash.ads、idle.ad.expose 等 6 个广告/模块端点在 request 阶段 reject_dict(200) 终止；商品推荐 mamaAD 卡片、悬浮球、搜索预填词、顶部省钱 Tab、群聊/圈子 Banner 通过 response.json.jq 精准剥离。需已安装并信任 Loon 证书。"
+      },
+      {
+        "name": "cleanFeed",
+        "default": "false",
+        "tag": "激进信息流与我的页精简（默认关）",
+        "desc": "首页 nextfresh / 本地信息流 / 搜索结果只留 item、删除搜索发现页与我的页底部商品推荐、精简我的页分区。因过滤粒度较激进默认关，按需开启。"
+      }
+    ],
+    "quic_fallback": true,
     "mitm_hosts": [
       "acs.m.goofish.com",
       "g-acs.m.goofish.com"
     ],
-    "url_regex": [
-      "URL-REGEX,^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop.*splash\\.ads,REJECT-DICT",
-      "URL-REGEX,^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.idle\\.ad\\.expose,REJECT-DICT",
-      "URL-REGEX,^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.home\\.whale\\.modulet(?:/|\\?|$),REJECT-DICT",
-      "URL-REGEX,^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.resell\\.recommendorhotcate(?:/|\\?|$),REJECT-DICT",
-      "URL-REGEX,^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.topic\\.banner(?:/|\\?|$),REJECT-DICT",
-      "URL-REGEX,^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.idle\\.coin\\.nextfresh(?:/|\\?|$),REJECT-DICT"
-    ],
-    "rewrite_json": [
+    "rewrite": [
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.recommend(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.item.recommend/1.0/",
-        "jq": ".data.cardList |= map(select(.cardData.bizType != \"mamaAD\"))",
-        "note": "商品底部推荐：只删 bizType=mamaAD 的卡片",
+        "id": "kill-splash-ads",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "splash.ads",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop.*splash\\.ads",
+        "action": "reject_dict(200)",
+        "note": "闲鱼开屏广告 mtop 请求直接返回 200 + 空字典",
+        "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf"
+      },
+      {
+        "id": "kill-ad-expose",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.idle.ad.expose",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.idle\\.ad\\.expose",
+        "action": "reject_dict(200)",
+        "note": "闲鱼广告曝光计数上报接口直接返回 200 + 空字典",
+        "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf"
+      },
+      {
+        "id": "kill-whale-modulet",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.home.whale.modulet",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.home\\.whale\\.modulet(?:/|\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "首页顶部营销模块（home.whale.modulet）直接返回 200 + 空字典",
+        "source": "https://t.me/GitCube"
+      },
+      {
+        "id": "kill-resell-recommend",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.item.resell.recommendorhotcate",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.resell\\.recommendorhotcate(?:/|\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "「这些宝贝超好卖」推广模块直接返回 200 + 空字典",
+        "source": "https://t.me/GitCube"
+      },
+      {
+        "id": "kill-topic-banner",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.topic.banner",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.topic\\.banner(?:/|\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "我的页话题横幅（topic.banner）直接返回 200 + 空字典",
+        "source": "https://t.me/GitCube"
+      },
+      {
+        "id": "kill-coin-nextfresh",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idlehome.idle.coin.nextfresh",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.idle\\.coin\\.nextfresh(?:/|\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "闲鱼币推荐信息流（idle.coin.nextfresh）直接返回 200 + 空字典",
+        "source": "https://t.me/GitCube"
+      },
+      {
+        "id": "clean-item-recommend",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.item.recommend",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.recommend(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.cardList |= map(select(.cardData.bizType != \\\"mamaAD\\\"))\")",
+        "note": "商品底部推荐：只删 bizType=mamaAD 的阿里妈妈广告卡片",
         "source": "ddgksf2013"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.user\\.strategy\\.list(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.user.strategy.list/1.0/",
-        "jq": ".data.strategies = [{}]",
+        "id": "clean-strategy-list",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.user.strategy.list",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.user\\.strategy\\.list(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.strategies = [{}]\")",
         "note": "首页右下角悬浮球：留一个空 strategy 占位",
         "source": "ddgksf2013"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search\\.shade(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idlemtopsearch.search.shade/1.0/",
-        "jq": ".data.singleShadeWords = [{}]",
+        "id": "clean-search-shade",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idlemtopsearch.search.shade",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search\\.shade(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.singleShadeWords = [{}]\")",
         "note": "搜索框预填/热词：留一个空占位",
         "source": "ddgksf2013"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.item\\.search\\.activate(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idlemtopsearch.item.search.activate/1.0/",
-        "jq": ".data.cardList = [{}]",
-        "note": "搜索页「猜你可能找」卡片",
+        "id": "clean-search-activate",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idlemtopsearch.item.search.activate",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.item\\.search\\.activate(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.cardList = [{}]\")",
+        "note": "搜索页「猜你可能找」推广卡片清空",
         "source": "ddgksf2013"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.home\\.circle\\.list(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idlehome.home.circle.list/1.0/",
-        "jq": ".data.circleList |= map(select(.bizCode != \"saveMoney\"))",
-        "note": "首页顶部 Tab：去掉 saveMoney 推广位",
+        "id": "clean-circle-savemoney",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idlehome.home.circle.list",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.home\\.circle\\.list(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.circleList |= map(select(.bizCode != \\\"saveMoney\\\"))\")",
+        "note": "首页顶部 Tab：去掉 saveMoney 省钱推广位",
         "source": "ddgksf2013"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.home\\.nextfresh(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idlehome.home.nextfresh/1.0/",
-        "jq": ".data.homeTopList |= [ .[0] ] | .data.sections |= map(select(.data.bizType == \"item\"))",
-        "note": "首页信息流：顶部只留首项、分区只留 item（源模块口径较激进）",
-        "source": "ddgksf2013"
-      },
-      {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idlemtopsearch.search/1.0/",
-        "jq": ".data.resultList |= map(select(.data.item.main.clickParam.args.biz_type == \"item\"))",
-        "note": "搜索结果信息流：只留 item 结果（源模块口径较激进）",
-        "source": "ddgksf2013"
-      },
-      {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.local\\.home(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.local.home/1.0/",
-        "jq": ".data.sections |= map(select(.data.bizType == \"item\"))",
-        "note": "本地信息流：分区只留 item（源模块口径较激进）",
-        "source": "ddgksf2013"
-      },
-      {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search\\.discover(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idlemtopsearch.search.discover/1.0/",
-        "jq": "del(.data.resultList)",
-        "note": "搜索发现页：删除 resultList（源模块口径较激进）",
-        "source": "ddgksf2013"
-      },
-      {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.idle\\.user\\.page\\.my\\.adapter(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.idle.user.page.my.adapter/1.0/",
-        "jq": ".data.ability=[] | .data.container.sections |= map(select(.sectionBizCode | test(\"head|user|trade\")))",
-        "note": "我的页面：清空 ability 并只留 head/user/trade 分区（源模块口径最激进，建议最后单开验证）",
-        "source": "ddgksf2013"
-      },
-      {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.buy\\.feeds(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.item.buy.feeds/1.0/",
-        "jq": "del(.data.sections)",
-        "note": "我的页面底部商品推荐：删除 sections（源模块口径较激进）",
-        "source": "ddgksf2013"
-      },
-      {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.group\\.myself\\.banner(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.group.myself.banner/1.0/",
-        "jq": ".data.bannerList = []",
-        "note": "群聊/消息页 banner 位",
+        "id": "clean-group-banner",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.group.myself.banner",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.group\\.myself\\.banner(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.bannerList = []\")",
+        "note": "群聊/消息页 banner 位清空",
         "source": "fmz200"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.circle\\.myself\\.banner/1\\.0(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.circle.myself.banner/1.0/",
-        "jq": ".data.bannerList = []",
-        "note": "圈子页 banner 位",
+        "id": "clean-circle-banner",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.circle.myself.banner",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.circle\\.myself\\.banner/1\\.0(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.bannerList = []\")",
+        "note": "圈子页 banner 位清空",
         "source": "fmz200"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.playboy\\.recommend/2\\.0(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.playboy.recommend/2.0/",
-        "jq": ".data.recommends = [] | .data.items = [] | .data.next = false",
-        "note": "消息页推荐位",
+        "id": "clean-playboy-recommend",
+        "group": "响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "mtop.taobao.idle.playboy.recommend",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.playboy\\.recommend/2\\.0(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.recommends = [] | .data.items = [] | .data.next = false\")",
+        "note": "消息页推荐位清空",
         "source": "fmz200"
       },
       {
-        "url": "^https?://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.recommend\\.list(?:/|\\?|$)",
-        "sample": "https://acs.m.goofish.com/gw/mtop.taobao.idle.item.recommend.list/1.0/",
-        "jq": ".data.cardList = []",
-        "note": "商品推荐列表：清空 cardList（fmz200 口径，整列清空）",
+        "id": "slim-home-nextfresh",
+        "group": "激进信息流与我的页精简（cleanFeed 默认关）：按需开启",
+        "stage": "response",
+        "gate": "cleanFeed",
+        "endpoint": "mtop.taobao.idlehome.home.nextfresh",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.home\\.nextfresh(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.homeTopList |= [ .[0] ] | .data.sections |= map(select(.data.bizType == \\\"item\\\"))\")",
+        "note": "首页信息流：顶部只留首项、分区只留 item",
+        "source": "ddgksf2013"
+      },
+      {
+        "id": "slim-search-result",
+        "group": "激进信息流与我的页精简（cleanFeed 默认关）：按需开启",
+        "stage": "response",
+        "gate": "cleanFeed",
+        "endpoint": "mtop.taobao.idlemtopsearch.search",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.resultList |= map(select(.data.item.main.clickParam.args.biz_type == \\\"item\\\"))\")",
+        "note": "搜索结果信息流：只留 item 结果",
+        "source": "ddgksf2013"
+      },
+      {
+        "id": "slim-local-home",
+        "group": "激进信息流与我的页精简（cleanFeed 默认关）：按需开启",
+        "stage": "response",
+        "gate": "cleanFeed",
+        "endpoint": "mtop.taobao.idle.local.home",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.local\\.home(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.sections |= map(select(.data.bizType == \\\"item\\\"))\")",
+        "note": "本地信息流：分区只留 item",
+        "source": "ddgksf2013"
+      },
+      {
+        "id": "slim-search-discover",
+        "group": "激进信息流与我的页精简（cleanFeed 默认关）：按需开启",
+        "stage": "response",
+        "gate": "cleanFeed",
+        "endpoint": "mtop.taobao.idlemtopsearch.search.discover",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search\\.discover(?:/|\\?|$)",
+        "action": "response.json.delete(\"data.resultList\")",
+        "note": "搜索发现页：原生点分路径删除 data.resultList",
+        "source": "ddgksf2013"
+      },
+      {
+        "id": "slim-my-adapter",
+        "group": "激进信息流与我的页精简（cleanFeed 默认关）：按需开启",
+        "stage": "response",
+        "gate": "cleanFeed",
+        "endpoint": "mtop.idle.user.page.my.adapter",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.idle\\.user\\.page\\.my\\.adapter(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.ability=[] | .data.container.sections |= map(select(.sectionBizCode | test(\\\"head|user|trade\\\")))\")",
+        "note": "我的页面：清空 ability 并只留 head/user/trade 分区",
+        "source": "ddgksf2013"
+      },
+      {
+        "id": "slim-buy-feeds",
+        "group": "激进信息流与我的页精简（cleanFeed 默认关）：按需开启",
+        "stage": "response",
+        "gate": "cleanFeed",
+        "endpoint": "mtop.taobao.idle.item.buy.feeds",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.buy\\.feeds(?:/|\\?|$)",
+        "action": "response.json.delete(\"data.sections\")",
+        "note": "我的页面底部商品推荐：原生点分路径删除 data.sections",
+        "source": "ddgksf2013"
+      },
+      {
+        "id": "slim-recommend-list",
+        "group": "激进信息流与我的页精简（cleanFeed 默认关）：按需开启",
+        "stage": "response",
+        "gate": "cleanFeed",
+        "endpoint": "mtop.taobao.idle.item.recommend.list",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.recommend\\.list(?:/|\\?|$)",
+        "action": "response.json.jq(\".data.cardList = []\")",
+        "note": "商品推荐列表：整列清空 cardList",
         "source": "fmz200"
       }
     ]

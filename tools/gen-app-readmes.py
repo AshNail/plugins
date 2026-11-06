@@ -149,25 +149,27 @@ def render(app, sdklib, ads_groups):
                 lines.append(
                     f"| `{a.get('name')}` | {a.get('default')} | {a.get('desc', a.get('tag', ''))} |"
                 )
-            lines += [
-                "",
-                "> 净化类默认开、自动化类默认关：领奖/签到/重放这条线不默认启用是仓库纪律，"
-                "要用就把 `autoTask` 改成 true。",
-                "",
-                "### 绑定（`[Script]`）",
-                "",
-                "| 脚本 | 触发面 | 开关 | 行为 |",
-                "|---|---|---|---|",
-            ]
-            for b in enh.get("bindings", []):
-                face = b.get("pattern") or b.get("cron") or "generic"
-                probe = "（探针）" if b.get("probe") else ""
-                lines.append(
-                    f"| `{b.get('script')}` | `{face}` | `{b.get('switch') or '—'}` | "
-                    f"{b.get('note', b.get('tag', ''))}{probe} |"
-                )
-            rules = enh.get("rewrite") or []
-            if rules:
+            bindings = enh.get("bindings") or []
+            if bindings:
+                lines += [
+                    "",
+                    "> 净化类默认开、自动化类默认关：领奖/签到/重放这条线不默认启用是仓库纪律，"
+                    "要用就把 `autoTask` 改成 true。",
+                    "",
+                    "### 绑定（`[Script]`）",
+                    "",
+                    "| 脚本 | 触发面 | 开关 | 行为 |",
+                    "|---|---|---|---|",
+                ]
+                for b in bindings:
+                    face = b.get("pattern") or b.get("cron") or "generic"
+                    probe = "（探针）" if b.get("probe") else ""
+                    lines.append(
+                        f"| `{b.get('script')}` | `{face}` | `{b.get('switch') or '—'}` | "
+                        f"{b.get('note', b.get('tag', ''))}{probe} |"
+                    )
+            rewrite_items = enh.get("rewrite") or []
+            if rewrite_items:
                 lines += [
                     "",
                     "### 净化复写（`[Rewrite]`）",
@@ -175,7 +177,7 @@ def render(app, sdklib, ads_groups):
                     "| 规则 | 阶段 | 动作 | 开关 | 行为 |",
                     "|---|---|---|---|---|",
                 ]
-                for item in rules:
+                for item in rewrite_items:
                     lines.append(
                         f"| `{item.get('id')}` | {item.get('stage')} | "
                         f"`{item.get('action', '').split('(')[0]}` | `{item.get('gate')}` | "
@@ -187,9 +189,12 @@ def render(app, sdklib, ads_groups):
                     "`Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 "
                     "`$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，"
                     "这正是「净化不生效」的那条链。",
-                    "> 探针纪律：`probe=true` 的绑定与复写命中同一条 URL，按官方口径脚本会被静默抑制，"
-                    "所以锚定日志里它**有没有出现**就是**复写有没有命中**的判据。",
                 ]
+                if bindings:
+                    lines.append(
+                        "> 探针纪律：`probe=true` 的绑定与复写命中同一条 URL，按官方口径脚本会被静默抑制，"
+                        "所以锚定日志里它**有没有出现**就是**复写有没有命中**的判据。"
+                    )
             lines += [
                 "",
                 f"> 全层由 `src/apps/{slug}.json` 的 `enhance` 整段生成（`tools/build-apps.py`），"
@@ -224,7 +229,7 @@ def render(app, sdklib, ads_groups):
                 lines.append(f"# 来源 {item['source']}：{item['note']}")
                 lines.append(
                     f"# response if ${{url}} ~= /{escape_regex_slashes(item['url'])}/"
-                    f" then response.json.jq(`{item['jq']}`)"
+                    f" then response.json.jq({json.dumps(item['jq'], ensure_ascii=False)})"
                 )
             lines += ["```", ""]
         if active_enh:

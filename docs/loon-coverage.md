@@ -18,7 +18,7 @@
 | 传输层 | 4 | 0 | 3 | 0 | 2 | **100%** |
 | 规则层 | 10 | 9 | 9 | 1 | 0 | **53%** |
 | Host 层 | 2 | 4 | 2 | 0 | 0 | **33%** |
-| 复写层 | 7 | 6 | 14 | 0 | 0 | **54%** |
+| 复写层 | 7 | 7 | 13 | 0 | 0 | **50%** |
 | 脚本层 | 22 | 13 | 12 | 0 | 0 | **63%** |
 | 脚本属性 | 6 | 1 | 0 | 0 | 0 | **86%** |
 | 参数层 | 3 | 3 | 0 | 0 | 0 | **50%** |
@@ -27,7 +27,7 @@
 | 旧版语法 | 0 | 0 | 2 | 0 | 0 | **0%** |
 | 分发 | 0 | 0 | 0 | 2 | 0 | **0%** |
 | 元数据 | 10 | 1 | 1 | 0 | 2 | **91%** |
-| **合计** | **72** | **39** | **48** | **12** | **4** | **65%** |
+| **合计** | **72** | **40** | **47** | **12** | **4** | **64%** |
 
 ## 传输层
 
@@ -74,7 +74,7 @@
 | `REJECT`（404 + 空 body） | ✅ 已用 | 已落地 |
 | `REJECT-DROP`（丢包防重试风暴） | ✅ 已用 | HTTPDNS 关键词域命中后 SDK 会对 200 空包秒级重试，丢包静默超时是从根上断重试 |
 | `REJECT-DICT`（200 + `{}`） | ✅ 已用 | 上报/配置接口按 JSON 解析：返回空对象让 SDK 判定成功并清本地重试队列 |
-| `REJECT-IMG`（200 + 1px GIF） | 🟡 可用未用 | meituan 可选 MITM 增强层里以注释态收录（p[0-9].meituan.net 广告图路径）——图片加载器拿到合法图像不会走「破损图→重试」，该层默认关，生效项仍为 0 |
+| `REJECT-IMG`（200 + 1px GIF） | 🟡 可用未用 | 共享图床的广告图路径需绑定 `[Argument]` 开关（`${cleanAds} == true`），已统一走复写层 `reject_img(200)`（meituan/taobao）；规则层 `REJECT-IMG` 留给无需开关的独立广告图片域名 |
 | `REJECT-ARRAY`（200 + `[]`） | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js 三家 SDK 均为对象包络 `status_code`/`ret`/`result`；wool_scripts 的转换器仅文档了映射关系、无一条真实 `reject_array`；本仓库 fixtures 无顶层数组），仍无可引用的样本——不是忘了用，是没有一条规则能诚实启用。启用门槛：拿到顶层数组的真机/公开样本后，①build-apps 的 enhance.url_regex 白名单先放行 REJECT-ARRAY；②该条规则连同样本来源进 enhance.sources |
 
 ## Host 层
@@ -104,7 +104,7 @@
 | `redirect(302\|307)` | ❌ 判死 | 会把客户端送去继续请求，广告位可能被填上别的素材 |
 | `reject(status)` | ❌ 判死 | 官方注明返回 `text/plain`；按 JSON 解析的 SDK 会走「解析失败→重试」分支 |
 | `reject_dict(status)` | ✅ 已用 | 已落地 |
-| `reject_img(status)` | ❌ 判死 | 图片路径已由规则层 `REJECT-IMG` 覆盖（meituan 增强层）；同一请求再写一条 Rewrite 拒绝只会互相覆盖 |
+| `reject_img(status)` | ✅ 已用 | 共享图床（meituan p[0-9]/flowplus/img.meituan.net、taobao gw.alicdn.com）下的广告目录路径在 request 阶段返回 200 + 1px GIF，避免图片加载器进入破损图重试分支，并支持 `${cleanAds} == true` 开关控制 |
 | `reject_array(status)` | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` 全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条：样本 + enhance.url_regex 白名单 + 来源登记 |
 | `reject_video(status)` | ❌ 判死 | 同上，视频素材域名不进 MITM |
 | `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 降到 gzip |
@@ -112,15 +112,15 @@
 | `request.body.replace` | ❌ 判死 | 正文级正则对 JSON 不安全（可能命中字符串内部的同名字段） |
 | `response.body.replace` | ❌ 判死 | 同上；且命中后同阶段脚本不再执行，等于用正则换掉全部 JSON 逻辑 |
 | `request.json.*` | ❌ 判死 | 本插件不改请求体；请求侧无广告载荷需要剥 |
-| `response.json.add/delete/replace` | ✅ 已用 | qidian 净化层改由它承担（getconf 30 键 replace + 11 项 delete、书架/福利/兑换页字段级删除）：起点 Argus 响应带 `Content-Encoding: gzip`，脚本侧解压依赖 `$utils.ungzip`（Build ≥ 988），低版本静默 passthrough；引擎自己解压，gzip 面整个消失。soda/douyin 仍判死——原生 JSON 改写命中后同阶段脚本不执行，会整条废掉「保奖励」判断 |
-| `response.json.jq` | ✅ 已用 | netease 插件用原生 jq 删除网易云广告字段（9 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条 |
+| `response.json.add/delete/replace` | ✅ 已用 | qidian / qqnews / xianyu 净化层主力（getconf 30 键 replace + 11 项 delete、书架/福利/兑换页字段级删除、腾讯新闻 adList 置 null、闲鱼 search.discover/item.buy.feeds 删键）：引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。soda/douyin 仍交由脚本处理（原生 JSON 改写命中后同阶段脚本不执行，会跳过「保奖励」判断） |
+| `response.json.jq` | ✅ 已用 | netease / qidian / qqnews / youtube / bilibili / meituan / xianyu 全面启用原生 jq（统一采用官方双引号 + `\"` 转义语法，修复历史反引号语法导致未执行的问题） |
 | `response.json.jq_file` | ❌ 判死 | 插件资源文件会引入包外依赖；本仓库要求自包含 |
 | `request.body.mock` | ❌ 判死 | 同上：改写请求体不属于本插件职责 |
 | `response.body.mock` | ❌ 判死 | 包络写错＝白屏，且会把同 URL 的脚本全废掉；收益只在「省一次解码」 |
 | 多 Action 管道 `\|` | ❌ 判死 | 每条命中 URL 只需要一个动作；多动作会增加同一请求的副作用面，没有收益 |
 | `reject(status, body)` 自定义 body | ❌ 判死 | 自定义 body 不如 `reject_dict` 语义清楚；按 JSON 解析的 SDK 回 `{}` 最稳 |
 | `body.mock_file` / 远程文件 | ❌ 判死 | Mock 会整包替换响应，包络写错就是白屏；插件也不应依赖运行时远程拉取 |
-| 批量数组参数 | ✅ 已用 | qidian getconf 净化一条规则改 30 个开关字段（两个等长平行数组），比拆 30 条规则少三次装载面也少三份 URL 匹配开销；值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq` |
+| 批量数组参数 | 🟡 可用未用 | qidian 曾用一条 `response.json.replace` 平行数组改 getconf 30 个开关字段；v3.5.0 整段撤下 response.json.*（本机 11-06 14:34 日志：复写命中的 47 条请求挂起中位 20s、最长 75.7s，15 条以 SSL Code=6 断连，未命中的 165 条 0s 零失败），改回 [Script] 侧改写，故此项归零。值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq`；真要用回来必须先在同一条 gzip 响应上验证「命中且不挂起」 |
 
 ## 脚本层
 

@@ -266,8 +266,8 @@ CAPABILITIES = [
          why="上报/配置接口按 JSON 解析：返回空对象让 SDK 判定成功并清本地重试队列"),
     dict(layer="规则层", key="r-reject-img", name="`REJECT-IMG`（200 + 1px GIF）", expect="open",
          probe=r"(?m),(?:REJECT-IMG)\s*$", href=DOC + "/Policy/",
-         why="meituan 可选 MITM 增强层里以注释态收录（p[0-9].meituan.net 广告图路径）——"
-             "图片加载器拿到合法图像不会走「破损图→重试」，该层默认关，生效项仍为 0"),
+         why="共享图床的广告图路径需绑定 `[Argument]` 开关（`${cleanAds} == true`），已统一走复写层 `reject_img(200)`（meituan/taobao）；"
+             "规则层 `REJECT-IMG` 留给无需开关的独立广告图片域名"),
     dict(layer="规则层", key="r-reject-array", name="`REJECT-ARRAY`（200 + `[]`）", expect="open",
          probe=r"(?m),(?:REJECT-ARR(?:AY|Y))\s*$", href=DOC + "/Policy/",
          why="2026-11-06 全语料复核（app2smile adsense.js 三家 SDK 均为对象包络 `status_code`/`ret`/`result`；"
@@ -345,11 +345,12 @@ CAPABILITIES = [
          why="官方注明返回 `text/plain`；按 JSON 解析的 SDK 会走「解析失败→重试」分支"),
     dict(layer="复写层", key="w-reject-dict", name="`reject_dict(status)`", expect="used",
          probe=r"then\s+reject_dict\s*\(", href=DOC + "/Rewrite/rewrite_v2"),
-    dict(layer="复写层", key="w-reject-img", name="`reject_img(status)`", expect="reject",
+    dict(layer="复写层", key="w-reject-img", name="`reject_img(status)`", expect="used",
          probe=r"then\s+reject_img\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="图片路径已由规则层 `REJECT-IMG` 覆盖（meituan 增强层）；同一请求再写一条 Rewrite 拒绝只会互相覆盖"),
+         why="共享图床（meituan p[0-9]/flowplus/img.meituan.net、taobao gw.alicdn.com）下的广告目录路径在 request 阶段返回 200 + 1px GIF，"
+             "避免图片加载器进入破损图重试分支，并支持 `${cleanAds} == true` 开关控制"),
     dict(layer="复写层", key="w-reject-array", name="`reject_array(status)`", expect="open",
-         probe=r"then\s+reject_array\s*\(", href=DOC + "/Rewrite/rewrite_v2",
+         probe=r"(?m)then\s+reject_array\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` "
              "全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条："
              "样本 + enhance.url_regex 白名单 + 来源登记"),
@@ -373,13 +374,12 @@ CAPABILITIES = [
          why="本插件不改请求体；请求侧无广告载荷需要剥"),
     dict(layer="复写层", key="w-res-json-field", name="`response.json.add/delete/replace`", expect="used",
          probe=r"then\s+response\.json\.(?:add|delete|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="qidian 净化层改由它承担（getconf 30 键 replace + 11 项 delete、书架/福利/兑换页字段级删除）："
-             "起点 Argus 响应带 `Content-Encoding: gzip`，脚本侧解压依赖 `$utils.ungzip`（Build ≥ 988），"
-             "低版本静默 passthrough；引擎自己解压，gzip 面整个消失。"
-             "soda/douyin 仍判死——原生 JSON 改写命中后同阶段脚本不执行，会整条废掉「保奖励」判断"),
+         why="qidian / qqnews / xianyu 净化层主力（getconf 30 键 replace + 11 项 delete、书架/福利/兑换页字段级删除、腾讯新闻 adList 置 null、闲鱼 search.discover/item.buy.feeds 删键）："
+             "引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。"
+             "soda/douyin 仍交由脚本处理（原生 JSON 改写命中后同阶段脚本不执行，会跳过「保奖励」判断）"),
     dict(layer="复写层", key="w-res-json-jq", name="`response.json.jq`", expect="used",
          probe=r"then\s+response\.json\.jq\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="netease 插件用原生 jq 删除网易云广告字段（9 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条"),
+         why="netease / qidian / qqnews / youtube / bilibili / meituan / xianyu 全面启用原生 jq（统一采用官方双引号 + `\\\"` 转义语法，修复历史反引号语法导致未执行的问题）"),
     dict(layer="复写层", key="w-res-json-jq-file", name="`response.json.jq_file`", expect="reject",
          probe=r"then\s+response\.json\.jq_file\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="插件资源文件会引入包外依赖；本仓库要求自包含"),
@@ -399,11 +399,13 @@ CAPABILITIES = [
     dict(layer="复写层", key="w-mock-file", name="`body.mock_file` / 远程文件", expect="reject",
          probe=r"\.body\.mock_file\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="Mock 会整包替换响应，包络写错就是白屏；插件也不应依赖运行时远程拉取"),
-    dict(layer="复写层", key="w-batch", name="批量数组参数", expect="used",
+    dict(layer="复写层", key="w-batch", name="批量数组参数", expect="open",
          probe=r"then\s+\w+\.[\w.]*\(\s*\[", href=DOC + "/Rewrite/rewrite_v2",
-         why="qidian getconf 净化一条规则改 30 个开关字段（两个等长平行数组），"
-             "比拆 30 条规则少三次装载面也少三份 URL 匹配开销；"
-             "值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq`"),
+         why="qidian 曾用一条 `response.json.replace` 平行数组改 getconf 30 个开关字段；v3.5.0 整段"
+             "撤下 response.json.*（本机 11-06 14:34 日志：复写命中的 47 条请求挂起中位 20s、最长 75.7s，"
+             "15 条以 SSL Code=6 断连，未命中的 165 条 0s 零失败），改回 [Script] 侧改写，故此项归零。"
+             "值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq`；"
+             "真要用回来必须先在同一条 gzip 响应上验证「命中且不挂起」"),
 
     # ---------------- 脚本层 ----------------
     dict(layer="脚本层", key="s-trigger-request", name="Request Script（`request if ...`）", expect="used",

@@ -1,5 +1,5 @@
 /**
- * 起点读书 · 看书激励助手 v3.4.0
+ * 起点读书 · 看书激励助手 v3.5.0
  *
  * 核心功能（看书+激励）：
  *
@@ -9,15 +9,18 @@
  *   激励任务重放：拦截 finishWatch，重放 9/9 和 3/3
  *   自动领奖：拦截 receiveTaskReward + 尝试 6 个领奖端点
  *
- * 【响应净化层】（v3.4.0 起本层是**回退层**：同 URL 的 [Rewrite] 引擎复写默认生效并抑制本脚本）
- *   getconf 净化：30 项字段覆写 + 10 项字段删除（关广告/追踪/弹窗）
+ * 【响应净化层】（v3.5.0 起本层是**唯一**字段级净化：response.json.* 引擎复写整段撤下，
+ *   本机日志证明复写命中的请求挂起 20-75s 后以 SSL Code=6 断连，我的页因此直接报网络错误）
+ *   getconf 净化：30 项字段覆写 + 11 项字段删除 + 关发现 tab
  *   开屏广告：清空 getsplashscreen 返回
  *   发现页：白名单过滤（保留书单/专栏/IP 专区）
+ *   发现信息流：删 Data.AdvItem（v3.4.0 只有复写覆盖，脚本侧空白）
  *   书架：悬浮广告/置顶运营位清空
- *   福利中心：mainPage/mainPageDialog 净化
- *   账户页：营销模块删除
+ *   福利中心：mainPage/mainPageDialog 净化，限时福利(SurpriseBenefit)保留，
+ *            按文案剥「广告任务/白泽宇航员装扮」任务条目
+ *   账户页：营销模块删除 + 同一条任务条目裁切
  *   每日导读：Items 清空
- *   广告列表：getadvlist/getadvlistbatch 已由复写整条终止
+ *   广告列表：getadvlist/getadvlistbatch 由 request 阶段 reject_dict 整条终止
  *   阅读积分：readpage 时长改满值 + 任务标记完成（v3.4.0 起挂 autoTask，不随净化默认开）
  *   弹窗/红点：popup/batchget、reddot/getdot 清空
  *   新手引导：freshman 系列清空
@@ -132,6 +135,20 @@ const CONFIG = {
   // 账户页删除营销模块
   AccountPageDelKeys: ["BenefitButtonList"],
 
+  // 激励类广告任务条目：文案命中就只剥这一条，不碰模块本身。
+  // 「做任务得白泽宇航员装扮」「完成1个广告任务得奖励」既不是独立模块名，
+  // 也不在 BaizeModule/TaskShowData 里——删模块够不着它们（用户 11-06 实测仍在）。
+  // 关键词必须是完整任务文案，不能只写「广告任务」：沙箱实测那样会连带剪掉
+  // 文案里恰好含这四字的书籍/书单条目（Data.BookList[*].Name）。
+  AdTaskKeywords: [
+    "广告任务得奖励", "完成1个广告任务", "完成一个广告任务",
+    "白泽宇航员装扮", "宇航员装扮",
+  ],
+  TitleKeys: [
+    "Title", "title", "TaskName", "taskName", "Name", "name",
+    "SubTitle", "Text", "text", "Desc", "desc", "ButtonText", "Tips",
+  ],
+
   // 广告白名单（保留激励相关广告位）
   AdWhitelist: ["reward", "video", "normaltask", "limitegg", "redpocket"],
 
@@ -164,16 +181,18 @@ function debugLog(msg) {
 }
 
 // ==========================================
-// 📌 锚定日志（v3.3.0 方向 A 试验期**常开**，不受 debugLog 门禁）
+// 📌 锚定日志（v3.5.0 复写层撤案后仍常开，不受 debugLog 门禁）
 // ==========================================
-// 目的只有一个：把「执行面」的事实钉进真机日志，供后续优化对账，判读口径：
-//   · 有 anchor phase=response 行        ⇒ 这条 URL 的 [Script] 绑定被调用了
-//   · 同 URL 有 [Rewrite] 规则却仍有此行 ⇒ 官方互斥没生效，或复写正则没命中
-//   · 此行消失                            ⇒ 复写命中并接管（净化改由引擎做）
+// v3.3.0 那段判读口径作废：当时要靠 anchor 区分「复写接管」与「脚本还在跑」，
+// 现在 response.json.* 整段删除，不存在接管。anchor 留着的理由是它给了另一条
+// 决定性证据——2026-11-06 14:34 日志里 `[起点锚点]` 零命中，而同一份日志有
+// `Finished execute http-response script:起点getconf净化`：脚本跑了，但 console.log
+// 不落主日志（绑定是 `with debug=${debugLog}`，debugLog 默认 false），所以净化是否
+// 改到字段只能靠 anchor + 真机开关对账，不能靠「日志里没有 anchor」判死。
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.4.0";
+const ANCHOR_BUILD = "3.5.0";
 
 function anchor(msg) {
   try { console.log("[起点锚点] b=" + ANCHOR_BUILD + " " + msg); } catch (e) {}
@@ -303,8 +322,8 @@ function anchorBody(response) {
     return;
   }
 
-  // ── I. 响应净化（v3.3.0 起为**回退层**：同 URL 的 [Rewrite] 复写命中时官方会抑制本脚本，
-  //     所以这一段还能跑到，就说明对应复写规则没命中或本就没有复写覆盖）──
+  // ── I. 响应净化（v3.5.0 起这是**唯一**的字段级净化层：response.json.* 复写整段撤下，
+  //     只有 request 阶段 reject_dict 的纯广告端点会在到达这里之前就被引擎终止）──
   if (typeof $response !== "undefined") {
     // 开屏广告
     if (path.includes("getsplashscreen")) { debugLog("处理开屏广告"); handleSplashScreen(E, $response); return; }
@@ -326,6 +345,8 @@ function anchorBody(response) {
     }
     // 发现页
     if (path.includes("getsimplediscover")) { debugLog("处理发现页"); handleDiscover(E, $response); return; }
+    // 发现信息流（v3.4.0 只有复写覆盖、脚本侧是空的；复写撤下后必须补回来）
+    if (path.includes("getdiscoverpagefeeds")) { debugLog("处理发现信息流"); handleDiscoverFeeds(E, $response); return; }
     // 书架悬浮广告
     if (path.includes("getHoverAdv")) { debugLog("处理书架悬浮广告"); handleHoverAdv(E, $response); return; }
     // 每日阅读积分
@@ -553,7 +574,12 @@ function handleSplashScreen(E, response) {
 function handleDeeplink(E, response) {
   const obj = safeJsonParse(response.body);
   if (!obj) { E.done(); return; }
-  if (obj.Data) obj.Data = {};
+  // 只清 ActionUrl：geturl 响应其余字段是冷启动业务配置，整段清 Data 会连带打掉
+  // （v3.4.0 复写口径同此，本函数此前比复写更激进）
+  if (obj.Data && obj.Data.ActionUrl !== undefined) {
+    obj.Data.ActionUrl = "";
+    anchor("deeplink ActionUrl 已清");
+  }
   respondJson(E, obj, "qidian-sanitize");
 }
 
@@ -572,7 +598,23 @@ function handleAccountPage(E, response) {
     CONFIG.AccountPageDelKeys.forEach(k => {
       if (obj.Data[k] !== undefined) { deleted.push(k); delete obj.Data[k]; }
     });
+    const pruned = [];
+    pruneAdTaskItems(obj.Data, pruned);
+    anchor("账户页 deleted=[" + deleted.join(",") + "] 任务条目=" + pruned.length +
+      (pruned.length ? " [" + pruned.join(" / ") + "]" : ""));
     if (deleted.length > 0) debugLog("账户页删除: " + deleted.join(", "));
+  }
+  respondJson(E, obj, "qidian-sanitize");
+}
+
+// 发现信息流：只有 AdvItem 是广告位，FeedsItems/HeadItems/FilterConf 是正文 feed，
+// 整条拒或整段清 Data 都会把发现页废掉（v3.4.0 复写也是这么写的）。
+function handleDiscoverFeeds(E, response) {
+  const obj = safeJsonParse(response.body);
+  if (!obj || !obj.Data) { E.done(); return; }
+  if (obj.Data.AdvItem !== undefined) {
+    delete obj.Data.AdvItem;
+    anchor("发现信息流 AdvItem 已删");
   }
   respondJson(E, obj, "qidian-sanitize");
 }
@@ -601,12 +643,45 @@ function handleMainPage(E, response) {
   if (data.DailyBenefitModule) data.DailyBenefitModule.RotateText = [];
   const REMOVE_KEYS = [
     "MemberExclusiveTaskModule", "PrivilegedTaskModule", "MoreRewardTab",
-    "SurpriseBenefit", "LastRewardItems", "IndexBannerTabs",
+    "LastRewardItems", "IndexBannerTabs",
     "BaizeModule", "TaskShowData", "UserRewardModule", "PopFrequency",
   ];
-  REMOVE_KEYS.forEach(k => { delete data[k]; });
+  // SurpriseBenefit 不再删：起点 Pro 源码自己标注它是「限时福利」，属真实奖励。
+  const removed = [];
+  REMOVE_KEYS.forEach(k => {
+    if (data[k] !== undefined) { removed.push(k); delete data[k]; }
+  });
+  const kept = data.SurpriseBenefit !== undefined ? ["SurpriseBenefit"] : [];
+  const pruned = [];
+  pruneAdTaskItems(data, pruned);
+  anchor("福利中心 removed=[" + removed.join(",") + "] kept=[" + kept.join(",") +
+    "] 任务条目=" + pruned.length + (pruned.length ? " [" + pruned.join(" / ") + "]" : ""));
   E.log("福利中心净化完成");
   respondJson(E, obj, "qidian-sanitize");
+}
+
+// 只剥数组里命中文案的那一条元素，不动模块、不动结构——「限时福利」和广告任务
+// 同页共存时，删模块会一起带走，按条目裁才不会误伤。深度限 6 层防成环。
+function pruneAdTaskItems(node, pruned, path, depth) {
+  const here = path === undefined ? "Data" : path;
+  const d = depth === undefined ? 0 : depth;
+  if (d > 6 || node === null || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (let i = node.length - 1; i >= 0; i--) {
+      const item = node[i];
+      const title = item && typeof item === "object" && !Array.isArray(item)
+        ? CONFIG.TitleKeys.map(k => (typeof item[k] === "string" ? item[k] : "")).join("|")
+        : "";
+      if (title && CONFIG.AdTaskKeywords.some(kw => title.includes(kw))) {
+        pruned.push(here + "[" + i + "]=" + title.slice(0, 40));
+        node.splice(i, 1);
+        continue;
+      }
+      pruneAdTaskItems(item, pruned, here + "[" + i + "]", d + 1);
+    }
+    return;
+  }
+  Object.keys(node).forEach(k => pruneAdTaskItems(node[k], pruned, here + "." + k, d + 1));
 }
 
 function handleDiscover(E, response) {

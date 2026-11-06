@@ -1,7 +1,7 @@
 #!name=知乎 · 去广告与精简
-#!desc=知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；商业化广告接口（commercial_api/ad-style-service）与推广/预置词走可选原生增强层（REJECT-DICT 空字典，200 状态码防重试）；核心问答/文章/个人页/图床/推送严格设防红线。
+#!desc=知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；同域商业化广告接口（commercial_api/ad-style-service）与推广/预置词默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 返回空字典防重试，零 JS 脚本）；核心问答/文章/个人页/图床/推送严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.0.1
+#!version=1.1.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihu/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a4/33/69/a43369ac-cef8-3356-4fae-fb504841e37d/AppIcon-0-0-1x_U007emarketing-0-7-0-sRGB-85-220.png/512x512bb.jpg
@@ -16,10 +16,31 @@
 # 红线（绝不进任何拦截组）：passport.zhihu.com 账号与安全登录网关 / api.zhihu.com 知乎核心业务 API，问答与文章主服务 / zhuanlan.zhihu.com 知乎专栏核心域名 / unpkg.zhihu.com 前端静态资源与组件加载 / mqtt.zhihu.com 实时消息推送长连接通道 / lc-push.zhihu.com 移动端离线/在线推送通道 / pic1.zhimg.com 静态图片与用户头像图床。
 # 知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。
 # 知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配。
-# 能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走可选增强层 REJECT-DICT（HTTP 200 + 空字典），保持零 JS 脚本。
-# 2026-11-06 v1.0.1：注释增强层新增 www 主机 commercial_api/ 整族 REJECT-DICT（zhihu web 端商业化接口，与 api 主机同族；Adblock4limbo 收录 /commercial_api/banners_v3/mobile_banner 实锤），默认注释、需证书。
+# 能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走 Loon 原生 [Rewrite] v2 引擎复写（reject_dict(200)，HTTP 200 + 空字典），保持零 JS 脚本。
+# v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 13 条 request 阶段 reject_dict(200) 规则 + 3 台解密主机的 QUIC 回退，解决注释态增强层在订阅插件下无法直接开启的问题。
 # 本文件由 tools/build-apps.py 从 src/apps/zhihu.json 生成，不要手改生成物。
 # ========================================================================
+
+
+# ========================================================================
+# 开关（源：src/apps/<slug>.json 的 enhance.arguments；改开关改源后 npm run build:apps）
+# ------------------------------------------------------------------------
+# 净化类默认开、自动化类默认关——finishWatch 重放、代领奖、广告时长 patch 都是
+# 「代打卡/伪造完成」，不默认生效，也不随净化开关一起被打开。
+# ========================================================================
+
+[Argument]
+
+cleanAds = switch,true,tag=同域商业化与推荐位去广告（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：commercial_api、ad-style-service、回答底部推广、瀑布流推荐、搜索预置词、直答引导与营销气泡在 request 阶段直接 reject_dict(200) 终止。需已安装并信任 Loon 证书。
+
+[Rule]
+
+# ------------------------------------------------------------
+# QUIC 回退（增强层配套 · 拒的是 HTTP/3 协议，回落 TCP 后正文不受影响）
+# MITM 只解密 TCP；App 走 HTTP/3 时下面这些主机的响应脚本会静默收不到。本组只对 PROTOCOL,QUIC 生效，同一主机的 TCP 请求（正文/书架/章节）零影响。
+AND,((DOMAIN-SUFFIX,api.zhihu.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,www.zhihu.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,zhida.zhihu.com),(PROTOCOL,QUIC)),REJECT
 
 [Host]
 
@@ -36,44 +57,71 @@ zhihu-web-analytics.zhihu.com = 127.0.0.1
 
 
 # ========================================================================
-# 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
+# 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 # ------------------------------------------------------------------------
-# 知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 13 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。
-# 启用步骤：①Loon 里装并信任证书 →
-#           ②取消 [MITM] 头与其 hostname 行的注释 →
-#           ③取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
-# 只对未做证书固定的 App 有效；银行/微信/米家这类做了证书固定，
-# MITM 直接失败甚至触发风控——那些插件不提供本层（红线）。
-# 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
-# 证据: https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx
-# 证据: https://kelee.one/
-# 证据: https://github.com/limbopro/Adblock4limbo/blob/main/Zhihu.conf
+# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——
+# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，
+# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。
+# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，
+# 解密不等于拦截。
 # ========================================================================
 
-# [MITM]
+[MITM]
+
+hostname = %APPEND% api.zhihu.com, www.zhihu.com, zhida.zhihu.com
+
+
+# ========================================================================
+# 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
+# ------------------------------------------------------------------------
+# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；
+# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，
+# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、
+# reject_* 自己终止响应，gzip 面整个消失。
+# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，
+# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。
+# ========================================================================
+
+[Rewrite]
+
 # ------------------------------------------------------------
-# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。
-# hostname = %APPEND% api.zhihu.com, www.zhihu.com, zhida.zhihu.com
-#
-# [Rule]
+# 请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口
 # ------------------------------------------------------------
-# 下列规则必须放在 [Rule] 段：取消本行（# [Rule]）与所需规则行的注释才生效。
-# QUIC 回退（与 MITM 配套）：MITM 只解密 TCP，App 走 HTTP/3 时下面的
-# URL-REGEX 会静默失效。
-# 取消这些行让对应域的 QUIC 直接拒绝、回落 TCP。
-# AND,((DOMAIN-SUFFIX,api.zhihu.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,www.zhihu.com),(PROTOCOL,QUIC)),REJECT
-# AND,((DOMAIN-SUFFIX,zhida.zhihu.com),(PROTOCOL,QUIC)),REJECT
-# URL-REGEX,^https://api\.zhihu\.com/ad-style-service/request,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/commercial_api/,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/commercial_api/banners_v\d+/app_float_corner,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/commercial_api/answer/\d+/bottom-v\d+,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/next-render\?id=\d+&type=answer,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/related_recommend/feed/waterfall,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/search/preset_words,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/search/related_queries/question/\d+,REJECT-DICT
-# URL-REGEX,^https://zhida\.zhihu\.com/ai_ingress/ai_chat/guidance,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/content-distribution-core/bubble/common/show,REJECT-DICT
-# URL-REGEX,^https://www\.zhihu\.com/api/v\d+/members/homepage_card,REJECT-DICT
-# URL-REGEX,^https://www\.zhihu\.com/commercial_api/,REJECT-DICT
-# URL-REGEX,^https://api\.zhihu\.com/people/homepage_entry_v\d+,REJECT-DICT
+# kill-ad-style: 知乎广告样式服务请求直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/ad-style-service\/request/ then reject_dict(200)
+
+# kill-api-commercial: api.zhihu.com 商业化广告接口整族（开屏/Banner/角标/回答底部）直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/commercial_api\// then reject_dict(200)
+
+# kill-float-corner: 右下角悬浮角标推广位直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/commercial_api\/banners_v\d+\/app_float_corner/ then reject_dict(200)
+
+# kill-answer-bottom: 回答底部商业推广位直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/commercial_api\/answer\/\d+\/bottom-v\d+/ then reject_dict(200)
+
+# kill-next-render: 回答下方穿插渲染卡片直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/next-render\?id=\d+&type=answer/ then reject_dict(200)
+
+# kill-related-waterfall: 相关推荐瀑布流直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/related_recommend\/feed\/waterfall/ then reject_dict(200)
+
+# kill-preset-words: 搜索框预置推广词直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/search\/preset_words/ then reject_dict(200)
+
+# kill-related-queries: 问题页相关搜索词推广直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/search\/related_queries\/question\/\d+/ then reject_dict(200)
+
+# kill-zhida-guidance: 知乎直答 AI 引导卡片直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/zhida\.zhihu\.com\/ai_ingress\/ai_chat\/guidance/ then reject_dict(200)
+
+# kill-bubble-show: 内容分发气泡提示直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/content-distribution-core\/bubble\/common\/show/ then reject_dict(200)
+
+# kill-homepage-card: 个人主页推广卡片直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/www\.zhihu\.com\/api\/v\d+\/members\/homepage_card/ then reject_dict(200)
+
+# kill-www-commercial: www.zhihu.com 网页/混合容器商业化广告接口整族直接返回 200 + 空字典（来源 https://github.com/limbopro/Adblock4limbo/blob/main/Zhihu.conf）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/www\.zhihu\.com\/commercial_api\// then reject_dict(200)
+
+# kill-homepage-entry: 个人中心推广入口模块直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/people\/homepage_entry_v\d+/ then reject_dict(200)

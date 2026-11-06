@@ -235,7 +235,7 @@ def arg_names(text):
 
 def candidates(line, section, args):
     """返回该有效行里需要被官方词表解释的 token 集合。"""
-    line = re.sub(r'"[^"]*"', '""', line)          # 引号内是用户可见值/URL 路径
+    line = re.sub(r'"(?:\\.|[^"\\])*"', '""', line)   # 引号内是用户可见值/URL 路径/jq 表达式（含 \" 转义）
     if line.startswith("#!"):
         return {"METADATA": {line.split("=", 1)[0].strip().lstrip("#!").lower()}}
     if section == "_全站":
@@ -260,7 +260,7 @@ def candidates(line, section, args):
         out = set(re.findall(r"([a-z_][a-z0-9_-]*)=", line))
         if "," in line:
             ctl = line.split(",", 1)[1].strip().split(",")[0].strip().lower()
-            if ctl not in ("", '""'):               # 引号已折叠成 ""，取值不是语法
+            if ctl not in ("", '""') and not DOMAINISH.match(ctl):  # 引号与纯数字默认值不是语法
                 out.add(ctl)
         return {"ARGUMENT": out}
     if section == "RULE":

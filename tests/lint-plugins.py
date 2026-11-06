@@ -2991,7 +2991,11 @@ def check_app_plugins():
                 # active 层允许 [MITM]/hostname/[Script] 绑定与 [Rewrite] 复写默认生效；
                 # 路径级黑洞必须仍是注释态。
                 script_set = {ln.strip() for ln in parsed.get("Script", [])}
-                sanctioned = script_set | {ln.strip() for ln in parsed.get("Rewrite", [])}
+                sanctioned = (
+                    script_set
+                    | {ln.strip() for ln in parsed.get("Rewrite", [])}
+                    | {ln.strip() for ln in parsed.get("Argument", [])}
+                )
                 for line in raw.splitlines():
                     s = line.strip()
                     if s in sanctioned:
@@ -3025,9 +3029,11 @@ def check_app_plugins():
                     f"apps/{slug}: README missing 净化复写（[Rewrite]）一节 "
                     "(run python3 tools/gen-app-readmes.py)"
                 )
-            for key in ("mitm_hosts", "url_regex", "sources"):
+            for key in ("mitm_hosts", "sources"):
                 if not enh.get(key):
                     errors.append(f"apps/{slug}: enhance.{key} empty")
+            if not (enh.get("rewrite") or enh.get("url_regex") or enh.get("rewrite_json")):
+                errors.append(f"apps/{slug}: enhance needs at least one of rewrite / url_regex / rewrite_json")
             for r in enh.get("url_regex", []):
                 parts = r.split(",")
                 if parts[0] != "URL-REGEX" or len(parts) != 3:
@@ -3113,7 +3119,7 @@ def check_app_plugins():
                     continue
                 want = (
                     f"# response if ${{url}} ~= /{escape_regex_slashes(item.get('url', ''))}/"
-                    f" then response.json.jq(`{item.get('jq', '')}`)"
+                    f" then response.json.jq({json.dumps(item.get('jq', ''), ensure_ascii=False)})"
                 )
                 if want not in raw_lines:
                     errors.append(
