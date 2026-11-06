@@ -160,7 +160,6 @@ miniapp-ad.cdn.bcebos.com = 127.0.0.1
 mobads-logs.baidu.com = 127.0.0.1
 mobads-pre-config.cdn.bcebos.com = 127.0.0.1
 nadvideo2.baidu.com = 127.0.0.1
-nsclick.baidu.com = 127.0.0.1
 sestat.baidu.com = 127.0.0.1
 spcode.baidu.com = 127.0.0.1
 ubmcmm.baidustatic.com = 127.0.0.1

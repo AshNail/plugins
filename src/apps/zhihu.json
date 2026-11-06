@@ -2,7 +2,7 @@
   "slug": "zhihu",
   "name": "知乎 · 去广告与精简",
   "desc": "知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；商业化广告接口（commercial_api/ad-style-service）与推广/预置词走可选原生增强层（REJECT-DICT 空字典，200 状态码防重试）；核心问答/文章/个人页/图床/推送严格设防红线。",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "date": "2026-11-06",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,知乎",
@@ -10,7 +10,8 @@
     "红线（绝不进任何拦截组）：passport.zhihu.com 账号与安全登录网关 / api.zhihu.com 知乎核心业务 API，问答与文章主服务 / zhuanlan.zhihu.com 知乎专栏核心域名 / unpkg.zhihu.com 前端静态资源与组件加载 / mqtt.zhihu.com 实时消息推送长连接通道 / lc-push.zhihu.com 移动端离线/在线推送通道 / pic1.zhimg.com 静态图片与用户头像图床。",
     "知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。",
     "知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配。",
-    "能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走可选增强层 REJECT-DICT（HTTP 200 + 空字典），保持零 JS 脚本。"
+    "能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走可选增强层 REJECT-DICT（HTTP 200 + 空字典），保持零 JS 脚本。",
+    "2026-11-06 v1.0.1：注释增强层新增 www 主机 commercial_api/ 整族 REJECT-DICT（zhihu web 端商业化接口，与 api 主机同族；Adblock4limbo 收录 /commercial_api/banners_v3/mobile_banner 实锤），默认注释、需证书。"
   ],
   "redlines": [
     {
@@ -90,10 +91,11 @@
     }
   ],
   "enhance": {
-    "intro": "知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 12 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。",
+    "intro": "知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 13 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。",
     "sources": [
       "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx",
-      "https://kelee.one/"
+      "https://kelee.one/",
+      "https://github.com/limbopro/Adblock4limbo/blob/main/Zhihu.conf"
     ],
     "mitm_hosts": [
       "api.zhihu.com",
@@ -112,6 +114,7 @@
       "URL-REGEX,^https://zhida\\.zhihu\\.com/ai_ingress/ai_chat/guidance,REJECT-DICT",
       "URL-REGEX,^https://api\\.zhihu\\.com/content-distribution-core/bubble/common/show,REJECT-DICT",
       "URL-REGEX,^https://www\\.zhihu\\.com/api/v\\d+/members/homepage_card,REJECT-DICT",
+      "URL-REGEX,^https://www\\.zhihu\\.com/commercial_api/,REJECT-DICT",
       "URL-REGEX,^https://api\\.zhihu\\.com/people/homepage_entry_v\\d+,REJECT-DICT"
     ]
   },

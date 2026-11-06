@@ -1,12 +1,12 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.19
+#!version=2.8.20
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06 10:45
+#!date=2026-11-06 11:40
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -443,7 +443,7 @@ ulog-sdk.gifshow.com = 127.0.0.1
 # ============================================================================
 # 百度广告 / 百青藤
 # ----------------------------------------------------------------------------
-# 百度联盟、百青藤 SDK、广告点击与素材 CDN。cpro.baidustatic.com 与 bcebos 配置域是共享 CDN 上的精确广告主机。2026-10 补 ecmb.bdimg.com（百度广告点击监测，7 源；bdimg 共享图床只列精确主机）。2026-10 再补 cm.baidu.com（广告点击监测）、entry.baidu.com（推广入口，EasyList China 精确到 /rp/home?），均 7 源。
+# 百度联盟、百青藤 SDK、广告点击与素材 CDN。cpro.baidustatic.com 与 bcebos 配置域是共享 CDN 上的精确广告主机。2026-10 补 ecmb.bdimg.com（百度广告点击监测，7 源；bdimg 共享图床只列精确主机）。2026-10 再补 cm.baidu.com（广告点击监测）、entry.baidu.com（推广入口，EasyList China 精确到 /rp/home?），均 7 源。 2026-11-06：nsclick.baidu.com 移入「百度系：证据冲突（默认关）」组（DD-AD 以百度云盘快速下载为由明示白名单，五家拦截清单仍判为百度联盟点击监测）。
 # ============================================================================
 mobads.baidu.com = 127.0.0.1
 *.mobads.baidu.com = 127.0.0.1
@@ -456,7 +456,6 @@ cpro.baidustatic.com = 127.0.0.1
 eclick.baidu.com = 127.0.0.1
 cb.baidu.com = 127.0.0.1
 cbjs.baidu.com = 127.0.0.1
-nsclick.baidu.com = 127.0.0.1
 union.baidu.com = 127.0.0.1
 hao123union.baidu.com = 127.0.0.1
 adscdn.baidu.com = 127.0.0.1
@@ -490,6 +489,15 @@ imgstat.baidu.com = 127.0.0.1
 sestat.baidu.com = 127.0.0.1
 click-bes.baidu.com = 127.0.0.1
 miniapp-ad.cdn.bcebos.com = 127.0.0.1
+
+# ============================================================================
+# 百度系：证据冲突（默认关）
+# ----------------------------------------------------------------------------
+# nsclick.baidu.com：anti-AD、AdRules、AdGuard-DNS、AWAvenue、大圣净化五家拦截清单均判为百度联盟/网盟点击监测域（按广告点击计数面收录）；afwfv/DD-AD 以「百度云盘##快速下载计数」为由明示白名单（@@||nsclick.baidu.com^，未带 $domain 限定）。拦错的代价是百度网盘「快速下载」按钮静默无反应；放过的代价只是广告点击计数上报失效。按红线不对称原则降为默认注释：不用百度网盘快速下载、且要断百度联盟点击面的用户自行启用。
+#
+# ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
+# ============================================================================
+# nsclick.baidu.com = 127.0.0.1
 
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
@@ -878,6 +886,24 @@ hzjizhun.com = 127.0.0.1
 hzjizhun.cn = 127.0.0.1
 *.hzjizhun.cn = 127.0.0.1
 adx.zuoyebang.com = 127.0.0.1
+ads.ishansong.com = 127.0.0.1
+ad.xiaotucc.com = 127.0.0.1
+dsp.fcbox.com = 127.0.0.1
+e.jparking.cn = 127.0.0.1
+saas-ad.cloudpnr.com = 127.0.0.1
+api-marketing.zhinengxiyifang.cn = 127.0.0.1
+new.xiongzhangad.com = 127.0.0.1
+ad.17173.com = 127.0.0.1
+market.178.com = 127.0.0.1
+tuiguang.178.com = 127.0.0.1
+img1.18183.com = 127.0.0.1
+afp.m1905.com = 127.0.0.1
+counter.m1905.com = 127.0.0.1
+ggcode.2345.com = 127.0.0.1
+tg.jifen.2345.com = 127.0.0.1
+eclick.360doc.com = 127.0.0.1
+360shopping.com.cn = 127.0.0.1
+*.360shopping.com.cn = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -2208,7 +2234,7 @@ magsrv.com = 127.0.0.1
 # ============================================================================
 # HTTPDNS / 私有 DoH 端点（防绕过）
 # ----------------------------------------------------------------------------
-# 覆盖阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。
+# 覆盖阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。 2026-11-06 补 httpdns-sdk.n.netease.com、httpdns.music.163.com 两条网易 HTTPDNS（anti-AD、hagezi-pro、fmz200 HTTPDNS 插件三源）；q2cdn 仍单源不收录。
 # ============================================================================
 httpdns.aliyuncs.com = 127.0.0.1
 *.httpdns.aliyuncs.com = 127.0.0.1
@@ -2281,6 +2307,8 @@ union-httpdns.gslb.yy.com = 127.0.0.1
 yuyin-httpdns.gslb.yy.com = 127.0.0.1
 httpdns-v6.gslb.yy.com = 127.0.0.1
 amdc.alipay.com.cn = 127.0.0.1
+httpdns-sdk.n.netease.com = 127.0.0.1
+httpdns.music.163.com = 127.0.0.1
 
 # ============================================================================
 # 公共 DoH 解析器（DNS 防泄漏）

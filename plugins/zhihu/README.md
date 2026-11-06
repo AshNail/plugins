@@ -2,7 +2,7 @@
 
 > 知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；商业化广告接口（commercial_api/ad-style-service）与推广/预置词走可选原生增强层（REJECT-DICT 空字典，200 状态码防重试）；核心问答/文章/个人页/图床/推送严格设防红线。
 
-版本 **1.0.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
+版本 **1.0.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）
 
 ## 安装
 
@@ -20,11 +20,11 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 
 ## 可选 MITM 增强层（默认整段注释，不装证书 = 永不生效）
 
-知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 12 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。
+知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 13 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。
 
 - 解密主机（`[MITM] hostname`，3 个，注释态，取消注释才解密）：`api.zhihu.com`, `www.zhihu.com`, `zhida.zhihu.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，3 条，注释态）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX` 会静默失效；启用本层时应连同这些行一起取消注释。
-- 路径级规则（`URL-REGEX`，12 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
+- 路径级规则（`URL-REGEX`，13 条，命中即拦对应广告接口/素材，不影响同域功能请求）：
 
 ```text
 # URL-REGEX,^https://api\.zhihu\.com/ad-style-service/request,REJECT-DICT
@@ -38,6 +38,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 # URL-REGEX,^https://zhida\.zhihu\.com/ai_ingress/ai_chat/guidance,REJECT-DICT
 # URL-REGEX,^https://api\.zhihu\.com/content-distribution-core/bubble/common/show,REJECT-DICT
 # URL-REGEX,^https://www\.zhihu\.com/api/v\d+/members/homepage_card,REJECT-DICT
+# URL-REGEX,^https://www\.zhihu\.com/commercial_api/,REJECT-DICT
 # URL-REGEX,^https://api\.zhihu\.com/people/homepage_entry_v\d+,REJECT-DICT
 ```
 
@@ -48,6 +49,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 证据：
 - https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx
 - https://kelee.one/
+- https://github.com/limbopro/Adblock4limbo/blob/main/Zhihu.conf
 
 ## 红线与天花板（如实）
 
@@ -55,6 +57,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 - 知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。
 - 知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配。
 - 能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走可选增强层 REJECT-DICT（HTTP 200 + 空字典），保持零 JS 脚本。
+- 2026-11-06 v1.0.1：注释增强层新增 www 主机 commercial_api/ 整族 REJECT-DICT（zhihu web 端商业化接口，与 api 主机同族；Adblock4limbo 收录 /commercial_api/banners_v3/mobile_banner 实锤），默认注释、需证书。
 
 ## 证据与验证
 

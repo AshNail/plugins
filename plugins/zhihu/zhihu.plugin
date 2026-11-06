@@ -1,7 +1,7 @@
 #!name=知乎 · 去广告与精简
 #!desc=知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；商业化广告接口（commercial_api/ad-style-service）与推广/预置词走可选原生增强层（REJECT-DICT 空字典，200 状态码防重试）；核心问答/文章/个人页/图床/推送严格设防红线。
 #!author=edy
-#!version=1.0.0
+#!version=1.0.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihu/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/d8/bc/a5d8bc1b-31d7-2510-4bf6-17b2b7858c97/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
@@ -17,6 +17,7 @@
 # 知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。
 # 知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配。
 # 能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走可选增强层 REJECT-DICT（HTTP 200 + 空字典），保持零 JS 脚本。
+# 2026-11-06 v1.0.1：注释增强层新增 www 主机 commercial_api/ 整族 REJECT-DICT（zhihu web 端商业化接口，与 api 主机同族；Adblock4limbo 收录 /commercial_api/banners_v3/mobile_banner 实锤），默认注释、需证书。
 # 本文件由 tools/build-apps.py 从 src/apps/zhihu.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -37,7 +38,7 @@ zhihu-web-analytics.zhihu.com = 127.0.0.1
 # ========================================================================
 # 可选 MITM 增强层（下面整段默认注释；不装证书 = 永不生效）
 # ------------------------------------------------------------------------
-# 知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 12 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。
+# 知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 13 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。
 # 启用步骤：①Loon 里装并信任证书 →
 #           ②取消 [MITM] 头与其 hostname 行的注释 →
 #           ③取消 [Rule] 头及需要的 QUIC 回退 / URL-REGEX 行。
@@ -46,6 +47,7 @@ zhihu-web-analytics.zhihu.com = 127.0.0.1
 # 本层每一条正则都来自公开可引用规则源，见下方证据；不凭空造路径。
 # 证据: https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx
 # 证据: https://kelee.one/
+# 证据: https://github.com/limbopro/Adblock4limbo/blob/main/Zhihu.conf
 # ========================================================================
 
 # [MITM]
@@ -73,4 +75,5 @@ zhihu-web-analytics.zhihu.com = 127.0.0.1
 # URL-REGEX,^https://zhida\.zhihu\.com/ai_ingress/ai_chat/guidance,REJECT-DICT
 # URL-REGEX,^https://api\.zhihu\.com/content-distribution-core/bubble/common/show,REJECT-DICT
 # URL-REGEX,^https://www\.zhihu\.com/api/v\d+/members/homepage_card,REJECT-DICT
+# URL-REGEX,^https://www\.zhihu\.com/commercial_api/,REJECT-DICT
 # URL-REGEX,^https://api\.zhihu\.com/people/homepage_entry_v\d+,REJECT-DICT

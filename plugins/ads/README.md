@@ -60,18 +60,18 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 15 组、1782 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
-| `[Host]` HTTPDNS 组 | 71 条：阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺等 | 是 |
+| `[Host]` 核心广告组 | 15 组、1799 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
+| `[Host]` HTTPDNS 组 | 73 条：阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺、网易等 | 是 |
 | `[Host]` 公共 DoH 组 | 48 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等海外厂商 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
 | `[Rule]` DOMAIN-WILDCARD 通配/家族层 | 41 条 glob（30 广告左标签 + 11 数字分片家族：`ads.*`、`adserver.*`、`ads[0-9]-normal*.zijieapi.com` 等）：按广告专用左标签拦截任意层级子域，弥补 `[Host]` 无法表达动态子域；规则行不带参数 | **否**（需 Loon 3.5.3(1008)+，当前仅 TF；默认注释，`[Host]` 已逐条覆盖这批域，取消注释只是把同族动态子域也一并拒绝） |
 | `[General]` | 3 条：公共 DNS + IP 形式 DoH + IP 形式 DoH3 (HTTP/3) | 是 |
-| `[Host]` 默认注释组 | 6 组、170 条展开规则，默认整组注释（归因、统计、国内公共 DoH、微博/平台观察组，以及命中按 App 插件红线的候选） | **否** |
+| `[Host]` 默认注释组 | 7 组、171 条展开规则，默认整组注释（归因、统计、国内公共 DoH、微博/平台观察组，百度争议域，以及命中按 App 插件红线的候选） | **否** |
 | `[Rule]` 可选组 | 44 条默认注释：27 条 HTTPDNS 网关 IP（`IP-CIDR/IP-CIDR6`，阿里内地+海外、腾讯、百度网关）+ 16 条公共 DNS 解析器 IP 直连阻断（Google/Cloudflare/Quad9/AdGuard 的 IPv4+IPv6，封 DNS 旁路）+ `PROTOCOL,STUN,REJECT`（防 WebRTC 泄露；会断语音/视频通话） | **否** |
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 可选层（默认注释）：52 条 URL-REGEX + 1 条 jq + `[MITM]` 名单（原 adfilter 并入） | **否**（默认整段注释；启用需 Loon 证书） |
 
-合计：**23 组、1901 条生效 Host（exact 1223 / wildcard 678）、170 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
+合计：**24 组、1920 条生效 Host（exact 1241 / wildcard 679）、171 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 默认注释组（可选开启）
 
@@ -181,7 +181,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（15 组 / 1782 条展开）
+### 核心广告组（15 组 / 1799 条展开）
 
 | 组 | 代表 |
 |---|---|
@@ -201,9 +201,9 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 | 弹窗/Popunder | PropellerAds、PopAds、PopCash、ExoClick、JuicyAds、TrafficJunky、Adsterra、HilltopAds、Clickadu、SpyLog 等 |
 | 原 adfilter：精确广告域（可莉迁移） | `ad.21cn.com`、`ad.k.21cn.com`、`admarket.21cn.com`、`adshows.21cn.com`、`m1.ad.10010.com`、`open-pixon.ads-pixiv.net`（adnxs 族已由「广告交易/SSP/DSP」组的 `=adnxs.com` 覆盖） |
 
-### HTTPDNS / 公共 DoH（119 条展开）
+### HTTPDNS / 公共 DoH（121 条展开）
 
-- HTTPDNS/私有 DoH：`*.httpdns.aliyuncs.com`（含阿里《启动接入点》`resolvers-*` 域名兜底）、`httpdns.aliyuncs.com`、`httpdns.qq.com`、`httpdns.baidu.com`、`httpdns.volcengineapi.com`、`httpdns.pro`、`dns.weixin.qq.com` 等 71 条。`dns.jd.com` 与 `resolver.msg.xiaomi.net` 不在这里——它们分别是 `src/apps/jd.json`（京东自建 HTTPDNS）与 `src/apps/mijia.json`（MIUI 推送/消息解析）声明的红线域，见上面「默认注释组（可选开启）」。
+- HTTPDNS/私有 DoH：`*.httpdns.aliyuncs.com`（含阿里《启动接入点》`resolvers-*` 域名兜底）、`httpdns.aliyuncs.com`、`httpdns.qq.com`、`httpdns.baidu.com`、`httpdns.volcengineapi.com`、`httpdns.pro`、`dns.weixin.qq.com`、`httpdns-sdk.n.netease.com`、`httpdns.music.163.com` 等 73 条。`dns.jd.com` 与 `resolver.msg.xiaomi.net` 不在这里——它们分别是 `src/apps/jd.json`（京东自建 HTTPDNS）与 `src/apps/mijia.json`（MIUI 推送/消息解析）声明的红线域，见上面「默认注释组（可选开启）」。
 - 公共 DoH：`dns.google`（+`dns64.dns.google`/`8888.google`）、`*.cloudflare-dns.com`（覆盖 security/family/dns64 等全部变体）+ `one.one.one.one` + `1dot1dot1dot1.cloudflare-dns.com`、Quad9 全变体（`dns[.9-12].quad9.net`+`dot.quad9.net`）、`dns[1-3].nextdns.io`+`doh.nextdns.io`、`doh.opendns.com`、AdGuard 新旧域（`=adguard-dns.com` → `adguard-dns.com`+`*.adguard-dns.com` 覆盖 dns/family/unfiltered 变体 + 旧 `dns.adguard.com`）、`doh.cleanbrowsing.org`、Mullvad DoT 族（`dns.mullvad.net`+`*.doh.mullvad.net`+`dot.mullvad.net`）、ControlD（`freedns.controld.com`+`dns.controld.com`+`doh.controld.com`）、`doh.brave.com`、dns.sb（`doh.dns.sb`/`dot.sb`）、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 共 48 条。阿里云/DNSPod/360 的国内入口见「默认注释组」——它们默认生效会把 Loon 自己的 DoH 打到 127.0.0.1。
 - 刻意不拦 `doh.dns.apple.com`，避免影响 iOS/macOS 系统解析。
 
@@ -455,6 +455,7 @@ HTTPDNS 是“绕过系统 DNS 的通道”，不是广告域本身。我们拦�
 
 ## 版本
 
+- **2.8.20**（2026-11-06）：**吸纳微信小程序与媒体广告联盟：落地 17 个纯净广告专域，网易 HTTPDNS 端点覆盖补全，证据冲突域降级默认关**。依据全网多源广告审计（严格排除 133 条 App 红线，0 命中）：①国内商业广告联盟与媒体投放（`cn_union`）补 17 域：微信小程序第三方广告服务（闪送小程序 `ads.ishansong.com`、小兔买菜 `ad.xiaotucc.com`、丰巢 DSP `dsp.fcbox.com`、捷停车 `e.jparking.cn`、汇付天下 SaaS `saas-ad.cloudpnr.com`、智能洗衣房 `api-marketing.zhinengxiyifang.cn`）、主流媒体与 PC/移动广告平台（熊掌广告联盟 `new.xiongzhangad.com`、17173 广告 `ad.17173.com`、178 推广 `market.178.com` / `tuiguang.178.com`、18183 广告素材 `img1.18183.com`、1905 电影网广告 AFP `afp.m1905.com` / `counter.m1905.com`、2345 广告联盟 `ggcode.2345.com` / `tg.jifen.2345.com`、360doc 个人图书馆广告 `eclick.360doc.com`、360 购物推广全域 `=360shopping.com.cn`）；②HTTPDNS 组（`httpdns`）补 2 域：网易 HTTPDNS 解析端点 `httpdns-sdk.n.netease.com`、`httpdns.music.163.com`；③证据冲突组（`baidu_disputed`）：将 `nsclick.baidu.com` 降级为默认注释（DD-AD 百度网盘快速下载白名单冲突，保护业务功能）。生效 Host 1901→1920（exact 1223→1241 / wildcard 678→679），展开 2071→2091；核心广告组 1782→1799。
 - **2.8.19**（2026-11-06）：**吸纳可莉（fkikelee）优质商业广告联盟矩阵：落地 37 个纯净广告专域与移动 SDK 变现网络（展开 +70）**。依据可莉（fkingikelee/fkikelee）仓库及全网多源广告审计（严格排除 124 条 App 红线，0 命中）：①百度商业广告（`baidu`）补 2 域：BES 广告点击服务 `click-bes.baidu.com`、百度智能小程序商业广告 CDN `miniapp-ad.cdn.bcebos.com`；②国内商业广告联盟与媒体投放（`cn_union`）补 22 域：推啊互动广告全域 `=tuia.cn`、变现猫导流服务 `guide2.bianxianmao.com`、云聚移动全域 `=hubcloud.com.cn`、网脉广告全域 `=adwangmai.com`、趣联广告全域 `=adfunlink.com`、信多广告全域 `=xinduoad.com`、芳林广告全域 `=fanglinad.com`、光芒移动全域 `=halomobi.com`、快易广告全域 `=kuaiyiad.com`、门塔移动全域 `=mentamob.com`、MobRTB 移动全域 `=mobrtb.com`、睿盟移动全域 `=richmob.cn`、RixEngine 程序化全域 `=rixengine.com`、上海凌野网络全域 `=shanghailingye.cn`、易凡广告全域 `=yfanads.com`、易微广告全域 `=yiweiads.com`、1RTB 全域 `=1rtb.com` / `=1rtb.net`、66Mobi 全域 `=66mobi.com`、基准网络全域 `=hzjizhun.com` / `=hzjizhun.cn`、作业帮商业广告交换 `adx.zuoyebang.com`；③全球移动广告 SDK 与聚合变现（`mobile_sdks`）补 13 域：拓比移动广告全域 `=tobidad.com` / `=tobidad.cn`、AdScope 广告聚合全域 `=adscope.cn` / `=adscope.com.cn` / `=ad-scope.com.cn` / `=adscope.xyz`、倍孜 Beizi 移动广告全域 `=beizi.online` / `=beizi.info`、聚量广告全域 `=adhub.com.cn`、MedPro 移动变现全域 `=medproad.com`、ADMobile 移动商业网络全域 `=admobile.mobi` / `=admobile.vip` / `=admobile.net.cn`。生效 Host 1831→1901（exact 1186→1223 / wildcard 645→678），展开 2001→2071；核心广告组 1712→1782。
 - **2.8.18**（2026-11-06）：**全网主流平台广告矩阵与金融移动生态深度绝育：落地 14 个高频商业广告专域（展开 +18）**。依据 14 份公开上游审计与平台指纹分析（0 命中 124 条 App 红线）：①国内联盟与大厂广告（`cn_union`）补 6 域：品友互动移动 DSP 投放网络 `=ipinyou.com.cn`（8 源）、平安银行与集团广告 CDN `adcdn.pingan.com`（4 源）、平安站点行为打点 `sdc.pingan.com`（3 源）、快手商业化广告开放接口 `open.e.kuaishou.com`（7 源）、京东广告联盟 `ads-union.jd.com`（6 源）、字节跳动巨量引擎数据分析与归因 `analytics.oceanengine.com`（6 源）；②手机厂商与生态广告（`oem`）补 5 域：小米生活服务与 O2O 广告 API `o2o.api.xiaomi.com`（8 源）、小米小爱/AI 商业化追踪 `tracker.ai.xiaomi.com`（6 源）、OPPO 广告推送/短信通道 `sms.ads.oppomobile.com`（4 源）、OPPO 广告点击跳转与归因 `ck.ads.oppomobile.com`（4 源）、vivo 广告投放端点 `bhwkju.vivo.com`（4 源）；③全球广告技术与程序化（`adtech`）补 3 域：CitrusAd 全球主流零售媒体与展示广告 `=citrusad.net`（7 源）、CyberAgent AMoAd 移动广告网络 `=amoad.com`（7 源）、Blockthrough 反广告拦截绕过服务 `=btloader.com`（7 源）。生效 Host 1813→1831（exact 1172→1186 / wildcard 641→645），展开 1983→2001；核心广告组 1694→1712。
 - **2.8.17**（2026-11-06）：**中国银联与主流商业银行营销体系深度覆盖：落地 4 个金融营销广告专域**。依据 14 份公开上游审计与平台指纹分析（0 命中 124 条 App 红线）：国内媒体与商业联盟组（`cn_union`）补 4 域：中国银联自营商业广告域名 `ads.cup.com.cn`（3 源）、中国银联国际营销分析系统 `marketing.unionpayintl.com`（2 源）、招商银行信用卡自建广告投放域 `mbads.paas.cmbchina.com`（1 源）、建设银行建信金科全行业销追踪与投放系统 `marketing.ccbtechnology.com`（4 源）。生效 Host 1809→1813（exact 1168→1172 / wildcard 641 不变），展开 1979→1983；核心广告组 1690→1694。
