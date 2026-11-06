@@ -1,6 +1,6 @@
 {
-  "version": "2.8.15",
-  "updated": "2026-11-06 00:35",
+  "version": "2.8.16",
+  "updated": "2026-11-06 10:15",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "openUrl": "https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.15",
+      "version": "2.8.16",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -354,7 +354,9 @@
             "mtrace.qq.com",
             "btrace.qq.com",
             "mdevstat.qqlive.qq.com",
-            "wit.qq.com"
+            "wit.qq.com",
+            "adnet.qq.com",
+            "dmplog.qq.com"
           ]
         },
         {
@@ -425,7 +427,11 @@
             "duiwai.baidu.com",
             "spcode.baidu.com",
             "iwanad.baidu.com",
-            "baifen.music.baidu.com"
+            "baifen.music.baidu.com",
+            "ada.baidu.com",
+            "ad.player.baidu.com",
+            "imgstat.baidu.com",
+            "sestat.baidu.com"
           ]
         },
         {
@@ -663,7 +669,34 @@
             "pcmx.autohome.com.cn",
             "ax.ifeng.com",
             "deliver.ifeng.com",
-            "dotcounter.douyutv.com"
+            "dotcounter.douyutv.com",
+            "lianmeng.360.cn",
+            "api.so.lianmeng.360.cn",
+            "stat.lianmeng.360.cn",
+            "huid.ad.360.cn",
+            "=ads360.cn",
+            "ad2.sina.com.cn",
+            "ad3.sina.com.cn",
+            "dcads.sina.com.cn",
+            "sax8.sina.com.cn",
+            "adm.leju.sina.com.cn",
+            "agn.aty.sohu.com",
+            "vm.aty.sohu.com",
+            "vstat.my.tv.sohu.com",
+            "brand.sogou.com",
+            "dsp.brand.sogou.com",
+            "image.p4p.sogou.com",
+            "erebor.douban.com",
+            "ad.doubanio.com",
+            "api-ad-adapter.wps.com",
+            "adsp.xunlei.com",
+            "saad.ms.zhangyue.net",
+            "smad.ms.zhangyue.net",
+            "ad.zhangyue.com",
+            "adui.tg.meitu.com",
+            "ma-adx.ctrip.com",
+            "udiab1.jianshu.com",
+            "apilog-web.acfun.cn"
           ]
         },
         {
@@ -925,7 +958,11 @@
             "cdn.iads.unitychina.cn",
             "=tradplusad.com",
             "=tianmu.mobi",
-            "=admobile.top"
+            "=admobile.top",
+            "adexp.chinaliftoff.io",
+            "click.chinaliftoff.io",
+            "cdn.chinaliftoff-creatives.io",
+            "pubnative.info"
           ]
         },
         {

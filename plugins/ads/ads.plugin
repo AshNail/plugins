@@ -1,12 +1,12 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.15
+#!version=2.8.16
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06 00:35
+#!date=2026-11-06 10:15
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -403,6 +403,8 @@ mtrace.qq.com = 127.0.0.1
 btrace.qq.com = 127.0.0.1
 mdevstat.qqlive.qq.com = 127.0.0.1
 wit.qq.com = 127.0.0.1
+adnet.qq.com = 127.0.0.1
+dmplog.qq.com = 127.0.0.1
 
 # ============================================================================
 # 快手联盟 / 快手广告
@@ -482,6 +484,10 @@ duiwai.baidu.com = 127.0.0.1
 spcode.baidu.com = 127.0.0.1
 iwanad.baidu.com = 127.0.0.1
 baifen.music.baidu.com = 127.0.0.1
+ada.baidu.com = 127.0.0.1
+ad.player.baidu.com = 127.0.0.1
+imgstat.baidu.com = 127.0.0.1
+sestat.baidu.com = 127.0.0.1
 
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
@@ -789,6 +795,34 @@ pcmx.autohome.com.cn = 127.0.0.1
 ax.ifeng.com = 127.0.0.1
 deliver.ifeng.com = 127.0.0.1
 dotcounter.douyutv.com = 127.0.0.1
+lianmeng.360.cn = 127.0.0.1
+api.so.lianmeng.360.cn = 127.0.0.1
+stat.lianmeng.360.cn = 127.0.0.1
+huid.ad.360.cn = 127.0.0.1
+ads360.cn = 127.0.0.1
+*.ads360.cn = 127.0.0.1
+ad2.sina.com.cn = 127.0.0.1
+ad3.sina.com.cn = 127.0.0.1
+dcads.sina.com.cn = 127.0.0.1
+sax8.sina.com.cn = 127.0.0.1
+adm.leju.sina.com.cn = 127.0.0.1
+agn.aty.sohu.com = 127.0.0.1
+vm.aty.sohu.com = 127.0.0.1
+vstat.my.tv.sohu.com = 127.0.0.1
+brand.sogou.com = 127.0.0.1
+dsp.brand.sogou.com = 127.0.0.1
+image.p4p.sogou.com = 127.0.0.1
+erebor.douban.com = 127.0.0.1
+ad.doubanio.com = 127.0.0.1
+api-ad-adapter.wps.com = 127.0.0.1
+adsp.xunlei.com = 127.0.0.1
+saad.ms.zhangyue.net = 127.0.0.1
+smad.ms.zhangyue.net = 127.0.0.1
+ad.zhangyue.com = 127.0.0.1
+adui.tg.meitu.com = 127.0.0.1
+ma-adx.ctrip.com = 127.0.0.1
+udiab1.jianshu.com = 127.0.0.1
+apilog-web.acfun.cn = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -1146,6 +1180,10 @@ tianmu.mobi = 127.0.0.1
 *.tianmu.mobi = 127.0.0.1
 admobile.top = 127.0.0.1
 *.admobile.top = 127.0.0.1
+adexp.chinaliftoff.io = 127.0.0.1
+click.chinaliftoff.io = 127.0.0.1
+cdn.chinaliftoff-creatives.io = 127.0.0.1
+pubnative.info = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据

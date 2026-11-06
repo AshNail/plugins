@@ -24,7 +24,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 | 阅读热源·腾讯侧纯上报域 | A | 启用 | REA 热源考古(QDReader 5.9.482 字面 URL),四段家系全收纯上报/遥测端点:腾讯系(YW 日志 unitelogreport/ptunitelogreport/applog/ywlog/path.book+ptbooksp0309+sparta html5、合规 compliance.tdos=PMonitor、Beacon otheve/oth.eve.mdt/oth.str.mdt/ios.rqd、Bugly 两后缀整族(rmonitor 双域)+buglycloud.sgp、h.trace/kv、htrace.wetvinfo=Beacon 海外通道);阅文系(ys.yuewen.com=听书 TTS 报);起点系(monitor.if.qidian.com=NetMonitor R1/R2、path.qidian.com=qdclientlogreportV2);生态 SDK 网关(AMS 广告日志 zhiyan.tencent-cloud.net/collect、liteav vodreport.qcloud.com、极光 stats.jpush.cn、极验 monitor.geetest.com、移动一键登录 log2.cmpassport.com、天翼 collect.ux.21cn.com、支付宝 loggw-exsdk.alipay.com)。全部无推送/无正文/无支付交易 API。 |
 | 起点自家埋点（B 级,默认关） | B | 默认关闭 | tongji/dwtrack.qidian.com=站内统计(anti-AD 收录,拦了只断自家分析);o.if.qidian.com=anti-AD 独家拦但 if 命名空间同时承载内容 API,有误伤可能——先真机测试;qdp.qidian.com=起点推送,拦了断通知。log.1ting.com=听书线日志,无清单背书。monitor.if.qidian.com 与 path.qidian.com 已移入 heat_reporting 默认生效;qdp/upush 属推送通道进本组默认关。 |
 | 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 51 域 / 0 规则。 |
-| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 16 域 / 0 规则。 |
+| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 18 域 / 0 规则。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 3 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
@@ -110,4 +110,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/qidian.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 123 条，[Rule] 6 条。
+统计：精确/通配黑洞 125 条，[Rule] 6 条。
