@@ -1,15 +1,16 @@
 {
   "slug": "qidian",
   "name": "起点读书 · 看书激励助手",
-  "desc": "起点读书看书激励助手 v3.3.0:净化默认开、自动化默认关。净化(cleanAds 默认开)改由 Loon 引擎复写承担——[Rewrite] 层:纯广告端点在 request 阶段 reject_dict(200) 整条终止(开屏/书架运营位/批量弹窗/推送弹窗/播放条/热词/章末/青少年/新手引导/猜你喜欢/活动列表/推送消息),getconf 走 30 项覆写 + 11 项删除 + 发现 tab,混业务端点只按字段剥(每日导读/账户页/悬浮位/福利中心/红点/兑换页/Deeplink)。为什么换引擎:起点 Argus 响应带 Content-Encoding: gzip,脚本读响应体依赖 $utils.ungzip(仅 Build ≥ 988 提供),低版本静默 passthrough ⇒ 净化零生效;复写由引擎解压,gzip 面整个消失。自动化(autoTask 默认关):Token 捕获 → cron 自动签到+抽奖 → finishWatch 重放 9/9 与 3/3 → receiveTaskReward 领奖 → 广告 SDK 时长 patch 成 1 秒。启用层写在 src/apps/qidian.json 里由 tools/build-apps.py 生成、lint 逐行对账——不再手改生成物(v4.0.0 的启用层就是一次构建被覆盖回注释基线的)。前置:本层 [MITM] 默认生效,Loon 须已安装并信任证书,否则起点 API 的 TLS 会被客户端掐断;autoTask 依赖当天打开过起点 App 刷新 Token。",
-  "version": "3.3.0",
+  "desc": "起点读书看书激励助手 v3.4.0:净化默认开、自动化默认关。净化(cleanAds 默认开)全部由 Loon 引擎复写承担——[Rewrite] 层:纯广告端点在 request 阶段 reject_dict(200) 整条终止(开屏/书架运营位/广告位批量拉取/批量弹窗/推送弹窗/播放条/热词/章末/青少年/新手引导/猜你喜欢/活动列表/推送消息),getconf 走 30 项覆写 + 11 项删除 + 发现 tab,混业务端点只按字段剥(每日导读/账户页/悬浮位/福利中心/红点/兑换页/发现信息流 AdvItem/发现页 tab 白名单/Deeplink)。为什么换引擎:起点 Argus 响应带 Content-Encoding: gzip,脚本读响应体依赖 $utils.ungzip(仅 Build ≥ 988 提供),低版本静默 passthrough ⇒ 净化零生效;复写由引擎解压,gzip 面整个消失。自动化(autoTask 默认关):Token 捕获 → cron 自动签到+抽奖 → finishWatch 重放 9/9 与 3/3 → receiveTaskReward 领奖 → 每日阅读积分伪造 → 广告 SDK 时长 patch 成 1 秒。启用层写在 src/apps/qidian.json 里由 tools/build-apps.py 生成、lint 逐行对账——不再手改生成物(v4.0.0 的启用层就是一次构建被覆盖回注释基线的)。前置:本层 [MITM] 默认生效,Loon 须已安装并信任证书,否则起点 API 的 TLS 会被客户端掐断;autoTask 依赖当天打开过起点 App 刷新 Token。",
+  "version": "3.4.0",
   "date": "2026-11-06",
   "loonVersion": "3.5.1(983)",
   "tag": "看书,激励,起点读书,阅文,纯净阅读,自动签到,激励任务,自动领奖,响应净化",
   "comment": [
-    "v3.3.0 净化层主力换引擎(方向 A):净化从 [Script] 迁到 Loon 原生 [Rewrite]。根因不是规则写错,而是执行面——本机 Loon HAR(2026-11-06 10:28,69MB)解码实证起点 Argus 响应带 Content-Encoding: gzip 的正是净化目标端点(getsplashscreen Data.List=3 / getaccountpage BenefitButtonList=6 / getTopOperation Items=3 / getdailyrecommend Items=30 / getsimplediscover Items=20 / recommendBook=10 / getclassicbookinfo=2 / getconf),而 src/qidian/auto-task.js 的 safeJsonParse 遇到 gzip 只能走 $utils.ungzip,该 API 仅 Build ≥ 988 提供 ⇒ 解析返回 null ⇒ 处置函数直接空 $done() 透传,净化静默零生效。[Rewrite] 的 response.json.* 由引擎自己解压、reject_* 由引擎自己终止响应,这条链彻底消失(可莉 QiDian_remove_ads.lpx 全引擎侧所以在用户机上有效)。",
-    "v3.3.0 分层与探针纪律:getconf 三条批处理(30 覆写 / 11 删除 / 发现 tab) + 纯广告端点 request 阶段 reject_dict(200) + 混业务端点字段级 replace/delete/jq。仍留在 [Script] 的只有:Token 捕获(request 阶段,读 header 不碰 body ⇒ gzip 免疫)、秒播/重放/领奖(autoTask 默认关)、readtime/readpage 与 getsimplediscover(需要按 KeyName 白名单过滤/遍历 TaskList,jq 表达不了,登记为缺口)。video/adv/reportDialog 刻意不进整条终止:脚本侧 AdWhitelist 含 \"video\" 关键词,历史上它就豁免这条,搬进引擎就变成新增拦截面 ⇒ 保守不改。adv/getadvlistbatch 同理:Data 是「位置名→数组」的动态键,引擎无法形状保持地清空每个键,且当期 HAR 各位置全为空列表 ⇒ 只登记不采纳。",
-    "v3.3.0 探针:官方口径「Response Body Rewrite 命中 → Response Script 不执行;Request 阶段终止响应 → 两侧脚本均不执行」,所以 getconf-clean / deep-clean 两条绑定保留为探针(probe=true)——锚定日志里它们的 Trigger 行「出现」= 复写没命中,「消失」= 复写命中并接管;再由 capture-conf-checkin(request 阶段)有没有跑判断 TLS 到底解没解密。生成器对「复写与脚本同 URL」默认判错,只有显式 probe=true 才放行。",
+    "v3.3.0 净化层主力换引擎(方向 A):净化从 [Script] 迁到 Loon 原生 [Rewrite]。根因不是规则写错,而是执行面——本机 Loon HAR(2026-11-06 10:28,69MB)解码实证起点 Argus 响应带 Content-Encoding: gzip 的正是净化目标端点(getsplashscreen Data.List=3 / getaccountpage BenefitButtonList=6 / getTopOperation Items=3 / getdailyrecommend Items=30 / getsimplediscover Items=20 / recommendBook=10 / getclassicbookinfo=2 / getconf),而 src/qidian/auto-task.js 的 safeJsonParse 遇到 gzip 只能走 $utils.ungzip,该 API 仅 Build ≥ 988 提供 ⇒ 解析返回 null ⇒ 处置函数直接空 $done() 透传,净化静默零生效。[Rewrite] 的 response.json.* 由引擎自己解压、reject_* 由引擎自己终止响应,这条链彻底消失(可莉 QiDian_remove_ads.lpx 全引擎侧所以在用户机上有效)。真机复验(2026-11-06 13:09 日志):装载行 `Load 1971 rules. 256 scripts. 74 rewrites.`——rewrite 数从 47 涨到 74,多出的 27 条正是本层;起点深度净化 match 18 / Trigger 8,起点getconf净化 match 2 / Trigger 0,差值就是被复写接管的请求;同连接有 `Match MITM host:magev6.if.qidian.com` 说明真解密了。用户口径「当前有效了」。",
+    "v3.4.0 收口残留面(同一份日志的 URL 普查给的方向):① adv/getadvlist 族整族进复写 request reject_dict(200)——脚本侧 handleAdListBatch 的豁免只看 URL 有没有 AdWhitelist 关键词(reward/video/normaltask/limitegg/redpocket),HAR 8 样本 + 日志 12 次请求 positions 全是 bookstore/usercenter/checkin/comment 类,零命中 ⇒ 脚本本来就是整个清空 Data,引擎终止等价且少一次回包;② discovery/getdiscoverpagefeeds 补字段级复写(删 Data.AdvItem=3,保留 FeedsItems/HeadItems/FilterConf)——这端点此前既没复写也不在脚本处置表里,是 v3.3.0 的真缺口;③ user/getsimplediscover 白名单用 response.json.jq + \\\" 转义引号搬进引擎(lpx 已证明这写法能被 Loon 吃下),HAR 里 20 项只留 3 项;④ readtime/readpage 从 cleanAds 探针里摘出来另挂 autoTask 绑定——它改的是阅读积分与任务完成态,属激励伪造不是去广告,默认关才是诚实的;⑤ 删掉注释态 URL-REGEX 里的 /argus/api/v[0-9]/audio/ 整族黑洞:它和默认生效的 [Host] TTS 黑洞(tts.yuewen.com / tts-qidian.xf-yun.com / tts.webnovel.com / tingbook.com 等)是同一目标写两层——而这条路径规则落在正文主机 magev6/h5 上,按族拒会把书本详情页的听书入口与音色列表(audio/gettonegroup?bookId=0,本机日志实测)一起打掉,留下的是报错而不是「听书不可用」。听书播放按 v2.1.0 设计仍由 [Host] 层阻断,这一条没动。deep-clean 探针的 pattern 随之收窄,剩下的 Trigger 只该是 reportDialog 与 lottery(passthrough)。",
+    "v3.3.0 分层与探针纪律:getconf 三条批处理(30 覆写 / 11 删除 / 发现 tab) + 纯广告端点 request 阶段 reject_dict(200) + 混业务端点字段级 replace/delete/jq。仍留在 [Script] 净化开关下的只有 video/adv/reportDialog 与 checkin/lottery 两个 passthrough 残留(lottery 在脚本里本就是空转,reportDialog 因为脚本侧 AdWhitelist 含 \"video\" 关键词历史上就豁免它,搬进引擎就变成新增拦截面 ⇒ 保守不改);readtime/readpage 归 autoTask。生成器对「复写与脚本同 URL」默认判错,只有显式 probe=true 才放行。",
+    "v3.3.0 探针:官方口径「Response Body Rewrite 命中 → Response Script 不执行;Request 阶段终止响应 → 两侧脚本均不执行」,所以 getconf-clean / deep-clean 两条绑定保留为探针(probe=true)——锚定日志里它们的 Trigger 行「出现」= 复写没命中,「消失」= 复写命中并接管;再由 capture-conf-checkin(request 阶段)有没有跑判断 TLS 到底解没解密。注意:抑制是按 URL 命中判定的,jq 表达式即便执行报错也照样算命中 ⇒ 探针给不了「复写对不对」的答案,只给「有没有接管」;所以新搬的 getsimplediscover 要在真机上看发现页 tab 数量,而不是看日志。判读法:`match http-response script:X` 有行而同连接没有 `Trigger http-response(body) script:X` = 该请求被复写接管。",
     "v3.2.0 启用层回到源里:MITM/Script/Argument 三层由 enhance.active=true 默认启用(净化 cleanAds=true、自动化 autoTask=false),整段生成、逐行对账。v4.0.0 曾把同一层手工开在生成物上,被下一次 build:apps 覆盖回注释基线——生成物不是真源,源才是。",
     "真机取证(2026-11-05 20:25:48 Loon 日志,iPhone18,4 / iOS 27.2 / Loon 3.5.3(1014)):注释态增强层=零生效。magev6.if.qidian.com 22 次、h5.if.qidian.com 4 次连接全部 GEOIP,CN DIRECT 且 url:(null),auto-task.min.js 一次都没执行;整份日志只有 1 条请求进入明文(Apple 地理配置)。同期 [Host]/[Rule] 黑洞层正常命中(unitelogreport.reader.qq.com / rmonitor.qq.com / path.book.qq.com / stats.jpush.cn 在 DNS 阶段 REJECT),红线侧 pay6.yuewen.com / fockrt.yuewen.com / cococdn.qidian.com / readx-her-* 全部 DIRECT——充值与正文没被误伤。",
     "v3.1.0 优化:聚焦看书+激励核心功能。移除通知推送层(Bark/Telegram/PushPlus)、移除提醒层(sign-reminder/welfare-reminder)、精简发现页白名单(保留书单/专栏/IP专区)、精简广告白名单(只保留激励相关)。",
@@ -423,6 +424,28 @@
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
       },
       {
+        "id": "kill-adv-family",
+        "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "adv/getadvlist",
+        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/adv/getadvlist(batch)?(\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "广告位拉取整族（getadvlist 与 getadvlistbatch 一条覆盖）：脚本侧 handleAdListBatch 的豁免只看 URL 里有没有 AdWhitelist 关键词，本机 HAR 8 样本 + 日志 12 次请求的 positions 全是 bookstore/usercenter/checkin/comment 类，零命中关键词 ⇒ 脚本本来就是把 Data 整个清空，引擎直接终止等价且少走一次回包",
+        "source": "本机 HAR 440 + 日志 11-06 13:09 + kelee QiDian_remove_ads.lpx adv/ 前缀 + 仓库注释态 URL-REGEX 基线"
+      },
+      {
+        "id": "clean-discoverfeeds",
+        "group": "字段级净化（混业务端点）：只剥广告字段，保留 Argus 包络，不整条拒",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "discovery/getdiscoverpagefeeds",
+        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/discovery/getdiscoverpagefeeds(\\?|$)",
+        "action": "response.json.delete(\"Data.AdvItem\")",
+        "note": "发现信息流：只删 AdvItem（HAR 实证 Data={AdvItem:3, FeedsItems:10, HeadItems:10, FilterConf:6, BroadCasts:0, FeedGroup, FeedsLastPos}——其余是正文 feed，整条拒就把发现页废了）",
+        "source": "本机 HAR 440（该端点此前既无复写也不在脚本处置表里，是 v3.3.0 的真缺口）"
+      },
+      {
         "id": "conf-flags",
         "group": "客户端配置净化（response.json.replace/delete）：getconf 与脚本处置表逐项对齐",
         "stage": "response",
@@ -553,6 +576,17 @@
         "action": "response.json.delete(\"Data.Goods\")",
         "note": "签到兑换页：只删 Goods 商品位，保留页面其余结构",
         "source": "起点 Pro 2026-09-30 等价化集"
+      },
+      {
+        "id": "clean-simplediscover",
+        "group": "字段级净化（混业务端点）：只剥广告字段，保留 Argus 包络，不整条拒",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "user/getsimplediscover",
+        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/user/getsimplediscover(\\?|$)",
+        "action": "response.json.jq(\".Data.Items |= map(select(.KeyName == \\\"NEW_ZHUANQU\\\" or .KeyName == \\\"NEW_ZHUANLAN\\\" or .KeyName == \\\"NEW_SHUDAN\\\"))\")",
+        "note": "发现页 tab 白名单：只留 IP 专区/专栏/书单（HAR 实证 20 项，白名单 3 项）。jq 字符串里的引号按 lpx 口径写成 \\\" 转义——这是全仓第一条带转义引号的复写，真机若发现页仍是 20 项就是引擎没吃下转义，回退动作=删掉这一条",
+        "source": "kelee SodaMusic_remove_ads.lpx 的 jq 转义写法 + 起点 Pro DiscoverKeepKeys 等价化"
       }
     ],
     "bindings": [
@@ -651,7 +685,7 @@
       {
         "id": "deep-clean",
         "kind": "response",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/adv/getadvlistbatch|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/user/getsimplediscover|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/readtime/readpage|v[0-9]+/user/getaccountpage)",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/user/getaccountpage)",
         "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "cleanAds",
@@ -660,7 +694,20 @@
         "timeout": 10,
         "probe": true,
         "tag": "起点深度净化",
-        "note": "探针 + 残留面（v3.3.0 起大端点族已由 [Rewrite] 接管）：抑制是按 URL 生效的，所以锚定日志里只剩 adv/getadvlistbatch、video/adv/reportDialog、user/getsimplediscover、readtime/readpage、checkin/lottery 还会 Trigger（lottery 在脚本里本来就是 passthrough 空转）——这五处是 jq 表达不了或刻意不整条拒的缺口；其它端点若仍出现 Trigger，就说明对应复写规则没命中"
+        "note": "探针 + 残留面（v3.4.0 起 adv/getadvlist 族、user/getsimplediscover、discovery/getdiscoverpagefeeds 也已进复写，readtime/readpage 挪去 autoTask 绑定）：本机日志 13:09 实测本绑定 match 18 / Trigger 8，差值 10 正好等于日志里出现的 10 次已被复写覆盖的请求（getconf 之外的 getHoverAdv、dailyrecommend、reddot×3、deeplink、mainPage、checkinexchangepage、getaccountpage）——抑制按 URL 生效，Trigger 行剩下的是 video/adv/reportDialog 与 checkin/lottery（脚本里本就是 passthrough）；其它端点若重新出现 Trigger，就说明对应复写规则没命中"
+      },
+      {
+        "id": "readtime-patch",
+        "kind": "response",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/readtime/readpage",
+        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "script": "auto-task",
+        "switch": "autoTask",
+        "args": ["debugLog", "autoTask"],
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点每日阅读积分",
+        "note": "readpage 响应把 TodayReadTime 改满值 + TaskList 全部标完成——这是激励完成伪造，不是去广告，v3.4.0 起从 cleanAds 探针里摘出来挂 autoTask（默认关）。HAR 440 里该端点零样本，字段名沿用脚本侧 ReadInfo/TaskModule"
       },
       {
         "id": "cron-sign-in",
@@ -693,7 +740,6 @@
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/bookshelf/getTopOperation,REJECT-DICT",
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/client/iosad,REJECT-DICT",
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/dailyrecommend/getdailyrecommend,REJECT-DICT",
-      "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/audio/,REJECT-DICT",
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/Comic/,REJECT-DICT",
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/circle/getBookMyPiaVideoList,REJECT-DICT",
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/adv/getadvlist,REJECT-DICT",

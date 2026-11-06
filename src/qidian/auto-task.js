@@ -1,5 +1,5 @@
 /**
- * 起点读书 · 看书激励助手 v3.1.0
+ * 起点读书 · 看书激励助手 v3.4.0
  *
  * 核心功能（看书+激励）：
  *
@@ -9,16 +9,16 @@
  *   激励任务重放：拦截 finishWatch，重放 9/9 和 3/3
  *   自动领奖：拦截 receiveTaskReward + 尝试 6 个领奖端点
  *
- * 【响应净化层】
+ * 【响应净化层】（v3.4.0 起本层是**回退层**：同 URL 的 [Rewrite] 引擎复写默认生效并抑制本脚本）
  *   getconf 净化：30 项字段覆写 + 10 项字段删除（关广告/追踪/弹窗）
  *   开屏广告：清空 getsplashscreen 返回
- *   发现页：白名单过滤（保留书单/专栏/IP 专区/点点圈）
+ *   发现页：白名单过滤（保留书单/专栏/IP 专区）
  *   书架：悬浮广告/置顶运营位清空
  *   福利中心：mainPage/mainPageDialog 净化
  *   账户页：营销模块删除
  *   每日导读：Items 清空
- *   广告列表：getadvlistbatch 批量清空
- *   阅读积分：readpage 时长改满值 + 任务标记完成
+ *   广告列表：getadvlist/getadvlistbatch 已由复写整条终止
+ *   阅读积分：readpage 时长改满值 + 任务标记完成（v3.4.0 起挂 autoTask，不随净化默认开）
  *   弹窗/红点：popup/batchget、reddot/getdot 清空
  *   新手引导：freshman 系列清空
  *   章末模块：showChapterEndModule 清空
@@ -173,7 +173,7 @@ function debugLog(msg) {
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.3.0";
+const ANCHOR_BUILD = "3.4.0";
 
 function anchor(msg) {
   try { console.log("[起点锚点] b=" + ANCHOR_BUILD + " " + msg); } catch (e) {}
