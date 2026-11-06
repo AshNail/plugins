@@ -1,8 +1,8 @@
 # 银行 App 聚合 · 遥测瘦身
 
-> 覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:六款银行 App 官方 SDK 目录均无第三方广告网络,广告≈100% 第一方内嵌(DNS 拦不到 banner 本体)。本插件只裁已证实的自建广告端点与穿山甲内网域;登录/支付/二维码/推送零接触。银行证书固定,MITM 不可行也不做。
+> 覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:全面覆盖中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与招行/浦发/云闪付已证实的自建商业广告专域与营销系统;登录/支付/付款码/动账提醒绝对放行(零接触红线);银行App内置SSL Pinning,纯连接层零证书零MITM安全绝育。
 
-版本 **1.1.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -16,7 +16,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/banks/banks.plugi
 
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
-| 已证实的自建/自营广告端点 | A | 启用 | mbads.paas.cmbchina.com=招行卡中心自建广告投放域(anti-AD+AdGuard 双收录,全聚合质量最高一条);ads.cup.com.cn=银联自营广告域(anti-AD+AW 双收录)。 |
+| 已证实的自建/自营广告端点 | A | 启用 | 六大国有银行(工行/建行/农行/中行/交行/邮储)+招行+云闪付已证实的自建广告投放与营销系统域名。 |
 | 穿山甲企业内网解析域 | A | 启用 | *.alliance.com.corpqueue.net=穿山甲 SDK 内置企业内网主机名(私有 TLD 防劫持),外部网络只产生 DNS 探测噪音,黑洞零副作用;对装了穿山甲的 App 普遍有效。 |
 | 云闪付 ads/analytics 主接口（默认关） | B | 默认关闭 | ads.95516.com=云闪付主广告接口:bm7 issue #493 记录 REJECT 后 App 狂发 analytics.95516.com(重试风暴),anti-AD easylist 输出对此域有 @@ 例外(疑似历史误报)——默认关,想开单独开并观察日志。 |
 | 银行日志上报单源候选（默认关） | B | 默认关闭 | log.cmbchina.com=招行日志上报(hagezi-pro 单源);jf365.boc.cn 同在清单但那是中行积分商城(拦了=用户权益受损,拒收示范)——本组只列 log 域,且等真机日志证实再开。 |
@@ -35,4 +35,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/banks/banks.plugi
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/banks.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 4 条，[Rule] 2 条。
+统计：精确/通配黑洞 11 条，[Rule] 2 条。
