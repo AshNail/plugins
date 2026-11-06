@@ -75,7 +75,7 @@
 | `REJECT-DROP`（丢包防重试风暴） | ✅ 已用 | HTTPDNS 关键词域命中后 SDK 会对 200 空包秒级重试，丢包静默超时是从根上断重试 |
 | `REJECT-DICT`（200 + `{}`） | ✅ 已用 | 上报/配置接口按 JSON 解析：返回空对象让 SDK 判定成功并清本地重试队列 |
 | `REJECT-IMG`（200 + 1px GIF） | 🟡 可用未用 | meituan 可选 MITM 增强层里以注释态收录（p[0-9].meituan.net 广告图路径）——图片加载器拿到合法图像不会走「破损图→重试」，该层默认关，生效项仍为 0 |
-| `REJECT-ARRAY`（200 + `[]`） | 🟡 可用未用 | 当前可引用的广告端点都回对象包络（`{data:...}`），没有顶层数组端点，无法诚实启用 |
+| `REJECT-ARRAY`（200 + `[]`） | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js 三家 SDK 均为对象包络 `status_code`/`ret`/`result`；wool_scripts 的转换器仅文档了映射关系、无一条真实 `reject_array`；本仓库 fixtures 无顶层数组），仍无可引用的样本——不是忘了用，是没有一条规则能诚实启用。启用门槛：拿到顶层数组的真机/公开样本后，①build-apps 的 enhance.url_regex 白名单先放行 REJECT-ARRAY；②该条规则连同样本来源进 enhance.sources |
 
 ## Host 层
 
@@ -105,7 +105,7 @@
 | `reject(status)` | ❌ 判死 | 官方注明返回 `text/plain`；按 JSON 解析的 SDK 会走「解析失败→重试」分支 |
 | `reject_dict(status)` | ✅ 已用 | 已落地 |
 | `reject_img(status)` | ❌ 判死 | 图片路径已由规则层 `REJECT-IMG` 覆盖（meituan 增强层）；同一请求再写一条 Rewrite 拒绝只会互相覆盖 |
-| `reject_array(status)` | 🟡 可用未用 | 当前命中的广告端点都回对象包络（`{data:...}`），没有顶层数组的端点 |
+| `reject_array(status)` | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` 全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条：样本 + enhance.url_regex 白名单 + 来源登记 |
 | `reject_video(status)` | ❌ 判死 | 同上，视频素材域名不进 MITM |
 | `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 降到 gzip |
 | `response.header.add/set/del/replace` | 🟡 可用未用 | 响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖 |
@@ -258,7 +258,7 @@
 | `#!icon` | ✅ 已用 | 已落地 |
 | `#!system` | ✅ 已用 | 已落地 |
 | `#!system_version` | 🟡 可用未用 | 一个值同时约束 `#!system` 里列的**所有**平台：ads 写了 `iOS,iPadOS,tvOS,macOS`，填 15.0 等于要求 macOS 15 / tvOS 15。不填＝全部支持，比填错安全 |
-| `#!loon_version` | ✅ 已用 | 只在 `#!system=ios` 的 soda/douyin 上声明；14 个 `#!system` 覆盖 macOS 的插件**不写这行**。Loon for Mac 的营销版本号是独立一条线（0.1(26) → 0.5.0(1011)，构建号自 991 起才与 iOS 统一），iOS 口径的 `3.5.1(983)` 在 Mac 上比的到底是营销版本还是构建号官方没写，两种读法都会挡掉一部分 Mac 用户；不填＝不带最低版本（官方明写「未填写表示全部支持」的是 `#!system`，这条属推断），裁量同 `#!system_version`。功能基线退回 README 供人参考，机器侧由 lint 的 `check_loon_version_gate()` 反向锁死「声明 macOS 就不许带门槛」 |
+| `#!loon_version` | ✅ 已用 | 只在 `#!system=iOS` 的 soda/douyin 上声明；14 个 `#!system` 覆盖 macOS 的插件**不写这行**。Loon for Mac 的营销版本号是独立一条线（0.1(26) → 0.5.0(1011)，构建号自 991 起才与 iOS 统一），iOS 口径的 `3.5.1(983)` 在 Mac 上比的到底是营销版本还是构建号官方没写，两种读法都会挡掉一部分 Mac 用户；不填＝不带最低版本（官方明写「未填写表示全部支持」的是 `#!system`，这条属推断），裁量同 `#!system_version`。功能基线退回 README 供人参考，机器侧由 lint 的 `check_loon_version_gate()` 反向锁死「声明 macOS 就不许带门槛」 |
 | `#!date` | ✅ 已用 | 已落地 |
 | `#!tag` | ✅ 已用 | 已落地 |
 | `#!type` | ✅ 已用 | 已落地 |

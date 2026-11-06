@@ -347,7 +347,7 @@ src/ads/protected-roots.json  # 共享主域保护名单
 
 ```bash
 python3 tools/build-ads.py            # 重新生成 plugins/ads/ads.plugin
-python3 tools/build-ads.py --check    # CI 用：生成物是否与 JSON 一致
+python3 tools/build-ads.py --check    # 本地门禁用：生成物是否与 JSON 一致
 python3 tools/build-ads.py --stats    # 看 General/Rule/组/规则计数
 ```
 

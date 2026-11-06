@@ -2500,7 +2500,7 @@ def run_audit(args):
 def bank_app_count():
     """银行合集里有几款 App：出处是 banks.json 的 desc 首句「覆盖A/B/C…」，不在门禁里写死。"""
     desc = json.loads((ROOT / "src/apps/banks.json").read_text(encoding="utf-8"))["desc"]
-    head = re.split(r"[:：]", desc, 1)[0]
+    head = re.split(r"[:：]", desc, maxsplit=1)[0]
     return len([part for part in head.split("/") if part.strip()])
 
 

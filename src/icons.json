@@ -44,6 +44,18 @@
       "trackId": 399363156,
       "seller": "Tencent Technology (Beijing) Company Limited"
     },
+    "bilibili": {
+      "app": "哔哩哔哩",
+      "bundleId": "tv.danmaku.bilianime",
+      "trackId": 736536022,
+      "seller": "Shanghai Kuanyu Digital Technology Co., Ltd."
+    },
+    "amap": {
+      "app": "高德地图",
+      "bundleId": "com.autonavi.amap",
+      "trackId": 461703208,
+      "seller": "AutoNavi Information Technology Co. Ltd."
+    },
     "meituan": {
       "app": "美团",
       "bundleId": "com.meituan.imeituan",

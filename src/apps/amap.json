@@ -1,0 +1,144 @@
+{
+  "slug": "amap",
+  "name": "高德地图 · 去广告与精简",
+  "desc": "高德地图 iOS/iPadOS：日志与遥测（logs/dualstack-logs/amap-aos-info-nogw/adashx）+ 商业化广告域（optimus-ads）走 [Host] 127.0.0.1 零证书黑洞；开屏 alimama 广告、首页推荐流、路线规划推广卡片、订单 Tip 与通用归因走可选原生增强层（REJECT-DICT / REJECT，保持零 JS 脚本）；核心逆地理编码（apsrgeo）、基站定位（cgicol）、路线规划网关（restapi）与轨迹定位（ts）严格设防红线。",
+  "version": "1.0.0",
+  "date": "2026-11-06",
+  "loonVersion": "3.5.1(983)",
+  "tag": "去广告,高德地图",
+  "comment": [
+    "红线（绝不进任何拦截组）：restapi.amap.com 核心路线规划、地点搜索与地理编码网关 / ts.amap.com 猎鹰轨迹服务与定位上报核心 API / sns.amap.com 账号与安全服务 / apsrgeo.amap.com 逆地理编码服务，经纬度转换道路门牌地址依赖 / cgicol.amap.com 与 dualstack-cgicol.amap.com 基站定位服务，室内与隧道定位依赖。",
+    "高德地图业务共享根域 *.amap.com，禁止整域通配。",
+    "高德基础地图数据共享根域 *.autonavi.com，禁止整域通配。",
+    "能力天花板与原生设计：logs.amap.com、dualstack-logs.amap.com、amap-aos-info-nogw.amap.com、adashx.ut.amap.com、h-adashx.ut.amap.com、v6-adashx.ut.amap.com、optimus-ads.amap.com、optimus-ads-ykx.amap.com 八个日志遥测与广告域走 [Host] 127.0.0.1 零证书黑洞；开屏、信息流与路线规划推广走可选增强层 REJECT-DICT，保持零 JS 脚本。",
+    "证据：ddgksf2013、Adblock4limbo、anti-AD、AdRules 公开规则库的高德地图广告处置逻辑。本插件不搬运其混淆 JS（如 amap.js），改用 Loon 原生 URL-REGEX 与 REJECT-DICT 规则实现等价效果。整段默认注释，安装证书后按需启用。"
+  ],
+  "redlines": [
+    {
+      "domain": "restapi.amap.com",
+      "kind": "host",
+      "quote": "restapi.amap.com 核心路线规划、地点搜索与地理编码网关",
+      "why": "核心路线规划与地点搜索 API 网关"
+    },
+    {
+      "domain": "ts.amap.com",
+      "kind": "host",
+      "quote": "ts.amap.com 猎鹰轨迹服务与定位上报核心 API",
+      "why": "猎鹰轨迹与定位上报服务"
+    },
+    {
+      "domain": "sns.amap.com",
+      "kind": "host",
+      "quote": "sns.amap.com 账号与安全服务",
+      "why": "账号登录与安全认证"
+    },
+    {
+      "domain": "apsrgeo.amap.com",
+      "kind": "host",
+      "quote": "apsrgeo.amap.com 逆地理编码服务，经纬度转换道路门牌地址依赖",
+      "why": "逆地理编码，经纬度转道路名称依赖"
+    },
+    {
+      "domain": "cgicol.amap.com",
+      "kind": "host",
+      "quote": "cgicol.amap.com 与 dualstack-cgicol.amap.com 基站定位服务，室内与隧道定位依赖",
+      "why": "基站定位服务，室内与隧道定位依赖"
+    },
+    {
+      "domain": "dualstack-cgicol.amap.com",
+      "kind": "host",
+      "quote": "cgicol.amap.com 与 dualstack-cgicol.amap.com 基站定位服务，室内与隧道定位依赖",
+      "why": "双栈基站定位服务，室内与隧道定位依赖"
+    },
+    {
+      "domain": "amap.com",
+      "kind": "family",
+      "quote": "高德地图业务共享根域 *.amap.com，禁止整域通配",
+      "why": "高德地图业务共享根域，禁止整域通配"
+    },
+    {
+      "domain": "autonavi.com",
+      "kind": "family",
+      "quote": "高德基础地图数据共享根域 *.autonavi.com，禁止整域通配",
+      "why": "高德基础地图数据共享根域，禁止整域通配"
+    }
+  ],
+  "sdks": [],
+  "groups": [
+    {
+      "id": "telemetry",
+      "title": "高德自建日志遥测 / 阿里 UT 埋点 / 配置更新",
+      "tier": "A",
+      "note": "logs.amap.com（6源）、dualstack-logs.amap.com（4源）、amap-aos-info-nogw.amap.com（3源）、adashx.ut.amap.com（3源）、h-adashx.ut.amap.com（2源）、v6-adashx.ut.amap.com（2源）。DNS 映射 127.0.0.1 阻断。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://github.com/hagezi/dns-blocklists",
+        "https://github.com/AdguardTeam/AdguardFilters"
+      ],
+      "hosts": [
+        "adashx.ut.amap.com",
+        "amap-aos-info-nogw.amap.com",
+        "dualstack-logs.amap.com",
+        "h-adashx.ut.amap.com",
+        "logs.amap.com",
+        "v6-adashx.ut.amap.com"
+      ],
+      "rules": []
+    },
+    {
+      "id": "commercial_ads",
+      "title": "高德商业化广告与擎天广告系统",
+      "tier": "A",
+      "note": "optimus-ads.amap.com（4源，高德擎天广告投放系统）、optimus-ads-ykx.amap.com（1源，广告分片）。DNS 映射 127.0.0.1 阻断。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://github.com/hagezi/dns-blocklists"
+      ],
+      "hosts": [
+        "optimus-ads.amap.com",
+        "optimus-ads-ykx.amap.com"
+      ],
+      "rules": []
+    }
+  ],
+  "triage_exclude": [
+    {
+      "label": "业务·逆地理编码",
+      "globs": [
+        "apsrgeo.amap.com"
+      ]
+    },
+    {
+      "label": "业务·基站定位服务",
+      "globs": [
+        "cgicol.amap.com",
+        "dualstack-cgicol.amap.com"
+      ]
+    }
+  ],
+  "enhance": {
+    "intro": "高德地图 iOS 的开屏广告、首页推荐流、路线规划推广卡片与打车页面推广信息与核心 API 共用 m5.amap.com、m5-zb.amap.com、center.amap.com 等接口，不可 DNS 黑洞整域。下列 7 条 URL-REGEX 采用 Loon 原生 REJECT-DICT 与 REJECT，使客户端认为推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。",
+    "sources": [
+      "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf",
+      "https://github.com/limbopro/Adblock4limbo"
+    ],
+    "mitm_hosts": [
+      "m5.amap.com",
+      "m5-zb.amap.com",
+      "center.amap.com",
+      "amap-aos-info-nogw.amap.com",
+      "ai.amap.com",
+      "optimus-ads.amap.com"
+    ],
+    "url_regex": [
+      "URL-REGEX,^https?://.*\\.amap\\.com/ws/aos/alimama/splash_screen(\\?.*)?$,REJECT-DICT",
+      "URL-REGEX,^https?://.*\\.amap\\.com/v\\d/ai_rec/.*$,REJECT-DICT",
+      "URL-REGEX,^https?://.*\\.amap\\.com/ws/faas/amap-navigation/card-service-route-plan(\\?.*)?$,REJECT-DICT",
+      "URL-REGEX,^https?://.*\\.amap\\.com/ws/boss/order_web/\\w{8}_information(\\?.*)?$,REJECT-DICT",
+      "URL-REGEX,^https?://.*\\.amap\\.com/ws/asa/ads_attribution(\\?.*)?$,REJECT",
+      "URL-REGEX,^https?://.*\\.amap\\.com/ws/shield/scene/recommend(\\?.*)?$,REJECT-DICT",
+      "URL-REGEX,^https?://.*\\.amap\\.com/ws/valueadded/weather(\\?.*)?$,REJECT-DICT"
+    ]
+  },
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e5/df/cd/e5dfcd1f-948d-681f-29da-8d5c00e0ae45/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg"
+}

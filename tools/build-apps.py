@@ -10,7 +10,7 @@
 
 用法：
   python3 tools/build-apps.py          # 生成全部
-  python3 tools/build-apps.py --check  # 字节级漂移门禁（CI / npm run check:apps）
+  python3 tools/build-apps.py --check  # 字节级漂移门禁（本地 / npm run check:apps）
 
 设计约束（与 plugins/ads 相同的纪律，零证书网络层拦截）：
 - 只用 [Rule]（DOMAIN-SUFFIX / DOMAIN-KEYWORD）与 [Host] 黑洞两类段；

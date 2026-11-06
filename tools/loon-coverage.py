@@ -27,7 +27,7 @@ undocumented 行仍然要求**探测得到**：token 一旦从插件里消失，
 ----
   python3 tools/loon-coverage.py            # 打印报表
   python3 tools/loon-coverage.py --write    # 重新生成 docs/loon-coverage.md
-  python3 tools/loon-coverage.py --check    # CI：探测结果与声明不符即失败
+  python3 tools/loon-coverage.py --check    # 本地门禁：探测结果与声明不符即失败
 """
 
 import io
@@ -270,7 +270,10 @@ CAPABILITIES = [
              "图片加载器拿到合法图像不会走「破损图→重试」，该层默认关，生效项仍为 0"),
     dict(layer="规则层", key="r-reject-array", name="`REJECT-ARRAY`（200 + `[]`）", expect="open",
          probe=r"(?m),(?:REJECT-ARR(?:AY|Y))\s*$", href=DOC + "/Policy/",
-         why="当前可引用的广告端点都回对象包络（`{data:...}`），没有顶层数组端点，无法诚实启用"),
+         why="2026-11-06 全语料复核（app2smile adsense.js 三家 SDK 均为对象包络 `status_code`/`ret`/`result`；"
+             "wool_scripts 的转换器仅文档了映射关系、无一条真实 `reject_array`；本仓库 fixtures 无顶层数组），"
+             "仍无可引用的样本——不是忘了用，是没有一条规则能诚实启用。启用门槛：拿到顶层数组的真机/公开样本后，"
+             "①build-apps 的 enhance.url_regex 白名单先放行 REJECT-ARRAY；②该条规则连同样本来源进 enhance.sources"),
 
     # ---------------- Host / DNS 层 ----------------
     dict(layer="Host 层", key="h-exact", name="`域名 = 固定 IP`", expect="used",
@@ -347,7 +350,9 @@ CAPABILITIES = [
          why="图片路径已由规则层 `REJECT-IMG` 覆盖（meituan 增强层）；同一请求再写一条 Rewrite 拒绝只会互相覆盖"),
     dict(layer="复写层", key="w-reject-array", name="`reject_array(status)`", expect="open",
          probe=r"then\s+reject_array\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="当前命中的广告端点都回对象包络（`{data:...}`），没有顶层数组的端点"),
+         why="2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` "
+             "全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条："
+             "样本 + enhance.url_regex 白名单 + 来源登记"),
     dict(layer="复写层", key="w-reject-video", name="`reject_video(status)`", expect="reject",
          probe=r"then\s+reject_video\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="同上，视频素材域名不进 MITM"),
@@ -728,7 +733,7 @@ CAPABILITIES = [
              "填 15.0 等于要求 macOS 15 / tvOS 15。不填＝全部支持，比填错安全"),
     dict(layer="元数据", key="m-loon-version", name="`#!loon_version`", expect="used",
          probe=r"(?m)^#!loon_version\s*=", href=DOC + "/Plugin/",
-         why="只在 `#!system=ios` 的 soda/douyin 上声明；14 个 `#!system` 覆盖 macOS 的插件**不写这行**。"
+         why="只在 `#!system=iOS` 的 soda/douyin 上声明；14 个 `#!system` 覆盖 macOS 的插件**不写这行**。"
              "Loon for Mac 的营销版本号是独立一条线（0.1(26) → 0.5.0(1011)，构建号自 991 起才与 iOS 统一），"
              "iOS 口径的 `3.5.1(983)` 在 Mac 上比的到底是营销版本还是构建号官方没写，两种读法都会挡掉"
              "一部分 Mac 用户；不填＝不带最低版本（官方明写「未填写表示全部支持」的是 `#!system`，"

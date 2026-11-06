@@ -1,5 +1,5 @@
 [tool.ruff]
-# 本地与 CI 都按 Python 3.9 语法检查（仓库脚本没有 3.10+ 语法需求）。
+# 本地门禁与本机构建都按 Python 3.9 语法检查（仓库脚本没有 3.10+ 语法需求）。
 target-version = "py39"
 
 [tool.ruff.lint]

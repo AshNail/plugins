@@ -10,7 +10,7 @@
  * marker pair are overwritten; everything outside is untouched.
  *
  *   node tools/gen-args.js           rewrite generated regions
- *   node tools/gen-args.js --check   fail if any region is stale (CI / lint)
+ *   node tools/gen-args.js --check   fail if any region is stale (本地门禁 / lint)
  */
 "use strict";
 

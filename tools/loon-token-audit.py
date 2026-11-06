@@ -17,7 +17,7 @@
 用法
 ----
   python3 tools/loon-token-audit.py                 # 报表：逐段列出未登记 token
-  python3 tools/loon-token-audit.py --check         # CI：出现新 token 即失败，并自检词表来源
+  python3 tools/loon-token-audit.py --check         # 本地门禁：出现新 token 即失败，并自检词表来源
   python3 tools/loon-token-audit.py --build DIR     # 从已抽取的官方正文纯文本重建词表
   python3 tools/loon-token-audit.py --fetch         # 重新抓官网页面再重建（需要联网，手工执行）
   python3 tools/loon-token-audit.py --sitemap       # 在线核对：官方文档页有没有我们没读过的
@@ -165,7 +165,7 @@ def fetch_dir(argv, flag):
 
 
 def fetch_to_dir(directory):
-    """抓官方正文页并剥成纯文本（手工执行，CI 不碰网络）。
+    """抓官方正文页并剥成纯文本（手工执行，门禁不碰网络）。
 
     认页面身份的判据是 Docusaurus 写在 `<html class>` 上的 `docs-doc-id-<slug>` 标记，
     **不是正文长度**：`Rule/protocol_rule` 整页正文只有 147 字节，用长度阈值会把真页面

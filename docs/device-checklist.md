@@ -273,7 +273,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **v3.2.0 待复测（汽水 API 分片取证通道）**：`api3/api5 × hl/lf/lq` 与 `conf5-lf` 这 7 台已进 soda 的 `[MITM]`，下一轮日志要回答三个问题——① 是否出现 `Match MITM host:api5-lf.qishui.com` 这类行（证明解密面确实铺开）；② 这些分片上有没有 `/luna/*`、开屏上报或激励端点（决定要不要给它们加绑定）；③ 有没有出现 `certificate unknown`（两份日志的 6543+198 行 `*.qishui.com` 里零次，一旦出现就是固定证书，立刻退回注释并写进本清单）。**本轮没有为它们写任何绑定**，所以「已净化/已拦截」这类话在这一层还不成立，只有「能看见了」。
 - [x] **有意的数据缺口**：638 条非广告 luna 请求未绑定；没有“全 luna 都处理”的假宣告。
 
-## J. 17 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
+## J. 19 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
 
 - [ ] 逐个导入 `plugins/<slug>/<slug>.plugin`，装后完全退出并重开目标 App。
 - [ ] **生效判读**：日志里命中域应显示 `Host Map IP:127.0.0.1`（插件 [Host] 的特征字样，区别于主配置的 `Reject domain ... in DNS phase`）。
@@ -284,6 +284,8 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [ ] **mijia**：设备控制（`api.io.mi.com` 系、`*xmpush*` 推送、`resolver.msg.xiaomi.net` 解析、`*.micloud.*`/`app.chat.xiaomi.net` 云与对话、`api.sec.miui.com`/`data.sec.intl.miui.com`/`avlyun`/`avast` 安全族）必须无恙——这些是本插件 `redlines` 逐条登记的域，绝不出现在拦截日志。
 - [ ] **jd**：`dsp-x`/`ads-union`/`ccc-x` 命中即广告交易层生效；商品图（`360buyimg`/`img-x`）不得白图，下单/搜索签名（h5st）/登录/客服/推送必须无恙。首页/信息流广告不保证消失（素材与商品同 API 同图床）；`jd_ad_watchlist` 与 `jd_telemetry` 默认关，先在日志确认域名再试开。
 - [ ] **zhihu**：开插件验证知乎自建遥测/分析（`zhihu-web-analytics`/`sugar`/`crash2`/`udd1i5`）命中 `127.0.0.1` 零证书黑洞；热榜、推荐、关注信息流正常，问答、文章、个人页无白屏；`passport.zhihu.com` 登录与 `lc-push.zhihu.com` 推送无恙。可选增强层（12 条 REJECT-DICT）在导入证书并取消注释后，信息流与回答页穿插广告静默绝育（返回 200 + 空字典），搜索预置词清空。
+- [ ] **bilibili**：开插件验证哔哩哔哩遥测/播放器埋点/HTTPDNS（`dataflow.biliapi.com`/`data.bilibili.com`/`tracker.chat.bilibili.com` 系 / `httpdns.bilivideo.com`）命中 `127.0.0.1` 零证书黑洞；登录（`passport.bilibili.com`）、视频播放、直播、私信长连接正常；首页信息流广告、开屏、搜索推广正常消失后功能无恙。可选增强层（4 条 `response.json.jq` + 1 条可选 `REJECT-DICT`）在导入证书并取消注释后生效：开屏配置 `data.show` 置空、首页推荐流过滤商业卡片（cm_v2/cm_double_v9）。
+- [ ] **amap**：开插件验证高德地图自建日志遥测/阿里 UT 埋点（`logs.amap.com`/`dualstack-logs.amap.com`/`amap-aos-info-nogw.amap.com`/`adashx.ut.amap.com` 系）与商业广告域（`optimus-ads.amap.com`）命中 `127.0.0.1` 零证书黑洞；逆地理编码（`apsrgeo.amap.com`）、基站定位（`cgicol.amap.com`）、路线规划主网关（`restapi.amap.com`）与轨迹服务（`ts.amap.com`）正常无恙，地图定位、搜索与导航正常。可选增强层（7 条 URL-REGEX）在导入证书并取消注释后生效：开屏 alimama 广告、首页推荐流、路线规划下方推广卡片与订单页面推广信息绝育。
 - [ ] **qqnews**：开插件验证腾讯新闻开屏与各频道列表无广告；`news.ssp.qq.com`（开屏/配置主网关）与 `r.inews.qq.com`（要闻/频道/专题业务 API）内容加载正常，新闻正文与评论无恙。可选增强层（2 条 response.json.jq）在导入证书并取消注释后，列表 `adList` 置空，专题 `widget_list` 过滤广告 widget。
 - [ ] 红线交叉验证（ads × `jd`/`mijia`）：`src/apps/*.json` 的 `redlines` 把 `dns.jd.com`（京东自建 HTTPDNS）、`union.jd.com`（京东联盟站）与 `resolver.msg.xiaomi.net`（小米推送/米家解析通道，出处是 `mijia.json` 台账「推送/云红线」的 `resolver.msg.*`，不在 `comment` 里）划为绝不进拦截组，`tools/build-ads.py` 因此拒绝把它们放进任何默认生效组，三者现在只存在于 ads 的「与按 App 插件红线冲突的候选」注释组。取证两步：①同时导入 ads + `jd` + `mijia`，确认日志里**没有**这几条的 `Host Map IP:127.0.0.1`，京东搜索/下单/图片正常、米家设备控制与消息推送正常；②逐行取消 `# ` 打开它们后重开这两个 App，观察是否出现「转圈/搜索无结果/白图/设备离线/收不到推送」——若一切正常，说明它们确实回退系统 DNS，可把对应条目挪回默认生效组并同步改该 App 的红线与本清单（挪回去要先删红线，门禁会当场拒绝无红线的激活）。没做完这两步之前，别凭「成熟清单也拦」推断无副作用。
 - [ ] **qidian/xianyu/x/instagram**：预期收益低（内联广告），判读以「遥测域消失 + 业务无恙」为准，不以「广告消失」为准。

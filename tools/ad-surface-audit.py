@@ -28,7 +28,7 @@ Loon 的功能利用率到了 70%，仍可能有整类广告（贴片、直播�
 ----
   python3 tools/ad-surface-audit.py            # 打印矩阵
   python3 tools/ad-surface-audit.py --write    # 生成 docs/ad-type-strategy.md
-  python3 tools/ad-surface-audit.py --check    # CI：证据缺失或文档过期即失败
+  python3 tools/ad-surface-audit.py --check    # 本地门禁：证据缺失或文档过期即失败
 """
 
 import glob

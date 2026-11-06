@@ -46,6 +46,7 @@ PATTERNS: dict[str, re.Pattern] = {
     "taobao": re.compile(r"adashx|simba\.taobao|ads\.m\.taobao|topshow\.taobao|alimama|tanx\.|mmstat|hudong\.alicdn|ossgw\.alicdn"),
     "zhihu": re.compile(r"zhihu|zhimg"),
     "bilibili": re.compile(r"bilibili|biliapi|bilivideo|hdslb|biligame"),
+    "amap": re.compile(r"amap|autonavi"),
     "youtube": re.compile(r"youtube|googlevideo|ytimg|youtubei"),
 }
 
@@ -68,6 +69,7 @@ BRAND_ROOTS: dict[str, set[str]] = {
     "taobao": {"taobao.com", "tmall.com", "alimama.com", "tanx.com", "mmstat.com", "alicdn.com"},
     "zhihu": {"zhihu.com", "zhimg.com"},
     "bilibili": {"bilibili.com", "biliapi.com", "biliapi.net", "bilivideo.com", "hdslb.com", "biligame.com"},
+    "amap": {"amap.com", "autonavi.com"},
     "youtube": {"youtube.com", "googlevideo.com", "ytimg.com", "googleapis.com"},
 }
 
@@ -82,6 +84,7 @@ EXCLUDE_ROOTS = {
     "jd.com", "360buyimg.com", "360buy.com", "jd.hk",
     "zhihu.com", "zhimg.com",
     "bilibili.com", "biliapi.com", "biliapi.net", "bilivideo.com", "hdslb.com", "biligame.com",
+    "amap.com", "autonavi.com",
     "youtube.com", "googlevideo.com", "ytimg.com", "googleapis.com",
 }
 # root 本身排除，但其广告向子域仍可进候选（用 token 再筛一层）
@@ -104,6 +107,7 @@ ROOT_AD_HINT = {
     "360buy.com": re.compile(r"cps|union"),
     "jd.hk": re.compile(r"."),
     "alicdn.com": re.compile(r"ad|hudong|ossgw|simba|tanx"),
+    "amap.com": re.compile(r"ad|log|stat|track|opt|info|cgicol|geo"),
 }
 
 ADBLOCK_RE_EXTRA = re.compile(r"^\|\|([^/*^$]+)\^?", re.IGNORECASE)

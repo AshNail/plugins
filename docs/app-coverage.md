@@ -5,11 +5,33 @@
 > **候选≠必拦**：逐条人工定级后才进 `src/apps/`。A=≥3 源独立收录；B=2 源；C=单源（默认不收）。
 > 命中 App JSON 里 `triage_exclude` 台账的候选记为「排除·<族>」，不计入缺口——**排除是裁决，不是待办**。
 
+## `amap` — 生效黑洞 8 域；缺口候选 A:0 B:0 C:0（已裁决排除 3 条；已收录但默认关闭 0 条）
+
+| B 候选（2 源） | 源 | 状态 |
+|---|---|---|
+| `apsrgeo.amap.com` | 2: adguard-dns,hagezi-pro | 排除·业务·逆地理编码 |
+| `cgicol.amap.com` | 2: adguard-dns,hagezi-pro | 排除·业务·基站定位服务 |
+| `dualstack-cgicol.amap.com` | 2: adguard-dns,hagezi-pro | 排除·业务·基站定位服务 |
+
+裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
+- `业务·逆地理编码` ← `apsrgeo.amap.com`
+- `业务·基站定位服务` ← `cgicol.amap.com`, `dualstack-cgicol.amap.com`
+
 ## `banks` — 生效黑洞 9 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `ads.95516.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
+
+## `bilibili` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:1（已裁决排除 1 条；已收录但默认关闭 0 条）
+
+| B 候选（2 源） | 源 | 状态 |
+|---|---|---|
+| `miniapp.bilibili.com` | 2: anti-ad,hagezi-pro | 排除·业务·小程序平台 |
+
+裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
+- `业务·小程序平台` ← `miniapp.bilibili.com`
+- `业务·接口服务` ← `interface.bilibili.com`
 
 ## `bubei-danci` — 生效黑洞 1 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
@@ -25,7 +47,7 @@
 |---|---|---|
 | `cm.netseer.com` | 2: anti-ad,stevenblack | 已收录·默认关 |
 
-## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:13（已裁决排除 13 条；已收录但默认关闭 18 条）
+## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:13（已裁决排除 11 条；已收录但默认关闭 17 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -38,7 +60,6 @@
 | `img-x.jd.com` | 3: anti-ad,awa,hagezi-pro | 排除·商品图 CDN 放行 |
 | `img2.360buyimg.com` | 3: anti-ad,awa,hagezi-pro | 排除·商品图 CDN 放行 |
 | `janapi.jd.com` | 3: anti-ad,awa,hagezi-pro | 排除·交易/风控红线 |
-| `jrad.jd.com` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
 | `kepler.jd.com` | 3: adwars,awa,hagezi-pro | 排除·基础设施红线 |
 | `knicks.jd.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
 | `mapi.m.jd.com` | 3: anti-ad,awa,hagezi-pro | 排除·交易/风控红线 |
@@ -48,7 +69,6 @@
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|
-| `ads.union.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `blackhole.m.jd.com` | 2: anti-ad,hagezi-pro | 排除·基础设施红线 |
 | `cm.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `dns.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
@@ -56,10 +76,9 @@
 | `im-x.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `jcm.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `jpushjd.m.jd.com` | 2: anti-ad,hagezi-pro | 排除·推送/客服红线 |
-| `jrclick.jd.com` | 2: anti-ad,hagezi-pro | 排除·基础设施红线 |
+| `jrad.jd.com` | 2: adwars,anti-ad | 已收录·默认关 |
 | `log.jd.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
 | `policy.jd.com` | 2: anti-ad,hagezi-pro | 排除·基础设施红线 |
-| `stat.m.jd.com` | 2: anti-ad,hagezi-pro | 排除·C 级单源不收 |
 | `u-x.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `wn.x.jd.com` | 2: anti-ad,awa | 已收录·默认关 |
 | `x.jd.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
@@ -88,7 +107,7 @@
 |---|---|---|
 | `dreport.meituan.net` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:15（已裁决排除 139 条；已收录但默认关闭 22 条）
+## `mijia` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:14（已裁决排除 140 条；已收录但默认关闭 22 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -183,11 +202,11 @@
 
 无 A/B 级缺口候选。
 
-## `taobao` — 生效黑洞 14 域；缺口候选 A:0 B:4 C:4（已裁决排除 0 条；已收录但默认关闭 11 条）
+## `taobao` — 生效黑洞 14 域；缺口候选 A:0 B:0 C:8（已裁决排除 0 条；已收录但默认关闭 11 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
-| `adashx4ae.ut.taobao.com` | 4: adaway,adguard-dns,hagezi-pro,stevenblack | 已收录·默认关 |
+| `adashx4ae.ut.taobao.com` | 5: adaway,adguard-dns,anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
 | `adashxgc.ut.taobao.com` | 4: adwars,anti-ad,awa,hagezi-pro | 已收录·默认关 |
 | `h-adashx4ae.ut.taobao.com` | 3: adguard-dns,hagezi-pro,stevenblack | 已收录·默认关 |
 | `h-adashx4yt.ut.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
@@ -196,13 +215,9 @@
 |---|---|---|
 | `adashx.ut.taobao.com` | 2: hagezi-pro,stevenblack | 已收录·默认关 |
 | `adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
-| `fav.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
 | `h-adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
-| `m.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
 | `mclick.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `redirect.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
-| `srd.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
-| `stat.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
 | `textlink.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `v6-adashx.ut.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 

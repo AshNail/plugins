@@ -826,7 +826,6 @@ loon-plugins/
 ├── tests/                          # 脚本层回归测试（26 套 / 798 条断言 × 2 = 1596）
 ├── package.json
 ├── package-lock.json
-├── .github/workflows/check.yml     # CI：build + lint + 测试
 ├── .nojekyll                       # 防御性保留：若日后启用 Pages，避免 Jekyll 处理 .plugin / scripts
 └── .gitignore
 ```

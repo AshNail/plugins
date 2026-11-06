@@ -16,3 +16,7 @@ node_modules/
 .workbuddy/
 __pycache__/
 *.pyc
+
+# 本仓库不使用 GitHub Actions / CI：所有检查在本地 npm run check 执行
+# 远端工作流文件一律禁止提交
+.github/
