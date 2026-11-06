@@ -7,18 +7,27 @@
  *   · $utils.ungzip 官方签名是 Uint8Array → Uint8Array，旧代码对返回值直接 JSON.parse。
  * 断言：
  *   1. Uint8Array 的 gzip 体 + ungzip 返回 Uint8Array → getconf 被真的改写
- *   2. 改写后的响应头删掉过期的 content-encoding / content-length
+ *   2. 改写后的响应头把过期的 content-encoding 就地改成 identity、content-length 改成新体字节数
+ *      (v3.5.5 起不再删键——手册没保证 Loon 是替换还是合并脚本给的 headers，合并时删键＝不改)
  *   3. Uint8Array 明文字节（Loon 已替脚本解压）同样生效
  *   4. 字符串明文同样生效
  *   5. ungzip 缺失（Build < 988）→ 静默透传，不抛、不改 body
  *   6. ungzip 返回字符串的宽松实现同样可用
  *   7. deeplink 只清 ActionUrl，其余业务字段保留
  *   8. (v3.5.3) 回写形态跟随来路形态：字节进→字节出、字符串进→字符串出。
- *      真机判据是 16:21 日志「脚本 Finished 却零字段变更」——Loon 不替脚本解压 gzip，
- *      不带 binary_body_mode 时 $response.body 是 UTF-8 硬解的乱码串；而 v3.5.1 开了
- *      binary_body_mode 却回字符串，被 Loon 丢弃。两头必须同时成立，缺一个都是透传。
- *   9. (v3.5.4) X-Qidian-Plugin 头部带 `;b=<build>;in=<形态>`：真机 21:05 日志证明脚本
- *      console 只在绑定 `debug=true` 时落主日志，头部是唯一不受这个门禁的自证面。
+ *      真机判据是 16:21 日志「脚本 Finished 却零字段变更」——不带 binary_body_mode 时
+ *      gzip 字节被按 UTF-8 硬解成乱码串，1f 8b 检测失效。形态镜像按 $done 手册是冗余的
+ *      （body 接受 String 或 Uint8Array），留着是因为它对两种 Loon 头合并语义都无害。
+ *   9. (v3.5.4) X-Qidian-Plugin 头部带 `;b=<build>;in=<形态>`。
+ *      ⚠ v3.5.4 那句「绑定 debug=true 就能把脚本 console 落主日志」已被 21:35:23 日志判死：
+ *      两条净化绑定的 with debug 常开后，主日志仍是 0 条 [起点锚点]，而 match/Trigger/Finished
+ *      齐全。官方口径是 console.log「向**当前脚本日志**写入一条记录」——主日志导出不含它，
+ *      要看锚点只能在 App 内的脚本日志里看。头部标记依旧是唯一能远程取证的自证面。
+ *   10. (v3.5.5) 两处：① 过期的 content-encoding/content-length 就地改写原键名（identity +
+ *       新体字节数），原键不存在时不发明新头——手册没保证 Loon 对脚本 headers 是替换还是合并，
+ *       合并语义下 `delete` 等于「不改」，原始 gzip 声明会套在明文新体上，App 解压失败回落缓存；
+ *       ② getconf / 账户页 / 福利页把本次变更条数写成 `;n=<N>` 进同一个头：主日志没有脚本
+ *       stdout，App 内日志又导不出来，条数只能跟着响应头走。
  *   注意：主日志里 Trigger→Finished 的时长（0ms / 999ms 二态）**没有判读价值**——同一端点
  *   两种值都出现过，999ms 严格贴着 1s，是 Loon 异步 $done 的刷写节拍而不是脚本工作量。
  */
@@ -105,12 +114,16 @@ function shapeMatches(bodyIn, out) {
     check("TeenShowFreq 置 \"0\"", j && j.Data.CloudSetting.TeenShowFreq === "0");
     check("非广告字段保留", j && j.Data.KeepMe === "yes");
     const h = (out && out.headers) || {};
-    check("过期的 content-encoding / content-length 已删",
-      h["content-encoding"] === undefined && h["content-length"] === undefined, JSON.stringify(h));
+    check("过期的 content-encoding 就地改写为 identity（不删键，防 Loon 合并头时漏掉原始 gzip 声明）",
+      h["content-encoding"] === "identity", JSON.stringify(h));
+    check("content-length 改写为新体字节数", Number(h["content-length"]) === out.body.length,
+      h["content-length"] + " vs " + out.body.length);
     check("其它响应头保留", h.server === "stub");
     check("字节进 → 字节出（binary_body_mode 契约）", shapeMatches(gz, out), Object.prototype.toString.call(out && out.body));
-    check("X-Qidian-Plugin 带 build 与来路形态", String(h["X-Qidian-Plugin"] || "").includes(";b=") && String(h["X-Qidian-Plugin"] || "").endsWith(";in=u8"),
+    check("X-Qidian-Plugin 带 build 与来路形态", String(h["X-Qidian-Plugin"] || "").includes(";b=") && String(h["X-Qidian-Plugin"] || "").includes(";in=u8"),
       String(h["X-Qidian-Plugin"]));
+    check("变更条数也进头部（主日志没有脚本 stdout，一份 HAR 就要能读出改了几项）",
+      Number(String(h["X-Qidian-Plugin"]).split(";n=")[1]) > 0, String(h["X-Qidian-Plugin"]));
   }
 
   console.log("\n[2] Uint8Array 明文字节（Loon 已解压）");
@@ -119,6 +132,8 @@ function shapeMatches(bodyIn, out) {
     const { out } = await run(GETCONF, bytes, { utils: realUtils, headers: { server: "stub" } });
     const j = parse(out);
     check("明文字节也被净化", j && j.Data.PangleEnable === "0", JSON.stringify(out).slice(0, 120));
+    const h2 = (out && out.headers) || {};
+    check("原始未声明编码时不凭空加 content-encoding", h2["content-encoding"] === undefined && h2.server === "stub", JSON.stringify(h2));
   }
 
   console.log("\n[3] 字符串明文");
@@ -128,7 +143,7 @@ function shapeMatches(bodyIn, out) {
     check("字符串明文被净化", j && j.Data.PangleEnable === "0");
     check("字符串进 → 字符串出", shapeMatches(text, out), Object.prototype.toString.call(out && out.body));
     const mark = String(((out && out.headers) || {})["X-Qidian-Plugin"] || "");
-    check("字符串形态也如实记进头部", mark.endsWith(";in=str"), mark);
+    check("字符串形态也如实记进头部", mark.includes(";in=str"), mark);
   }
 
   console.log("\n[4] ungzip 缺失（Build < 988）→ 静默透传");

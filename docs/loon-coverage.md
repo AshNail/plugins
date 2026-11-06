@@ -149,7 +149,7 @@
 | `$request.url` / `method` / `headers` | ✅ 已用 | 已落地 |
 | `$request.body`（需 `requires_body`） | 🟡 可用未用 | 本插件只改响应；请求体里没有需要剥的广告载荷 |
 | `$response.body` | ✅ 已用 | 已落地 |
-| `$done({headers})` 改响应头 | ✅ 已用 | 回写 body 时同步补 `Content-Encoding`/诊断标记，避免过期压缩头 |
+| `$done({headers})` 改响应头 | ✅ 已用 | 回写 body 时同步处理压缩头与诊断标记。手册只说「修改响应 Body 后 Loon 会根据传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」，没说脚本给的 headers 是替换还是合并原始头——合并语义下 `delete` 一个键等于不改，原始 `Content-Encoding: gzip` 会套在明文新体上。所以 qidian v3.5.5 起对这两个键**就地改写原键名**（identity + 新体字节数），只在原键存在时动手 |
 | `$done({status})` 单独改状态码 | ❌ 判死 | 只翻状态码、Body 仍是原广告响应，SDK 照样解析；要改回包就整包给（嵌套 `response`），单改 status 没有可用形态。此前标「已用」是探测式写漏了 `{` 边界，把嵌套回包误算成顶层用法 |
 | `$done({url})` 改请求 URL | 🟡 可用未用 | 改 URL 归复写层 `url.replace`：正则、捕获和替换范围都在配置里看得见。搬进脚本会变成「先 Rewrite 后 JS 再改一次」，排障时无法归因 |
 | `$done({node})` / `$done({policy})` 改本次路由 | ❌ 判死 | 拦截插件替用户决定这条请求走哪个节点，等于把去广告和分流耦合；出问题时无法区分是谁改的路由 |
@@ -180,10 +180,10 @@
 |---|---|---|
 | `enable`（可动态） | ✅ 已用 | 已落地 |
 | `tag` | ✅ 已用 | 已落地 |
-| `debug`（可动态） | ✅ 已用 | 真机 21:05 日志实证：脚本里的 console.log 只有在绑定带 `debug=true` 时才落主日志，而主日志本身的 `[Debug]` 条目（Loon 全局调试）与插件开关都管不到这件事——24 个插件的 console 输出在同一份日志里全部为 0 条。qidian v3.5.4 起把两条净化绑定的 `debug` 直出 true（取证期），否则「脚本跑完但改没改字段」在主日志里是静默的 |
+| `debug`（可动态） | ✅ 已用 | v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死：两条净化绑定 debug 常开后主日志仍 0 条 [起点锚点]（match/Trigger/Finished 齐全）。官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」，主日志导出不含它，锚点只能在 App 内脚本日志页看。debug 仍常开（保住 App 内那份脚本日志），但远程取证面只剩两个：`tag` 字面量会原样出现在主日志的 match/Trigger/Finished 行里（v3.5.5 起把 build 号写进 tag），以及响应头 X-Qidian-Plugin |
 | `timeout` | ✅ 已用 | 已落地 |
 | `requires_body` | ✅ 已用 | 已落地 |
-| `binary_body_mode` | ✅ 已用 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）实际开启：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`（v3.5.1 开了模式却回字符串，被 Loon 丢弃，两头必须同时成立） |
+| `binary_body_mode` | ✅ 已用 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）实际开启：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。注：形态镜像是防御性冗余而非必需——API 手册明写 `$done().body` 接受字符串**或** `Uint8Array`，v3.5.1 那句「回字符串会被 Loon 丢弃」手册无据，已撤回；真正没写清的是脚本给的 headers 与原始 headers 是替换还是合并，所以 v3.5.5 起对过期的 content-encoding/content-length 就地改写而非删键 |
 | `img_url` | ✅ 已用 | 已落地 |
 
 ## 参数层

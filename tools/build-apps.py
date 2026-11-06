@@ -604,8 +604,10 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
 def render_binding(b: dict) -> str:
     """一条现代语法绑定。形状与 soda/douyin 手写接线一致：属性顺序 debug→enable→requires_body→binary_body_mode→timeout→tag。
 
-    binding.debug=true 把这一条的 with debug 常开（取证期用）：Loon 只在绑定带 debug 时把脚本
-    console 输出落主日志，而 ${debugLog} 默认 false，于是「脚本到底改没改字段」在日志里是静默的。
+    binding.debug=true 把这一条的 with debug 常开（取证期用）。注意 21:35 真机日志判死了
+    「debug=true 会把脚本 console 落主日志」——官方口径是 console.log 写「当前脚本日志」，
+    导出的主日志结构上没有它；debug 常开只保住 App 内那份脚本日志。真正会出现在主日志里的
+    是 tag 字面量（match/Trigger/Finished 行原样带），所以取证期的 build 指纹要往 tag 里放。
     """
     kind = b["kind"]
     args = ", ".join(f"${{{a}}}" for a in b.get("args", []))

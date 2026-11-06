@@ -208,13 +208,16 @@ function debugLog(msg) {
 // v3.3.0 那段判读口径作废：当时要靠 anchor 区分「复写接管」与「脚本还在跑」，
 // 现在 response.json.* 整段删除，不存在接管。anchor 留着的理由是它给了另一条
 // 决定性证据——2026-11-06 14:34 日志里 `[起点锚点]` 零命中，而同一份日志有
-// `Finished execute http-response script:起点getconf净化`：脚本跑了，但 console.log
-// 不落主日志（绑定是 `with debug=${debugLog}`，debugLog 默认 false），所以净化是否
-// 改到字段只能靠 anchor + 真机开关对账，不能靠「日志里没有 anchor」判死。
+// `Finished execute http-response script:起点getconf净化`：脚本跑了，日志里却看不到
+// 它改了什么，所以净化是否改到字段不能靠「日志里没有 anchor」判死。
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
+// v3.5.4 押的「绑定带 debug=true 就能把 anchor 落主日志」已被 21:35 真机日志判死：
+// debug 常开后主日志仍 0 条 anchor，而官方口径是 console.log 写「当前脚本日志」——
+// anchor 只能进 App 内脚本日志页。于是自证面只剩两个：会原样出现在主日志 match/Trigger
+// 行里的 tag（v3.5.5 起带 build 号），和响应头 X-Qidian-Plugin。
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.4";
+const ANCHOR_BUILD = "3.5.5";
 
 // 必须在主入口 IIFE 之前声明：const 没有变量提升，放在 IIFE 之后会在同步响应路径触发 TDZ ReferenceError
 const CLEAN_RULES = {
@@ -224,9 +227,10 @@ const CLEAN_RULES = {
 };
 
 // 同上一条 TDZ 纪律：safeJsonParse 写入、respondJson 读取，两者都在主 IIFE 的同步路径上。
-// binary_body_mode=true 时 Loon 要求 $done({body}) 回传字节，回字符串会被静默丢弃（v3.5.1 的失效形态），
-// 所以进来的体是什么形态，出去就必须还原成什么形态。
-const BODY_OUT = { shape: "str" };
+// shape 记录来路形态，回写时按同一形态还回去（$done 手册 String/Uint8Array 都收，属防御性冗余）。
+// n 由净化处置函数写入本次字段变更数，两者一起进 X-Qidian-Plugin 头——脚本 stdout 进不了
+// 导出的主日志（21:35 判死），一份 HAR 是目前唯一能远程看到「改了几项」的通道。
+const BODY_OUT = { shape: "str", n: -1 };
 
 function extractPath(url) {
   if (typeof url !== "string") return "";
@@ -537,23 +541,32 @@ async function autoReceiveRewards(E, headers) {
 // 🔧 响应处理工具函数
 // ==========================================
 /**
- * 构建响应头，删除 content-encoding 和 content-length
+ * 构建响应头：来路声明过压缩/长度的，就地改写成新体的真实值
  * 添加 X-Qidian-Plugin 标记用于诊断
  */
-function respondHeaders(tag) {
+function respondHeaders(tag, text) {
   const h = Object.assign({}, (typeof $response !== "undefined" && $response.headers) || {});
   // in=<形态> 让一份 HAR 就能回答「新脚本跑到了吗、Loon 给的是字节还是字符串」——
-  // 真机日志里 console 输出只有绑定带 debug 才落盘，头部标记不受这个门禁。
-  h["X-Qidian-Plugin"] = (tag || "qidian-sanitize") + ";b=" + ANCHOR_BUILD + ";in=" + BODY_OUT.shape;
-  
-  // 删除 content-encoding 和 content-length
-  const drop = [];
-  for (const k of Object.keys(h)) {
-    const lk = String(k).toLowerCase();
-    if (lk === "content-encoding" || lk === "content-length") drop.push(k);
-  }
-  for (const k of drop) delete h[k];
-  
+  // 头部标记不受 console 门禁。
+  h["X-Qidian-Plugin"] = (tag || "qidian-sanitize") + ";b=" + ANCHOR_BUILD + ";in=" + BODY_OUT.shape
+    + (BODY_OUT.n >= 0 ? ";n=" + BODY_OUT.n : "");
+
+  // v3.5.5：过期的 content-encoding 不再删除而是就地改写为 identity，content-length 改写为新体字节数。
+  // 手册只说「修改响应 Body 后 Loon 会根据传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」，
+  // 没说 Loon 会不会把脚本给的 headers 与原始 headers 做合并；若是合并，delete 一个键等于「不改」，
+  // 原始的 `Content-Encoding: gzip` 就会连同明文新体一起发给 App——解压必失败→App 回落缓存→
+  // 脚本跑了、字段改了、UI 却一动不动，正是真机「Trigger/Finished 齐全但看不到变更」的形状。
+  // 只在原始键存在时改写：不凭空发明头（原体是 chunked 时不能塞 content-length）。
+  const write = (name, value) => {
+    let key = null;
+    for (const k of Object.keys(h)) {
+      if (String(k).toLowerCase() === name) { key = k; break; }
+    }
+    if (key !== null) h[key] = value;
+  };
+  write("content-encoding", "identity");
+  write("content-length", String(utf8Encode(text).length));
+
   return h;
 }
 
@@ -561,12 +574,13 @@ function respondHeaders(tag) {
  * 返回修改后的 JSON 响应
  * 自动处理响应头，确保客户端能正确解析
  */
-function respondJson(E, obj, tag) {
+function respondJson(E, obj, tag, n) {
+  if (n !== undefined) BODY_OUT.n = n;
   const text = JSON.stringify(obj);
   const body = BODY_OUT.shape === "str" ? text
     : BODY_OUT.shape === "ab" ? utf8Encode(text).buffer
     : utf8Encode(text);
-  E.done({ body: body, headers: respondHeaders(tag) });
+  E.done({ body: body, headers: respondHeaders(tag, text) });
 }
 
 // ==========================================
@@ -604,7 +618,7 @@ function handleClientConfig(E, response, url) {
 
   anchor("getconf parsed=1 changes=" + changes.length);
   debugLog("getconf 净化: " + changes.length + " 项变更 [" + changes.slice(0, 5).join(", ") + (changes.length > 5 ? "..." : "") + "]");
-  respondJson(E, obj, "qidian-sanitize");
+  respondJson(E, obj, "qidian-sanitize", changes.length);
 }
 
 function handleSplashScreen(E, response) {
@@ -666,6 +680,7 @@ function handleAccountPage(E, response) {
     anchor("账户页 deleted=[" + deleted.join(",") + "] 任务条目=" + pruned.length +
       (pruned.length ? " [" + pruned.join(" / ") + "]" : ""));
     if (deleted.length > 0) debugLog("账户页删除: " + deleted.join(", "));
+    BODY_OUT.n = deleted.length + pruned.length;
   }
   respondJson(E, obj, "qidian-sanitize");
 }
@@ -721,7 +736,7 @@ function handleMainPage(E, response) {
   anchor("福利中心 removed=[" + removed.join(",") + "] kept=[" + kept.join(",") +
     "] 任务条目=" + pruned.length + (pruned.length ? " [" + pruned.join(" / ") + "]" : ""));
   E.log("福利中心净化完成");
-  respondJson(E, obj, "qidian-sanitize");
+  respondJson(E, obj, "qidian-sanitize", removed.length + pruned.length);
 }
 
 // 只剥数组里命中文案的那一条元素，不动模块、不动结构——「限时福利」和广告任务
@@ -994,7 +1009,7 @@ function normalizeHeaders(headers) {
   return h;
 }
 
-/* UTF-8 字符串 -> Uint8Array（binary_body_mode 下 $done 必须回字节，回字符串会被 Loon 丢弃） */
+/* UTF-8 字符串 -> Uint8Array（binary_body_mode 下来路是字节就还字节；$done 手册说 String/Uint8Array 都收，形态镜像属防御性冗余） */
 function utf8Encode(str) {
   const out = [];
   for (let i = 0; i < str.length; i++) {

@@ -115,7 +115,7 @@ Biliverse 的 Rewrite 版把 JSON 接口整体重定向到第三方网关 `app.n
 | `[Script]` | `cron` / `generic` | 脚本 | ✅ 提醒 + 状态看板 |
 | `[Script]` | `network-changed` | 脚本 | ❌ 全量执行、只能弹通知（§9.3） |
 | `[Script]` | `${response.status}` / `${response.header[…]}` / `${request.method}` 条件 | 脚本 | ❌ 与 `readBody` 的 not-json 分支重复（§9.2） |
-| `[Script]` | `with debug` / `binary_body_mode` / 动态 `timeout` | 脚本 | 🟡 debug 备用；timeout 已用；binary 已用于起点两条净化绑定（v3.5.3） |
+| `[Script]` | `with debug` / `binary_body_mode` / 动态 `timeout` | 脚本 | 🟡 debug 只保住 App 内脚本日志（21:35 判死「debug=true 落主日志」）；timeout 已用；binary 已用于起点两条净化绑定（v3.5.3） |
 | `[Script]` | `$done()` 无参 = 断开连接 **【文档】** | 脚本 | ❌（未用中断语义） |
 | `[MITM]` | `hostname = %APPEND% ...` **【未收录】** | 解密 | ⚪ 未文档化：保留待真机取证（§9.3） |
 | `[MITM]` | `h2 = true` **【未收录】** | 解密 | ⚪ 未文档化：防御性冗余，不进能力口径（§9.3） |
@@ -402,8 +402,8 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | `with timeout` / 动态 `timeout=${参数}` | ✅ | 每条 10s（cron 60s） |
 | 动态 `cron ${reminderCron}` | ✅ | 每日提醒的 cron 由 `[Argument]` input 提供 |
 | `with tag` / `with img_url` | ✅ | 状态按钮的图标与分组 |
-| `with debug=${开关}` | 🟡 | Loon 自己的脚本调试开关；现在 `X-Soda-Plugin` 头 + `console.log` 已能回答「跑没跑、跑到哪步」，等真机排障需要更细粒度时再挂 |
-| `binary_body_mode` | ✅ | 起点 getconf-clean / deep-clean 在用：真机证伪了「引擎替脚本解压 gzip」，字符串形态的 gzip 体 `1f 8b` 检测失效 ⇒ 脚本跑完零字段变更；开字节模式 + `respondJson` 按来路形态回写字节才闭环 |
+| `with debug=${开关}` | 🟡 | Loon 自己的脚本调试开关。2026-11-06 21:35 真机判死「debug=true 会把脚本 console 落主日志」：两条净化绑定 debug 常开后主日志仍 0 条脚本输出，官方口径 console.log 写「当前脚本日志」，只进 App 内脚本日志页；主日志侧的自证面只剩 `tag` 字面量与 `X-*-Plugin` 响应头 |
+| `binary_body_mode` | ✅ | 起点 getconf-clean / deep-clean 在用：真机证伪了「引擎替脚本解压 gzip」，字符串形态的 gzip 体 `1f 8b` 检测失效 ⇒ 脚本跑完零字段变更。`respondJson` 按来路形态回写字节属防御性冗余（$done 手册 String/Uint8Array 都收）；手册没说清脚本 headers 与原始 headers 是替换还是合并，故 v3.5.5 起对过期的 content-encoding/content-length 就地改写而非删键 |
 | `$done()` 无参（断开连接） | ❌ | 等价于 `REJECT-DROP`，会给客户端「连接被掐」而不是「服务器回了空」，反而更容易触发秒级重试 |
 
 ### 9.3 规则、MITM、General
