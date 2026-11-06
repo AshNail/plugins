@@ -530,9 +530,49 @@ luna/advert/splash/brand/report
 luna/ads/report/dsp/show
 ```
 
-两条都用原生 `reject_dict(200)`：返回 JSON `{}` 且带 `application/json`，SDK 按 JSON 解码不会报错。官方的 `reject(200)` 返回空 Body（`text/plain`），`reject(200, "{}")` 也只是普通文本——需要 JSON Content-Type 时必须用 `reject_dict` / `reject_array`。
+这两条是 v3.0.0 就有的老住户。原生 `reject_dict(200)`：返回 JSON `{}` 且带 `application/json`，SDK 按 JSON 解码不会报错。官方的 `reject(200)` 返回空 Body（`text/plain`），`reject(200, "{}")` 也只是普通文本——需要 JSON Content-Type 时必须用 `reject_dict` / `reject_array`。
 
 配置类端点不能直接 `reject_dict`：会丢掉 `status_code`，App 可能重试或走默认值——所以交给 `[Script]` 保留包络、只清广告容器。
+
+v3.3.0 起这一段另外多了 3 条 request 终止 + 2 条 response 字段级复写，来源是与 kelee lpx 的逐条对账，判据和风险见下一节。
+
+### 5.2.1 v3.3.0 与 kelee `SodaMusic_remove_ads.lpx` 逐条对账
+
+参考件是纯引擎侧的 Loon 插件（`loon_version=3.5.1(998)`，15 条 `[Rewrite]` + 1 条远程脚本）。逐条比对本插件的绑定矩阵与 `sanitize.js` 的 10 条 RULES 后，分成三堆。
+
+**采纳（5 条，全是本插件零覆盖的端点）**：
+
+| 端点 | 引擎动作 | 为什么本插件原先没有 |
+|---|---|---|
+| `luna/media_ads` | request `reject_dict(200)` | 绑定矩阵与 RULES 里都没有这条路径 |
+| `luna/activities` | request `reject_dict(200)` | 同上（注意别和 `luna/growth/activity*` 混——那是激励腿，本插件在用） |
+| `luna/listen-video/reminder` | request `reject_dict(200)` | 同上；【听抖音】的 Tab/入口另有 `hideDouyinTab`、`hideDouyinEntry` 两条脚本处理 |
+| `luna/me` | response `delete("reward_ad_banner")` | RULES 只匹配 `me/discover`，不含 `me` 本体 |
+| `luna/more-panel` | response jq 摘 `blocks[].type == "related_video"` | 完全没沾过 |
+
+**采纳（脚本侧 2 处，因为端点已被 `[Script]` 绑住，引擎再写一条会把脚本静默压掉）**：`sanitize.js` 的 `feed-ads` 规则补 `previewGuide` / `priorityDisplay` 两个 kill 键（`luna/card`），并新增一条按值过滤的 prune——`items[].type == "video_track_mix"`（`luna/feed/song-tab` 的混播视频卡）。这两条走的是脚本既有语义：`kill` 是置空（`emptyLike`）不是删键，`prune` 是整条摘掉；判据见 `tests/test_prune.js` §6/§7。
+
+**刻意不采纳（6 条）**：
+
+| lpx 规则 | 不采纳的理由 |
+|---|---|
+| `/luna/ads/` 前缀整族 request reject | 会连 `luna/ads/reward/receive` 与 `reward/settle` 一起掐掉——那是领奖链路。本插件只放行到 `ads/(config\|retrieve\|dsp/retrieve)` 三条，且这三条已有脚本保包络 |
+| `/luna/treasure/entrance/config` request reject | 福利页入口配置，`treasure-entrance` 规则按字段只摘广告标签（`reward_ad_banner` / `labels` / `bannerList`），整条拒等于把签到、金币、VIP 入口一起打掉 |
+| `/luna/commerce/v2/commerce_info` request reject | `autoTask` 的 💎 权益注入就绑在这一条上 |
+| `/luna/commerce/upsells_config` request reject | 现有 `upsells` 绑定是子串匹配，已经吃掉 `_config` 后缀；引擎再终止一次只是换执行层，还会把脚本的包络保留丢掉 |
+| `webcast-open.douyin.com/webcast/openapi/feed/` request reject | 要新加一台与抖音共用的 `[MITM]` 主机，而它是直播 Tab 的内容接口不是广告位 |
+| `tnc*-*.zijieapi.com/get_domains` 把 `ttnet_quic_enabled` 等 4 个开关置 0 + jq 过滤 `dispatch_actions` | 与 `[Rule]` 段那 25 条 `PROTOCOL,QUIC` 回退是同一目标的两种做法：lpx 让 SDK 自己不走 h3，本仓库是 h3 一律拒绝。换过来得先解密 tnc 主机，两套并存没有取证意义 |
+
+**风险与回退**：采纳的 5 条引擎规则里，3 条 `reject_dict(200)` 会丢掉 `status_code`——按上面那条既有结论，这正是「配置类端点不该整条拒」的理由。这里仍然采纳，是因为 media_ads / activities / listen-video·reminder 的响应体里没有业务字段，`{}` 与「业务字段清空」等价；真机若出现活动页反复重试或空白，回退动作就是删对应那一行，不动其它。`me` / `more-panel` 的字段名照 lpx 原文（汽水响应无 Argus 式包络，裸键就是顶层键），响应形状若不同就是无害的空操作。
+
+**取证判据（汽水在本机 2026-11-06 13:09 那份日志里零流量，所以这 5+2 条全部未取证）**：
+
+1. 装载行 `Load N rules. M scripts. K rewrites.`——`K` 应该比未装本插件时多 8；
+2. 播放/刷 feed 期间应出现 `Match MITM host:api5-lf.qishui.com`（或 api3-* / beta-luna）——没有这行就是主机没进 `[MITM]`，脚本与复写都看不见 body；
+3. `[soda] feed-ads | n change(s)` 与 `X-Soda-Plugin: soda-sanitize` 响应头说明脚本层在跑；
+4. 若日志里出现 `ce=br` 诊断字段，说明压缩降级失败（`Accept-Encoding` 那条常开复写没生效），净化会「看起来没作用」；
+5. 新采纳的 5 条要在页面上验：我的页激励 banner 块消失、更多面板没有视频推广块、开屏后没有活动弹窗。
+
 
 ### 5.3 语法说明
 
@@ -541,9 +581,11 @@ luna/ads/report/dsp/show
 ```
 request if ${splashClean} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject_dict(200)
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/report\/dsp\/show/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/media_ads(?:\?|$)/ then reject_dict(200)
+response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/more-panel(?:\?|$)/ then response.json.jq(".blocks |= map(select(.type != \"related_video\"))")
 ```
 
-注意不是 Surge 的 `url reject`。`reject_dict(status)` 的状态码范围是 100–599；HTTPS 命中需要该域名在 `[MITM]` 中。
+注意不是 Surge 的 `url reject`。`reject_dict(status)` 的状态码范围是 100–599；HTTPS 命中需要该域名在 `[MITM]` 中。luna 的主机对必须两个都写（lint 的 luna host parity 门禁），`jq` 表达式里的引号按 lpx 口径写成 `\"`。
 
 ### 5.4 请求侧减负：开屏广告请求拦截（默认开）
 

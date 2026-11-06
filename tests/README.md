@@ -68,14 +68,14 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 
 `tests/fixtures/` 里放的是**真实抓包样本**（2026-10-20 HAR）：`douyin_treasure_page.json`（抖音福利页原始响应）、`soda_incentive_done.json`（汽水发奖请求/响应），用于防止“按想象改字段”。
 
-**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1714 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
+**测试数字门禁**：下面这张「断言分布」表与本页的「27 套件 ×2 = 54 套件 / 1726 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
 
 ## 断言分布
 
 | 测试 | 断言数 | 覆盖 |
 |---|---:|---|
 | `test_sanitize2.js` | 19 | 通用字段清洗、包络保留、非目标端点不误伤 |
-| `test_prune.js` | 13 | `incentive/config` 的 `advert_sources` / `feed_advert_config` / `preload` |
+| `test_prune.js` | 19 | `incentive/config` 的 `advert_sources` / `feed_advert_config` / `preload` |
 | `test_taskinfos.js` | 1 | `task_infos` 广告任务裁剪（保留签到/听歌/逛商城） |
 | `test_ads_surfaces.js` | 36 | 开屏、广告位、DSP、兜底、卡片、增长入口、upsell、新增广告配置容器（ad_feed_pre_show / ad_information_flow / bdp_splash_ad_config 等）、开屏缓存/预加载/传感器配置清空 |
 | `test_soda_upsell_v2.js` | 56 | soda `upsell_map`：真实 93 弹窗样本删除广告/商城实体、奖励弹窗保留、排序/冷启动/频控同步、只带 `upsell_map` 的响应也能命中 |
@@ -102,7 +102,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_check_update.js` | 23 | 版本检查静音：只把 `has_update` / `hasUpdate` 置 false、包络与同形键零接触、无键/非 JSON 原样透传、gzip 解出后同样生效、回写时清掉过期的 `content-encoding` / `content-length` |
 | `test_args_schema.js` | 37 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
 
-合计 **857** 条断言；源码与压缩版各一遍，共 **1714** 条。
+合计 **863** 条断言；源码与压缩版各一遍，共 **1726** 条。
 
 ## 抖音插件（douyin.plugin）
 

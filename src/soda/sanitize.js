@@ -139,9 +139,13 @@ const RULES = [
            "videoEndAd", "feedAds", "feedRewardAdEntrance",
            "audioAd", "midRollAd", "midRollAds", "pauseAd",
            "recommendAd", "searchBanner", "sponsorCard", "commercialNotice",
-           "promotedTrack", "promotedSong"],
+           "promotedTrack", "promotedSong",
+           /* kelee SodaMusic_remove_ads.lpx 对账补漏（luna/card）：卡片级推广引导与优先级插位 */
+           "previewGuide", "priorityDisplay"],
     prune: [
-      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i }
+      { key: "bannerList", match: /ad[_-]?reward|reward[_-]?ad|ads_banner|ad_snap|incentive[_-]?ad|看视频|看广告/i },
+      /* luna/feed/song-tab 的混合视频卡（lpx 同款判据：type 值，不是键名） */
+      { key: "items", match: /"type"\s*:\s*"video_track_mix"/i }
     ],
     dropAdItems: true
   },

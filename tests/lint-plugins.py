@@ -17,7 +17,7 @@ def escape_regex_slashes(pattern):
 
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
-    ("plugins/soda/soda.plugin", 5, 0, 2, 49, "soda"),
+    ("plugins/soda/soda.plugin", 5, 0, 5, 49, "soda"),
     ("plugins/douyin/douyin.plugin", 5, 0, 2, 11, "douyin"),
 ]
 

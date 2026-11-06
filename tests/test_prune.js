@@ -88,6 +88,37 @@ console.log('\n== 5. 激励配置仍正常 ==');
   check('preload -> false', o.preload === false);
 }
 
+console.log('\n== 6. lpx 对账补漏：card 的 preview_guide / priority_display ==');
+{
+  const r = run('https://api.qishui.com/luna/card', {
+    items: [{ id: 'a' }],
+    preview_guide: { text: '先看广告' },
+    card_items: [{ id: 'b', priority_display: { slot: 1 } }, { id: 'c' }]
+  });
+  const o = JSON.parse(r.done.body);
+  check('preview_guide 置空（sanitize 的 kill 语义是 emptyLike，不是删键）',
+    o.preview_guide && Object.keys(o.preview_guide).length === 0, JSON.stringify(o));
+  check('priority_display 置空',
+    o.card_items.every(x => !x.priority_display || Object.keys(x.priority_display).length === 0));
+  check('卡片本体保留', o.items.length === 1 && o.card_items.length === 2);
+}
+
+console.log('\n== 7. lpx 对账补漏：song-tab 的 video_track_mix 混播卡 ==');
+{
+  const r = run('https://api.qishui.com/luna/feed/song-tab', {
+    items: [
+      { type: 'song', id: 's1' },
+      { type: 'video_track_mix', id: 'v1' },
+      { type: 'playlist', id: 'p1' }
+    ]
+  });
+  const o = JSON.parse(r.done.body);
+  const types = o.items.map(x => x.type);
+  check('video_track_mix 被摘', !types.includes('video_track_mix'), types.join(','));
+  check('song 保留', types.includes('song'));
+  check('playlist 保留', types.includes('playlist'));
+}
+
 console.log('\n----------------------------------------');
 console.log('PASS='+pass+'  FAIL='+fail);
 process.exit(fail?1:0);

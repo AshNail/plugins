@@ -1,13 +1,13 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐全能助手 v3.2.0:整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),已连同配套 QUIC 回退与 gzip 降级一起补进静态层——本轮零新增绑定,只是把取证通道打开。致谢:起点读书 finishWatch 重放机制启发。
+#!desc=汽水音乐全能助手 v3.3.0:整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),已连同配套 QUIC 回退与 gzip 降级一起补进静态层——本轮零新增绑定,只是把取证通道打开。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条本插件零覆盖的端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡;另 6 条按激励链路与共主机成本刻意不采纳,理由写在 [Rewrite] 段头。汽水在本机日志里零流量,这 5+2 条尚未取证——判据见 README「汽水净化取证」。致谢:起点读书 finishWatch 重放机制启发。
 #!author=edy
-#!version=3.2.0
+#!version=3.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://lf3-static.bytednsdoc.com/obj/eden-cn/zvtheh7pfpenuhog/cyber_logo/music.png
 #!system=ios
 #!loon_version=3.5.1(983)
-#!date=2026-11-05
+#!date=2026-11-06
 #!tag=汽水音乐,统一,开关,Loon,自动化,激励任务
 
 # ============================================================================
@@ -183,6 +183,45 @@ request if ${splashClean} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|
 
 # DSP 广告展示上报：去广告模式下阻断无用出网并回 200 + JSON {}；由 cleanAds 开关控制。
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/ads\/report\/dsp\/show/ then reject_dict(200)
+
+# ----------------------------------------------------------------------------
+# v3.3.0 与 kelee SodaMusic_remove_ads.lpx（Loon 3.5.1(998)，纯引擎侧）逐条对账
+# ----------------------------------------------------------------------------
+# 采纳的 5 条有个共同点：本插件的 [Script] 绑定矩阵里**一条都没沾到这些端点**，
+# sanitize.js 的 10 条 RULES 也没清过它们的字段——也就是 lpx 带来的净新增净化面。
+# 写在引擎侧而不是新写脚本的原因和起点 v3.3.0 一样：脚本读 body 要先 ungzip
+# （只有 Build ≥ 988 提供），引擎自己解压；reject_dict 连回包都不用拿。
+# 主机对仍写 api.qishui.com + beta-luna.douyin.com 两个（lint 的 luna host parity
+# 门禁：真机日志里两个主机都在承接 luna 流量，少一个就是「插件在跑、清理不到」）。
+# ⚠ 未取证：汽水在 2026-11-06 13:09 那份日志里零流量，这 5 条是从 lpx 逐字移植、
+# 按端点语义判断采纳的。字段名（reward_ad_banner / blocks+related_video）照 lpx 原文，
+# 响应形状若不同就是无害的空操作——判据见 README「汽水净化取证」。
+# 刻意不采纳的 6 条，理由同 README 同名小节：/luna/ads/ 前缀整族（会连 reward/receive|settle
+# 一起掐掉领奖链路，本插件只放行到 ads/(config|retrieve|dsp/retrieve) 三条）、
+# /luna/treasure/entrance/config（福利页入口，本插件当激励面在用，sanitize 只摘广告标签不整条拒）、
+# /luna/commerce/v2/commerce_info（autoTask 的 VIP 权益注入就绑在这一条上）、
+# /luna/commerce/upsells_config（已被上面那条 upsells 绑定按子串吃掉，引擎再终止只是换执行层）、
+# webcast-open.douyin.com/webcast/openapi/feed/（要新加一台与抖音共用的 [MITM] 主机，
+# 而它是直播 Tab 的内容接口不是广告位——先取证再说）、
+# tnc*-*.zijieapi.com/get_domains 的 quic/httpdns 置 0（和上面 [Rule] 段那 25 条
+# PROTOCOL,QUIC 回退是同一个目标的两种做法，两套并存要重新取证：lpx 那套是
+# 「让 SDK 自己不走 h3」，本仓库这套是「h3 一律拒绝」，换过来得先解密 tnc 主机）。
+# ----------------------------------------------------------------------------
+
+# 媒体广告位配置：纯广告端点，响应体里没有业务字段。
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/media_ads(?:\?|$)/ then reject_dict(200)
+
+# 运营活动列表：同上，纯运营载荷。
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/activities(?:\?|$)/ then reject_dict(200)
+
+# 看视频听歌提醒弹窗：广告向引导，不含业务字段。
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/listen-video\/reminder(?:\?|$)/ then reject_dict(200)
+
+# 「我的」页：只剥激励广告 banner 字段，页面其余结构保留（lpx 原文是裸键，汽水响应无包络）。
+response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/me(?:\?|$)/ then response.json.delete("reward_ad_banner")
+
+# 更多面板：blocks 里只摘 type=related_video 的视频推广块（`\"` 转义写法来自 lpx，Loon 引擎吃这套）。
+response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/more-panel(?:\?|$)/ then response.json.jq(".blocks |= map(select(.type != \"related_video\"))")
 
 
 # ============================================================================
