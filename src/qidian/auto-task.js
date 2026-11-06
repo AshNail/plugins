@@ -1,5 +1,5 @@
 /**
- * 起点读书 · 看书激励助手 v3.4.0
+ * 起点读书 · 看书激励助手 v3.5.0
  *
  * 核心功能（看书+激励）：
  *
@@ -173,7 +173,7 @@ function debugLog(msg) {
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.4.0";
+const ANCHOR_BUILD = "3.5.0";
 
 function anchor(msg) {
   try { console.log("[起点锚点] b=" + ANCHOR_BUILD + " " + msg); } catch (e) {}
