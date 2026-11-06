@@ -4,8 +4,7 @@
   "_country": "CN",
   "_size": "512x512bb.jpg",
   "_exceptions": {
-    "ads": "全站拦截器不针对任何一款 App，国区没有对应条目；保留品牌 CDN 图，见 tests/lint-plugins.py 的 ICON_CDN_EXCEPTIONS",
-    "qidian-pro": "起点 Pro 是逐字移植件（用户明确要求不改一个字），连 #!icon 行都没有——补一行就是改移植件。图标身份与 qidian 同一条目，见 plugins 里 alias_of"
+    "ads": "全站拦截器不针对任何一款 App，国区没有对应条目；保留 AdGuard 品牌 CDN 图。门禁是 tests/lint-plugins.py 的 check_icon_cdn()，例外表就是本键——加一条必须写理由"
   },
   "plugins": {
     "qidian": {
