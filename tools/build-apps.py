@@ -16,6 +16,10 @@
 - 只用 [Rule]（DOMAIN-SUFFIX / DOMAIN-KEYWORD）与 [Host] 黑洞两类段；
   不生成拦截/改写型配置（[MITM]/[Rewrite]/request·response 型 [Script]）——
   这些插件服务银行与业务敏感 App，零证书是底线。
+- 唯一例外：`enhance.active=true` 的 App（未做证书固定，用户裁决）允许默认输出
+  [MITM]+[Rewrite]+[Script] 三层；其中 [Rewrite] 是净化主力（引擎自己解压 gzip），
+  每条规则必须逐字带 note+source，且与同 URL 的脚本绑定互斥——只有显式标
+  `probe=true` 的绑定才允许被复写抑制，充当「复写是否命中」的锚定探针。
 - 唯一脚本例外：app.get("crons") 声明的 [Script] cron 型本地通知——Loon 定时器
   本地触发、只发 $notification 附 App 内路由深链，零 MITM、零网络请求；
 - 例外：未做证书固定的 App 可带 `enhance` 可选增强层——**整段注释**输出
@@ -450,6 +454,19 @@ def escape_regex_slashes(pattern: str) -> str:
 # active=true 的 App 才允许出现 [Argument]/[MITM]/[Script] 三类默认生效配置，
 # 且每一行都要能被源逐行重述（tests/lint-plugins.py 的 check_app_plugins 复审）。
 BIND_KINDS = {"request", "response", "cron", "generic"}
+# active 增强层的引擎复写层（[Rewrite]）：Loon v2 复写语法，一条规则一行。
+# 为什么要这一层而不是脚本：起点 Argus 的响应带 Content-Encoding: gzip，
+# [Script] 侧读响应体必须先解压，而 $utils.ungzip 只有 Build ≥ 988 提供，
+# 低版本走 silent passthrough ⇒ 净化静默零生效（真机 HAR 实证见 qidian.json）。
+# response.json.* / reject_* 都由引擎完成解压与终止响应，脚本链的 gzip 面整个消失。
+REWRITE_STAGES = {"request", "response"}
+REWRITE_TERMINATE_RE = re.compile(r"^reject_(dict|array|img|video)\((200|204|404)\)$")
+REWRITE_JSON_RE = re.compile(
+    r"^response\.json\.(?P<kind>replace|delete|jq)\((?P<args>.*)\)$", re.S
+)
+REWRITE_ID_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+DOT_PATH_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
+SCALAR_JSON_RE = re.compile(r'^(?:".*"|-?\d+(?:\.\d+)?|true|false|null)$')
 CRON_EXPR_RE = re.compile(r"^\S+ \S+ \S+ \S+ \S+$")
 ARG_NAME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9]*$")
 SCRIPT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -564,7 +581,19 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
                     )
         if kind == "cron" and not CRON_EXPR_RE.match(b.get("cron", "")):
             raise BuildError(f"{where}: bindings[{bid}].cron 需 5 段: {b.get('cron')!r}")
+        if b.get("probe"):
+            if kind not in ("request", "response"):
+                raise BuildError(
+                    f"{where}: bindings[{bid}].probe 只对 request/response 绑定有意义"
+                    "（cron/generic 没有 URL，谈不上被复写抑制）"
+                )
+            if not enh.get("rewrite"):
+                raise BuildError(
+                    f"{where}: bindings[{bid}].probe 声称「等着被 enhance.rewrite 抑制」，"
+                    "但源里一条复写规则都没有"
+                )
         lines.append(render_binding(b))
+    validate_rewrite(enh, where, names, bindings)
     return lines
 
 
@@ -597,6 +626,257 @@ def render_binding(b: dict) -> str:
     return head + ", ".join(attrs)
 
 
+def split_action_args(text: str) -> list[str]:
+    """按顶层逗号切分动作参数：尊重双引号（含 \\" 转义）与中括号嵌套。"""
+    parts: list[str] = []
+    buf = ""
+    depth = 0
+    in_str = False
+    esc = False
+    for ch in text:
+        if in_str:
+            buf += ch
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+            buf += ch
+            continue
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth < 0:
+                raise ValueError("括号不平衡")
+        if ch == "," and depth == 0:
+            parts.append(buf.strip())
+            buf = ""
+        else:
+            buf += ch
+    if depth != 0 or in_str:
+        raise ValueError("括号或引号不平衡")
+    parts.append(buf.strip())
+    return [p for p in parts if p != ""]
+
+
+def check_json_action(action: str, where: str) -> None:
+    """response.json.replace|delete|jq 的参数形状校验。
+
+    官方《Rewrite 新语法》两条硬约束在这里都会踩：① 批量参数是**两个等长平行数组**
+    （keys 与 values 按下标配对，写成扁平单数组会被加载期拒绝）；② JSON 值只支持
+    String/Number/Boolean/null/变量，**不含数组/对象**——置空数组必须走 json.jq。
+    """
+    m = REWRITE_JSON_RE.match(action)
+    if not m:
+        raise BuildError(f"{where}: 不是合法的 response.json.* 动作: {action!r}")
+    kind = m.group("kind")
+    try:
+        args = split_action_args(m.group("args"))
+    except ValueError as e:
+        raise BuildError(f"{where}: 动作参数解析失败（{e}）: {action!r}") from e
+    if kind == "replace":
+        if not args:
+            raise BuildError(f"{where}: json.replace 需要参数: {action!r}")
+        if args[0].startswith("["):
+            if len(args) != 2 or not args[1].startswith("["):
+                raise BuildError(
+                    f"{where}: json.replace 批量形态必须是两个等长平行数组 "
+                    f"replace([k1,k2],[v1,v2])，得到 {args!r}"
+                )
+            try:
+                keys, values = json.loads(args[0]), json.loads(args[1])
+            except json.JSONDecodeError as e:
+                raise BuildError(f"{where}: json.replace 数组不是合法 JSON（{e}）: {action!r}") from e
+            if len(keys) != len(values):
+                raise BuildError(
+                    f"{where}: json.replace 平行数组长度不等 "
+                    f"keys={len(keys)} values={len(values)}"
+                )
+            for k in keys:
+                if not isinstance(k, str) or not DOT_PATH_RE.match(k):
+                    raise BuildError(f"{where}: json.replace 键名不是点分路径: {k!r}")
+            for v in values:
+                if isinstance(v, (list, dict)):
+                    raise BuildError(
+                        f"{where}: json.replace 的值不支持数组/对象（官方口径），置空数组用 json.jq: {v!r}"
+                    )
+        else:
+            if len(args) != 2:
+                raise BuildError(f"{where}: json.replace 单键形态需要 (key, value): {args!r}")
+            if not (args[0].startswith('"') and args[0].endswith('"')):
+                raise BuildError(f"{where}: json.replace 键必须是双引号字符串: {args[0]!r}")
+            if not SCALAR_JSON_RE.match(args[1]):
+                raise BuildError(f"{where}: json.replace 值不是标量: {args[1]!r}")
+    elif kind == "delete":
+        if len(args) != 1:
+            raise BuildError(f"{where}: json.delete 只接受一个参数（键或键数组）: {args!r}")
+        arg = args[0]
+        if arg.startswith("["):
+            try:
+                keys = json.loads(arg)
+            except json.JSONDecodeError as e:
+                raise BuildError(f"{where}: json.delete 键数组非法 JSON（{e}）") from e
+            if not all(isinstance(k, str) and DOT_PATH_RE.match(k) for k in keys):
+                raise BuildError(f"{where}: json.delete 键名不全是点分路径: {arg!r}")
+        elif not (DOT_PATH_RE.match(arg.strip('"')) or arg.strip('"') == arg.rstrip('"')):
+            raise BuildError(f"{where}: json.delete 键必须是点分路径字符串: {arg!r}")
+    else:  # jq
+        if len(args) != 1 or not (args[0].startswith('"') and args[0].endswith('"')):
+            raise BuildError(f"{where}: json.jq 需要一个双引号表达式: {args!r}")
+        if "`" in args[0]:
+            raise BuildError(f"{where}: json.jq 表达式不许含反引号: {args[0]!r}")
+
+
+def render_rewrite_rule(item: dict) -> str:
+    """一条 active [Rewrite] 规则。开关前置成 `${gate} == true` 条件（插件参数在
+    新语法里就是这么消费的），正则按 Loon 字面量要求把裸 `/` 转义。"""
+    return (
+        f'{item["stage"]} if ${{{item["gate"]}}} == true && ${{url}} ~= '
+        f'/{escape_regex_slashes(item["url"])}/ then {item["action"]}'
+    )
+
+
+def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dict]) -> list[str]:
+    """active [Rewrite] 层的源侧校验：返回规则行（生成与 lint 共用同一份判定）。
+
+    官方互斥口径（LOON-FEATURES §1.8）：Response Body Rewrite 命中 → Response Script
+    不执行；Request 阶段终止响应 → 两侧脚本均不执行。所以「同一条 URL 既挂复写又挂
+    脚本」默认是违规的——只有显式声明 `probe=true` 的绑定才允许被复写抑制，用作
+    「复写到底命中没有」的锚定探针。
+    """
+    rules = enh.get("rewrite") or []
+    if not rules:
+        return []
+    if enh.get("rewrite_json"):
+        raise BuildError(
+            f"{where}: enhance.rewrite（默认生效）与 rewrite_json（注释态基线）二选一，"
+            "同端点两处声明必然漂移"
+        )
+    lines: list[str] = []
+    touched_probe: set[str] = set()
+    for item in rules:
+        if not isinstance(item, dict):
+            raise BuildError(f"{where}: enhance.rewrite 项必须是对象")
+        rid = item.get("id", "?")
+        where_i = f"{where}: rewrite[{rid}]"
+        if not REWRITE_ID_RE.match(rid):
+            raise BuildError(f"{where_i}: id 非法（kebab-case）: {rid!r}")
+        stage = item.get("stage")
+        if stage not in REWRITE_STAGES:
+            raise BuildError(f"{where_i}: stage {stage!r} 不在 {sorted(REWRITE_STAGES)}")
+        url, endpoint = item.get("url", ""), item.get("endpoint", "")
+        if not url.startswith("^https://"):
+            raise BuildError(
+                f"{where_i}: url 必须以 ^https:// 开头——与 enhance.bindings 的 pattern 同口径，"
+                f"真机 HAR 里起点这些接口只有 HTTPS 形态: {url!r}"
+            )
+        try:
+            re.compile(url)
+        except re.error as e:
+            raise BuildError(f"{where_i}: url 正则非法: {e}") from e
+        if not endpoint or endpoint not in url.replace("\\.", "."):
+            raise BuildError(
+                f"{where_i}: endpoint {endpoint!r} 必须逐字出现在 url 正则里，"
+                "否则互斥判定就是在比一个正则里没有的片段"
+            )
+        bare_url = url.replace("\\.", ".")
+        if not any(".".join(h.split(".")[-2:]) in bare_url for h in enh.get("mitm_hosts", [])):
+            raise BuildError(f"{where_i}: url 正则没覆盖任何 enhance.mitm_hosts（复写要先解密）")
+        for key in ("note", "source"):
+            if not item.get(key):
+                raise BuildError(f"{where_i}: 缺 {key}（每条复写都要能自证出处）")
+        gate = item.get("gate")
+        if gate not in names:
+            raise BuildError(f"{where_i}: gate {gate!r} 不在 enhance.arguments 里")
+        action = item.get("action", "")
+        if REWRITE_JSON_RE.match(action):
+            if stage != "response":
+                raise BuildError(f"{where_i}: response.json.* 只能挂在 response 侧")
+            check_json_action(action, where_i)
+        elif REWRITE_TERMINATE_RE.match(action):
+            if stage != "request":
+                raise BuildError(
+                    f"{where_i}: reject_* 在 request 侧终止响应（两侧脚本都不执行），"
+                    "不许挂在 response 侧"
+                )
+        else:
+            raise BuildError(
+                f"{where_i}: action 不在白名单（response.json.replace|delete|jq / "
+                f"reject_dict|array|img|video）: {action!r}"
+            )
+        for b in bindings:
+            if b.get("kind") not in ("request", "response"):
+                continue
+            same_side = b["kind"] == stage
+            kills = REWRITE_TERMINATE_RE.match(action) is not None
+            if not (same_side or kills):
+                continue
+            if endpoint in b.get("pattern", ""):
+                if not b.get("probe"):
+                    raise BuildError(
+                        f"{where_i}: 端点 {endpoint!r} 同时被 [Script] 绑定 "
+                        f"{b.get('id')!r}（{b['kind']}）覆盖——复写命中会静默压掉脚本。"
+                        "要留它当探针就给绑定加 probe=true，否则把绑定删掉。"
+                    )
+                touched_probe.add(b["id"])
+        lines.append(render_rewrite_rule(item))
+    for b in bindings:
+        if b.get("probe") and b["id"] not in touched_probe:
+            raise BuildError(
+                f"{where}: 绑定 {b['id']!r} 标了 probe=true，但没有任何 enhance.rewrite "
+                "规则命中它的端点——探针标记已失效，要么补规则要么去掉标记"
+            )
+    return lines
+
+
+def rewrite_rule_lines(enh: dict, where: str) -> list[str]:
+    """lint 对账入口：只返回应当逐字出现在产物 [Rewrite] 段里的规则行。"""
+    names = [a.get("name") for a in enh.get("arguments") or []]
+    return validate_rewrite(enh, where, names, enh.get("bindings") or [])
+
+
+def render_rewrite_section(enh: dict, where: str) -> list[str]:
+    """active [Rewrite] 段整段渲染（含段头说明与逐条注释）。"""
+    rules = enh.get("rewrite") or []
+    if not rules:
+        return []
+    lines = [
+        "",
+        "# " + "=" * 72,
+        "# 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）",
+        "# " + "-" * 72,
+        "# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；",
+        "# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，",
+        "# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、",
+        "# reject_* 自己终止响应，gzip 面整个消失。",
+        "# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，",
+        "# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。",
+        "# " + "=" * 72,
+        "",
+        "[Rewrite]",
+        "",
+    ]
+    last_group = None
+    for item in rules:
+        group = item.get("group")
+        if group and group != last_group:
+            lines.append("# " + "-" * 60)
+            lines.append(f"# {group}")
+            lines.append("# " + "-" * 60)
+            last_group = group
+        elif group is None and last_group is not None:
+            last_group = None
+        lines.append(f'# {item["id"]}: {item["note"]}（来源 {item["source"]}）')
+        lines.append(render_rewrite_rule(item))
+        lines.append("")
+    return lines
+
+
 def render_arguments(enh: dict, where: str) -> list[str]:
     validate_enhance_active(enh, where)
     out = [
@@ -620,7 +900,7 @@ def render_arguments(enh: dict, where: str) -> list[str]:
 
 
 def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[str]:
-    """active 增强层的默认生效配置层：[MITM] hostname + [Script] 绑定。"""
+    """active 增强层的默认生效配置层：[MITM] hostname + [Rewrite] 复写 + [Script] 绑定。"""
     validate_enhance_active(enh, where)
     hosts = enh.get("mitm_hosts", [])
     out = [
@@ -640,6 +920,7 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
         f"hostname = %APPEND% {', '.join(hosts)}",
         "",
     ]
+    out += render_rewrite_section(enh, where)
     if not has_cron_section:
         out += [
             "# " + "=" * 72,

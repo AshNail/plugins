@@ -164,6 +164,62 @@ function debugLog(msg) {
 }
 
 // ==========================================
+// 📌 锚定日志（v3.3.0 方向 A 试验期**常开**，不受 debugLog 门禁）
+// ==========================================
+// 目的只有一个：把「执行面」的事实钉进真机日志，供后续优化对账，判读口径：
+//   · 有 anchor phase=response 行        ⇒ 这条 URL 的 [Script] 绑定被调用了
+//   · 同 URL 有 [Rewrite] 规则却仍有此行 ⇒ 官方互斥没生效，或复写正则没命中
+//   · 此行消失                            ⇒ 复写命中并接管（净化改由引擎做）
+//   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
+//   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
+// 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
+const ANCHOR_BUILD = "3.3.0";
+
+function anchor(msg) {
+  try { console.log("[起点锚点] b=" + ANCHOR_BUILD + " " + msg); } catch (e) {}
+}
+
+function anchorEnv() {
+  let ungzip = "missing";
+  try {
+    if (typeof $utils !== "undefined" && typeof $utils.ungzip === "function") ungzip = "present";
+  } catch (e) {}
+  return "ungzip=" + ungzip + " debug=" + DEBUG;
+}
+
+// 只记长度与压缩特征，绝不把 body 写进日志（含用户凭据与书籍正文）。
+function bodyShape(body) {
+  if (body === null || body === undefined) return "none";
+  if (typeof body === "string") {
+    return "str:" + body.length +
+      (body.length > 1 && body.charCodeAt(0) === 0x1f && body.charCodeAt(1) === 0x8b ? " gzip" : "");
+  }
+  if (typeof Uint8Array !== "undefined" && body instanceof Uint8Array) {
+    return "u8:" + body.length + (body[0] === 0x1f && body[1] === 0x8b ? " gzip" : "");
+  }
+  if (typeof ArrayBuffer !== "undefined" && body instanceof ArrayBuffer) {
+    return "ab:" + body.byteLength +
+      (new Uint8Array(body).length > 1 && new Uint8Array(body)[0] === 0x1f ? " gzip?" : "");
+  }
+  return typeof body;
+}
+
+function pickHeader(headers, name) {
+  if (!headers) return "";
+  const want = String(name).toLowerCase();
+  for (const k of Object.keys(headers)) {
+    if (String(k).toLowerCase() === want) return String(headers[k] || "");
+  }
+  return "";
+}
+
+function anchorBody(response) {
+  if (!response) return "";
+  return " body=[" + bodyShape(response.body) + "] enc=" +
+    (pickHeader(response.headers, "content-encoding") || "-");
+}
+
+// ==========================================
 // 🚀 主入口
 // ==========================================
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -172,13 +228,18 @@ function debugLog(msg) {
 
   // Cron 模式：无 $request → 定时任务
   if (typeof $request === "undefined") {
-    debugLog("Cron 模式启动");
+    let tk = "";
+    try { tk = ($persistentStore.read("Qidian_Headers") || "").length ? "set" : "none"; } catch (e) { tk = "err"; }
+    anchor("phase=timer " + anchorEnv() + " token=" + tk);
     await runCronTasks(E);
     E.done();
     return;
   }
 
   const { url, method } = $request;
+  anchor("phase=" + (typeof $response === "undefined" ? "request" : "response") +
+    " " + method + " " + url.replace(/^https?:\/\/[^/]+/, "").slice(0, 90) +
+    " " + anchorEnv() + anchorBody($response));
   debugLog("请求: " + method + " " + url.substring(0, 120));
 
   // ── A. Token 窃取（response 阶段） ──
@@ -242,7 +303,8 @@ function debugLog(msg) {
     return;
   }
 
-  // ── I. 响应净化 ──
+  // ── I. 响应净化（v3.3.0 起为**回退层**：同 URL 的 [Rewrite] 复写命中时官方会抑制本脚本，
+  //     所以这一段还能跑到，就说明对应复写规则没命中或本就没有复写覆盖）──
   if (typeof $response !== "undefined") {
     // 开屏广告
     if (path.includes("getsplashscreen")) { debugLog("处理开屏广告"); handleSplashScreen(E, $response); return; }
@@ -270,6 +332,7 @@ function debugLog(msg) {
     if (path.includes("readtime/readpage")) { debugLog("处理每日阅读积分"); handleReadTime(E, $response); return; }
     // 净化规则
     if (matchCleanRule(path)) { debugLog("匹配净化规则: " + path); handleClean(E, path, $response); return; }
+    anchor("js-sanitize=none path=" + path.slice(0, 80) + "（该 URL 没有被任何脚本处置认领）");
   }
 
   E.done();
@@ -442,22 +505,14 @@ function respondJson(E, obj, tag) {
 // 🔧 响应净化
 // ==========================================
 function handleClientConfig(E, response) {
-  console.log("[起点全能助手] handleClientConfig 开始执行");
-  debugLog("handleClientConfig 开始执行");
-  
-  const bodyType = typeof response.body;
-  console.log("[起点全能助手] response.body 类型: " + bodyType);
-  
   const obj = safeJsonParse(response.body);
   if (!obj) {
-    console.log("[起点全能助手] JSON 解析失败，跳过净化");
-    debugLog("handleClientConfig: JSON 解析失败, body 类型: " + bodyType);
+    anchor("getconf parsed=0 reason=parse-fail" + anchorBody(response));
     E.done();
     return;
   }
   if (!obj.Data) {
-    console.log("[起点全能助手] obj.Data 不存在");
-    debugLog("handleClientConfig: obj.Data 不存在");
+    anchor("getconf parsed=1 reason=no-Data result=" + obj.Result);
     E.done();
     return;
   }
@@ -475,9 +530,8 @@ function handleClientConfig(E, response) {
     obj.Data.CloudSetting.TeenShowFreq = "0";
   }
 
-  console.log("[起点全能助手] getconf 净化: " + changes.length + " 项变更");
+  anchor("getconf parsed=1 changes=" + changes.length + "（此行出现=复写未接管 getconf，脚本仍在净化）");
   debugLog("getconf 净化: " + changes.length + " 项变更 [" + changes.slice(0, 5).join(", ") + (changes.length > 5 ? "..." : "") + "]");
-  E.log("getconf 净化完成");
   respondJson(E, obj, "qidian-sanitize");
 }
 
@@ -813,20 +867,22 @@ function safeJsonParse(body) {
   if (typeof body === "string") {
     // 检测 gzip 魔数 (1f 8b)
     if (body.length >= 2 && body.charCodeAt(0) === 0x1f && body.charCodeAt(1) === 0x8b) {
-      console.log("[起点全能助手] [DEBUG] 响应体是 gzip 压缩数据，尝试解压");
+      if (typeof $utils === "undefined" || typeof $utils.ungzip !== "function") {
+        anchor("gzip str len=" + body.length + " ungzip=missing ⇒ 本侧净化必然 passthrough");
+        return null;
+      }
       try {
-        if (typeof $utils !== "undefined" && $utils.ungzip) {
-          const decompressed = $utils.ungzip(body);
-          return JSON.parse(decompressed);
-        }
+        const obj = JSON.parse($utils.ungzip(body));
+        anchor("gzip str len=" + body.length + " ungzip=ok");
+        return obj;
       } catch (e) {
-        console.log("[起点全能助手] [DEBUG] gzip 解压失败: " + e.message);
+        anchor("gzip str len=" + body.length + " ungzip=fail " + String((e && e.message) || e).slice(0, 60));
       }
       return null;
     }
     
     try { return JSON.parse(body); } catch (e) { 
-      console.log("[起点全能助手] [DEBUG] JSON 解析失败: " + e.message + ", body前100字符: " + body.substring(0, 100));
+      console.log("[起点全能助手] [DEBUG] JSON 解析失败: " + String((e && e.message) || e).slice(0, 60) + ", len=" + body.length);
       return null; 
     }
   }
@@ -834,7 +890,7 @@ function safeJsonParse(body) {
   // 处理 Uint8Array / ArrayBuffer
   if (body instanceof Uint8Array || body instanceof ArrayBuffer) {
     const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
-    console.log("[起点全能助手] [DEBUG] 响应体是二进制数据，长度: " + bytes.length);
+    anchor("binary " + (body instanceof Uint8Array ? "u8" : "ab") + " len=" + bytes.length);
     // 检测 gzip
     if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
       try {
@@ -842,8 +898,9 @@ function safeJsonParse(body) {
           const decompressed = $utils.ungzip(body);
           return JSON.parse(decompressed);
         }
+        anchor("binary gzip ungzip=missing ⇒ 本侧净化必然 passthrough");
       } catch (e) {
-        console.log("[起点全能助手] [DEBUG] 二进制 gzip 解压失败: " + e.message);
+        anchor("binary gzip ungzip=fail " + String((e && e.message) || e).slice(0, 60));
       }
     }
     // 尝试直接转字符串
@@ -853,7 +910,7 @@ function safeJsonParse(body) {
         return JSON.parse(str);
       }
     } catch (e) {
-      console.log("[起点全能助手] [DEBUG] 二进制转字符串失败: " + e.message);
+      anchor("binary textDecode=fail " + String((e && e.message) || e).slice(0, 60));
     }
   }
   

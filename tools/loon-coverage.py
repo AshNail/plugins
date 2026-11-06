@@ -366,9 +366,12 @@ CAPABILITIES = [
     dict(layer="复写层", key="w-req-json", name="`request.json.*`", expect="reject",
          probe=r"then\s+request\.json\.", href=DOC + "/Rewrite/rewrite_v2",
          why="本插件不改请求体；请求侧无广告载荷需要剥"),
-    dict(layer="复写层", key="w-res-json-field", name="`response.json.add/delete/replace`", expect="reject",
+    dict(layer="复写层", key="w-res-json-field", name="`response.json.add/delete/replace`", expect="used",
          probe=r"then\s+response\.json\.(?:add|delete|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="soda/douyin 的响应层是字段级脚本 + 开关分支；原生 JSON 改写命中后同阶段脚本不执行，会整条废掉「保奖励」判断"),
+         why="qidian 净化层改由它承担（getconf 30 键 replace + 11 项 delete、书架/福利/兑换页字段级删除）："
+             "起点 Argus 响应带 `Content-Encoding: gzip`，脚本侧解压依赖 `$utils.ungzip`（Build ≥ 988），"
+             "低版本静默 passthrough；引擎自己解压，gzip 面整个消失。"
+             "soda/douyin 仍判死——原生 JSON 改写命中后同阶段脚本不执行，会整条废掉「保奖励」判断"),
     dict(layer="复写层", key="w-res-json-jq", name="`response.json.jq`", expect="used",
          probe=r"then\s+response\.json\.jq\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="netease 插件用原生 jq 删除网易云广告字段（9 条生效，Mac response jq 未执行、待 iOS/TV 验证）；xianyu 可选层仍以注释态保留 15 条"),
@@ -391,9 +394,11 @@ CAPABILITIES = [
     dict(layer="复写层", key="w-mock-file", name="`body.mock_file` / 远程文件", expect="reject",
          probe=r"\.body\.mock_file\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="Mock 会整包替换响应，包络写错就是白屏；插件也不应依赖运行时远程拉取"),
-    dict(layer="复写层", key="w-batch", name="批量数组参数", expect="open",
+    dict(layer="复写层", key="w-batch", name="批量数组参数", expect="used",
          probe=r"then\s+\w+\.[\w.]*\(\s*\[", href=DOC + "/Rewrite/rewrite_v2",
-         why="单条规则只有一组参数，没有「同 URL 改多个头」的需求"),
+         why="qidian getconf 净化一条规则改 30 个开关字段（两个等长平行数组），"
+             "比拆 30 条规则少三次装载面也少三份 URL 匹配开销；"
+             "值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq`"),
 
     # ---------------- 脚本层 ----------------
     dict(layer="脚本层", key="s-trigger-request", name="Request Script（`request if ...`）", expect="used",

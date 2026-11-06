@@ -2775,8 +2775,9 @@ APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
 APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP"}
 APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+\s*=\s*\d{1,3}(?:\.\d{1,3}){3}$")
 APP_SECTIONS = {"Rule", "Host", "Script"}
-# enhance.active=true 的 App 插件才允许的段：净化层默认启用要靠 [Argument] 开关 + [MITM] 解密。
-APP_ACTIVE_SECTIONS = {"Argument", "MITM"}
+# enhance.active=true 的 App 插件才允许的段：净化层默认启用要靠 [Argument] 开关 + [MITM] 解密
+# + [Rewrite] 引擎复写（v3.3.0 起净化主力，脚本侧 gzip 链不可靠）。
+APP_ACTIVE_SECTIONS = {"Argument", "MITM", "Rewrite"}
 
 # 生成器是唯一真源：lint 直接 import tools/build-apps.py，用同一份 render 逻辑
 # 逐行对账产物，而不是在 lint 里重写第二套判定（v4.0.0 的教训正是两处各写一遍）。
@@ -2860,9 +2861,11 @@ def check_app_plugins():
                 + ("（active 增强层才允许 Argument/MITM）" if not active_enh else "")
             )
         want_bindings: list[str] = []
+        want_rules: list[str] = []
         if active_enh:
             try:
                 want_bindings = BUILD_APPS.validate_enhance_active(enh, f"src/apps/{slug}.json")
+                want_rules = BUILD_APPS.rewrite_rule_lines(enh, f"src/apps/{slug}.json")
             except Exception as e:
                 errors.append(f"apps/{slug}: enhance.active 源侧校验失败: {e}")
         crons = data.get("crons") or []
@@ -2893,6 +2896,28 @@ def check_app_plugins():
                 dist = ROOT / "plugins" / slug / "scripts" / f"{b.get('script')}.min.js"
                 if not dist.exists():
                     errors.append(f"apps/{slug}: missing {dist.relative_to(ROOT)} (run npm run build)")
+        rewrite_lines = parsed.get("Rewrite", [])
+        if want_rules:
+            if "Rewrite" not in sections:
+                errors.append(
+                    f"apps/{slug}: src/apps/{slug}.json declares enhance.rewrite but "
+                    "plugin has no [Rewrite] section (stale build; run npm run build:apps)"
+                )
+            for idx, (got, want) in enumerate(zip(rewrite_lines, want_rules), start=1):
+                if got != want:
+                    errors.append(
+                        f"apps/{slug}: [Rewrite] 规则 #{idx} 与源里的 enhance.rewrite 不一致\n"
+                        f"    产物: {got}\n    源应: {want}"
+                    )
+            for extra in rewrite_lines[len(want_rules):]:
+                errors.append(f"apps/{slug}: [Rewrite] 多出源里没有的规则行: {extra}")
+            for missing in want_rules[len(rewrite_lines):]:
+                errors.append(f"apps/{slug}: [Rewrite] 缺源里声明的规则行: {missing}")
+        elif rewrite_lines:
+            errors.append(
+                f"apps/{slug}: [Rewrite] 有 {len(rewrite_lines)} 条规则但源里没声明 "
+                "enhance.rewrite（要么写进 src/apps JSON，要么 rebuild 让它消失）"
+            )
         if crons:
             for c, line in zip(crons, script_lines):
                 m = APP_CRON_LINE_RE.match(line)
@@ -2963,18 +2988,23 @@ def check_app_plugins():
                 )
             raw = plugin.read_text()
             if active_enh:
-                # active 层允许 [MITM]/hostname/[Script] 绑定默认生效；路径级黑洞必须仍是注释态。
+                # active 层允许 [MITM]/hostname/[Script] 绑定与 [Rewrite] 复写默认生效；
+                # 路径级黑洞必须仍是注释态。
                 script_set = {ln.strip() for ln in parsed.get("Script", [])}
+                sanctioned = script_set | {ln.strip() for ln in parsed.get("Rewrite", [])}
                 for line in raw.splitlines():
                     s = line.strip()
+                    if s in sanctioned:
+                        continue
                     if s.startswith(("URL-REGEX,", "response.json.jq")) or (
                         "response.json.jq" in s and not s.startswith("#")
                     ):
                         errors.append(f"apps/{slug}: active 层的路径级黑洞必须保持注释: {s!r}")
                     if s.startswith(("response if ", "request if ", "cron ", "generic ")) \
-                            and not s.startswith("#") and s not in script_set:
+                            and not s.startswith("#"):
                         errors.append(
-                            f"apps/{slug}: 绑定行必须落在 [Script] 段里（当前在段外且不在源 bindings 对账范围）: {s!r}"
+                            f"apps/{slug}: 绑定行必须落在 [Script]、复写行必须落在 [Rewrite]"
+                            f"（当前在段外且不在源对账范围）: {s!r}"
                         )
             else:
                 for line in raw.splitlines():
@@ -2989,6 +3019,11 @@ def check_app_plugins():
             elif "QUIC 回退" not in (plugin.parent / "README.md").read_text():
                 errors.append(
                     f"apps/{slug}: README must explain the QUIC fallback (MITM sees TCP only)"
+                )
+            if want_rules and not rd_has_section(plugin.parent / "README.md", "净化复写"):
+                errors.append(
+                    f"apps/{slug}: README missing 净化复写（[Rewrite]）一节 "
+                    "(run python3 tools/gen-app-readmes.py)"
                 )
             for key in ("mitm_hosts", "url_regex", "sources"):
                 if not enh.get(key):

@@ -112,6 +112,7 @@ def render(app, sdklib, ads_groups):
     if enh:
         n_regex = len(enh.get("url_regex", []))
         n_json = len(enh.get("rewrite_json", []))
+        n_rules = len(enh.get("rewrite") or [])
         n_hosts = len(enh.get("mitm_hosts", []))
         quic = [h for h in enh.get("mitm_hosts", []) if not any(c in h for c in "*?[]:")]
         skipped = [h for h in enh.get("mitm_hosts", []) if h not in quic]
@@ -130,7 +131,9 @@ def render(app, sdklib, ads_groups):
             + ("已生效" if active_enh else "注释态")
             + "）："
             "MITM 只解密 TCP，App 走 HTTP/3 时"
-            + (" `URL-REGEX` 与 `response.json.jq` 都会静默失效" if n_json else " `URL-REGEX` 会静默失效")
+            + (" `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效" if n_rules
+               else " `URL-REGEX` 与 `response.json.jq` 都会静默失效" if n_json
+               else " `URL-REGEX` 会静默失效")
             + ("；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。"
                if active_enh else "；启用本层时应连同这些行一起取消注释。"),
         ]
@@ -158,10 +161,35 @@ def render(app, sdklib, ads_groups):
             ]
             for b in enh.get("bindings", []):
                 face = b.get("pattern") or b.get("cron") or "generic"
+                probe = "（探针）" if b.get("probe") else ""
                 lines.append(
                     f"| `{b.get('script')}` | `{face}` | `{b.get('switch') or '—'}` | "
-                    f"{b.get('note', b.get('tag', ''))} |"
+                    f"{b.get('note', b.get('tag', ''))}{probe} |"
                 )
+            rules = enh.get("rewrite") or []
+            if rules:
+                lines += [
+                    "",
+                    "### 净化复写（`[Rewrite]`）",
+                    "",
+                    "| 规则 | 阶段 | 动作 | 开关 | 行为 |",
+                    "|---|---|---|---|---|",
+                ]
+                for item in rules:
+                    lines.append(
+                        f"| `{item.get('id')}` | {item.get('stage')} | "
+                        f"`{item.get('action', '').split('(')[0]}` | `{item.get('gate')}` | "
+                        f"{item.get('note', '')} |"
+                    )
+                lines += [
+                    "",
+                    "> 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 "
+                    "`Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 "
+                    "`$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，"
+                    "这正是「净化不生效」的那条链。",
+                    "> 探针纪律：`probe=true` 的绑定与复写命中同一条 URL，按官方口径脚本会被静默抑制，"
+                    "所以锚定日志里它**有没有出现**就是**复写有没有命中**的判据。",
+                ]
             lines += [
                 "",
                 f"> 全层由 `src/apps/{slug}.json` 的 `enhance` 整段生成（`tools/build-apps.py`），"
@@ -206,6 +234,11 @@ def render(app, sdklib, ads_groups):
             if n_regex:
                 steps.append(
                     "要路径级黑洞就取消对应 `URL-REGEX` 行的注释并移进上方已生效的 `[Rule]` 段"
+                )
+            if n_rules:
+                steps.append(
+                    "确认可用：冷启动后看日志里复写装载计数（`Reload rewrites:`）与脚本侧锚点行，"
+                    "再用探针绑定判断复写是否接管（探针消失 = 复写命中）"
                 )
         else:
             steps = ["Loon 装并信任证书", "取消插件内 `[MITM]` 头与 hostname 行注释"]
