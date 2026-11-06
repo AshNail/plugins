@@ -214,7 +214,7 @@ function debugLog(msg) {
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.3";
+const ANCHOR_BUILD = "3.5.4";
 
 // 必须在主入口 IIFE 之前声明：const 没有变量提升，放在 IIFE 之后会在同步响应路径触发 TDZ ReferenceError
 const CLEAN_RULES = {
@@ -542,7 +542,9 @@ async function autoReceiveRewards(E, headers) {
  */
 function respondHeaders(tag) {
   const h = Object.assign({}, (typeof $response !== "undefined" && $response.headers) || {});
-  h["X-Qidian-Plugin"] = tag || "qidian-sanitize";
+  // in=<形态> 让一份 HAR 就能回答「新脚本跑到了吗、Loon 给的是字节还是字符串」——
+  // 真机日志里 console 输出只有绑定带 debug 才落盘，头部标记不受这个门禁。
+  h["X-Qidian-Plugin"] = (tag || "qidian-sanitize") + ";b=" + ANCHOR_BUILD + ";in=" + BODY_OUT.shape;
   
   // 删除 content-encoding 和 content-length
   const drop = [];

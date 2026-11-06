@@ -17,6 +17,10 @@
  *      真机判据是 16:21 日志「脚本 Finished 却零字段变更」——Loon 不替脚本解压 gzip，
  *      不带 binary_body_mode 时 $response.body 是 UTF-8 硬解的乱码串；而 v3.5.1 开了
  *      binary_body_mode 却回字符串，被 Loon 丢弃。两头必须同时成立，缺一个都是透传。
+ *   9. (v3.5.4) X-Qidian-Plugin 头部带 `;b=<build>;in=<形态>`：真机 21:05 日志证明脚本
+ *      console 只在绑定 `debug=true` 时落主日志，头部是唯一不受这个门禁的自证面。
+ *   注意：主日志里 Trigger→Finished 的时长（0ms / 999ms 二态）**没有判读价值**——同一端点
+ *   两种值都出现过，999ms 严格贴着 1s，是 Loon 异步 $done 的刷写节拍而不是脚本工作量。
  */
 const zlib = require("zlib");
 const src = require("./load-script")("auto-task.js", "qidian");
@@ -105,6 +109,8 @@ function shapeMatches(bodyIn, out) {
       h["content-encoding"] === undefined && h["content-length"] === undefined, JSON.stringify(h));
     check("其它响应头保留", h.server === "stub");
     check("字节进 → 字节出（binary_body_mode 契约）", shapeMatches(gz, out), Object.prototype.toString.call(out && out.body));
+    check("X-Qidian-Plugin 带 build 与来路形态", String(h["X-Qidian-Plugin"] || "").includes(";b=") && String(h["X-Qidian-Plugin"] || "").endsWith(";in=u8"),
+      String(h["X-Qidian-Plugin"]));
   }
 
   console.log("\n[2] Uint8Array 明文字节（Loon 已解压）");
@@ -121,6 +127,8 @@ function shapeMatches(bodyIn, out) {
     const j = parse(out);
     check("字符串明文被净化", j && j.Data.PangleEnable === "0");
     check("字符串进 → 字符串出", shapeMatches(text, out), Object.prototype.toString.call(out && out.body));
+    const mark = String(((out && out.headers) || {})["X-Qidian-Plugin"] || "");
+    check("字符串形态也如实记进头部", mark.endsWith(";in=str"), mark);
   }
 
   console.log("\n[4] ungzip 缺失（Build < 988）→ 静默透传");

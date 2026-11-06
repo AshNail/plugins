@@ -558,7 +558,11 @@ CAPABILITIES = [
     dict(layer="脚本属性", key="o-tag", name="`tag`", expect="used",
          probe=r"with[^\n]*\btag\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-debug", name="`debug`（可动态）", expect="used",
-         probe=r"with[^\n]*\bdebug\s*=", href=DOC + "/Script/script_v2"),
+         probe=r"with[^\n]*\bdebug\s*=", href=DOC + "/Script/script_v2",
+         why="真机 21:05 日志实证：脚本里的 console.log 只有在绑定带 `debug=true` 时才落主日志，"
+             "而主日志本身的 `[Debug]` 条目（Loon 全局调试）与插件开关都管不到这件事——24 个插件"
+             "的 console 输出在同一份日志里全部为 0 条。qidian v3.5.4 起把两条净化绑定的 `debug` "
+             "直出 true（取证期），否则「脚本跑完但改没改字段」在主日志里是静默的"),
     dict(layer="脚本属性", key="o-timeout", name="`timeout`", expect="used",
          probe=r"with[^\n]*\btimeout\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-body", name="`requires_body`", expect="used",

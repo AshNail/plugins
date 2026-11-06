@@ -180,7 +180,7 @@
 |---|---|---|
 | `enable`（可动态） | ✅ 已用 | 已落地 |
 | `tag` | ✅ 已用 | 已落地 |
-| `debug`（可动态） | ✅ 已用 | 已落地 |
+| `debug`（可动态） | ✅ 已用 | 真机 21:05 日志实证：脚本里的 console.log 只有在绑定带 `debug=true` 时才落主日志，而主日志本身的 `[Debug]` 条目（Loon 全局调试）与插件开关都管不到这件事——24 个插件的 console 输出在同一份日志里全部为 0 条。qidian v3.5.4 起把两条净化绑定的 `debug` 直出 true（取证期），否则「脚本跑完但改没改字段」在主日志里是静默的 |
 | `timeout` | ✅ 已用 | 已落地 |
 | `requires_body` | ✅ 已用 | 已落地 |
 | `binary_body_mode` | ✅ 已用 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）实际开启：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`（v3.5.1 开了模式却回字符串，被 Loon 丢弃，两头必须同时成立） |
