@@ -28,6 +28,10 @@
  *       合并语义下 `delete` 等于「不改」，原始 gzip 声明会套在明文新体上，App 解压失败回落缓存；
  *       ② getconf / 账户页 / 福利页把本次变更条数写成 `;n=<N>` 进同一个头：主日志没有脚本
  *       stdout，App 内日志又导不出来，条数只能跟着响应头走。
+ *   11. (v3.5.6) 同一串证据换个出口：调试模式开 + 本次净化有变更计数时，respondJson 在回写前
+ *       $notification.post(`b= in= n=`) 推到锁屏，$persistentStore 记时间做 15s 节流；
+ *       透传路径（没走到 respondJson）一律不推。22:06 日志用 tag 证明插件已装到 v3.5.5，
+ *       「没更新」不再是候选原因，而主日志 0 次提到 content-encoding——送达形态只能问设备本身。
  *   注意：主日志里 Trigger→Finished 的时长（0ms / 999ms 二态）**没有判读价值**——同一端点
  *   两种值都出现过，999ms 严格贴着 1s，是 Loon 异步 $done 的刷写节拍而不是脚本工作量。
  */
@@ -39,7 +43,8 @@ function run(url, body, opts) {
   return new Promise((resolve) => {
     let out;
     const logs = [];
-    const done = (v) => { out = v === undefined ? {} : v; resolve({ out, logs }); };
+    const posts = [];
+    const done = (v) => { out = v === undefined ? {} : v; resolve({ out, logs, posts }); };
     const fn = new Function(
       "$request", "$response", "$done", "console", "$argument", "$utils",
       "$persistentStore", "$notification", "$httpClient", src
@@ -49,13 +54,13 @@ function run(url, body, opts) {
       { body, headers: opts.headers || { "content-encoding": "gzip", "content-length": "99", server: "stub" } },
       done,
       { log: (...a) => logs.push(a.join(" ")) },
-      { debugLog: "false", cleanAds: "true", autoTask: "false" },
+      { debugLog: opts.debug ? "true" : "false", cleanAds: "true", autoTask: "false" },
       opts.utils,
-      { read: () => null, write: () => true },
-      { post: () => {} },
+      { read: () => (opts.persistAt === undefined ? null : String(opts.persistAt)), write: () => true },
+      { post: (...a) => posts.push(a) },
       {}
     );
-    setTimeout(() => resolve({ out: out === undefined ? { __timeout: true } : out, logs }), 1500);
+    setTimeout(() => resolve({ out: out === undefined ? { __timeout: true } : out, logs, posts }), 1500);
   });
 }
 
@@ -268,6 +273,24 @@ function shapeMatches(bodyIn, out) {
     check("SurpriseBenefit 限时福利保留", j && j.Data.SurpriseBenefit && j.Data.SurpriseBenefit.Title === "限时福利");
     check("广告任务/白泽装扮条目被剪除且正常任务保留", j && j.Data.DailyBenefitModule.TaskList.length === 1 && j.Data.DailyBenefitModule.TaskList[0].Title === "看视频得章节卡");
     check("书籍条目不误伤", j && j.Data.BookList[0].Name === "广告任务专区");
+  }
+
+  console.log("\n[11] 取证通知（v3.5.6）：调试模式开 + 净化有变更计数才推锁屏，15s 节流");
+  {
+    const quiet = await run(GETCONF, gz, { utils: realUtils });
+    check("调试模式关时一条通知都不推", quiet.posts.length === 0, JSON.stringify(quiet.posts));
+
+    const loud = await run(GETCONF, gz, { utils: realUtils, debug: true });
+    const msg = (loud.posts[0] || []).join(" | ");
+    check("调试模式开且 n>0 时推出 b=/in=/n=", loud.posts.length === 1
+      && /b=\d+\.\d+\.\d+ in=u8 n=\d+/.test(msg), msg);
+    check("通知标题带端点", /getconf/.test(String((loud.posts[0] || [])[0] || "")), String((loud.posts[0] || [])[0] || ""));
+
+    const throttled = await run(GETCONF, gz, { utils: realUtils, debug: true, persistAt: Date.now() });
+    check("15s 内不重复推", throttled.posts.length === 0, JSON.stringify(throttled.posts));
+
+    const passthrough = await run(GETCONF, gz, { debug: true });
+    check("ungzip 缺失的透传路径不推（没走到 respondJson）", passthrough.posts.length === 0, JSON.stringify(passthrough.posts));
   }
 
   console.log("\nPASS=" + pass + " FAIL=" + fail);

@@ -214,10 +214,11 @@ function debugLog(msg) {
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // v3.5.4 押的「绑定带 debug=true 就能把 anchor 落主日志」已被 21:35 真机日志判死：
 // debug 常开后主日志仍 0 条 anchor，而官方口径是 console.log 写「当前脚本日志」——
-// anchor 只能进 App 内脚本日志页。于是自证面只剩两个：会原样出现在主日志 match/Trigger
-// 行里的 tag（v3.5.5 起带 build 号），和响应头 X-Qidian-Plugin。
+// anchor 只能进 App 内脚本日志页。于是自证面只剩三个：会原样出现在主日志 match/Trigger
+// 行里的 tag（v3.5.5 起带 build 号）、响应头 X-Qidian-Plugin，以及 v3.5.6 起在调试模式下
+// 把同一串证据推到锁屏的 forensicNotice()。
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.5";
+const ANCHOR_BUILD = "3.5.6";
 
 // 必须在主入口 IIFE 之前声明：const 没有变量提升，放在 IIFE 之后会在同步响应路径触发 TDZ ReferenceError
 const CLEAN_RULES = {
@@ -571,6 +572,25 @@ function respondHeaders(tag, text) {
 }
 
 /**
+ * 取证推送：把与 X-Qidian-Plugin 同一串证据（build / 来路形态 / 变更条数）直接推到锁屏。
+ * 主日志装不下脚本 console（21:35 判死），HAR 又要用户多一步，于是开「调试模式」时自证。
+ * 只推净化有计数的三处（getconf / 账户页 / 福利页），并用 $persistentStore 做 15s 节流，
+ * 免得一次冷启动刷出七八条。
+ */
+function forensicNotice() {
+  if (!DEBUG || BODY_OUT.n < 0) return;
+  const KEY = "Qidian_ForensicAt";
+  const now = Date.now();
+  let last = 0;
+  try { last = Number($persistentStore.read(KEY)) || 0; } catch (e) {}
+  if (now - last < 15000) return;
+  try { $persistentStore.write(String(now), KEY); } catch (e) {}
+  const where = (typeof $request !== "undefined" ? extractPath($request.url) : "").split("/").slice(-2).join("/");
+  const head = "b=" + ANCHOR_BUILD + " in=" + BODY_OUT.shape + " n=" + BODY_OUT.n;
+  try { $notification.post("起点净化取证 " + where, head, "与响应头 X-Qidian-Plugin 同值；n=0 表示解析成功但没字段可改"); } catch (e) {}
+}
+
+/**
  * 返回修改后的 JSON 响应
  * 自动处理响应头，确保客户端能正确解析
  */
@@ -580,6 +600,7 @@ function respondJson(E, obj, tag, n) {
   const body = BODY_OUT.shape === "str" ? text
     : BODY_OUT.shape === "ab" ? utf8Encode(text).buffer
     : utf8Encode(text);
+  forensicNotice();
   E.done({ body: body, headers: respondHeaders(tag, text) });
 }
 
