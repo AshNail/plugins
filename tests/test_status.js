@@ -62,7 +62,7 @@ function todayKey() {
   check("soda: notif attach openUrl is qishui://", res.notifOut && res.notifOut.attach && res.notifOut.attach.openUrl === "qishui://");
   check("soda: notif attach clipboard 带完整诊断", res.notifOut && res.notifOut.attach &&
     typeof res.notifOut.attach.clipboard === "string" &&
-    res.notifOut.attach.clipboard.includes("静态层：QUIC 回退 25 域"), res.notifOut && res.notifOut.attach);
+    res.notifOut.attach.clipboard.includes("静态层：QUIC 回退 18 域"), res.notifOut && res.notifOut.attach);
 }
 
 // 2. Soda 广告统计
@@ -204,8 +204,8 @@ function todayKey() {
 // 静态传输层（常开、无开关）：看板必须报出 QUIC 回退域数，数字来自 families.json。
 {
   const soda = runStatus(sodaStatus, {}, { statusNotify: "silent" });
-  check("soda: 静态层显示 QUIC 回退 25 域",
-    soda.doneOut.content.includes("静态层：QUIC 回退 25 域"), soda.doneOut.content);
+  check("soda: 静态层显示 QUIC 回退 18 域",
+    soda.doneOut.content.includes("静态层：QUIC 回退 18 域"), soda.doneOut.content);
   const douyin = runStatus(douyinStatus, {}, { statusNotify: "silent" });
   check("douyin: 静态层显示 QUIC 回退 16 域",
     douyin.doneOut.content.includes("静态层：QUIC 回退 16 域"), douyin.doneOut.content);

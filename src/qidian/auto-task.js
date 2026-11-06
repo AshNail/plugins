@@ -192,7 +192,7 @@ function debugLog(msg) {
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.0";
+const ANCHOR_BUILD = "3.5.1";
 
 function anchor(msg) {
   try { console.log("[起点锚点] b=" + ANCHOR_BUILD + " " + msg); } catch (e) {}
@@ -729,7 +729,9 @@ function handleAdSkip(E, response) {
     respondJson(E, obj, "qidian-sanitize");
     return;
   }
-  let body = String(response.body || "");
+  // 二进制体（binary_body_mode）下不是字符串，正则兜底无从谈起：放行，别把字节串成 "1,2,3"
+  if (typeof response.body !== "string") { E.done(); return; }
+  let body = response.body;
   const s = CONFIG.VideoSkipSeconds;
   body = body
     .replace(/"video_duration":\s*\d+/g, '"video_duration":' + s)
@@ -934,62 +936,80 @@ function normalizeHeaders(headers) {
   return h;
 }
 
+/* Uint8Array -> UTF-8 字符串（JavaScriptCore 没有可靠的 TextDecoder，自己解） */
+function utf8Decode(bytes) {
+  let out = "", i = 0;
+  const n = bytes.length;
+  while (i < n) {
+    const b = bytes[i++] & 0xff;
+    if (b < 0x80) {
+      out += String.fromCharCode(b);
+    } else if (b >= 0xc0 && b < 0xe0) {
+      out += String.fromCharCode(((b & 0x1f) << 6) | (bytes[i++] & 0x3f));
+    } else if (b >= 0xe0 && b < 0xf0) {
+      out += String.fromCharCode(((b & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f));
+    } else {
+      const cp = ((b & 0x07) << 18) | ((bytes[i++] & 0x3f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+      out += String.fromCodePoint(cp);
+    }
+  }
+  return out;
+}
+
+/**
+ * 响应体 → JSON 对象。三种形态都认：
+ *   1. Uint8Array / ArrayBuffer（绑定带 binary_body_mode=true 时的唯一形态）——
+ *      gzip 魔数 1f 8b 则先 $utils.ungzip（入参 Uint8Array、**返回 Uint8Array**，
+ *      不是字符串，所以必须再 utf8 解码才能 JSON.parse），否则当明文字节；
+ *   2. 字符串：普通 JSON 文本直接 parse；
+ *   3. 字符串形态的 gzip（不带 binary_body_mode 时 Loon 把字节按 UTF-8 解成字符串，
+ *      0x8b 之类高位字节已被替换成 U+FFFD，魔数检测与解压都不可能成功——这是 v3.5.0
+ *      以前「脚本跑完却一个字段都没改」的根因，保留这条只是兜底、不指望它成功）。
+ */
 function safeJsonParse(body) {
   if (body === null || body === undefined) return null;
-  if (typeof body === "object" && !(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) return body; // 已经是对象，直接返回
-  
-  // 处理字符串
+  if (typeof body === "object" && !(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) return body;
+
+  let bytes = null;
   if (typeof body === "string") {
-    // 检测 gzip 魔数 (1f 8b)
     if (body.length >= 2 && body.charCodeAt(0) === 0x1f && body.charCodeAt(1) === 0x8b) {
-      if (typeof $utils === "undefined" || typeof $utils.ungzip !== "function") {
-        anchor("gzip str len=" + body.length + " ungzip=missing ⇒ 本侧净化必然 passthrough");
+      bytes = new Uint8Array(body.length);
+      for (let i = 0; i < body.length; i++) bytes[i] = body.charCodeAt(i) & 0xff;
+    } else {
+      try { return JSON.parse(body); } catch (e) {
+        anchor("json parse=fail str len=" + body.length + " " + String((e && e.message) || e).slice(0, 60));
         return null;
       }
-      try {
-        const obj = JSON.parse($utils.ungzip(body));
-        anchor("gzip str len=" + body.length + " ungzip=ok");
-        return obj;
-      } catch (e) {
-        anchor("gzip str len=" + body.length + " ungzip=fail " + String((e && e.message) || e).slice(0, 60));
-      }
+    }
+  } else {
+    bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
+  }
+
+  const gz = bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+  let text;
+  if (gz) {
+    if (typeof $utils === "undefined" || typeof $utils.ungzip !== "function") {
+      anchor("gzip bytes len=" + bytes.length + " ungzip=missing ⇒ 本侧净化必然 passthrough");
       return null;
     }
-    
-    try { return JSON.parse(body); } catch (e) { 
-      console.log("[起点全能助手] [DEBUG] JSON 解析失败: " + String((e && e.message) || e).slice(0, 60) + ", len=" + body.length);
-      return null; 
-    }
-  }
-  
-  // 处理 Uint8Array / ArrayBuffer
-  if (body instanceof Uint8Array || body instanceof ArrayBuffer) {
-    const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
-    anchor("binary " + (body instanceof Uint8Array ? "u8" : "ab") + " len=" + bytes.length);
-    // 检测 gzip
-    if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
-      try {
-        if (typeof $utils !== "undefined" && $utils.ungzip) {
-          const decompressed = $utils.ungzip(body);
-          return JSON.parse(decompressed);
-        }
-        anchor("binary gzip ungzip=missing ⇒ 本侧净化必然 passthrough");
-      } catch (e) {
-        anchor("binary gzip ungzip=fail " + String((e && e.message) || e).slice(0, 60));
-      }
-    }
-    // 尝试直接转字符串
     try {
-      if (typeof globalThis.TextDecoder !== "undefined") {
-        const str = new globalThis.TextDecoder().decode(bytes);
-        return JSON.parse(str);
-      }
+      const raw = $utils.ungzip(bytes);
+      text = typeof raw === "string" ? raw : utf8Decode(raw);
     } catch (e) {
-      anchor("binary textDecode=fail " + String((e && e.message) || e).slice(0, 60));
+      anchor("gzip bytes len=" + bytes.length + " ungzip=fail " + String((e && e.message) || e).slice(0, 60));
+      return null;
     }
+  } else {
+    text = utf8Decode(bytes);
   }
-  
-  return null;
+  try {
+    const obj = JSON.parse(text);
+    anchor("json parse=ok " + (gz ? "gzip" : "plain") + " bytes=" + bytes.length);
+    return obj;
+  } catch (e) {
+    anchor("json parse=fail " + (gz ? "gzip" : "plain") + " bytes=" + bytes.length + " " + String((e && e.message) || e).slice(0, 60));
+    return null;
+  }
 }
 
 // ==========================================

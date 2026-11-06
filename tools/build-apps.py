@@ -599,7 +599,7 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
 
 
 def render_binding(b: dict) -> str:
-    """一条现代语法绑定。形状与 soda/douyin 手写接线一致：属性顺序 debug→enable→requires_body→timeout→tag。"""
+    """一条现代语法绑定。形状与 soda/douyin 手写接线一致：属性顺序 debug→enable→requires_body→binary_body_mode→timeout→tag。"""
     kind = b["kind"]
     args = ", ".join(f"${{{a}}}" for a in b.get("args", []))
     call = f'script("scripts/{b["script"]}.min.js"'
@@ -611,6 +611,8 @@ def render_binding(b: dict) -> str:
     if kind in ("request", "response"):
         if b.get("requires_body"):
             attrs.append("requires_body=true")
+        if b.get("binary_body_mode"):
+            attrs.append("binary_body_mode=true")
         attrs.append(f'timeout={b["timeout"]}')
         attrs.append(f'tag="{b["tag"]}"')
         head = f'{kind} if ${{url}} ~= /{escape_regex_slashes(b["pattern"])}/ then {call} with '

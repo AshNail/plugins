@@ -1,7 +1,7 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐全能助手 v3.3.0:整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),已连同配套 QUIC 回退与 gzip 降级一起补进静态层——本轮零新增绑定,只是把取证通道打开。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条本插件零覆盖的端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡;另 6 条按激励链路与共主机成本刻意不采纳,理由写在 [Rewrite] 段头。汽水在本机日志里零流量,这 5+2 条尚未取证——判据见 README「汽水净化取证」。致谢:起点读书 finishWatch 重放机制启发。
+#!desc=汽水音乐全能助手 v3.3.1(撤出 7 台固定证书的 API 分片 MITM——v3.3.0 起汽水整 App 网络错误的根因):整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),已连同配套 QUIC 回退与 gzip 降级一起补进静态层——本轮零新增绑定,只是把取证通道打开。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条本插件零覆盖的端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡;另 6 条按激励链路与共主机成本刻意不采纳,理由写在 [Rewrite] 段头。汽水在本机日志里零流量,这 5+2 条尚未取证——判据见 README「汽水净化取证」。致谢:起点读书 finishWatch 重放机制启发。
 #!author=edy
-#!version=3.3.0
+#!version=3.3.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/a1/6d/b4/a16db478-33e0-fc41-bc84-d5dd33f10762/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
@@ -52,7 +52,7 @@
 # 两层模型（v2.8.0 起）：
 #   L1 运行时层 = [Argument] 开关：只给“用户可能想改主意”的功能。
 #   L2 静态层   = [Rule]/[Rewrite]/[MITM]：传输与协议层，常开、无开关。
-#     · QUIC 强制回退：[MITM] 里这 25 个域拒绝 HTTP/3，逼回 TCP+TLS，
+#     · QUIC 强制回退：[MITM] 里这 18 个域拒绝 HTTP/3，逼回 TCP+TLS，
 #       否则脚本根本看不见流量（MITM 只处理 TCP）。不做全局 QUIC 拒绝。
 #     · h2 = true：零成本保险。官方 MitM 文档只列 hostname/ca-p12/ca-passphrase，
 #       没有 h2（HTTP/2 解密是官方产品页宣称的默认能力）；社区插件通行写，
@@ -105,38 +105,29 @@ autoSignIn = switch,true,tag=自动签到v2,desc=已注册：命中 sign_in_done
 # ============================================================================
 # 1. [Rule] · 传输层（静态，常开）
 # ----------------------------------------------------------------------------
-# QUIC 强制回退：只对 [MITM] 里这 25 个精确域拒绝 HTTP/3(QUIC)。
+# QUIC 强制回退：只对 [MITM] 里这 18 个精确域拒绝 HTTP/3(QUIC)。
 # 为什么必须常开：脚本只能看见 TCP+TLS；目标域一旦走 HTTP/3，
 # MITM 不生效 → 清洗/拦截脚本“静默看不到流量”，功能像随机失效。
 # 为什么不做全局 PROTOCOL,QUIC,REJECT：那会连视频/通话/直播一起打掉。
 # 代价：首个连接多一次回退（约 100~300ms）；极少数不回退的实现会连不上该接口。
-# 回滚：删掉下面这 25 行，或整段清空（[Rule] 段可留空）。
+# 回滚：删掉下面这 18 行，或整段清空（[Rule] 段可留空）。
 # Pangle 分片族（ads3/ads5 × 5 个后缀）在 [Rule] 里逐个列出：DOMAIN-SUFFIX
 # 不吃通配。对应的 [MITM] 用一条 ads?-normal*.zijieapi.com 覆盖全族——两边
 # 严格对齐，才不会出现「解密了但没回退」的空档。分片清单取自 ads.plugin 的
 # 公开广告数据（ads3/ads5 × normal/-hl/-lf/-lq/-xh），不是猜的。
-# 汽水自己的 API 分片（api3/api5 × hl/lf/lq + conf5-lf）是两份真机日志逐台取证
-# 补进来的：承接流量的主机是 api5-lf/api3-lf/conf5-lf/api5-hl/api3-hl/api3-lq/
-# api5-lq.qishui.com，而插件原先只写了 api.qishui.com 与 conf.qishui.com——后者在
-# 2026-11-05 那整场日志里零连接。取证事实：这些主机 alpn 只报 h2,http/1.1（没有 h3），
-# 两份日志里提到 *.qishui.com 的行共 6543 + 198 行，certificate unknown 零次，
-# 也就是「没做证书固定、只是没进 hostname」，Loon 只能按 SNI 查规则、url:(null)、
-# 响应脚本永远看不见 body。补进 [MITM] 才有明文可看，脚本层是否命中留给下一轮日志裁决。
-# log3-lf/log5-lf.qishui.com 同批被观测到，但它们是纯上报（mon/tnc/gecko 同族），
-# 没有任何绑定指向它们，解密只增加握手成本，故刻意不纳入——要取证再补。
+# 汽水自己的 API 分片（api3/api5 × hl/lf/lq + conf5-lf）**不在**本层：v3.3.0 曾把它们
+# 连同 [MITM] 一起加进来做取证，2026-11-06 16:21:50 真机日志（Loon 3.5.3(1014)）一锤定音——
+# 6 台分片 + conf5-lf 每一次握手都以 `H2 MITM TLS handshake failed ... ssl/tls alert
+# certificate unknown`（Code=167773206）收场（api5-lf 186 次、api3-lf 30 次，余下各 2~5 次），
+# 汽水 App 对这批主机做了证书固定，解密即断网，表现就是「全部提示网络错误」。v3.3.1 整批退出
+# [MITM]、[Rule] 的 QUIC 回退与 Accept-Encoding 降级；这几台主机回到「只能按 SNI 看见」的原状。
+# 重新纳入的前置条件：先用 Frida/越狱环境证明固定已被绕开，不能再靠「日志里零次」推断。
 # ============================================================================
 
 [Rule]
 
 AND,((DOMAIN-SUFFIX,api.qishui.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,conf.qishui.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,api3-hl.qishui.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,api3-lf.qishui.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,api3-lq.qishui.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,api5-hl.qishui.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,api5-lf.qishui.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,api5-lq.qishui.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,conf5-lf.qishui.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,ad.zijieapi.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,lianmengapi.snssdk.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,aweme.snssdk.com),(PROTOCOL,QUIC)),REJECT
@@ -176,7 +167,7 @@ AND,((DOMAIN-SUFFIX,beta-luna.douyin.com),(PROTOCOL,QUIC)),REJECT
 # 就是下面 [MITM] 的完整名单，由 lint 逐个域名对账（少一个就报错）。
 # 代价：gzip 比 br 大约 10~20%，只作用于这几个 JSON 接口。
 # ----------------------------------------------------------------------------
-request if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|conf\.qishui\.com|api3-hl\.qishui\.com|api3-lf\.qishui\.com|api3-lq\.qishui\.com|api5-hl\.qishui\.com|api5-lf\.qishui\.com|api5-lq\.qishui\.com|conf5-lf\.qishui\.com|beta-luna\.douyin\.com|ad\.zijieapi\.com|aweme\.snssdk\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then request.header.set("Accept-Encoding", "gzip")
+request if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|conf\.qishui\.com|beta-luna\.douyin\.com|ad\.zijieapi\.com|aweme\.snssdk\.com|lianmengapi\.snssdk\.com|ads[0-9]-normal[a-z0-9-]*\.zijieapi\.com|zlink\.ugsdk\.cn|praisewindow\.ugsdk\.cn)\// then request.header.set("Accept-Encoding", "gzip")
 
 # 开屏广告上报是 fire-and-forget，回 200 + JSON {} 减少 SDK 重试；由 splashClean 开关控制。
 request if ${splashClean} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/advert\/splash\/brand\/report/ then reject_dict(200)
@@ -203,7 +194,7 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|bet
 # /luna/commerce/upsells_config（已被上面那条 upsells 绑定按子串吃掉，引擎再终止只是换执行层）、
 # webcast-open.douyin.com/webcast/openapi/feed/（要新加一台与抖音共用的 [MITM] 主机，
 # 而它是直播 Tab 的内容接口不是广告位——先取证再说）、
-# tnc*-*.zijieapi.com/get_domains 的 quic/httpdns 置 0（和上面 [Rule] 段那 25 条
+# tnc*-*.zijieapi.com/get_domains 的 quic/httpdns 置 0（和上面 [Rule] 段那 18 条
 # PROTOCOL,QUIC 回退是同一个目标的两种做法，两套并存要重新取证：lpx 那套是
 # 「让 SDK 自己不走 h3」，本仓库这套是「h3 一律拒绝」，换过来得先解密 tnc 主机）。
 # ----------------------------------------------------------------------------
@@ -391,65 +382,13 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${
 #                全部 luna 绑定同时写两个主机，由 lint 的 luna host parity 锁死。
 # conf.qishui.com：settingsClean 打开时才会处理；证书固定导致设置加载失败，
 #                关闭 settingsClean 或停用本插件。
-# api<n>-<shard>.qishui.com + conf5-lf.qishui.com：汽水 API 的**真实入口**。两份
-#                真机日志一致——2026-10-29 10:39:55：api3-lf/api3-hl 各 152 次、
-#                api5-lf/api5-hl 各 148 次、api5-lq 74、api3-lq 73，而 api.qishui.com
-#                只有 34 次；2026-11-05 20:25:48：api5-lf/api3-lf/conf5-lf/api5-hl/
-#                api3-hl/api3-lq/api5-lq 全部在场。alpn 只报 h2,http/1.1（没有 h3），
-#                两份日志里 *.qishui.com 共 6543 + 198 行、certificate unknown 零次——
-#                固定证书这条排除掉了。11-05 窗口里它们只有 SNI 与 url:(null)，
-#                因为本插件的 hostname 名单压根没有它们，Loon 只能按 SNI 查规则，
-#                响应脚本永远拿不到 body；10-29 窗口里 api3-lq/api5-lq 被解密了 73/74 次，
-#                但那是**用户主配置**的 MITM 名单，不该记在本插件头上
-#                （见 docs/device-checklist.md「别把主配置记在插件头上」）。补进 hostname
-#                之后，下一轮日志的解密与命中才归本插件解释。本轮不新增任何绑定，
-#                绑定仍只写 luna 的两个已证主机（lint 的 luna host parity 锁死）。
-#                log.qishui.com / log3-lf / log5-lf 是纯上报，没有任何绑定指向它们，
-#                解密只增加握手成本，刻意不纳入。
-# 下面 5 个广告域名：blockAdDomains / blockSplashAd 开关需要它们（HTTPS 必须先解密）。
-#                如果开启后激励广告播不了（证书固定），把这 5 个域名注释掉。
-# 分层关系：其中 ad.zijieapi.com / lianmengapi.snssdk.com /
-#                ads?-normal*.zijieapi.com（Pangle 分片族）同时也被 ads.plugin
-#                的 [Host] + DOMAIN-WILDCARD 家族层拦截；本份名单是 App 内
-#                MITM 兜底层。这里用 `?`/`*` 而不是逐个枚举 ads3/ads5，
-#                是因为 MITM 支持通配，而 [Rule] 的 DOMAIN-SUFFIX 不支持——
-#                两边各用自己最强的写法，名单靠 lint 校验覆盖关系。
-#                zlink.ugsdk.cn / praisewindow.ugsdk.cn 是 App 内运营端点
-#                （口令/弹窗），只由本开关覆盖，不进 ads.plugin。
-# 固定证书止损（2026-11-05 20:25:48 真机日志 · iPhone18,4 / iOS 27.2 / Loon 3.5.3(1014)）：
-#                下面这几台**客户端拒收了 Loon 证书**，签名统一是
-#                `ssl/tls alert certificate unknown`（err 167773206 / 0A000416）：
-#                  aweme.snssdk.com               8 次 SNI /  8 次 Match /  8 次握手失败
-#                  zlink.ugsdk.cn                 6 次 SNI /  6 次 Match /  6 次握手失败
-#                  ads5-normal-gl2.zijieapi.com   5 次 SNI /  5 次 Match /  5 次握手失败
-#                Match 行有两种形态（`host(host)` 与 `IP(host)`），括号里都是 SNI；
-#                ads5-normal-gl2 是靠本插件声明的 `ads?-normal*.zijieapi.com` 通配命中的。
-#                同窗口只有两台 Apple 主机解密成功（gspe1-ssl / configuration.ls.apple.com，
-#                零失败），Loon CA 已被系统信任，所以这不是「用户没装证书」，是 App 侧固定证书。
-#                后果：**不是静默不生效，而是这几台的连接被我们掐断了**——声明进 [MITM]
-#                之后握手失败即整条请求失败。因此点名到它们的绑定只剩「已注册」这一种说法：
-#                  · `sign_in/sign_in_done`（autoSignIn）与 `sign_in/sign_in_detail`（autoTask）
-#                    的正则里 aweme.snssdk.com 那一条腿结构性失效——握手就断了，请求层
-#                    拿不到请求，响应层更拿不到 body。另两条腿 api.qishui.com /
-#                    beta-luna.douyin.com 本窗口零流量，既不能算生效也不能算失效。
-#                  · `blockAdDomains` 请求层正则里的 ads 分片与 zlink.ugsdk.cn 同理。
-#                对外只许说「已注册、固定证书未解除前不生效」，不许说「已净化/已拦截/已签到」。
-#                polaris.zijieapi.com（26 次全失败）不在本插件名单，属抖音侧，见 douyin 插件。
-#                与汽水分片那条取证对照着读：api<n>-<shard>.qishui.com 是「没进名单」
-#                （零 Match、零 certificate unknown），这几台是「进了名单但被拒证」——
-#                症状不同，处置也不同，别混成一类。
-#                止损动作（默认不执行，要就手动）：把这些主机从上面 hostname 行删掉，
-#                对应 [Rule] 的 QUIC 回退行与只命中它们的绑定一起注释——删掉之后连接
-#                恢复正常，只是这些端点重新变成黑盒。签到注入的正则里保留 qishui/luna
-#                两条腿即可，不必整行注释。
-# h2 = true（常开）：未文档化键，社区通行写法。官方 MitM 文档只列三个键，
-#                HTTP/2 解密本就是默认能力，这里保留纯属零成本保险（未知键被忽略）。
-#                若某个 build 把它当非法键导致断网，删掉这一行即可回滚。
-# 脚本来源：block-domains.min.js / splash-ad.min.js 由 src/common/*.js +
-#                families.json 生成，与 douyin 插件共享单一源码。
+# api<n>-<shard>.qishui.com + conf5-lf.qishui.com：**固定证书，不可解密**（v3.3.1 撤出）。
+#                2026-11-06 16:21:50 日志：这 7 台共约 227 次握手 100% certificate unknown，
+#                v3.3.0 的「零次 certificate unknown 所以没固定」是在它们**没进 hostname**
+#                时得出的——没解密就不可能出现这个错误，该推断本身是个幸存者偏差。
 # ============================================================================
 
 [MITM]
 
-hostname = %APPEND% api.qishui.com, conf.qishui.com, api3-hl.qishui.com, api3-lf.qishui.com, api3-lq.qishui.com, api5-hl.qishui.com, api5-lf.qishui.com, api5-lq.qishui.com, conf5-lf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, aweme.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn, beta-luna.douyin.com
+hostname = %APPEND% api.qishui.com, conf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, aweme.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn, beta-luna.douyin.com
 h2 = true

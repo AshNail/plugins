@@ -179,6 +179,7 @@
 
 > ⚠️ 以下证据未命中，`--check` 会失败：
 >
+> - `plugins/soda/soda.plugin` 需 ≥1 处 `固定证书止损`，实际 0 处
 > - `plugins/douyin/README.md` 需 ≥1 处 `固定证书主机清单`，实际 0 处
 > - `plugins/soda/README.md` 需 ≥1 处 `固定证书主机清单`，实际 0 处
 

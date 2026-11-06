@@ -571,17 +571,8 @@ QUIC_HOSTS = {
     "soda": (
         "api.qishui.com",
         "conf.qishui.com",
-        # 汽水自己的 API 分片（2026-11-05 20:25:48 真机日志逐台取证）：主接口不落在
-        # api.qishui.com，而走带分片后缀的 api<n>-<shard>.qishui.com。它们 alpn 只报
-        # h2,http/1.1、整份日志对 *.qishui.com 零次 certificate unknown——不做证书固定、
-        # 只是没进 hostname，所以 url:(null)。纳进来才有取证通道，见插件里的取证注释。
-        "api3-hl.qishui.com",
-        "api3-lf.qishui.com",
-        "api3-lq.qishui.com",
-        "api5-hl.qishui.com",
-        "api5-lf.qishui.com",
-        "api5-lq.qishui.com",
-        "conf5-lf.qishui.com",
+        # api<n>-<shard>/conf5-lf.qishui.com 已于 v3.3.1 撤出：2026-11-06 16:21:50 日志里
+        # 227 次握手 100% certificate unknown，固定证书，不得再进 [MITM]/QUIC 回退。
         "ad.zijieapi.com",
         "aweme.snssdk.com",
         "lianmengapi.snssdk.com",

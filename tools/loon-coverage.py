@@ -563,9 +563,8 @@ CAPABILITIES = [
          probe=r"with[^\n]*\btimeout\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-body", name="`requires_body`", expect="used",
          probe=r"with[^\n]*\brequires_body\s*=", href=DOC + "/Script/script_v2"),
-    dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="open",
-         probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2",
-         why="它只改变 Body 的表示形式（Uint8Array），本插件处理的都是 JSON 文本"),
+    dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="used",
+         probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-img", name="`img_url`", expect="used",
          probe=r"with[^\n]*\bimg_url\s*=", href=DOC + "/Script/script_v2"),
 

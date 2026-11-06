@@ -26,7 +26,7 @@
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.20`、`soda=3.3.0`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.20`、`soda=3.3.1`、`douyin=0.9.0`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
@@ -270,7 +270,7 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       那是用户主配置自己的 MITM 名单，不参与本清单判读。**v3.2.0 起 soda 已把这 7 台
       分片（api3/api5 × hl/lf/lq + conf5-lf）写进 `[MITM]`**，所以今后判读要先对 `#!version`：
       插件自己声明了的解密面才归本仓解释，没声明的一律算主配置。
-- [ ] **v3.2.0 待复测（汽水 API 分片取证通道）**：`api3/api5 × hl/lf/lq` 与 `conf5-lf` 这 7 台已进 soda 的 `[MITM]`，下一轮日志要回答三个问题——① 是否出现 `Match MITM host:api5-lf.qishui.com` 这类行（证明解密面确实铺开）；② 这些分片上有没有 `/luna/*`、开屏上报或激励端点（决定要不要给它们加绑定）；③ 有没有出现 `certificate unknown`（两份日志的 6543+198 行 `*.qishui.com` 里零次，一旦出现就是固定证书，立刻退回注释并写进本清单）。**本轮没有为它们写任何绑定**，所以「已净化/已拦截」这类话在这一层还不成立，只有「能看见了」。
+- [x] **汽水 API 分片取证通道（v3.3.1 撤出，结案）**：`api3/api5 × hl/lf/lq` 与 `conf5-lf` 这 7 台曾进 soda 的 `[MITM]`（v3.2.0~v3.3.0）。2026-11-06 16:21:50 日志（Loon 3.5.3(1014)）回答了原清单的三个问题：① `Match MITM host:api5-lf.qishui.com` 等行出现、解密面确实铺开；③ **`certificate unknown` 出现了**——`api5-lf` 186 次、`api3-lf` 30 次、`conf5-lf` 5 次、其余各 2 次，7 台共约 227 次握手 100% 失败，= 证书固定，汽水 App 因此「全部提示网络错误」。原清单「两份日志零次」的推断是幸存者偏差（那时这些主机没进 hostname，根本没发生过解密）。**处置已按本条预案执行**：7 台从 `[MITM]`、QUIC 回退（25→18 条）与 `Accept-Encoding` 降级一并退出，lint 的 `QUIC_HOSTS` 同步去掉。**复测**：升级到 3.3.1 后打开汽水，搜索/播放/换歌应不再弹网络错误；日志里 `qishui.com` 不应再出现 `Match MITM` 与 `H2 MITM TLS handshake failed`（`api.qishui.com`/`beta-luna.douyin.com` 除外）。重新纳入的前置条件：先证明固定已绕开。
 - [x] **有意的数据缺口**：638 条非广告 luna 请求未绑定；没有“全 luna 都处理”的假宣告。
 
 ## J. 19 个 App 专属插件（2026-10-28 起，源 `src/apps/`）
@@ -324,3 +324,5 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
 - [x] **远程规则**：6 条 `[Remote Rule]` 分别绑 DIRECT / Proxy / REJECT；工具只汇总 policy，不打印远程 URL。
 - [x] **边界**：该工具只做结构检查，不判断业务策略是否最优；`url-test` 只测延迟，不能发现“延迟低但吞吐崩”的节点（2026-11-03 实测：唯一存活 HY2 节点 189ms，但 Cloudflare 下载仅 4–7 KB/s；两条 VLESS 均 Timeout）。节点吞吐问题应更新订阅/换线路，不要改规则顺序。
 - [x] **远程规则集红线审计**：`python3 tools/remote-rules-audit.py` 拉取 blackmatrix7 的 Advertising / Privacy / Hijacking 三套 REJECT 规则，对照 122 条 App 红线并检查本地 DIRECT 覆盖。当前 Advertising 有 3 条京东红线关键词（kepler.jd.com / mapi.m.jd.com / policy.jd.com），均由本地精确 DIRECT 规则覆盖；实测 HTTPS 返回真实 302/403/404。远程清单更新后必须重跑，出现无本地覆盖的红线命中时工具 exit 1，不要删除本地覆盖行。
+
+- [ ] **起点 v3.5.1 脚本净化复测（binary_body_mode + ungzip 返回值修复）**：2026-11-06 16:21:50 日志里 getconf 净化 `Start evaluate`→`Finished` 0ms、字段零改动。升级后打开起点并**打开插件的 debugLog**（console.log 只在 `with debug` 开着才进主日志），日志应出现 `[起点锚点] b=3.5.1 json parse=ok gzip bytes=…` 与 `getconf parsed=1 changes=N`；没有则判读：`ungzip=missing`→Build<988；`json parse=fail plain`→Loon 给的不是 JSON（查是否 br/zstd）。UI 判据：发现页 tab=3、我的页功能区=5、福利页只剩 3 块激励任务。
