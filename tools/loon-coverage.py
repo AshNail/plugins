@@ -157,10 +157,12 @@ CAPABILITIES = [
     dict(layer="传输层", key="quic", name="QUIC→TCP 回退（`PROTOCOL,QUIC`）", expect="used",
          probe=r"PROTOCOL\s*,\s*QUIC",
          href=DOC + "/Rule/protocol_rule"),
-    dict(layer="传输层", key="gzip-negotiate", name="压缩协商降到 gzip", expect="used",
-         probe=r'request\.header\.set\(\s*"Accept-Encoding"\s*,\s*"gzip"\s*\)',
+    dict(layer="传输层", key="gzip-negotiate", name="压缩协商降到脚本能解的形状（gzip / identity）", expect="used",
+         probe=r'request\.header\.set\(\s*"Accept-Encoding"\s*,\s*"(?:gzip|identity)"\s*\)',
          href=DOC + "/Rewrite/rewrite_v2",
-         why="脚本层只有 ungzip；br/zstd 解不开就是静默跳过"),
+         why="脚本层只有 ungzip；br/zstd 解不开就是静默跳过。两种合法形状各有理由：gzip 把体压进 ungzip "
+             "的能力圈（soda/douyin，保带宽），identity 干脆让上游不压（qidian v3.5.7，把 binary_body_mode + "
+             "ungzip + 手写 UTF-8 解码这三层真机未确认的前提从主路上摘掉）"),
     dict(layer="传输层", key="h2", name="`h2 = true`（官方查不到该键）", expect="undocumented",
          token="MITM.h2",
          probe=r"(?m)^\s*h2\s*=\s*true\s*$",
@@ -172,7 +174,9 @@ CAPABILITIES = [
     dict(layer="传输层", key="no-compress", name="免压缩（删 `Accept-Encoding`）", expect="reject",
          probe=r'request\.header\.(del|replace)\(\s*"Accept-Encoding"',
          href=DOC + "/Rewrite/rewrite_v2",
-         why="upsell 响应 gzip 后已 183~191 KB，去压缩会膨胀 5~10 倍"),
+         why="`del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 "
+             "183~191 KB，膨胀 5~10 倍不可控。v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 "
+             "`set(..., \"identity\")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游"),
 
     # ---------------- 规则层 ----------------
     dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="open",
@@ -478,9 +482,12 @@ CAPABILITIES = [
          probe=r"(?s)\$done\(\s*\{[^{}]*?\bheaders\s*:",
          href=DOC + "/Script/script_api",
          why="回写 body 时同步处理压缩头与诊断标记。手册只说「修改响应 Body 后 Loon 会根据传输协议处理 "
-             "Content-Length/Transfer-Encoding/Content-Encoding」，没说脚本给的 headers 是替换还是合并原始头——"
-             "合并语义下 `delete` 一个键等于不改，原始 `Content-Encoding: gzip` 会套在明文新体上。"
-             "所以 qidian v3.5.5 起对这两个键**就地改写原键名**（identity + 新体字节数），只在原键存在时动手"),
+             "Content-Length/Transfer-Encoding/Content-Encoding」，而 §11.3/§11.5 又提醒「提供 headers 时"
+             "应先复制原 Header，避免无意删除其他字段」——这句读实了就是**整包替换**语义，所以 respondHeaders "
+             "从 `Object.assign({}, $response.headers)` 起步（Content-Type 一丢，App 侧按 content-type 分发的"
+             "解析器会整包拒收，形状与「脚本跑了、字段改了、UI 一动不动」一样）。压缩头本身按 v3.5.5 口径"
+             "**就地改写原键名**（identity + 新体字节数），只在原键存在时动手；替换语义下它其实会被 Loon 重算，"
+             "就地改写对两种语义都无害。v3.5.7 起起点主路已是 identity，这段属兜底"),
 
     dict(layer="脚本层", key="s-done-status", name="`$done({status})` 单独改状态码", expect="reject",
          probe=r"(?s)\$done\(\s*\{[^{}]*\bstatus\s*:",
@@ -574,13 +581,17 @@ CAPABILITIES = [
          probe=r"with[^\n]*\brequires_body\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="used",
          probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2",
-         why="v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）实际开启：真机 16:21 日志证伪了"
+         why="v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）开启它：真机 16:21 日志证伪了"
              "「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 "
              "硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。"
              "开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。"
+             "v3.5.7 起它从「主路」降为「兜底」：[Rewrite] 不再逼上游压 gzip 而是直接要 identity，"
+             "主路只剩 JSON.parse 一步；保留该键是因为万一某条 CDN 无视 identity 仍回 gzip，只有字节形态"
+             "还能救（字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，不可逆）。"
              "注：形态镜像是防御性冗余而非必需——API 手册明写 `$done().body` 接受字符串**或** `Uint8Array`，"
-             "v3.5.1 那句「回字符串会被 Loon 丢弃」手册无据，已撤回；真正没写清的是脚本给的 headers 与原始 "
-             "headers 是替换还是合并，所以 v3.5.5 起对过期的 content-encoding/content-length 就地改写而非删键"),
+             "v3.5.1 那句「回字符串会被 Loon 丢弃」手册无据，已撤回；headers 侧 §11.3/§11.5「提供 headers 时"
+             "应先复制原 Header」读实为整包替换语义，所以我们从复制原始头起步、并对过期的 "
+             "content-encoding/content-length 就地改写而非删键，两种语义都无害"),
     dict(layer="脚本属性", key="o-img", name="`img_url`", expect="used",
          probe=r"with[^\n]*\bimg_url\s*=", href=DOC + "/Script/script_v2"),
 

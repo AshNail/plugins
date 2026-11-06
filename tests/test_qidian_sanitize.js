@@ -11,7 +11,7 @@
  *      (v3.5.5 起不再删键——手册没保证 Loon 是替换还是合并脚本给的 headers，合并时删键＝不改)
  *   3. Uint8Array 明文字节（Loon 已替脚本解压）同样生效
  *   4. 字符串明文同样生效
- *   5. ungzip 缺失（Build < 988）→ 静默透传，不抛、不改 body
+ *   5. ungzip 缺失（Build < 988）→ 不改 body、不抛（v3.5.7 起会推 fail，不再静默）
  *   6. ungzip 返回字符串的宽松实现同样可用
  *   7. deeplink 只清 ActionUrl，其余业务字段保留
  *   8. (v3.5.3) 回写形态跟随来路形态：字节进→字节出、字符串进→字符串出。
@@ -28,10 +28,17 @@
  *       合并语义下 `delete` 等于「不改」，原始 gzip 声明会套在明文新体上，App 解压失败回落缓存；
  *       ② getconf / 账户页 / 福利页把本次变更条数写成 `;n=<N>` 进同一个头：主日志没有脚本
  *       stdout，App 内日志又导不出来，条数只能跟着响应头走。
- *   11. (v3.5.6) 同一串证据换个出口：调试模式开 + 本次净化有变更计数时，respondJson 在回写前
- *       $notification.post(`b= in= n=`) 推到锁屏，$persistentStore 记时间做 15s 节流；
- *       透传路径（没走到 respondJson）一律不推。22:06 日志用 tag 证明插件已装到 v3.5.5，
- *       「没更新」不再是候选原因，而主日志 0 次提到 content-encoding——送达形态只能问设备本身。
+ *   11. (v3.5.6→v3.5.7) 同一串证据换个出口：调试模式开时 respondJson 回写前推 `ok`，
+ *       v3.5.7 起 safeJsonParse 的每条失败分支也推 `fail`（ok/fail 各一个 15s 节流键）。
+ *       改口的原因是 22:15 真机答复「调试模式开着、v356 绑定 19/19/19、锁屏零通知、UI 没净化」——
+ *       只在成功侧推，就等于「解析失败」与「解析成功但没字段可改」在设备上同形，什么也排除不掉。
+ *       顺带作废一条口径：`Finished execute` 齐全**不能**证明脚本内部没抛异常，v3.5.2 那次
+ *       TDZ ReferenceError 就是从 catch 里空 $done() 走掉、日志照样打 Finished。
+ *   12. (v3.5.7) 路线 B 主路：[Rewrite] 复写改成 Accept-Encoding: identity，上游不压，脚本拿到
+ *       明文（本块用不带 content-encoding 的响应头跑明文字节）——主路上不再依赖
+ *       binary_body_mode 给字节、$utils.ungzip 同步返回、手写 UTF-8 解码这三层真机未确认的前提；
+ *       gzip 分支降级为「上游无视 identity」时的兜底。附带三条：来路没有压缩头就不发明它、
+ *       明文却非 JSON 要推 fail、instanceof 认不出的对象形态判失败而非当已解析 JSON 透传。
  *   注意：主日志里 Trigger→Finished 的时长（0ms / 999ms 二态）**没有判读价值**——同一端点
  *   两种值都出现过，999ms 严格贴着 1s，是 Loon 异步 $done 的刷写节拍而不是脚本工作量。
  */
@@ -275,22 +282,64 @@ function shapeMatches(bodyIn, out) {
     check("书籍条目不误伤", j && j.Data.BookList[0].Name === "广告任务专区");
   }
 
-  console.log("\n[11] 取证通知（v3.5.6）：调试模式开 + 净化有变更计数才推锁屏，15s 节流");
+  console.log("\n[11] 取证通知（v3.5.6→v3.5.7）：调试模式开，改写成功与解析失败都推锁屏，各 15s 节流");
   {
     const quiet = await run(GETCONF, gz, { utils: realUtils });
     check("调试模式关时一条通知都不推", quiet.posts.length === 0, JSON.stringify(quiet.posts));
 
     const loud = await run(GETCONF, gz, { utils: realUtils, debug: true });
     const msg = (loud.posts[0] || []).join(" | ");
-    check("调试模式开且 n>0 时推出 b=/in=/n=", loud.posts.length === 1
-      && /b=\d+\.\d+\.\d+ in=u8 n=\d+/.test(msg), msg);
+    check("调试模式开且改写成功时推 ok 并带 build/形态/n", loud.posts.length === 1
+      && /b=\d+\.\d+\.\d+ 形态=u8 ok/.test(msg) && /n=\d+/.test(msg), msg);
     check("通知标题带端点", /getconf/.test(String((loud.posts[0] || [])[0] || "")), String((loud.posts[0] || [])[0] || ""));
 
     const throttled = await run(GETCONF, gz, { utils: realUtils, debug: true, persistAt: Date.now() });
     check("15s 内不重复推", throttled.posts.length === 0, JSON.stringify(throttled.posts));
 
+    // v3.5.6 这条断言的是「透传不推」，而真机正是靠「零通知」反推出 respondJson 没走到——
+    // 于是 v3.5.7 把失败侧也接上出口：同一条路径现在必须推 fail。
     const passthrough = await run(GETCONF, gz, { debug: true });
-    check("ungzip 缺失的透传路径不推（没走到 respondJson）", passthrough.posts.length === 0, JSON.stringify(passthrough.posts));
+    const pmsg = (passthrough.posts[0] || []).join(" | ");
+    check("ungzip 缺失的透传路径改推 fail（不再静默）", passthrough.posts.length === 1
+      && /未改写·解析失败/.test(pmsg) && /ungzip 缺失/.test(pmsg), pmsg);
+    check("fail 路径仍然不改 body", passthrough.out.body === undefined, JSON.stringify(passthrough.out));
+  }
+
+  console.log("\n[12] v3.5.7 路线 B 主路：identity 明文（无压缩头）走直解，坏体报出去");
+  {
+    const plainBytes = new Uint8Array(Buffer.from(JSON.stringify(conf), "utf8"));
+    const main = await run(GETCONF, plainBytes, {
+      debug: true,
+      headers: { "content-type": "application/json;charset=utf-8", "content-length": "99", server: "stub" },
+    });
+    const mj = parse(main.out);
+    check("明文字节体不需要 ungzip 就能改写", mj && mj.Data.PangleEnable === "0" && mj.Data.ActivityIcon === undefined,
+      JSON.stringify(mj && mj.Data && Object.keys(mj.Data).slice(0, 4)));
+    check("回写形态仍是字节（来路 u8）", main.out.body instanceof Uint8Array, typeof main.out.body);
+    check("来路没有 content-encoding 就不发明它", main.out.headers["content-encoding"] === undefined,
+      JSON.stringify(main.out.headers));
+    check("content-length 就地改写成新体字节数", main.out.headers["content-length"] === String(main.out.body.length),
+      main.out.headers["content-length"] + " vs " + main.out.body.length);
+    check("identity 主路推的是 ok", /形态=u8 ok/.test((main.posts[0] || []).join(" | ")), JSON.stringify(main.posts));
+
+    const junk = await run(GETCONF, new Uint8Array(Buffer.from("hello loon", "utf8")), { debug: true });
+    check("明文却非 JSON ⇒ 推 fail 且带首段", junk.posts.length === 1
+      && /parse 失败/.test((junk.posts[0] || []).join(" | ")) && /hello/.test((junk.posts[0] || []).join(" | ")),
+      JSON.stringify(junk.posts));
+
+    // 运行时桥接来的二进制包装一旦 instanceof 认不出，旧写法会把它当已解析 JSON 原样返回：
+    // 下游要么 obj.Data===undefined 静默透传，要么被 stringify 成 {"0":31,…} 的坏包。
+    const weird = Object.create(null);
+    weird.Result = 0;
+    const w = await run(GETCONF, weird, { debug: true });
+    check("不认的 object 形态判失败而不是原样当 JSON 返回", w.out.body === undefined && w.out.headers === undefined,
+      JSON.stringify(w.out));
+    check("不认形态推 fail", w.posts.length === 1 && /不认的 object 形态/.test((w.posts[0] || []).join(" | ")),
+      JSON.stringify(w.posts));
+
+    const already = await run(GETCONF, JSON.parse(JSON.stringify(conf)), {});
+    const aj = parse(already.out);
+    check("已是朴素对象的来路仍然直接生效", aj && aj.Data.PangleEnable === "0");
   }
 
   console.log("\nPASS=" + pass + " FAIL=" + fail);

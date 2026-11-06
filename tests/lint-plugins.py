@@ -604,10 +604,13 @@ REWRITE_BODY_RX = re.compile(
     r"\b(?:request|response)\.(?:body\.(?:mock|replace)|json\.(?:add|delete|replace|jq))(?:_file)?\s*\("
 )
 DOMAIN_BLOCK_KINDS = ("DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-WILDCARD")
-# 唯一允许出现在 [Rewrite] 里的 Accept-Encoding 写法：把协商降到 gzip。
-# 脚本层只有 $utils.ungzip（Build ≥ 988），br/zstd 没有解码器。
-AE_SET_GZIP = re.compile(
-    r'request\.header\.set\(\s*"Accept-Encoding"\s*,\s*"gzip"\s*\)')
+# 允许出现在 [Rewrite] 里的 Accept-Encoding 写法只有两形：降到 gzip（脚本层只有
+# $utils.ungzip，br/zstd 没有解码器，降级保住压缩又只多 10~20% 体积），或降到 identity
+# （v3.5.7 起点选这条：真机证明断点在「字节→ungzip→手写 UTF-8 解码」这条链上，
+# 而这几个 Argus 接口体量小，明文膨胀是确定成本）。`del`/`replace` 仍然禁止——那是把
+# 协商随机交回上游，不是声明。
+AE_DOWNGRADE = re.compile(
+    r'request\.header\.set\(\s*"Accept-Encoding"\s*,\s*"(?:gzip|identity)"\s*\)')
 
 
 def host_of(url):
@@ -801,20 +804,19 @@ def check_static_layer(fp, family, data, mitm_text):
             "for the Pangle shard family"
         )
 
-    # 压缩协商：允许「br → gzip 降级」，禁止「免压缩」。
-    #   · 免压缩（request.header.del / replace 掉 Accept-Encoding）经真机体积
-    #     核算后放弃：upsell 类响应 gzip 后 183~191 KB，去压缩膨胀 5~10 倍。
-    #   · br → gzip 是另一回事：脚本层只有 $utils.ungzip，br/zstd 没有解码器，
-    #     收到就是乱码 → 落进「不是 JSON」分支 → 静默不清理。降级保住了压缩，
-    #     只多 10~20% 体积，换来「不会再因为编码而整条失效」。
+    # 压缩协商：允许「降到 gzip」与「降到 identity」两种显式声明，禁止 del/replace。
+    #   · del/replace 是把协商随机交回上游：upsell 类响应 gzip 后已 183~191 KB，
+    #     一旦回明文就膨胀 5~10 倍且不可控，这条经真机体积核算否决（E2）。
+    #   · 降到 gzip：脚本层只有 $utils.ungzip，br/zstd 没有解码器，收到就是乱码
+    #     → 落进「不是 JSON」分支 → 静默不清理。降级只多 10~20% 体积。
+    #   · 降到 identity（v3.5.7 起点）：小接口用确定成本换掉整条解压链——真机 22:15
+    #     的断点是「字节 → ungzip → 手写 UTF-8 解码」，不是体积。
     rewrite_lines = data.get("Rewrite", [])
     for line in rewrite_lines:
-        if "Accept-Encoding" in line and not AE_SET_GZIP.search(line):
+        if "Accept-Encoding" in line and not AE_DOWNGRADE.search(line):
             errors.append(
-                f"{fp}: Accept-Encoding 只允许 "
-                '`request.header.set("Accept-Encoding", "gzip")` 这种降级写法；'
-                "删压缩 / 改 identity 已按体积核算否决"
-                "（docs/loon-native-first.md E2）"
+                f"{fp}: Accept-Encoding 只允许 set 成 gzip 或 identity 这两种显式声明；"
+                "del/replace 等于把协商随机交回上游，经体积核算否决（docs/loon-native-first.md E2）"
             )
 
     # 降级规则必须覆盖 [MITM] 的每一个域名：漏一个，那个域名的 br 响应
@@ -822,12 +824,12 @@ def check_static_layer(fp, family, data, mitm_text):
     ae_rules = [
         line
         for line in rewrite_lines
-        if line.startswith("request if") and AE_SET_GZIP.search(line)
+        if line.startswith("request if") and AE_DOWNGRADE.search(line)
     ]
     if not ae_rules:
         errors.append(
             f"{fp}: 缺少 Accept-Encoding 降级规则"
-            '（request.header.set("Accept-Encoding","gzip")）；'
+            '（request.header.set("Accept-Encoding","gzip"|"identity")）；'
             "br 响应在脚本层没有解码器，会静默跳过清理"
         )
     else:

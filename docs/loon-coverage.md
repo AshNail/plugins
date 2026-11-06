@@ -39,9 +39,9 @@
 | `hostname = %APPEND% …`（官方查不到该 token） | ⚪ 未文档化 | 官方 MitM 页的参数表只有 `hostname` / `ca-p12` / `ca-passphrase` 三行，整站 26 个正文页都扫不到 `%APPEND%`（这条断言现在是机器数出来的：`tools/loon-token-audit.py` 的 `absent_claims[%append%] == 0`，命中数一变非 0 就报「断言已被推翻」）——它是 Surge 的「追加而非覆盖」写法。插件段与主配置同名键的合并语义官方同样没写（与订阅 Host Map 同一类未定义）。留着它的理由是对称的：Loon 若认识，删掉会让本插件整行覆盖用户主配置的解密名单；若不认识，它只是一个永不匹配的空主机项。**保留但不计入能力口径**；真机取证见 `docs/device-checklist.md` |
 | `ca-p12` / `ca-passphrase` | ❌ 判死 | 自带 CA 私钥意味着把私钥塞进公开插件，安全与可移植性双输；统一用 Loon 内置 CA |
 | QUIC→TCP 回退（`PROTOCOL,QUIC`） | ✅ 已用 | 已落地 |
-| 压缩协商降到 gzip | ✅ 已用 | 脚本层只有 ungzip；br/zstd 解不开就是静默跳过 |
+| 压缩协商降到脚本能解的形状（gzip / identity） | ✅ 已用 | 脚本层只有 ungzip；br/zstd 解不开就是静默跳过。两种合法形状各有理由：gzip 把体压进 ungzip 的能力圈（soda/douyin，保带宽），identity 干脆让上游不压（qidian v3.5.7，把 binary_body_mode + ungzip + 手写 UTF-8 解码这三层真机未确认的前提从主路上摘掉） |
 | `h2 = true`（官方查不到该键） | ⚪ 未文档化 | 同 `%APPEND%`：官方 MitM 参数表没有 `h2`，而官方产品页把「解密 HTTPS 与 HTTP/2」写成内置默认行为、没有开关。社区插件通行写 `h2 = true`，我们保留它当作「未知键被忽略」时的零成本保险——但保险不是能力，所以不进利用率；写成 `h2 = false` 才是真错（lint 锁死）。旧文档里那句「不计入能力点」在本轮才真正落地：此前它一直挂在「已用」上 |
-| 免压缩（删 `Accept-Encoding`） | ❌ 判死 | upsell 响应 gzip 后已 183~191 KB，去压缩会膨胀 5~10 倍 |
+| 免压缩（删 `Accept-Encoding`） | ❌ 判死 | `del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 183~191 KB，膨胀 5~10 倍不可控。v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 `set(..., "identity")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游 |
 
 ## 规则层
 
@@ -149,7 +149,7 @@
 | `$request.url` / `method` / `headers` | ✅ 已用 | 已落地 |
 | `$request.body`（需 `requires_body`） | 🟡 可用未用 | 本插件只改响应；请求体里没有需要剥的广告载荷 |
 | `$response.body` | ✅ 已用 | 已落地 |
-| `$done({headers})` 改响应头 | ✅ 已用 | 回写 body 时同步处理压缩头与诊断标记。手册只说「修改响应 Body 后 Loon 会根据传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」，没说脚本给的 headers 是替换还是合并原始头——合并语义下 `delete` 一个键等于不改，原始 `Content-Encoding: gzip` 会套在明文新体上。所以 qidian v3.5.5 起对这两个键**就地改写原键名**（identity + 新体字节数），只在原键存在时动手 |
+| `$done({headers})` 改响应头 | ✅ 已用 | 回写 body 时同步处理压缩头与诊断标记。手册只说「修改响应 Body 后 Loon 会根据传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」，而 §11.3/§11.5 又提醒「提供 headers 时应先复制原 Header，避免无意删除其他字段」——这句读实了就是**整包替换**语义，所以 respondHeaders 从 `Object.assign({}, $response.headers)` 起步（Content-Type 一丢，App 侧按 content-type 分发的解析器会整包拒收，形状与「脚本跑了、字段改了、UI 一动不动」一样）。压缩头本身按 v3.5.5 口径**就地改写原键名**（identity + 新体字节数），只在原键存在时动手；替换语义下它其实会被 Loon 重算，就地改写对两种语义都无害。v3.5.7 起起点主路已是 identity，这段属兜底 |
 | `$done({status})` 单独改状态码 | ❌ 判死 | 只翻状态码、Body 仍是原广告响应，SDK 照样解析；要改回包就整包给（嵌套 `response`），单改 status 没有可用形态。此前标「已用」是探测式写漏了 `{` 边界，把嵌套回包误算成顶层用法 |
 | `$done({url})` 改请求 URL | 🟡 可用未用 | 改 URL 归复写层 `url.replace`：正则、捕获和替换范围都在配置里看得见。搬进脚本会变成「先 Rewrite 后 JS 再改一次」，排障时无法归因 |
 | `$done({node})` / `$done({policy})` 改本次路由 | ❌ 判死 | 拦截插件替用户决定这条请求走哪个节点，等于把去广告和分流耦合；出问题时无法区分是谁改的路由 |
@@ -183,7 +183,7 @@
 | `debug`（可动态） | ✅ 已用 | v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死：两条净化绑定 debug 常开后主日志仍 0 条 [起点锚点]（match/Trigger/Finished 齐全）。官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」，主日志导出不含它，锚点只能在 App 内脚本日志页看。debug 仍常开（保住 App 内那份脚本日志），但远程取证面只剩两个：`tag` 字面量会原样出现在主日志的 match/Trigger/Finished 行里（v3.5.5 起把 build 号写进 tag），以及响应头 X-Qidian-Plugin |
 | `timeout` | ✅ 已用 | 已落地 |
 | `requires_body` | ✅ 已用 | 已落地 |
-| `binary_body_mode` | ✅ 已用 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）实际开启：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。注：形态镜像是防御性冗余而非必需——API 手册明写 `$done().body` 接受字符串**或** `Uint8Array`，v3.5.1 那句「回字符串会被 Loon 丢弃」手册无据，已撤回；真正没写清的是脚本给的 headers 与原始 headers 是替换还是合并，所以 v3.5.5 起对过期的 content-encoding/content-length 就地改写而非删键 |
+| `binary_body_mode` | ✅ 已用 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）开启它：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。v3.5.7 起它从「主路」降为「兜底」：[Rewrite] 不再逼上游压 gzip 而是直接要 identity，主路只剩 JSON.parse 一步；保留该键是因为万一某条 CDN 无视 identity 仍回 gzip，只有字节形态还能救（字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，不可逆）。注：形态镜像是防御性冗余而非必需——API 手册明写 `$done().body` 接受字符串**或** `Uint8Array`，v3.5.1 那句「回字符串会被 Loon 丢弃」手册无据，已撤回；headers 侧 §11.3/§11.5「提供 headers 时应先复制原 Header」读实为整包替换语义，所以我们从复制原始头起步、并对过期的 content-encoding/content-length 就地改写而非删键，两种语义都无害 |
 | `img_url` | ✅ 已用 | 已落地 |
 
 ## 参数层

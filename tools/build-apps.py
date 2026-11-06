@@ -455,14 +455,17 @@ def escape_regex_slashes(pattern: str) -> str:
 # 且每一行都要能被源逐行重述（tests/lint-plugins.py 的 check_app_plugins 复审）。
 BIND_KINDS = {"request", "response", "cron", "generic"}
 # active 增强层的引擎复写层（[Rewrite]）：Loon v2 复写语法，一条规则一行。
-# 为什么要这一层而不是脚本：起点 Argus 的响应带 Content-Encoding: gzip，
-# [Script] 侧读响应体必须先解压，而 $utils.ungzip 只有 Build ≥ 988 提供，
-# 低版本走 silent passthrough ⇒ 净化静默零生效（真机 HAR 实证见 qidian.json）。
+# 为什么要这一层而不是脚本：起点 Argus 的响应带 Content-Encoding，[Script] 侧读响应体
+# 就得先对付压缩，而脚本层只有 $utils.ungzip（gzip）——收到 br/zstd 就是乱码，低 Build 连
+# ungzip 都没有，净化静默零生效（真机 HAR 与 2026-11-06 日志见 qidian.json）。
+# 这一层的合法形态因此是「把压缩协商改到脚本能处理的形状」：gzip 是让它落进 ungzip 的能力圈，
+# identity（v3.5.7 起起点改走这条）是干脆让上游不压。两者都不需要 gate：它服务的是脚本链的
+# 解析前提，不是用户的净化开关，cleanAds 仍然只管会改字段的那些规则。
 # response.json.* / reject_* 都由引擎完成解压与终止响应，脚本链的 gzip 面整个消失。
 REWRITE_STAGES = {"request", "response"}
 REWRITE_TERMINATE_RE = re.compile(r"^reject_(dict|array|img|video)\((200|204|404)\)$")
 REWRITE_REQ_HEADER_RE = re.compile(
-    r'^request\.header\.set\("Accept-Encoding",\s*"gzip"\)$'
+    r'^request\.header\.set\("Accept-Encoding",\s*"(gzip|identity)"\)$'
 )
 REWRITE_JSON_RE = re.compile(
     r"^response\.json\.(?P<kind>replace|delete|jq)\((?P<args>.*)\)$", re.S

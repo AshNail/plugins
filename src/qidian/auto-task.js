@@ -216,9 +216,13 @@ function debugLog(msg) {
 // debug 常开后主日志仍 0 条 anchor，而官方口径是 console.log 写「当前脚本日志」——
 // anchor 只能进 App 内脚本日志页。于是自证面只剩三个：会原样出现在主日志 match/Trigger
 // 行里的 tag（v3.5.5 起带 build 号）、响应头 X-Qidian-Plugin，以及 v3.5.6 起在调试模式下
-// 把同一串证据推到锁屏的 forensicNotice()。
+// 把同一串证据推到锁屏的 forensicReport()。
+// v3.5.7 的真机结论逼出了第二处改动：调试模式开着、`起点深度净化v356` 19/19/19 齐全、锁屏
+// 一条通知都没有、UI 也没净化 ⇒ respondJson 一次都没走到，而 anchor 里「parse=fail」与
+// 「parse=ok 但没字段」在设备上完全同形。所以①出口换成成功/失败都推，②[Rewrite] 不再逼
+// 上游压 gzip 而是直接要 identity——把 ungzip 与手写 UTF-8 解码这两层运行时依赖从主路上拿掉。
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.6";
+const ANCHOR_BUILD = "3.5.7";
 
 // 必须在主入口 IIFE 之前声明：const 没有变量提升，放在 IIFE 之后会在同步响应路径触发 TDZ ReferenceError
 const CLEAN_RULES = {
@@ -572,22 +576,28 @@ function respondHeaders(tag, text) {
 }
 
 /**
- * 取证推送：把与 X-Qidian-Plugin 同一串证据（build / 来路形态 / 变更条数）直接推到锁屏。
+ * 取证推送：把与 X-Qidian-Plugin 同一串证据（build / 来路形态 / 结果）直接推到锁屏。
  * 主日志装不下脚本 console（21:35 判死），HAR 又要用户多一步，于是开「调试模式」时自证。
- * 只推净化有计数的三处（getconf / 账户页 / 福利页），并用 $persistentStore 做 15s 节流，
- * 免得一次冷启动刷出七八条。
+ * v3.5.7 起成功与失败都推：22:15 的真机口径是「调试模式开着、绑定 19/19/19、一条通知没有、
+ * UI 没变」，而 v3.5.6 只在 respondJson 推 ⇒ 「解析失败」和「解析成功但没字段可改」在设备上
+ * 同形，等于什么都没排除。ok 与 fail 各占一个节流键，15s 内互不挤掉。
  */
-function forensicNotice() {
-  if (!DEBUG || BODY_OUT.n < 0) return;
-  const KEY = "Qidian_ForensicAt";
+function forensicReport(kind, detail) {
+  if (!DEBUG) return;
+  const KEY = "Qidian_ForensicAt_" + kind;
   const now = Date.now();
   let last = 0;
   try { last = Number($persistentStore.read(KEY)) || 0; } catch (e) {}
   if (now - last < 15000) return;
   try { $persistentStore.write(String(now), KEY); } catch (e) {}
-  const where = (typeof $request !== "undefined" ? extractPath($request.url) : "").split("/").slice(-2).join("/");
-  const head = "b=" + ANCHOR_BUILD + " in=" + BODY_OUT.shape + " n=" + BODY_OUT.n;
-  try { $notification.post("起点净化取证 " + where, head, "与响应头 X-Qidian-Plugin 同值；n=0 表示解析成功但没字段可改"); } catch (e) {}
+  let where = "";
+  try {
+    where = (typeof $request !== "undefined" ? extractPath($request.url) : "").split("/").slice(-2).join("/");
+  } catch (e) {}
+  const head = "b=" + ANCHOR_BUILD + " 形态=" + BODY_OUT.shape + " " + kind;
+  const title = "起点净化 " + (kind === "fail" ? "未改写·解析失败 " : "已改写 ") + where;
+  const text = String(detail || "") + "（与响应头 X-Qidian-Plugin 同值；n=0 表示解析成功但没字段可改）";
+  try { $notification.post(title, head, text); } catch (e) {}
 }
 
 /**
@@ -600,7 +610,7 @@ function respondJson(E, obj, tag, n) {
   const body = BODY_OUT.shape === "str" ? text
     : BODY_OUT.shape === "ab" ? utf8Encode(text).buffer
     : utf8Encode(text);
-  forensicNotice();
+  forensicReport("ok", "n=" + BODY_OUT.n);
   E.done({ body: body, headers: respondHeaders(tag, text) });
 }
 
@@ -1079,10 +1089,20 @@ function utf8Decode(bytes) {
  *   3. 字符串形态的 gzip（不带 binary_body_mode 时 Loon 把字节按 UTF-8 解成字符串，
  *      0x8b 之类高位字节已被替换成 U+FFFD，魔数检测与解压都不可能成功——这是 v3.5.0
  *      以前「脚本跑完却一个字段都没改」的根因，保留这条只是兜底、不指望它成功）。
+ * v3.5.7 起主路是形态 2 的明文分支：[Rewrite] 把 Accept-Encoding 复写成 identity，上游不压，
+ * gzip 分支与 ungzip/手写 UTF-8 解码降级为兜底（万一某条 CDN 无视 identity 仍回 gzip）。
  */
 function safeJsonParse(body) {
   if (body === null || body === undefined) return null;
-  if (typeof body === "object" && !(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) return body;
+  if (typeof body === "object" && !(body instanceof Uint8Array) && !(body instanceof ArrayBuffer)) {
+    // 只认「已经是 JSON 结构」这一种对象：数组或朴素对象。其余（例如运行时桥过来、
+    // instanceof 认不出的二进制包装）当成对象原样返回会在下游变成 obj.Data===undefined
+    // 的静默透传，或直接被 JSON.stringify 成 {"0":31,"1":139,…} 的坏包，所以宁可判失败并报出去。
+    if (Array.isArray(body) || Object.getPrototypeOf(body) === Object.prototype) return body;
+    BODY_OUT.shape = "unknown";
+    forensicReport("fail", "来路是不认的 object 形态");
+    return null;
+  }
 
   let bytes = null;
   if (typeof body === "string") {
@@ -1097,6 +1117,7 @@ function safeJsonParse(body) {
         return obj;
       } catch (e) {
         anchor("json parse=fail str len=" + body.length + " " + String((e && e.message) || e).slice(0, 60));
+        forensicReport("fail", "字符串体 parse 失败 len=" + body.length);
         return null;
       }
     }
@@ -1110,6 +1131,7 @@ function safeJsonParse(body) {
   if (gz) {
     if (typeof $utils === "undefined" || typeof $utils.ungzip !== "function") {
       anchor("gzip bytes len=" + bytes.length + " ungzip=missing ⇒ 本侧净化必然 passthrough");
+      forensicReport("fail", "上游仍压 gzip 且 ungzip 缺失 len=" + bytes.length);
       return null;
     }
     try {
@@ -1117,6 +1139,7 @@ function safeJsonParse(body) {
       text = typeof raw === "string" ? raw : utf8Decode(raw);
     } catch (e) {
       anchor("gzip bytes len=" + bytes.length + " ungzip=fail " + String((e && e.message) || e).slice(0, 60));
+      forensicReport("fail", "ungzip 抛错 len=" + bytes.length + " " + String((e && e.message) || e).slice(0, 40));
       return null;
     }
   } else {
@@ -1128,6 +1151,8 @@ function safeJsonParse(body) {
     return obj;
   } catch (e) {
     anchor("json parse=fail " + (gz ? "gzip" : "plain") + " bytes=" + bytes.length + " " + String((e && e.message) || e).slice(0, 60));
+    forensicReport("fail", (gz ? "gzip " : "明文 ") + "字节体 parse 失败 bytes=" + bytes.length +
+      " 首段=" + String(text).slice(0, 24));
     return null;
   }
 }

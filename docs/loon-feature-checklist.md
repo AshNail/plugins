@@ -541,6 +541,14 @@
     - **边界**：`210021` 仍是服务端风控；不看满 30 秒直接领奖仍是广告欺诈，不做。HAR 未看到 `X-Soda-Plugin` 的实验结论记为「Loon 抓包可能记录脚本前响应，不能只凭该头判断」，真机以 App 行为与脚本日志为准。
     - **口径**：测试 27 套件 ×2 = 54、1760 断言（src 880）；`test_args_schema` 40 断言、17 个 label；ads 生效 Host 1499→1498（exact 921→920 / wildcard 578 不变）。四道受管声明：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 21 relative link(s)`）、`device checklist: J section covers all 19/19 app plugins`；`npm run lint` 0 errors、`tests/run-all.py` 54/1760 全绿。
 
+70. [x] **第四十六轮：真机把「Finished 齐全」这张通行证收回 —— 起点 v3.5.7 走 identity，取证出口补失败侧**
+    - **触发方式**：不再靠读日志猜，直接向 owner 要设备上唯一能看到的那一格答复。回答是「调试模式开着、锁屏零通知、广告没去掉」。按 v3.5.6 自己写的三分叉，这一支指向 `respondJson` 一次没走到 ⇒ 断点在响应体解析链；传输层、规则内容、插件装载三条此前已逐条排干。
+    - **顺手收回一条用错的口径**：`Finished execute http-response script:...` 齐全**不能**证明脚本内部没抛异常——v3.5.2 那次 TDZ `ReferenceError` 正是从 catch 里空 `$done()` 走掉、日志照样打 Finished。同理「零通知」也不能证明脚本没被调到：v3.5.6 的 `forensicNotice()` 只在成功侧推（`if (!DEBUG || BODY_OUT.n < 0) return;`），「解析失败」与「解析成功但没字段可改」在设备上同形，等于什么都没排除。
+    - **两处改动，净化字段规则一行未动**：① `[Rewrite]` 的 `force-gzip` → `force-identity`，复写值换成 `Accept-Encoding: identity`。依据是本机 16:21 日志已证明「写 gzip 上游就真回 gzip」，即上游照客户端声明走，那么写 identity 就拿到明文，主路上不再吃 `binary_body_mode` / `$utils.ungzip` / 手写 UTF-8 解码这三层真机未确认的前提（三者都留着当「CDN 无视 identity」的兜底——字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，只有字节形态还能救）。identity 同样禁掉脚本解不动的 br/zstd 且更彻底；代价是这几个 Argus 接口明文膨胀 5~10 倍，属确定成本。② `forensicNotice()` 换成 `forensicReport(kind, detail)`：ok 与 fail 各占一个 15s 节流键，失败侧把「字符串体 parse 失败 / ungzip 抛错 / ungzip 缺失 / 不认的 object 形态 / 明文字节体 parse 失败（附首段 24 字符）」原样推到锁屏，一次真机运行就是互斥三分叉。附带把 `safeJsonParse` 的对象早退收紧到「只认数组与朴素对象」——`instanceof` 认不出的二进制包装原先会被当已解析 JSON 原样返回，下游要么 `obj.Data === undefined` 静默透传、要么被 stringify 成 `{"0":31,…}` 的坏包。tag → `v357`。
+    - **官方文档本轮读实两条**：§11.3/§11.5「提供 `headers` 时应先复制原 Header，避免无意删除其他字段」读实即**整包替换**语义（我们早已 `Object.assign({}, $response.headers)` 起步；`Content-Type` 一丢，App 按 content-type 分发的解析器会整包拒收，症状与「字段改了 UI 不动」同形）；§8.5 `$utils.ungzip` 确为同步、`Uint8Array → Uint8Array`，所以 gzip 链的写法本身没错——错的可能在它上游那三层前提，这正是绕过去而不是继续猜的理由。
+    - **E2 的预留被自己兑现**：`docs/loon-native-first.md` E2 当年写「若将来出现『响应体很小、且 Loon gzip 交接有 bug』的端点，可以只针对该端点加一条，并把 lint 的反向断言改名放行」——这两个条件这次同时成立。`tests/lint-plugins.py` 的 `AE_SET_GZIP` 更名 `AE_DOWNGRADE`，白名单从「只许 gzip」放到「gzip 或 identity」，`del`/`replace` 仍然报错：**被体积核算否决的从来是「把协商随机交回上游」，不是「明文」本身**；soda/douyin 不受影响，upsell 的体积账仍然成立。「每个 `[MITM]` 域名必须被某条降级规则覆盖」继续锁死，`tools/build-apps.py` 的 gate 例外同步放开 identity。
+    - **测试**：`tests/test_qidian_sanitize.js` 37→47 断言。新增 [12] 块钉 v3.5.7 主路（明文字节 + 不带压缩头 → 真改写、不发明 `content-encoding`、`content-length` 就地改成新体字节数、推 `ok`），加三条失败侧取证：明文却非 JSON 推 fail 带首段、不认的 object 形态判失败且不回 body、朴素对象来路仍生效（防过度收紧）。[11] 里「透传不推」翻成「透传推 fail」——旧断言把「只有成功才该说话」写成了期望，而那正是本轮要改掉的取证模型。
+
 ## 11. 与本仓库的接口速查
 
 | 想做 | 工具 |

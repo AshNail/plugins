@@ -187,13 +187,17 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
   `/luna/treasure/task/page/v2` 是 **16–21 KB**。JSON 的 gzip 比通常 5~10 倍，去压缩等于把这些响应放大一个数量级。
   为了省一次原生 `ungzip`（微秒级）去换每屏几十 KB 到 1 MB 的流量，是负收益。
 - **唯一真实收益**：983–987（无 `$utils.ungzip`）能真正清理。但这批用户占比极低，且脚本已有“跳过并打标”的兜底。
-- **保留的可能性**：若将来出现“响应体很小、且 Loon gzip 交接有 bug”的端点，可以**只针对该端点**加一条，
-  并用 `tests/lint-plugins.py` 的 `Accept-Encoding` 反向断言改名放行。现在默认锁死。
-- **后来发现的更精确杠杆**：E2 真正的用途不是「免压缩」而是「禁 br」——把该端点的 `Accept-Encoding`
-  **设成** `gzip`（`request.header.set("Accept-Encoding","gzip")`），压缩照旧、体积不变，
-  只是不许服务端选 br。当前两个家族所有端点实测都是 gzip，所以不加；一旦诊断头出现 `;ce=br`
-  （v2.8.1 起可观测），这条就是最小修法。
-- **结论**：**不做**。lint 反向锁死：插件 `[Rewrite]` 里出现 `Accept-Encoding` 直接报错。
+- **保留的可能性 → 已兑现（2026-11-06，起点 v3.5.7）**：预留的那两个条件同时成立了——起点这几个 Argus 接口体量小
+  （getconf/getaccountpage 明文几百 KB 级、其余几十 KB），而真机 22:15 把断点定在「Loon 字节交接 → `$utils.ungzip`
+  → 手写 UTF-8 解码」这条链上（调试模式开着、净化绑定 19/19/19、锁屏零通知 ⇒ `respondJson` 一次没走到）。
+  于是**只对该域名族**把 `Accept-Encoding` 设成 `identity`，`tests/lint-plugins.py` 的白名单随之从「只许 gzip」
+  改成「gzip 或 identity 两种显式声明」，`del`/`replace` 仍然报错——被否决的从来是「把协商随机交回上游」，
+  不是「明文」本身。soda/douyin 不受影响：那边 upsell 的体积核算仍然成立，继续走 gzip。
+- **更精确杠杆的另一半**：E2 真正的用途不止「禁 br」——把 `Accept-Encoding` **设成** `gzip`
+  （`request.header.set("Accept-Encoding","gzip")`）同样能禁掉 br/zstd，且压缩照旧、体积只多 10~20%。
+  一旦诊断头出现 `;ce=br`（v2.8.1 起可观测），这条就是最小修法。
+- **结论**：**默认不做，例外按端点记**。lint 锁的是写法：`set` 成 gzip/identity 合法，`del`/`replace` 报错；
+  并且每个 `[MITM]` 域名都必须被某条降级规则覆盖（漏一个就是静默不解码）。
 
 ### E3 响应层：内联 `body.mock`
 
@@ -381,7 +385,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | `reject_img(status)` | ❌ | 1×1 GIF 适合「图位需要一张图」；我们的广告图走 `[Host]` 黑洞，根本到不了 MITM |
 | `reject_array(status)` | 🟡 | 端点响应必须是数组时才换（`[]`）；目前没有一个这样的上报接口 |
 | `reject_video(status)` | 🟡 | 开屏/激励素材若**直接在 MITM 可见的接口上返回视频字节**，用空视频比空包友好（播放器解码成功、不进重试）。现实里素材都走 CDN 域名拦截，用不上 |
-| `*.header.add/set/del/replace` | ❌ | 我们改 Body 不改头；唯一想改的 `Accept-Encoding` 已由体积实测否决（E2，见 §4） |
+| `*.header.add/set/del/replace` | ⚠️ 一处 | 我们改 Body 不改头，唯一的例外是 `Accept-Encoding` 降级：soda/douyin 设 `gzip`、起点 v3.5.7 设 `identity`（E2，见 §4）。`del`/`replace` 仍全线禁止 |
 | `*.body.replace(Regex, …)` | ❌ | 正文级正则替换对 JSON 不安全：嵌套括号、转义序列、同名字段都会误伤。字段级裁剪必须走解析 |
 | `*.json.add/replace/delete(KeyPath)` | ❌ | 现有 sanitize 全是字段级 + 正则 prune + 开关分支，且与脚本二选一（§8）；同一 App 内没有「无脚本、只删固定 key」的端点 |
 | `*.json.jq(JQ)`（原生 jq） | 🟡 **xianyu 注释态落地** | 与脚本二选一，但在**没有响应脚本**的可选 MITM 层成立：xianyu 用 15 条 jq 只删信息流广告字段/节点、保留 mtop 包络，证据来自 ddgksf2013/fmz200 的 `http-response-jq`；默认注释、逐条启用 |
@@ -974,7 +978,7 @@ body 重算。两种实现下都对：Loon 自己重压 → 它补头；Loon 原
 
 | 守卫 | 拦什么 |
 |---|---|
-| `AE_SET_GZIP` 白名单 | `[Rewrite]` 里出现 `header.del` / `header.replace` 改 Accept-Encoding 直接报错 |
+| `AE_DOWNGRADE` 白名单 | `[Rewrite]` 里 `Accept-Encoding` 只许 `set` 成 gzip 或 identity；出现 `header.del` / `header.replace` 直接报错（把协商随机交回上游不是声明） |
 | 降级覆盖断言 | `[MITM]` 每个域名都必须被降级规则命中，漏一个即报错 |
 | `markHeaders(...,true)` 单测 | 回写 body 时两个头必须消失；只加诊断头时必须保留 |
 
@@ -1312,8 +1316,9 @@ Ogury 走 `ogury.io`、AdTiming 的端点根本没公开。加进去的结果是
   `${开关} == true && ${url} ~= ...` 或纯 URL，没有出现用 `||` 绕过 URL 判断的写法）。
 - **「第一条命中即止」**：同一响应最多执行一条 response 脚本；`enable=false` 的规则**不占位**，
   被完全跳过。所以清理组与观测组按开关分层是正确的——但两者同开时观测组不会执行。
-- **`Accept-Encoding` 降级已在用**（soda:154 / douyin:143）：请求阶段把它压成 `gzip`，
-  绕开 br/zstd 无解码器的死路。这条此前只在脚本注释里，现在能对着文档确认写法合规。
+- **`Accept-Encoding` 降级已在用**（soda:154 / douyin:143 设 `gzip`，qidian v3.5.7 起 `force-identity` 设 `identity`）：
+  请求阶段显式声明编码，绕开 br/zstd 无解码器的死路；起点多走一步是因为真机把断点定在字节交接链上，
+  而这几接口明文代价可控。写法合规由 lint 的 `AE_DOWNGRADE` 白名单 + 「每个 [MITM] 域名必须被降级规则覆盖」共同锁住。
 
 ---
 
