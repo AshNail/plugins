@@ -1,0 +1,119 @@
+{
+  "slug": "zhihu",
+  "name": "知乎 · 去广告与精简",
+  "desc": "知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；商业化广告接口（commercial_api/ad-style-service）与推广/预置词走可选原生增强层（REJECT-DICT 空字典，200 状态码防重试）；核心问答/文章/个人页/图床/推送严格设防红线。",
+  "version": "1.0.0",
+  "date": "2026-11-06",
+  "loonVersion": "3.5.1(983)",
+  "tag": "去广告,知乎",
+  "comment": [
+    "红线（绝不进任何拦截组）：passport.zhihu.com 账号与安全登录网关 / api.zhihu.com 知乎核心业务 API，问答与文章主服务 / zhuanlan.zhihu.com 知乎专栏核心域名 / unpkg.zhihu.com 前端静态资源与组件加载 / mqtt.zhihu.com 实时消息推送长连接通道 / lc-push.zhihu.com 移动端离线/在线推送通道 / pic1.zhimg.com 静态图片与用户头像图床。",
+    "知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。",
+    "知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配。",
+    "能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走可选增强层 REJECT-DICT（HTTP 200 + 空字典），保持零 JS 脚本。"
+  ],
+  "redlines": [
+    {
+      "domain": "passport.zhihu.com",
+      "kind": "host",
+      "quote": "passport.zhihu.com 账号与安全登录网关",
+      "why": "账号与安全登录网关，绝不拦截"
+    },
+    {
+      "domain": "api.zhihu.com",
+      "kind": "host",
+      "quote": "api.zhihu.com 知乎核心业务 API，问答与文章主服务",
+      "why": "核心业务 API，问答/关注/首页数据网关"
+    },
+    {
+      "domain": "zhuanlan.zhihu.com",
+      "kind": "host",
+      "quote": "zhuanlan.zhihu.com 知乎专栏核心域名",
+      "why": "专栏文章内容访问"
+    },
+    {
+      "domain": "unpkg.zhihu.com",
+      "kind": "host",
+      "quote": "unpkg.zhihu.com 前端静态资源与组件加载",
+      "why": "前端静态资源依赖"
+    },
+    {
+      "domain": "mqtt.zhihu.com",
+      "kind": "host",
+      "quote": "mqtt.zhihu.com 实时消息推送长连接通道",
+      "why": "实时私信与通知长连接"
+    },
+    {
+      "domain": "lc-push.zhihu.com",
+      "kind": "host",
+      "quote": "lc-push.zhihu.com 移动端离线/在线推送通道",
+      "why": "系统推送通道"
+    },
+    {
+      "domain": "pic1.zhimg.com",
+      "kind": "host",
+      "quote": "pic1.zhimg.com 静态图片与用户头像图床",
+      "why": "核心静态图床，绝不黑洞"
+    },
+    {
+      "domain": "zhihu.com",
+      "kind": "family",
+      "quote": "知乎主站与业务共享根域 *.zhihu.com，禁止整域通配",
+      "why": "知乎主站业务共享根域，禁止整域通配"
+    },
+    {
+      "domain": "zhimg.com",
+      "kind": "family",
+      "quote": "知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配",
+      "why": "知乎静态资产共享根域，禁止整域通配"
+    }
+  ],
+  "sdks": [],
+  "groups": [
+    {
+      "id": "telemetry",
+      "title": "知乎自建遥测 / 崩溃分析 / 商业化追踪",
+      "tier": "A",
+      "note": "zhihu-web-analytics.zhihu.com（9源，知乎官方 Web/移动端分析）、udd1i5.zhihu.com（5源，商业化追踪与素材 CDN）、sugar.zhihu.com（4源，崩溃上报与监控平台）、crash2.zhihu.com（3源，崩溃分析日志端点）。均非业务数据流，DNS 映射 127.0.0.1 阻断。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://github.com/Cats-Team/AdRules",
+        "https://github.com/hagezi/dns-blocklists"
+      ],
+      "hosts": [
+        "crash2.zhihu.com",
+        "sugar.zhihu.com",
+        "udd1i5.zhihu.com",
+        "zhihu-web-analytics.zhihu.com"
+      ],
+      "rules": []
+    }
+  ],
+  "enhance": {
+    "intro": "知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。下列 12 条 URL-REGEX 采用 Loon 原生 REJECT-DICT（返回 HTTP 200 + 空字典），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。整段默认注释，启用需安装证书。",
+    "sources": [
+      "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx",
+      "https://kelee.one/"
+    ],
+    "mitm_hosts": [
+      "api.zhihu.com",
+      "www.zhihu.com",
+      "zhida.zhihu.com"
+    ],
+    "url_regex": [
+      "URL-REGEX,^https://api\\.zhihu\\.com/ad-style-service/request,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/commercial_api/,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/commercial_api/banners_v\\d+/app_float_corner,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/commercial_api/answer/\\d+/bottom-v\\d+,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/next-render\\?id=\\d+&type=answer,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/related_recommend/feed/waterfall,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/search/preset_words,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/search/related_queries/question/\\d+,REJECT-DICT",
+      "URL-REGEX,^https://zhida\\.zhihu\\.com/ai_ingress/ai_chat/guidance,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/content-distribution-core/bubble/common/show,REJECT-DICT",
+      "URL-REGEX,^https://www\\.zhihu\\.com/api/v\\d+/members/homepage_card,REJECT-DICT",
+      "URL-REGEX,^https://api\\.zhihu\\.com/people/homepage_entry_v\\d+,REJECT-DICT"
+    ]
+  },
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/d8/bc/a5d8bc1b-31d7-2510-4bf6-17b2b7858c97/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg"
+}

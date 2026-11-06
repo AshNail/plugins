@@ -1,5 +1,5 @@
 {
-  "version": "2.8.18",
+  "version": "2.8.19",
   "updated": "2026-11-06 10:45",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.18",
+      "version": "2.8.19",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -431,7 +431,9 @@
             "ada.baidu.com",
             "ad.player.baidu.com",
             "imgstat.baidu.com",
-            "sestat.baidu.com"
+            "sestat.baidu.com",
+            "click-bes.baidu.com",
+            "miniapp-ad.cdn.bcebos.com"
           ]
         },
         {
@@ -706,7 +708,29 @@
             "sdc.pingan.com",
             "open.e.kuaishou.com",
             "ads-union.jd.com",
-            "analytics.oceanengine.com"
+            "analytics.oceanengine.com",
+            "=tuia.cn",
+            "guide2.bianxianmao.com",
+            "=hubcloud.com.cn",
+            "=adwangmai.com",
+            "=adfunlink.com",
+            "=xinduoad.com",
+            "=fanglinad.com",
+            "=halomobi.com",
+            "=kuaiyiad.com",
+            "=mentamob.com",
+            "=mobrtb.com",
+            "=richmob.cn",
+            "=rixengine.com",
+            "=shanghailingye.cn",
+            "=yfanads.com",
+            "=yiweiads.com",
+            "=1rtb.com",
+            "=1rtb.net",
+            "=66mobi.com",
+            "=hzjizhun.com",
+            "=hzjizhun.cn",
+            "adx.zuoyebang.com"
           ]
         },
         {
@@ -977,7 +1001,20 @@
             "adexp.chinaliftoff.io",
             "click.chinaliftoff.io",
             "cdn.chinaliftoff-creatives.io",
-            "pubnative.info"
+            "pubnative.info",
+            "=tobidad.com",
+            "=tobidad.cn",
+            "=adscope.cn",
+            "=adscope.com.cn",
+            "=ad-scope.com.cn",
+            "=adscope.xyz",
+            "=beizi.online",
+            "=beizi.info",
+            "=adhub.com.cn",
+            "=medproad.com",
+            "=admobile.mobi",
+            "=admobile.vip",
+            "=admobile.net.cn"
           ]
         },
         {

@@ -1,7 +1,7 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.18
+#!version=2.8.19
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
@@ -488,6 +488,8 @@ ada.baidu.com = 127.0.0.1
 ad.player.baidu.com = 127.0.0.1
 imgstat.baidu.com = 127.0.0.1
 sestat.baidu.com = 127.0.0.1
+click-bes.baidu.com = 127.0.0.1
+miniapp-ad.cdn.bcebos.com = 127.0.0.1
 
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
@@ -834,6 +836,48 @@ sdc.pingan.com = 127.0.0.1
 open.e.kuaishou.com = 127.0.0.1
 ads-union.jd.com = 127.0.0.1
 analytics.oceanengine.com = 127.0.0.1
+tuia.cn = 127.0.0.1
+*.tuia.cn = 127.0.0.1
+guide2.bianxianmao.com = 127.0.0.1
+hubcloud.com.cn = 127.0.0.1
+*.hubcloud.com.cn = 127.0.0.1
+adwangmai.com = 127.0.0.1
+*.adwangmai.com = 127.0.0.1
+adfunlink.com = 127.0.0.1
+*.adfunlink.com = 127.0.0.1
+xinduoad.com = 127.0.0.1
+*.xinduoad.com = 127.0.0.1
+fanglinad.com = 127.0.0.1
+*.fanglinad.com = 127.0.0.1
+halomobi.com = 127.0.0.1
+*.halomobi.com = 127.0.0.1
+kuaiyiad.com = 127.0.0.1
+*.kuaiyiad.com = 127.0.0.1
+mentamob.com = 127.0.0.1
+*.mentamob.com = 127.0.0.1
+mobrtb.com = 127.0.0.1
+*.mobrtb.com = 127.0.0.1
+richmob.cn = 127.0.0.1
+*.richmob.cn = 127.0.0.1
+rixengine.com = 127.0.0.1
+*.rixengine.com = 127.0.0.1
+shanghailingye.cn = 127.0.0.1
+*.shanghailingye.cn = 127.0.0.1
+yfanads.com = 127.0.0.1
+*.yfanads.com = 127.0.0.1
+yiweiads.com = 127.0.0.1
+*.yiweiads.com = 127.0.0.1
+1rtb.com = 127.0.0.1
+*.1rtb.com = 127.0.0.1
+1rtb.net = 127.0.0.1
+*.1rtb.net = 127.0.0.1
+66mobi.com = 127.0.0.1
+*.66mobi.com = 127.0.0.1
+hzjizhun.com = 127.0.0.1
+*.hzjizhun.com = 127.0.0.1
+hzjizhun.cn = 127.0.0.1
+*.hzjizhun.cn = 127.0.0.1
+adx.zuoyebang.com = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -1200,6 +1244,32 @@ adexp.chinaliftoff.io = 127.0.0.1
 click.chinaliftoff.io = 127.0.0.1
 cdn.chinaliftoff-creatives.io = 127.0.0.1
 pubnative.info = 127.0.0.1
+tobidad.com = 127.0.0.1
+*.tobidad.com = 127.0.0.1
+tobidad.cn = 127.0.0.1
+*.tobidad.cn = 127.0.0.1
+adscope.cn = 127.0.0.1
+*.adscope.cn = 127.0.0.1
+adscope.com.cn = 127.0.0.1
+*.adscope.com.cn = 127.0.0.1
+ad-scope.com.cn = 127.0.0.1
+*.ad-scope.com.cn = 127.0.0.1
+adscope.xyz = 127.0.0.1
+*.adscope.xyz = 127.0.0.1
+beizi.online = 127.0.0.1
+*.beizi.online = 127.0.0.1
+beizi.info = 127.0.0.1
+*.beizi.info = 127.0.0.1
+adhub.com.cn = 127.0.0.1
+*.adhub.com.cn = 127.0.0.1
+medproad.com = 127.0.0.1
+*.medproad.com = 127.0.0.1
+admobile.mobi = 127.0.0.1
+*.admobile.mobi = 127.0.0.1
+admobile.vip = 127.0.0.1
+*.admobile.vip = 127.0.0.1
+admobile.net.cn = 127.0.0.1
+*.admobile.net.cn = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据
