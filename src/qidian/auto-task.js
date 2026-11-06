@@ -166,6 +166,7 @@ function debugLog(msg) {
 // ==========================================
 // 🚀 主入口
 // ==========================================
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 !(async () => {
   const E = new Env("起点全能助手");
 
