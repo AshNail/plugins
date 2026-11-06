@@ -1,8 +1,8 @@
 {
   "slug": "banks",
   "name": "银行 App 聚合 · 遥测瘦身",
-  "desc": "覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:全面覆盖中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与招行/浦发/云闪付已证实的自建商业广告专域与营销系统;登录/支付/付款码/动账提醒绝对放行(零接触红线);银行App内置SSL Pinning,纯连接层零证书零MITM安全绝育。",
-  "version": "1.2.0",
+  "desc": "覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:全面覆盖中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与招行/浦发/平安/云闪付已证实的自建商业广告专域与营销系统;登录/支付/付款码/动账提醒绝对放行(零接触红线);银行App内置SSL Pinning,纯连接层零证书零MITM安全绝育。",
+  "version": "1.3.0",
   "date": "2026-11-06",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,银行,遥测",
@@ -161,7 +161,8 @@
         "ad.boc.cn",
         "ad.bankcomm.com",
         "ad.psbc.com",
-        "marketing.unionpayintl.com"
+        "marketing.unionpayintl.com",
+        "adcdn.pingan.com"
       ],
       "rules": [
         "DOMAIN-SUFFIX,ads.cup.com.cn,REJECT"
@@ -203,7 +204,8 @@
         "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
       ],
       "hosts": [
-        "log.cmbchina.com"
+        "log.cmbchina.com",
+        "sdc.pingan.com"
       ]
     }
   ],

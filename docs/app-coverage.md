@@ -5,7 +5,7 @@
 > **候选≠必拦**：逐条人工定级后才进 `src/apps/`。A=≥3 源独立收录；B=2 源；C=单源（默认不收）。
 > 命中 App JSON 里 `triage_exclude` 台账的候选记为「排除·<族>」，不计入缺口——**排除是裁决，不是待办**。
 
-## `banks` — 生效黑洞 8 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `banks` — 生效黑洞 9 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -176,7 +176,7 @@
 
 无 A/B 级缺口候选。
 
-## `taobao` — 生效黑洞 14 域；缺口候选 A:0 B:3 C:8（已裁决排除 0 条；已收录但默认关闭 8 条）
+## `taobao` — 生效黑洞 14 域；缺口候选 A:0 B:0 C:8（已裁决排除 0 条；已收录但默认关闭 11 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -190,9 +190,9 @@
 | `adashx.ut.taobao.com` | 2: hagezi-pro,stevenblack | 已收录·默认关 |
 | `adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
 | `h-adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
-| `mclick.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
-| `redirect.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
-| `textlink.simba.taobao.com` | 2: anti-ad,hagezi-pro | 缺口 |
+| `mclick.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `redirect.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `textlink.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `v6-adashx.ut.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
 ## `wechat` — 生效黑洞 33 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）

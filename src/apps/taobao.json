@@ -2,7 +2,7 @@
   "slug": "taobao",
   "name": "淘宝 · 去广告（原生规则层）",
   "desc": "淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，需可选 MITM 后按 URL 精确拒绝。11 条路径来自可莉淘宝插件的 request reject 事实，改写为 Loon 原生 URL-REGEX + REJECT-DICT；不包含上游 JS，交易/登录/支付红线不动。",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "date": "2026-11-03",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,淘宝,阿里",
@@ -134,6 +134,22 @@
       "hosts": [
         "amdc.m.taobao.com",
         "amdcopen.m.taobao.com"
+      ]
+    },
+    {
+      "id": "simba_click",
+      "title": "阿里妈妈直通车点击跳转/外链（默认关）",
+      "tier": "B",
+      "disabled": true,
+      "note": "mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcards/pro.txt"
+      ],
+      "hosts": [
+        "mclick.simba.taobao.com",
+        "redirect.simba.taobao.com",
+        "textlink.simba.taobao.com"
       ]
     }
   ],

@@ -465,7 +465,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 
 ### 9.7 文档里的数字也是数据源（第二十四轮补上门禁）
 
-一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`1813 条生效 Host`、`15 个 App 插件`、
+一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`1831 条生效 Host`、`15 个 App 插件`、
 `官方文档 26 页`、`1714 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
 **风险面的规模**来用：加一批域名忘了改文档，读者就照着虚高（或虚低）的数字判断该不该装。
 
@@ -476,7 +476,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 | `plugins/ads/README.md` 的分组条数、生效/注释 Host、exact/wildcard、通配与家族拆分、可选 Rule 的 27/16/1 | `tools/build-ads.py --stats-json` |
 | 规模页 `docs/repo-metrics.md` 的正文页数、能力表 175 条与五档分布、旁路路径数、广告类型数、上游黑名单家数、App 插件数 / 覆盖 App 数 / 增强层个数 | `tokens.json`、`loon-coverage --check`、`bypass-audit --check`、`ad-surface-audit --check`、`app-coverage-audit.SOURCE_NAMES`、`src/apps/*.json` |
 | 「N 套件 ×2 = M 套件 / K 断言」与 `tests/README.md` 的断言分布表 | `tests/run-all.py` 本次实跑的 per-suite 计数 |
-| 本节自己的 `1813 条生效 Host`、`15 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
+| 本节自己的 `1831 条生效 Host`、`15 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
 | 文档里复述的「门禁管了 N 条声明」与 `readme numbers: N …` 成功行 | 同一次 lint 真实核对成功的条数 |
 | 文档任意一行同时出现 `test_xxx` 与「N 断言」 | 该套件本次实跑数（查不到套件名直接报错） |
 | 真机清单的 J 段插件数、正文页数、`ads=<版本>` 式版本引用 | `src/apps/*.json`、`tokens.json`、各插件 `#!version` |

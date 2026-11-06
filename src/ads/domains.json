@@ -1,6 +1,6 @@
 {
-  "version": "2.8.17",
-  "updated": "2026-11-06 10:30",
+  "version": "2.8.18",
+  "updated": "2026-11-06 10:45",
   "author": "edy",
   "homepage": "https://github.com/AshNail/plugins",
   "openUrl": "https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md",
@@ -10,7 +10,7 @@
       "file": "ads.plugin",
       "name": "广告平台拦截器 · All-in-One",
       "desc": "单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。",
-      "version": "2.8.17",
+      "version": "2.8.18",
       "tag": "广告拦截,DNS,HTTPDNS,防泄漏,去广告",
       "system": "iOS,iPadOS,tvOS,macOS",
       "intro": [
@@ -700,7 +700,13 @@
             "ads.cup.com.cn",
             "mbads.paas.cmbchina.com",
             "marketing.ccbtechnology.com",
-            "marketing.unionpayintl.com"
+            "marketing.unionpayintl.com",
+            "=ipinyou.com.cn",
+            "adcdn.pingan.com",
+            "sdc.pingan.com",
+            "open.e.kuaishou.com",
+            "ads-union.jd.com",
+            "analytics.oceanengine.com"
           ]
         },
         {
@@ -866,7 +872,12 @@
             "data.mistat.xiaomi.com",
             "adx.ads.oppomobile.com",
             "data.ads.oppomobile.com",
-            "bdapi.ads.oppomobile.com"
+            "bdapi.ads.oppomobile.com",
+            "o2o.api.xiaomi.com",
+            "tracker.ai.xiaomi.com",
+            "sms.ads.oppomobile.com",
+            "ck.ads.oppomobile.com",
+            "bhwkju.vivo.com"
           ]
         },
         {
@@ -1360,7 +1371,10 @@
             "=videoadstech.org",
             "=adform.com",
             "=advangelists.com",
-            "=alenty.com"
+            "=alenty.com",
+            "=citrusad.net",
+            "=amoad.com",
+            "=btloader.com"
           ]
         },
         {
