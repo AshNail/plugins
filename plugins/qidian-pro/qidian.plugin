@@ -6,6 +6,7 @@
 #!loon_version = 3.5.1(978)
 #!tag = 起点,去广告,签到
 #!type = normal
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d8/0b/85/d80b8512-93fa-f1ee-f1f8-6e0356fb2b66/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
 
 [Argument]
 CAPTURE_ENABLE=switch,"true","false",tag=是否开启抓取重写, desc=是否开启抓取重写（[Rewrite] 接管广告净化）。**关掉它广告改由 [Script] 接管，但不影响 Cookie 捕获** —— 见 QDREADER_COOKIE_ENABLE

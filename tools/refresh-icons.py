@@ -129,6 +129,18 @@ def write_url(path: Path, url: str) -> None:
                          text, count=1, flags=re.M)
     else:
         new, n = re.subn(r"^#!icon=\S+\s*$", f"#!icon={url}", text, count=1, flags=re.M)
+        if n == 0:
+            # 移植件类插件头里本来就没有这一行：插到头部连续 #! 块的末尾，
+            # 不动正文任何一行——Loon 只认头部区的 #! 键。
+            lines = text.split("\n")
+            last = 0
+            for i, line in enumerate(lines):
+                if line.startswith("#!"):
+                    last = i
+                elif line.strip():
+                    break
+            lines.insert(last + 1, f"#!icon={url}")
+            new, n = "\n".join(lines), 1
     if n != 1:
         raise SystemExit(f"{path.relative_to(ROOT)}: 找不到可写的 icon 行")
     if new != text:
