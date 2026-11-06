@@ -13,6 +13,10 @@
  *   5. ungzip 缺失（Build < 988）→ 静默透传，不抛、不改 body
  *   6. ungzip 返回字符串的宽松实现同样可用
  *   7. deeplink 只清 ActionUrl，其余业务字段保留
+ *   8. (v3.5.3) 回写形态跟随来路形态：字节进→字节出、字符串进→字符串出。
+ *      真机判据是 16:21 日志「脚本 Finished 却零字段变更」——Loon 不替脚本解压 gzip，
+ *      不带 binary_body_mode 时 $response.body 是 UTF-8 硬解的乱码串；而 v3.5.1 开了
+ *      binary_body_mode 却回字符串，被 Loon 丢弃。两头必须同时成立，缺一个都是透传。
  */
 const zlib = require("zlib");
 const src = require("./load-script")("auto-task.js", "qidian");
@@ -69,7 +73,20 @@ const realUtils = {
 
 function parse(out) {
   if (!out || out.body === undefined) return null;
-  try { return JSON.parse(out.body); } catch (e) { return null; }
+  const raw = out.body instanceof Uint8Array
+    ? Buffer.from(out.body).toString("utf8")
+    : out.body instanceof ArrayBuffer
+      ? Buffer.from(new Uint8Array(out.body)).toString("utf8")
+      : out.body;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+// v3.5.3 契约：进字节必须回字节。binary_body_mode 下回字符串会被 Loon 静默丢弃
+// （v3.5.1 就是这样「脚本跑完、字段没改」），所以这条断言挂了就是回归。
+function shapeMatches(bodyIn, out) {
+  const inBytes = bodyIn instanceof Uint8Array || bodyIn instanceof ArrayBuffer;
+  const outBytes = out && (out.body instanceof Uint8Array || out.body instanceof ArrayBuffer);
+  return inBytes === !!outBytes;
 }
 
 (async () => {
@@ -87,6 +104,7 @@ function parse(out) {
     check("过期的 content-encoding / content-length 已删",
       h["content-encoding"] === undefined && h["content-length"] === undefined, JSON.stringify(h));
     check("其它响应头保留", h.server === "stub");
+    check("字节进 → 字节出（binary_body_mode 契约）", shapeMatches(gz, out), Object.prototype.toString.call(out && out.body));
   }
 
   console.log("\n[2] Uint8Array 明文字节（Loon 已解压）");
@@ -102,6 +120,7 @@ function parse(out) {
     const { out } = await run(GETCONF, text, { utils: realUtils, headers: { server: "stub" } });
     const j = parse(out);
     check("字符串明文被净化", j && j.Data.PangleEnable === "0");
+    check("字符串进 → 字符串出", shapeMatches(text, out), Object.prototype.toString.call(out && out.body));
   }
 
   console.log("\n[4] ungzip 缺失（Build < 988）→ 静默透传");

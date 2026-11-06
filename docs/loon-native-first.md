@@ -115,7 +115,7 @@ Biliverse 的 Rewrite 版把 JSON 接口整体重定向到第三方网关 `app.n
 | `[Script]` | `cron` / `generic` | 脚本 | ✅ 提醒 + 状态看板 |
 | `[Script]` | `network-changed` | 脚本 | ❌ 全量执行、只能弹通知（§9.3） |
 | `[Script]` | `${response.status}` / `${response.header[…]}` / `${request.method}` 条件 | 脚本 | ❌ 与 `readBody` 的 not-json 分支重复（§9.2） |
-| `[Script]` | `with debug` / `binary_body_mode` / 动态 `timeout` | 脚本 | 🟡 debug 备用；timeout 已用；binary 不用 |
+| `[Script]` | `with debug` / `binary_body_mode` / 动态 `timeout` | 脚本 | 🟡 debug 备用；timeout 已用；binary 已用于起点两条净化绑定（v3.5.3） |
 | `[Script]` | `$done()` 无参 = 断开连接 **【文档】** | 脚本 | ❌（未用中断语义） |
 | `[MITM]` | `hostname = %APPEND% ...` **【未收录】** | 解密 | ⚪ 未文档化：保留待真机取证（§9.3） |
 | `[MITM]` | `h2 = true` **【未收录】** | 解密 | ⚪ 未文档化：防御性冗余，不进能力口径（§9.3） |
@@ -403,7 +403,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | 动态 `cron ${reminderCron}` | ✅ | 每日提醒的 cron 由 `[Argument]` input 提供 |
 | `with tag` / `with img_url` | ✅ | 状态按钮的图标与分组 |
 | `with debug=${开关}` | 🟡 | Loon 自己的脚本调试开关；现在 `X-Soda-Plugin` 头 + `console.log` 已能回答「跑没跑、跑到哪步」，等真机排障需要更细粒度时再挂 |
-| `binary_body_mode` | ❌ | 处理的全部是 JSON 文本 |
+| `binary_body_mode` | ✅ | 起点 getconf-clean / deep-clean 在用：真机证伪了「引擎替脚本解压 gzip」，字符串形态的 gzip 体 `1f 8b` 检测失效 ⇒ 脚本跑完零字段变更；开字节模式 + `respondJson` 按来路形态回写字节才闭环 |
 | `$done()` 无参（断开连接） | ❌ | 等价于 `REJECT-DROP`，会给客户端「连接被掐」而不是「服务器回了空」，反而更容易触发秒级重试 |
 
 ### 9.3 规则、MITM、General
@@ -1003,7 +1003,7 @@ body 重算。两种实现下都对：Loon 自己重压 → 它补头；Loon 原
 | 传输层 | 100% | QUIC 回退、MITM 通配、压缩降级全用上；只剩「免压缩」是判死；`h2` / `%APPEND%` 记为**未文档化**，两边都不计（§9.3） |
 | 插件段落 | 100% | 8 个段落里 7 个在用，`[IP Rewrite]` 判死 |
 | 元数据 | 92% | 只剩 `#!system_version`——见下方说明，**故意不写** |
-| 脚本属性 | 86% | 只剩 `binary_body_mode` |
+| 脚本属性 | 100% | `binary_body_mode` 由起点 v3.5.3 补上 |
 | 参数层 | 67% | 只剩 `type=number` / `type=boolean`，本插件没有数值参数 |
 | 脚本层 | 62% | 未用大多与拦截无关（`$httpClient`/`$dns.query`/AES 判死，其余无收益） |
 | 规则层 | 58% | `DOMAIN`/`DOMAIN-SUFFIX` 被 `[Host]` 覆盖，`OR`/`NOT` 无场景 |

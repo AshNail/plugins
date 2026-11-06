@@ -111,7 +111,7 @@
 - ✅ **条件表达式（第二轮核对）**：`request|response if` 支持 `${url}`、`${request.method}`、`${request.header['x']}`、`${response.status}`、`${response.header['x']}` 与 `[Argument]` 参数，操作符只有 `==` / `~=` / `&&` / `||` / `()`；**不支持** `!=`、`!~`、大小比较、Body 内容条件、正则命名捕获。Response 规则必须有「URL Guard 且是必要条件」。
 - ⚪ 未用的条件：`${response.status}`（可做「只改 200」的守卫）、`${response.header['Content-Type']}`（可做「只处理 JSON」的守卫）。两条都与脚本内 `readBody` 的 `not-json` 分支重复，且会把「Content-Type 写错但内容是 JSON」的接口静默漏掉，故不采用。
 - ⚪ `with debug=${开关}`：Loon 自带的脚本调试开关，可动态引用 `[Argument]`。现在用 `X-*-Plugin` 响应头 + `console.log` 已能定位「跑没跑、跑到哪步」，真机深挖时再挂。
-- ⚪ `binary_body_mode`：处理的都是 JSON 文本，不用。
+- ✅ `binary_body_mode`：起点两条净化绑定在用（v3.5.3）。前提已被真机证伪——「`[Rewrite]` 压成 gzip 后引擎会替脚本解压成字符串」不成立，不带该键时 gzip 体是 UTF-8 硬解的乱码串，`JSON.parse` 必抛、净化透传；开模式后回写必须同样回字节，v3.5.1 就是只开了模式却回字符串才被 Loon 丢弃。
 - ✅ `with timeout` / 动态 `timeout=${参数}` / 动态 `cron ${参数}` / `tag` / `img_url` 全部在用。
 - ❌ `mock_file` / `.mock_file`：外部资源依赖，违背仓库自包含纪律。
 

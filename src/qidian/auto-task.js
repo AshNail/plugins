@@ -214,7 +214,7 @@ function debugLog(msg) {
 //   · enc=gzip + parsed=0                 ⇒ 脚本拿到原始压缩体，本侧净化必然 passthrough
 //   · ungzip=missing                      ⇒ Build < 988，没有 $utils.ungzip
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.2";
+const ANCHOR_BUILD = "3.5.3";
 
 // 必须在主入口 IIFE 之前声明：const 没有变量提升，放在 IIFE 之后会在同步响应路径触发 TDZ ReferenceError
 const CLEAN_RULES = {
@@ -222,6 +222,11 @@ const CLEAN_RULES = {
   "reddot/getdot": ["Data"],
   "checkin/checkinexchangepage": ["Data.Goods"],
 };
+
+// 同上一条 TDZ 纪律：safeJsonParse 写入、respondJson 读取，两者都在主 IIFE 的同步路径上。
+// binary_body_mode=true 时 Loon 要求 $done({body}) 回传字节，回字符串会被静默丢弃（v3.5.1 的失效形态），
+// 所以进来的体是什么形态，出去就必须还原成什么形态。
+const BODY_OUT = { shape: "str" };
 
 function extractPath(url) {
   if (typeof url !== "string") return "";
@@ -555,10 +560,11 @@ function respondHeaders(tag) {
  * 自动处理响应头，确保客户端能正确解析
  */
 function respondJson(E, obj, tag) {
-  E.done({ 
-    body: JSON.stringify(obj), 
-    headers: respondHeaders(tag) 
-  });
+  const text = JSON.stringify(obj);
+  const body = BODY_OUT.shape === "str" ? text
+    : BODY_OUT.shape === "ab" ? utf8Encode(text).buffer
+    : utf8Encode(text);
+  E.done({ body: body, headers: respondHeaders(tag) });
 }
 
 // ==========================================
@@ -986,6 +992,26 @@ function normalizeHeaders(headers) {
   return h;
 }
 
+/* UTF-8 字符串 -> Uint8Array（binary_body_mode 下 $done 必须回字节，回字符串会被 Loon 丢弃） */
+function utf8Encode(str) {
+  const out = [];
+  for (let i = 0; i < str.length; i++) {
+    let c = str.charCodeAt(i);
+    if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+      const next = str.charCodeAt(i + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        c = ((c - 0xd800) << 10) + (next - 0xdc00) + 0x10000;
+        i++;
+      }
+    }
+    if (c < 0x80) out.push(c);
+    else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+    else if (c < 0x10000) out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+    else out.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 0x3f), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+  }
+  return new Uint8Array(out);
+}
+
 /* Uint8Array -> UTF-8 字符串（JavaScriptCore 没有可靠的 TextDecoder，自己解） */
 function utf8Decode(bytes) {
   let out = "", i = 0;
@@ -1022,16 +1048,22 @@ function safeJsonParse(body) {
 
   let bytes = null;
   if (typeof body === "string") {
+    BODY_OUT.shape = "str";
     if (body.length >= 2 && body.charCodeAt(0) === 0x1f && body.charCodeAt(1) === 0x8b) {
       bytes = new Uint8Array(body.length);
       for (let i = 0; i < body.length; i++) bytes[i] = body.charCodeAt(i) & 0xff;
     } else {
-      try { return JSON.parse(body); } catch (e) {
+      try {
+        const obj = JSON.parse(body);
+        anchor("json parse=ok str len=" + body.length);
+        return obj;
+      } catch (e) {
         anchor("json parse=fail str len=" + body.length + " " + String((e && e.message) || e).slice(0, 60));
         return null;
       }
     }
   } else {
+    BODY_OUT.shape = body instanceof ArrayBuffer ? "ab" : "u8";
     bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
   }
 
