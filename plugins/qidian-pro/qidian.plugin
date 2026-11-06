@@ -1,0 +1,236 @@
+#!name=起点全能助手 Pro
+#!desc=抓包驱动深度净化 · 福利中心精简 · 发现页白名单 · 自动静默签到 & 高阶福利任务自动化。checkin 快速失败 + DNS 预热 + TIMEOUT 420s。 (整合 kelee 规则)
+#!author=3kaiu
+#!homepage=https://github.com/3kaiu/config
+#!system = iOS,iPadOS,macOS
+#!loon_version = 3.5.1(978)
+#!tag = 起点,去广告,签到
+#!type = normal
+
+[Argument]
+CAPTURE_ENABLE=switch,"true","false",tag=是否开启抓取重写, desc=是否开启抓取重写（[Rewrite] 接管广告净化）。**关掉它广告改由 [Script] 接管，但不影响 Cookie 捕获** —— 见 QDREADER_COOKIE_ENABLE
+QDREADER_COOKIE_ENABLE=switch,"true","false",tag=是否捕获Cookie, desc=是否捕获起点读书 Cookie（签到/自动兑换章节卡/福利签到的唯一数据源）。**2026-09-30 从 CAPTURE_ENABLE 解耦**：原先 Cookie 捕获挂在 CAPTURE_ENABLE 上，而该开关同时决定 [Rewrite]/[Script] 互斥，于是"关掉抓包重写让脚本接管广告"必然连带签到全废 —— 现已拆开
+CRONEXP=input,"11 2 * * *",tag=CRONEXP, desc=默认每天2点11分执行, 建议自行配置。
+QDREADER_DEBUG=switch,"false","true",tag=是否开启调试模式, desc=是否开启调试模式
+TIMEOUT=input,420,type=number,tag=脚本执行超时时间, 默认420秒(高阶任务全量需3-4分钟), desc=TIMEOUT
+QDREADER_ADV_JOB_ENABLE=switch,"true","false",tag=激励任务, desc=开启后执行激励碎片任务
+QDREADER_EXTRA_ADV_JOB_ENABLE=switch,"true","false",tag=每日任务, desc=开启后执行每日广告任务
+QDREADER_LOTTERY_ENABLE=switch,"true","false",tag=每日抽奖, desc=开启后执行每日抽奖
+QDREADER_WEEKLY_EXCHANGE_ENABLE=switch,"true","false",tag=每周兑换, desc=开启后周日自动兑换章节卡
+QDREADER_CHAPTER_CARD_ENABLE=switch,"true","false",tag=章节卡片, desc=开启后查询章节卡信息
+QDREADER_MESSAGE_BOX_ENABLE=switch,"true","false",tag=大咖荐书, desc=开启后处理大咖荐书消息
+
+[Script]
+# 第三方广告 SDK 秒播
+# 穿山甲: 显式列两个 host (原 `\d*` 通配无法被 MitM 解密面门禁静态识别 —— 通配 host 会被
+# 判为 generic 而不计消费, 于是 [MitM] 里对应的域名恒被报成孤儿)。
+
+# GDT 广告视频替换
+
+# 自动重放与 Token 窃取 (request 阶段)
+# ⚠️ 修复: timeout 从 30 提升至 120 秒，因为 9 次重放 + 递增等待(2/4/.../18s)总计约90秒
+http-request ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v\d+\/video\/adv\/finishWatch script-path=https://ws.wenn.in/main/Scripts/Qidian.js, requires-body=true, timeout=120, tag=自动重放
+http-request ^https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/(client\/getconf|checkin\/checkin|checkin\/simpleinfo) script-path=https://ws.wenn.in/main/Scripts/Qidian.js, requires-body=false, timeout=10, tag=获取Token
+
+# getconf response 覆写 — 删除悬浮广告字段 (独立规则，不依赖大正则)
+http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf script-path=https://ws.wenn.in/main/Scripts/Qidian.js, requires-body=true, timeout=10, tag=客户端配置净化
+
+# 全局深度净化 (v4.5)
+http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/(v\d+\/video\/adv\/mainPage(?!Dialog)|v\d+\/video\/adv\/mainPageDialog|v\d+\/video\/adv\/reportDialog|v\d+\/adv\/getadvlistbatch|v\d+\/deeplink\/geturl|v\d+\/dailyrecommend|v\d+\/checkin\/(lottery|checkinexchangepage)|v\d+\/user\/getsimplediscover|v\d+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v\d+\/client\/iosad|v\d+\/push\/getdialog|v\d+\/maintain\/playstrip|v\d+\/young\/getconf|v\d+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v\d+\/message\/(pullOperationPush|pullSocialPush)|v\d+\/followsubscribe\/showChapterEndModule|v\d+\/client\/getsplashscreen|v\d+\/reddot\/getdot|v\d+\/popup\/batchget|v\d+\/ploy\/getactivitylist|v\d+\/interaction\/getclassicbookinfo|v\d+\/readtime\/readpage) script-path=https://ws.wenn.in/main/Scripts/Qidian.js, requires-body=true, timeout=10, tag=深度净化
+
+# 自动签到与高阶任务 (Cookie 捕获与自动化执行)
+http-response ^https?:\/\/h5\.if\.qidian\.com\/argus\/api\/v1\/user\/getlogininfo script-path=https://ws.wenn.in/main/Scripts/Qidian.js, requires-body=true, timeout=10, tag=起点读书获取Cookie, enable={QDREADER_COOKIE_ENABLE}, argument=[{QDREADER_DEBUG}]
+cron {CRONEXP} script-path=https://ws.wenn.in/main/Scripts/Qidian.js, timeout={TIMEOUT}, tag=起点读书自动签到(包含高阶任务), argument=[{QDREADER_DEBUG},{QDREADER_ADV_JOB_ENABLE},{QDREADER_EXTRA_ADV_JOB_ENABLE},{QDREADER_LOTTERY_ENABLE},{QDREADER_WEEKLY_EXCHANGE_ENABLE},{QDREADER_CHAPTER_CARD_ENABLE},{QDREADER_MESSAGE_BOX_ENABLE}]
+# ── 手动签到/自检入口 (2026-10-13 补, 官方 generic 形态) ──
+# 依据 (官方《插件》/《Script》两页一致): **Cron 表达式无效时对应脚本静默不执行**,
+# 无任何反馈; CRONEXP 又是用户手填的 input(无格式校验) ⇒ cron 挂掉时签到链静默消失。
+# generic 是官方给的手动自检位, 同脚本同参数点一下即跑一次, 是该静默面的唯一自检口。
+# 安全论证 (非拍脑袋): generic 与 cron 的运行时上下文相同(均无 $request/$response),
+# 而 Scripts/Qidian.js 主入口 IIFE 首行即 `if (typeof $request === "undefined") { await executeCronTasks(); ... }`
+# ⇒ 手动触发走的正是 cron 同一条任务路径, 参数也是同一套 7 项, 不引入新行为。
+# 与 cron 同纪律: **不得被任何 enable= 门控**(必须始终注册, 否则自检口静默消失);
+# 任务取舍由传入的 7 个开关参数控制, 与 cron 一致。
+generic script-path=https://ws.wenn.in/main/Scripts/Qidian.js, timeout={TIMEOUT}, tag=起点手动签到/自检(与自动签到同任务), argument=[{QDREADER_DEBUG},{QDREADER_ADV_JOB_ENABLE},{QDREADER_EXTRA_ADV_JOB_ENABLE},{QDREADER_LOTTERY_ENABLE},{QDREADER_WEEKLY_EXCHANGE_ENABLE},{QDREADER_CHAPTER_CARD_ENABLE},{QDREADER_MESSAGE_BOX_ENABLE}]
+
+[Rule]
+# 广告 SDK 白名单 — 防止误杀奖励包
+# ⚠️ 层间矛盾 (勿静默删本白名单)。逐条实证, 非笼统结论 (2026-09-29 审计修正):
+#   官方《规则系统 3.1》第 4 条: 来源优先级 本地配置 > 插件。故主配置 [Rule] 的 REJECT
+#   会压掉同域的插件 DIRECT。逐条核对结果:
+#     ① ii.gdt.qq.com / ② adsmind.gdtimg.com / ③ pangolin-sdk-toutiao.com
+#          → 均被主配置 REJECT 覆盖 → **本条永不生效**。且这三条保护的"秒播"功能
+#            已于 2026-08-12 用户决策停用(主配置全链 REJECT + 对应 [Script] 已删),
+#            保护对象本身不存在 ⇒ 于 2026-09-29 连同其 [Script]/[MitM] 一并删除。
+#            留存它们只会误导: 看着在保奖励包, 实则被主配置压掉、谁也保不到。
+#     ④ pangolin-sdk-toutiao1.com    → **部分生效, 保留**。主配置只有
+#          `DOMAIN, api-access.pangolin-sdk-toutiao1.com` 这一条精确 REJECT, 它
+#          **不覆盖** SUFFIX 的其他子域(裸域 / log-api. / gromore. 等) ⇒ 本条对这些生效。
+#          (`.com1` 是独立域, 不被 `DOMAIN-SUFFIX, pangolin-sdk-toutiao.com` 罩住)
+#   后果: 激励/每日任务奖励包可能因 SDK 被拦而计数失败(任务 X/9 长期不满)。
+#   ④ 改动任一方向都需真机确认: 要么关两任务开关, 要么把模板对应域改 DIRECT(开屏会回来)。
+#   门禁 plugin-lint-check 的「[跨层空转]」会自动报出被主配置 REJECT 覆盖的 DIRECT;
+#   ④ 不被报出(它确有生效子域), 是预期状态。
+DOMAIN-SUFFIX, pangolin-sdk-toutiao1.com, DIRECT
+
+# 追踪/监控/埋点 SDK — 强力阻绝
+# 2026-09-30: `tangram.e.qq.com` 移除 —— L0 的 ad-block.plugin 已拦同域, 而插件按 [Plugin] 注册顺序匹配
+#   (L0 先于本插件) ⇒ 留在这里是永不命中的死规则。plugin-shadow 门禁现已覆盖 plugin↔plugin 方向。
+# (与主配置重复的条目一律不在此登记: 本地>插件故永不可达, 门禁见
+#  test/cases/plugin-tpl-shadow.test.js)
+DOMAIN, publiclog.zhiyan.tencent-cloud.net, REJECT
+DOMAIN, zhiyan.monitor.tencent-cloud.net, REJECT
+DOMAIN, galileotelemetry.tencent.com, REJECT
+DOMAIN, gatherer.m.qq.com, REJECT
+DOMAIN, dl.tiku.qq.com, REJECT
+DOMAIN, apmplus.volces.com, REJECT
+DOMAIN, mssdk.volces.com, REJECT
+DOMAIN, tobapplog.ctobsnssdk.com, REJECT
+# 字节系 SDK/CDN 拦截 — 限定起点 App UA (QDReader*), 避免全局通杀误伤
+# 抖音/头条/飞书等字节系 App (*.bytescm.com 是图片 CDN, *-zijieapi.com 是
+# 网络配置端点); 同时避免抢占汽水音乐对 tnc*.zijieapi.com 的 reject-200 语义
+AND,((USER-AGENT,QDReader*),(DOMAIN-KEYWORD,pglstatp-toutiao)),REJECT
+AND,((USER-AGENT,QDReader*),(DOMAIN-KEYWORD,zijieapi)),REJECT
+AND,((USER-AGENT,QDReader*),(DOMAIN-KEYWORD,bytescm)),REJECT
+DOMAIN, noahqd.yuewen.com, REJECT
+DOMAIN, ali-stats.jpush.cn, REJECT
+
+[Rewrite]
+# 2026-09-29 迁移至 Loon 3.5.1(978) 新 Rewrite 语法(原 3.2.4 旧语法)。要点:
+#   ① 旧语法 enable={CAPTURE_ENABLE} 是**全部 13 条都带**的; 新语法必须逐条写成
+#      条件 ${CAPTURE_ENABLE} == true && …, 漏写一条即等于把该条开关永久打开。
+#   ② 正则**原样搬运**: 官方新语法示例同样把斜杠写作 \/ 、点写作 \. —— 在正则字面量里
+#      `/` 必须转义, 还原成 / 会让正则提前终止。只剥行首 ^, 不动内部转义。
+#   ③ 字面问号(query 分隔符)保持 \?; 旧语法行尾用于收束的 \/ 去掉(已由 / 承担)。
+#   ④ reject-dict → reject_dict(200) (官方《Rewrite 新语法》Action 速查表)。
+#   ⑥ 批量参数是**两个等长平行数组**按下标配对, 不是扁平单数组:
+#      json.replace(["k1","k2"], [v1,v2])。写成扁平数组会被加载期拒绝。
+#   ⑦ JSON 值只支持 String/Number/Boolean/null/变量 —— **不含数组/对象**,
+#      故"Data.Items 置空数组"用 json.jq(".Data.Items = []") 而非 replace 传 []。
+#   ⑤ 旧语法按空格分隔、正则内空格需 \x20; 新语法由 parser 解析整行, 不再需要。
+
+# ── 2026-09-30 两模式等价化 (开屏广告回归 + 覆盖缺口的根因修复) ──────────────
+# 症状: 用户报「广告 + 签到 + 自动兑换章节卡 + 福利签到全失效」且「开屏广告都还在」。
+# 底层诊断(证据见 APP-ONBOARDING.md 附十五):
+#   ① 官方语义 = 同侧 suppressing 复写命中时**脚本不执行** ⇒ [Rewrite] 与 [Script]
+#      **互斥不叠加**(LOON-FEATURES.md:210 qidian 范式)。两模式是"二选一", 不是叠加。
+#   ② 迁移前旧语法 `enable={CAPTURE_ENABLE}` 全部 13 条都带; 迁移后 [Rewrite] 只搬了
+#      原来就有的那 13 条, 而 **[Script] 大正则覆盖面更大(22 个端点族 vs 14 个)**,
+#      且 **[Rewrite] 的 getconf 只改 3 个字段 / 删 4 个字段, 而脚本改 30 个 / 删 10 个**。
+#      ⇒ 开着 CAPTURE_ENABLE 走 [Rewrite] 时, `SplashScreenInterval` /
+#      `SplashScreenRoundCount` / `BusinessSplashCoolDownTime` 这三个**专管开屏频次与冷却**
+#      的字段根本没被改 ⇒ **开屏广告去不掉**(这就是"开屏还是都有"的直接根因, 与 12306 那种
+#      端点已死无关)。关掉 CAPTURE_ENABLE 走 [Script] 则广告干净, 但 Cookie 捕获曾被
+#      同一开关门控 ⇒ **签到/兑换/福利全废**。一个开关耦合两件事, 无论开关都有一边坏。
+# 本组处置: ① Cookie 捕获解耦到 QDREADER_COOKIE_ENABLE(见 [Argument]);
+#          ② 把 [Rewrite] 补齐到与 [Script] 等价。
+# ★ 字段名与端点名的**一手来源是 Scripts/Qidian.js 自身的处置表**(非臆造):
+#   ClientConfigOverrides(30 项, 应用 obj.Data[k]=v) · DeleteKeys(10 项, delete obj.Data[k])
+#   RejectPaths(16 项纯广告/营销端点, 整条 404) · DirectKillPaths(2 项)
+#   CLEAN_RULES(3 项字段级) · AccountPageDelKeys · obj.Data.GDT / NewFeedsDiscover。
+#   口径统一为 `Data.` 前缀(脚本里是 obj.Data[k]); **值类型照搬脚本**(字符串 "0" 与数字 0
+#   混用, 见下), 使两模式行为一致 —— 这正是"等价"的含义。
+# 仍只在 [Script] 侧、**刻意不搬**的: `video/adv/mainPage`(脚本是"广告时长 patch 成 1 秒"
+#   的 AdDurationKeys 改写, 属**激励视频重放**链路, 与签到任务计数耦合; 搬到 [Rewrite]
+#   会让 Rewrite 模式下激励视频时长不再被改, 反而可能影响 9/9 任务计数)。
+
+# 客户端配置净化: ClientConfigOverrides 全 30 项一次改齐 (与脚本 CONFIG.ClientConfigOverrides 逐项对齐)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf$/ then response.json.replace(["Data.PangleEnable", "Data.DisableQidianBurryReport", "Data.DisableNewabInBI", "Data.SplashScreenInterval", "Data.SplashScreenRoundCount", "Data.BusinessSplashCoolDownTime", "Data.PushDialogFrequency", "Data.EnableMonitorLog", "Data.EnableBeaconFullBurry", "Data.ReloadExposureEnabled", "Data.QDABRegularReportTimeSpan", "Data.QDABReportMinThreshold", "Data.RankBuryPoint", "Data.CheckInPushSwitchReport", "Data.WolfEye", "Data.MainTabActivityRunning", "Data.DailyReadRecReasonSwitch", "Data.DailyRecommendGray", "Data.EnableShareChapterPloy", "Data.EnableChapterAdvanceGuide", "Data.AddBookShelfNoticeFrequency", "Data.BookShelfPushNoticeFrequency", "Data.UGCPushNoticeFrequency", "Data.NotificationPageBackPushNoticeFrequency", "Data.ActivityPageBackPushNoticeFrequency", "Data.InAppPushLimitMinutes", "Data.PushNoticeFrequency", "Data.AegisSignOn", "Data.EnableFockRetryStrategy", "Data.EnableSearchUser"], ["0", "1", "1", "0", "0", "99999", "0", "0", "0", "false", "999999", "999999", "0", "0", 0, 0, 0, 0, 0, 0, "999999", "999999", "999999", "999999", "999999", "999999", "-1", 0, 0, "1"])
+# 客户端配置净化: DeleteKeys 全 10 项 + GDT 追踪模块 (与脚本 CONFIG.DeleteKeys 逐项对齐)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf$/ then response.json.delete(["Data.ActivityIcon", "Data.ActivityPopup", "Data.LuckBag", "Data.BookShelfBottomIcons", "Data.ClassicBookInfo", "Data.ClientLocalNotify2", "Data.PushDialogScenes", "Data.RewardSatisfyDialog", "Data.FansClubPropInfo", "Data.AdVideoPositionConfig", "Data.GDT"])
+# 关闭发现 tab (脚本: obj.Data.NewFeedsDiscover = 0) + 青少年弹窗频次 (脚本赋字符串 "0")
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf$/ then response.json.replace(["Data.NewFeedsDiscover", "Data.CloudSetting.TeenShowFreq"], [0, "0"])
+
+# 广告接口: 开屏 / adv / 签到页 / 弹窗
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v4\/client\/getsplashscreen\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/checkin\/simpleinfo\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/push\/getdialog\?/ then reject_dict(200)
+# 每日导读: Items 置空数组
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v2\/dailyrecommend\/getdailyrecommend\?/ then response.json.jq(".Data.Items = []")
+# 播放条 / 推荐 / 新手引导 / 书架运营位 / 章末模块 / 青少年配置
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/maintain\/playstrip$/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/dailyrecommend\/recommendBook\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/freshman\/bookshelfbtn$/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/bookshelf\/getTopOperation$/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/followsubscribe\/showChapterEndModule\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/young\/getconf$/ then reject_dict(200)
+
+# ── 以下 10 条整条 reject 是本轮补齐: 端点名逐字取自脚本 CONFIG.RejectPaths ──
+# 判据: 端点走通(实测 200/405/402 Result:-3 与 402 签名错误, 见附十五), 且**语义纯广告/营销**,
+# 无业务字段同体 ⇒ 符合「整条 reject 只用于纯广告接口」。混业务的走字段级(见下方 CLEAN_RULES)。
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/checkin\/lottery\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/booksearch\/hotWords\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/freshman\/freshmanGuidePopup\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/message\/getpushedmessagelist\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/popup\/batchget\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/ploy\/getactivitylist\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/message\/pull(Operation|Social)Push\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/video\/adv\/reportDialog\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/interaction\/getclassicbookinfo\?/ then reject_dict(200)
+# DirectKillPaths: 脚本对这两条直接 404(语义 = 纯广告返回, 无业务同体)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/bookshelf\/getad\?/ then reject_dict(200)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/client\/iosad\?/ then reject_dict(200)
+
+# ── 字段级(混业务/需保留接口结构的): CLEAN_RULES 逐字对齐脚本 ──
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/video\/adv\/mainPageDialog\?/ then response.json.delete(["Data"])
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/reddot\/getdot\?/ then response.json.delete(["Data"])
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/checkin\/checkinexchangepage\?/ then response.json.delete(["Data.Goods"])
+# 我的页营销模块(脚本 AccountPageDelKeys)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/user\/getaccountpage\?/ then response.json.delete(["Data.BenefitButtonList"])
+
+
+# ── 2026-09-29 三源交叉验证补齐 (app2smile / fmz200 / zqzess) ──
+# 本组 3 条 + qpic 域为本仓此前完全缺失的广告面。三源处置口径一致, **全部字段改值,
+# 无一条整条 reject**: app2smile 对应 ActionUrl='' / iOS_tab=[] / ItemList=[], fmz200
+# 对同接口用 reject-dict/reject-img 等价保守形态。符合 AGENTS.md「既下发业务数据又
+# 下发广告的接口不能整条拒」。
+# 探针取证: 4 个接口均返回 Result:-3 设备信息错误 (路由通, 缺设备头) ⇒ 端点真实存在。
+# v1/adv/ 原为整段 reject_dict(200), 现只清 iOS_tab (app2smile 唯一有取证的口径)。
+# 为何不保留 reject_dict 兜底: reject_dict 把整个响应变 {}, 而 v1/adv/ 是**广告列表接口**
+# 之外的其它子路径共用同一前缀, 整段拒会连带清掉非广告字段 (本仓 functionId=start 白屏同源)。
+# 也**不臆造** Data.adList/Data.ads 之类未经取证的字段名 —— 无 HAR 无上游依据的字段名是猜测。
+# 置空数组用 json.jq 而非 json.replace(…, []) —— 官方《Rewrite 新语法》JSON 段: 值只支持
+# String/Number/Boolean/null/变量, **不含数组**; 传 [] 会被加载期拒绝。
+# 冷启动强制跳转精选页: ActionUrl 置空 (app2smile 口径)
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v2\/deeplink\/geturl/ then response.json.replace(["Data.ActionUrl", ""])
+# 发现页「精选/发现」之间的活动 tab: iOS_tab 置空数组
+# v1/adv/ 原为整段 reject_dict(200), 但会连带清掉 getadvlistbatch 的非广告字段;
+# 改为**只清 iOS_tab** (app2smile 口径), 保留接口结构 —— 精度更高且不被前缀遮蔽。
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/adv\// then response.json.jq(".Data.iOS_tab = []")
+# 书架右下角悬浮广告: ItemList 置空数组
+response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/bookshelf\/getHoverAdv/ then response.json.jq(".Data.ItemList = []")
+
+# ── 已撤销: qidian.qpic.cn (2026-09-29 三源研判时的反例记录) ──
+# fmz200 对 qidian.qpic.cn/qidian_common 用 reject-img, 曾照搬为 request 阶段
+# reject_img(200)。撤销理由 (两条独立证据, 非拍脑袋):
+#   ① **跨层矛盾**: 主配置 `DOMAIN-SUFFIX, qpic.cn, DIRECT` 把整域先路由走直连
+#      (该条归在微信白名单组, qpic 是图片 CDN)。request 阶段拦截发生在路由**之后**,
+#      图片已转发 → 规则本就抓不到, 属写上去就空转的规则。
+#   ② **不是广告平台**: qpic.cn 是起点**书封面/内容图床**, /qidian_common 是共用
+#      素材接口。改主配置为 REJECT 会连带拦掉书封面等正常素材, 风险远大于收益。
+# 判据: 上游按**单域**给的动作, 不能脱离本仓分层直接照搬 —— 同一域在不同配置里
+# 可能已承担别的职责。跨层矛盾优先于上游一致性。
+
+[MitM]
+
+# 2026-09-29 收窄 9 → 2。判据: 本仓 domain-reject-mode = DNS + dns-reject-mode = LOOPBACKIP,
+# 主配置对这些域是 DOMAIN / DOMAIN-SUFFIX,REJECT ⇒ 请求在 **DNS 阶段**即被回环拒绝, 到不了
+# MitM 解密层。留在 [MitM] 的唯一实际效果是**多背一份 CA 证书信任**, 换不来任何功能。
+# 随之删除的 4 条 [Script] (ii.gdt / 穿山甲 ×2 / adsmind+pgdt 视频) 同理: 域到不了解密层,
+# 脚本永不触发, 留着只会让人误以为"这域有处理"。
+# 重新加回的条件: 对应域在主配置**不再** REJECT, 或 domain-reject-mode 改为 Request。
+
+# ── 2026-09-30 社区探索复核 (GitHub 三源, 结论: 无需新增规则) ──────────────
+# 复核三个独立上游的起点方案, 逐条探针后**未新增任何规则** —— 本仓覆盖面已达或超过社区:
+#   · fmz200/wool_scripts `QiDianReading.lpx`: 12 条 reject/reject-dict/reject-img(整条形);
+#   · app2smile/rules `qidian.plugin`+`qidian.js`: 6 个 URL 的脚本净化;
+#   · ddgksf2013/Scripts `qidian.js`: 同类脚本。
+# 探针实测 (2026-09-30 双解析器 + HTTPS 路径探针):
+#   · magev6.../argus/api/v1/adv             → GET 404 ⇒ 社区规则已过期, 写进来就是死规则;
+#   · magev6.../argus/api/v1/followsubscribe → GET 404 ⇒ 同上(本仓 showChapterEndModule 子路径仍在);
+#   · magev6.../argus/api/v1/bookshelf/refresh → 200 {"Result":-3} 存活, 但社区用整条 reject_dict(200),
+#     而它是"我的页"刷新面 ⇒ 无字段级证据前整条拒会连带清掉业务数据, **只登记不采纳**;
+#   · mage.if.qidian.com/Atom.axd/Api/Client/GetConfIOS → 405 存活(旧版配置接口), 社区用 reject_img
+#     整条替换 ⇒ 同因只登记不采纳(本仓对同名新接口 getconf 用的是字段级 json.delete/replace);
+#   · qidian.qpic.cn/qidian_common → 本仓 2026-09-29 已撤销并留两条证据(跨层矛盾 + 书封图床),
+#     本轮维持撤销 —— 社区仍在用, 属"上游按单域给动作、不能脱离本仓分层照搬"的又一例。
+# 即: 起点这轮的产出是**证据化否决**, 不是新增规则 —— 三源一致也不等于该写。
