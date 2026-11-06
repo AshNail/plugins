@@ -746,5 +746,5 @@
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/booksquare/getfloatcard,REJECT-DICT"
     ]
   },
-  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d4/0e/59/d40e5977-557a-bb3b-6d33-9011a4b3c820/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg"
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d8/0b/85/d80b8512-93fa-f1ee-f1f8-6e0356fb2b66/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg"
 }

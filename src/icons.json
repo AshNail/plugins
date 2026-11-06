@@ -1,0 +1,204 @@
+{
+  "_note": "插件图标的唯一真源：只存 App Store 条目身份（bundleId / trackId），不存 URL。URL 由 tools/refresh-icons.py 现取现写——Apple 的 artwork token 段随版本重分配、旧串会被 CDN 回收（仓库里知乎那条已经 404 过一次），手抄必然漂。",
+  "_cdn": "https://is1-ssl.mzstatic.com/image/thumb/… 是 Apple 自己的官方图片 CDN，免费、无 key、无速率公告但社区长期使用；artworkUrl100 的末段尺寸是自由参数，本仓库统一 512x512bb.jpg。",
+  "_country": "CN",
+  "_size": "512x512bb.jpg",
+  "_exceptions": {
+    "ads": "全站拦截器不针对任何一款 App，国区没有对应条目；保留品牌 CDN 图，见 tests/lint-plugins.py 的 ICON_CDN_EXCEPTIONS",
+    "qidian-pro": "起点 Pro 是逐字移植件（用户明确要求不改一个字），连 #!icon 行都没有——补一行就是改移植件。图标身份与 qidian 同一条目，见 plugins 里 alias_of"
+  },
+  "plugins": {
+    "qidian": {
+      "app": "起点读书",
+      "bundleId": "m.qidian.QDReaderAppStore",
+      "trackId": 534174796,
+      "seller": "Shanghai Xuan Ting Entertainment Information & technology CO.,LTD"
+    },
+    "soda": {
+      "app": "汽水音乐",
+      "bundleId": "com.soda.music",
+      "trackId": 1605585211,
+      "seller": "Beijing Douyin Technology Co., Ltd."
+    },
+    "douyin": {
+      "app": "抖音",
+      "bundleId": "com.ss.iphone.ugc.Aweme",
+      "trackId": 1142110895,
+      "seller": "Beijing Douyin Technology Co., Ltd."
+    },
+    "netease": {
+      "app": "网易云音乐",
+      "bundleId": "com.netease.cloudmusic",
+      "trackId": 590338362,
+      "seller": "Hangzhou Netease Cloud Music Technology Co., Ltd."
+    },
+    "zhihu": {
+      "app": "知乎",
+      "bundleId": "com.zhihu.ios",
+      "trackId": 432274380,
+      "seller": "Beijing Zhizhetianxia Technology Co., Ltd."
+    },
+    "qqnews": {
+      "app": "腾讯新闻",
+      "bundleId": "com.tencent.info",
+      "trackId": 399363156,
+      "seller": "Tencent Technology (Beijing) Company Limited"
+    },
+    "meituan": {
+      "app": "美团",
+      "bundleId": "com.meituan.imeituan",
+      "trackId": 423084029,
+      "seller": "Sankuai Technology Co., Ltd."
+    },
+    "xianyu": {
+      "app": "闲鱼",
+      "bundleId": "com.taobao.fleamarket",
+      "trackId": 510909506,
+      "seller": "Zhejiang Alibaba Xianyu Network Technology Co., Ltd."
+    },
+    "taobao": {
+      "app": "淘宝",
+      "bundleId": "com.taobao.taobao4iphone",
+      "trackId": 387682726,
+      "seller": "Zhejiang Taobao Network Co.,Ltd"
+    },
+    "jd": {
+      "app": "京东",
+      "bundleId": "com.360buy.jdmobile",
+      "trackId": 414245413,
+      "seller": "Beijing Jingdong Century Trading Co., Ltd."
+    },
+    "mijia": {
+      "app": "米家",
+      "bundleId": "com.xiaomi.mihome",
+      "trackId": 957323480,
+      "seller": "Beijing Xiaomi Co., Ltd"
+    },
+    "zhihuifangdong": {
+      "app": "智慧房东",
+      "bundleId": "com.shilin.app",
+      "trackId": 1529842057,
+      "seller": "Ningbo Shiling Jingkong Shiye Co.,Ltd."
+    },
+    "bubei-danci": {
+      "app": "不背单词",
+      "bundleId": "cn.com.langeasy.LangEasyLexis",
+      "trackId": 698570469,
+      "seller": "Beijing Is-Cool Technology Co., Ltd"
+    },
+    "ruankao-tong": {
+      "app": "软考通",
+      "bundleId": "cloud.miplus.rk",
+      "trackId": 1498444438,
+      "seller": "Hangzhou Junce Technology Co., Ltd"
+    },
+    "mba-dashi": {
+      "app": "MBA大师",
+      "bundleId": "com.8000m.easylogiciphone",
+      "trackId": 1051258696,
+      "seller": "XianZhifengNetworkTechnologyCo.,Ltd."
+    },
+    "youtube": {
+      "app": "YouTube",
+      "bundleId": "com.google.ios.youtube",
+      "trackId": 544007664,
+      "seller": "Google LLC"
+    },
+    "instagram": {
+      "app": "Instagram",
+      "bundleId": "com.burbn.instagram",
+      "trackId": 389801252,
+      "seller": "Instagram, Inc."
+    },
+    "x": {
+      "app": "X（原 Twitter）",
+      "bundleId": "com.atebits.Tweetie2",
+      "trackId": 333903271,
+      "seller": "X Corp."
+    },
+    "wechat": {
+      "app": "微信",
+      "bundleId": "com.tencent.xin",
+      "trackId": 414478124,
+      "seller": "Tencent Technology (Shenzhen) Company Limited"
+    },
+    "qidian-pro": {
+      "app": "起点读书（起点全能助手 Pro 复用同一条官方条目）",
+      "bundleId": "m.qidian.QDReaderAppStore",
+      "trackId": 534174796,
+      "alias_of": "qidian",
+      "seller": "Shanghai Xuan Ting Entertainment Information & technology CO.,LTD"
+    },
+    "banks": {
+      "app": "云闪付（banks 聚合插件当前图标所指）",
+      "bundleId": "com.unionpay.chsp",
+      "trackId": 600273928,
+      "seller": "China Unionpay Co.,Ltd."
+    },
+    "ads": {
+      "app": "广告平台拦截器 · All-in-One（非单一 App）"
+    }
+  },
+  "bank_apps": {
+    "icbc": {
+      "app": "中国工商银行",
+      "bundleId": "com.icbc.iphoneclient",
+      "trackId": 423514795
+    },
+    "ccb": {
+      "app": "中国建设银行",
+      "bundleId": "com.ccb.ccbDemo",
+      "trackId": 391965015
+    },
+    "abc": {
+      "app": "中国农业银行",
+      "bundleId": "com.bankabc.iphonerelease",
+      "trackId": 515651240
+    },
+    "boc": {
+      "app": "中国银行",
+      "bundleId": "com.boc.BOCMBCI",
+      "trackId": 399608199
+    },
+    "bocom": {
+      "app": "交通银行",
+      "bundleId": "com.bankcomm.Bankcomm",
+      "trackId": 337876534
+    },
+    "psbc": {
+      "app": "邮储银行",
+      "bundleId": "com.psbc.mobilebank",
+      "trackId": 493489515
+    },
+    "cmb": {
+      "app": "招商银行",
+      "bundleId": "com.cmbchina.MPBBank",
+      "trackId": 392899425
+    },
+    "cmb_life": {
+      "app": "掌上生活（招商银行信用卡）",
+      "bundleId": "com.cmbchina.cmblife",
+      "trackId": 398453262
+    },
+    "maidanba": {
+      "app": "买单吧（交通银行信用卡）",
+      "bundleId": "com.bankcomm.maidanba",
+      "trackId": 1057446665
+    },
+    "spdb": {
+      "app": "浦发银行",
+      "bundleId": "com.spdb.retail.bank",
+      "trackId": 471855847
+    },
+    "spdbccc": {
+      "app": "浦大喜奔（浦发银行信用卡）",
+      "bundleId": "spdbccc.com.cn",
+      "trackId": 974428942
+    },
+    "pingan": {
+      "app": "平安口袋银行",
+      "bundleId": "com.pingan.creditcard",
+      "trackId": 1085016815
+    }
+  }
+}

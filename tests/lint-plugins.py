@@ -3752,6 +3752,48 @@ LUNA_HOST_PARITY = {
 }
 
 
+def check_icon_cdn():
+    """#!icon 必须是 App Store 官方 artwork CDN；例外要在 src/icons.json 登记并说明理由。
+
+    Apple 那条 URL 的身份在 `<hash>` 段，随构建产物重分配、旧串会被回收——手抄的
+    图标不是「丑」的问题，是迟早 404 的问题（本轮体检就抓到知乎那条已经死了）。
+    所以这里只认官方前缀 + 显式例外，URL 本身归 tools/refresh-icons.py 现取现写。
+    """
+    spec = json.loads((ROOT / "src" / "icons.json").read_text(encoding="utf-8"))
+    exceptions = set(spec.get("_exceptions", {}))
+    registered = set(spec["plugins"])
+    cdn = "https://is1-ssl.mzstatic.com/image/thumb/"
+    on_cdn = 0
+    for path in sorted(ROOT.glob("plugins/*/*.plugin")):
+        slug = path.parent.name
+        if slug in exceptions:
+            continue
+        icon = parse_meta(path).get("icon")
+        if not icon:
+            errors.append(
+                f"plugins/{slug}: 缺 #!icon——没登记例外就得给官方 artwork"
+            )
+            continue
+        if not icon.startswith(cdn):
+            errors.append(
+                f"plugins/{slug}: #!icon 不是 App Store 官方 CDN（{icon[:64]}）——"
+                "第三方清单的图会漂、会挂；跑 `python3 tools/refresh-icons.py --write`"
+            )
+            continue
+        on_cdn += 1
+        if slug not in registered:
+            errors.append(
+                f"plugins/{slug}: #!icon 存在但 src/icons.json 没登记它的 bundleId/trackId——"
+                "没有身份就没有刷新路径，这条 URL 迟早变 404"
+            )
+    for slug in sorted(registered - {p.parent.name for p in ROOT.glob("plugins/*/*.plugin")}):
+        errors.append(f"src/icons.json: 登记了 {slug}，但 plugins/{slug}/ 不存在（孤儿条目）")
+    print(
+        f"icons: {on_cdn} plugin(s) on Apple artwork CDN, "
+        f"{len(exceptions)} registered exception(s) ({'、'.join(sorted(exceptions)) or '无'})"
+    )
+
+
 def check_luna_host_parity():
     """每个 luna 绑定必须同时显式写全该 App 的真实主机对，少一个就是静默失效。"""
     checked = 0
@@ -3948,6 +3990,7 @@ check_ip_mode_values()
 check_mitm_surface()
 check_mitm_reach()
 check_regex_scopes()
+check_icon_cdn()
 check_luna_host_parity()
 check_rule_vectors()
 check_ads_family()

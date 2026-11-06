@@ -118,5 +118,5 @@
       "URL-REGEX,^https://api\\.zhihu\\.com/people/homepage_entry_v\\d+,REJECT-DICT"
     ]
   },
-  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a5/d8/bc/a5d8bc1b-31d7-2510-4bf6-17b2b7858c97/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg"
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a4/33/69/a43369ac-cef8-3356-4fae-fb504841e37d/AppIcon-0-0-1x_U007emarketing-0-7-0-sRGB-85-220.png/512x512bb.jpg"
 }

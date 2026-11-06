@@ -56,3 +56,15 @@
 - `docs/app-coverage.md`、`docs/repo-metrics.md`
 
 改源后执行 `npm run build`；提交前执行 `npm run check`。
+
+## 图标
+
+`#!icon` 不手抄 URL。身份只记在 `src/icons.json`（bundleId / trackId / seller），
+`tools/refresh-icons.py` 现场向 iTunes Lookup（钉 `country=CN`）取 `artworkUrl100`
+并统一改写成 Apple 官方 CDN `is1-ssl.mzstatic.com` 的 `512x512bb.jpg`：
+
+- `npm run icons`：离线报告当前差异；`npm run icons:write` 只写 `src/apps/*.json` 的
+  `"icon"` 行与手写插件的 `#!icon=` 行，生成物交给 `npm run build`。
+- `npm run check:icons`：在线取一遍并 HEAD 校验，漂移即红——artwork 路径里的
+  `<hash>` 段随构建产物重分配，旧串会被回收（知乎踩过 404）。
+- 例外表也住在 `src/icons.json` 的 `_exceptions`，lint 的图标门禁只认这张表。
