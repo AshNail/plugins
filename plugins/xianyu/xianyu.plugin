@@ -1,12 +1,12 @@
 #!name=闲鱼 · 去广告（原生复写层）
 #!desc=闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.6.0
+#!version=1.6.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/xianyu/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d0/d6/bb/d0d6bb22-8497-3abb-aa74-a303ce7e599c/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06
+#!date=2026-11-07
 #!tag=去广告,闲鱼,阿里
 #!type=normal
 
@@ -15,10 +15,10 @@
 # ------------------------------------------------------------------------
 # 红线：*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能;acs.m.goofish.com 出现在个别模块的 REJECT 里是错误规则,打死整个 App——拒收。
 # 取证否决：m.goofish.com / awl.goofish.com 实测 NXDOMAIN（不存在）;xianyu.mobi 与 blackmatrix7 的 16 个乱码域是淘宝短链跳转服务（cname.tb.cn），拦=断分享链接;cdn.ynuf.aliapp.org=阿里无线安全 UMID 指纹,禁拦。
-# 证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。
+# 证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、切回前台场景恢复开屏 mtop.idle.idleadv.scene.restore、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。
 # 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
 # 第二轮取证复检(2026-10-28)：mma.alimama.com 实测 NXDOMAIN(网传『阿里妈妈端点』不存在,禁凭品牌造域);开屏素材无 alicdn 之外的独立 CDN(墨鱼 GoofishAds.conf 亦无单独素材域);h-adashx.ut.taobao.com=阿里 UT/AdashX 埋点,全阿里系 App 共享,属全局 ads 插件的决策面,不进本按 App 插件。
-# v1.6.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（默认开：6 条开屏/曝光/推广模块 request reject_dict(200) + 8 条商品推荐 mamaAD / 悬浮球 / 搜索暗词 / 省钱 Tab / 群聊圈子 Banner jq 剥离）与 cleanFeed（默认关：7 条激进信息流/我的页精简，其中 search.discover 与 item.buy.feeds 升级为原生 response.json.delete）双开关控制 21 条原生复写规则 + 配套 QUIC 回退。
+# v1.6.1 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（默认开：7 条开屏/场景恢复/曝光/推广模块 request reject_dict(200) + 8 条商品推荐 mamaAD / 悬浮球 / 搜索暗词 / 省钱 Tab / 群聊圈子 Banner jq 剥离）与 cleanFeed（默认关：7 条激进信息流/我的页精简，其中 search.discover 与 item.buy.feeds 升级为原生 response.json.delete）双开关控制 22 条原生复写规则 + 配套 QUIC 回退。
 # 本文件由 tools/build-apps.py 从 src/apps/xianyu.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -32,7 +32,7 @@
 
 [Argument]
 
-cleanAds = switch,true,tag=mtop 同域开屏与广告位净化（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：splash.ads、idle.ad.expose 等 6 个广告/模块端点在 request 阶段 reject_dict(200) 终止；商品推荐 mamaAD 卡片、悬浮球、搜索预填词、顶部省钱 Tab、群聊/圈子 Banner 通过 response.json.jq 精准剥离。需已安装并信任 Loon 证书。
+cleanAds = switch,true,tag=mtop 同域开屏与广告位净化（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：splash.ads、idle.idleadv、idle.ad.expose 等 7 个广告/模块端点在 request 阶段 reject_dict(200) 终止；商品推荐 mamaAD 卡片、悬浮球、搜索预填词、顶部省钱 Tab、群聊/圈子 Banner 通过 response.json.jq 精准剥离。需已安装并信任 Loon 证书。
 cleanFeed = switch,false,tag=激进信息流与我的页精简（默认关）,desc=首页 nextfresh / 本地信息流 / 搜索结果只留 item、删除搜索发现页与我的页底部商品推荐、精简我的页分区。因过滤粒度较激进默认关，按需开启。
 
 [Rule]
@@ -51,9 +51,18 @@ AND,((DOMAIN-SUFFIX,g-acs.m.goofish.com),(PROTOCOL,QUIC)),REJECT
 *.alimama.com = 127.0.0.1
 *.mmstat.com = 127.0.0.1
 *.tanx.com = 127.0.0.1
+adash-emas.cn-hangzhou.aliyuncs.com = 127.0.0.1
+adashx.m.taobao.com = 127.0.0.1
 alimama.alicdn.com = 127.0.0.1
+alimama.cn = 127.0.0.1
+alimama.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
+audid-api.taobao.com = 127.0.0.1
+mmstat.com = 127.0.0.1
+poplayer.template.alibaba.com = 127.0.0.1
+tanx.com = 127.0.0.1
 tns.simba.taobao.com = 127.0.0.1
+wcp.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 阿里广告 SDK 端点（闲鱼净化模块唯一 REJECT 域）（置信 A）
@@ -116,6 +125,9 @@ hostname = %APPEND% acs.m.goofish.com, g-acs.m.goofish.com
 # kill-splash-ads: 闲鱼开屏广告 mtop 请求直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop.*splash\.ads/ then reject_dict(200)
 
+# kill-idleadv-restore: 闲鱼切回前台/场景恢复开屏与弹层广告请求（mtop.idle.idleadv.scene.restore 等）直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.idle\.idleadv\./ then reject_dict(200)
+
 # kill-ad-expose: 闲鱼广告曝光计数上报接口直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.idle\.ad\.expose/ then reject_dict(200)
 
@@ -135,49 +147,49 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.co
 # 响应字段级净化（cleanAds 默认开）：只剥广告字段，保留 mtop 包络
 # ------------------------------------------------------------
 # clean-item-recommend: 商品底部推荐：只删 bizType=mamaAD 的阿里妈妈广告卡片（来源 ddgksf2013）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.recommend(?:\/|\?|$)/ then response.json.jq(".data.cardList |= map(select(.cardData.bizType != \"mamaAD\"))")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.recommend(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.cardList | type) == \"array\" then .data.cardList |= map(select(type != \"object\" or (.cardData | type) != \"object\" or .cardData.bizType != \"mamaAD\")) else . end")
 
 # clean-strategy-list: 首页右下角悬浮球：留一个空 strategy 占位（来源 ddgksf2013）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.user\.strategy\.list(?:\/|\?|$)/ then response.json.jq(".data.strategies = [{}]")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.user\.strategy\.list(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.strategies = [{}] else . end")
 
 # clean-search-shade: 搜索框预填/热词：留一个空占位（来源 ddgksf2013）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search\.shade(?:\/|\?|$)/ then response.json.jq(".data.singleShadeWords = [{}]")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search\.shade(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.singleShadeWords = [{}] else . end")
 
 # clean-search-activate: 搜索页「猜你可能找」推广卡片清空（来源 ddgksf2013）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.item\.search\.activate(?:\/|\?|$)/ then response.json.jq(".data.cardList = [{}]")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.item\.search\.activate(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.cardList = [{}] else . end")
 
 # clean-circle-savemoney: 首页顶部 Tab：去掉 saveMoney 省钱推广位（来源 ddgksf2013）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.circle\.list(?:\/|\?|$)/ then response.json.jq(".data.circleList |= map(select(.bizCode != \"saveMoney\"))")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.circle\.list(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.circleList | type) == \"array\" then .data.circleList |= map(select(type != \"object\" or .bizCode != \"saveMoney\")) else . end")
 
 # clean-group-banner: 群聊/消息页 banner 位清空（来源 fmz200）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.group\.myself\.banner(?:\/|\?|$)/ then response.json.jq(".data.bannerList = []")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.group\.myself\.banner(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.bannerList = [] else . end")
 
 # clean-circle-banner: 圈子页 banner 位清空（来源 fmz200）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.circle\.myself\.banner\/1\.0(?:\/|\?|$)/ then response.json.jq(".data.bannerList = []")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.circle\.myself\.banner\/1\.0(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.bannerList = [] else . end")
 
 # clean-playboy-recommend: 消息页推荐位清空（来源 fmz200）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.playboy\.recommend\/2\.0(?:\/|\?|$)/ then response.json.jq(".data.recommends = [] | .data.items = [] | .data.next = false")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.playboy\.recommend\/2\.0(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.recommends = [] | .data.items = [] | .data.next = false else . end")
 
 # ------------------------------------------------------------
 # 激进信息流与我的页精简（cleanFeed 默认关）：按需开启
 # ------------------------------------------------------------
 # slim-home-nextfresh: 首页信息流：顶部只留首项、分区只留 item（来源 ddgksf2013）
-response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.nextfresh(?:\/|\?|$)/ then response.json.jq(".data.homeTopList |= [ .[0] ] | .data.sections |= map(select(.data.bizType == \"item\"))")
+response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.nextfresh(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data |= ((if (.homeTopList | type) == \"array\" and (.homeTopList | length) > 0 then .homeTopList |= [ .[0] ] else . end) | (if (.sections | type) == \"array\" then .sections |= map(select(type == \"object\" and (.data | type) == \"object\" and .data.bizType == \"item\")) else . end)) else . end")
 
 # slim-search-result: 搜索结果信息流：只留 item 结果（来源 ddgksf2013）
-response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search(?:\/|\?|$)/ then response.json.jq(".data.resultList |= map(select(.data.item.main.clickParam.args.biz_type == \"item\"))")
+response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.resultList | type) == \"array\" then .data.resultList |= map(select(type == \"object\" and (.data | type) == \"object\" and (.data.item | type) == \"object\" and (.data.item.main | type) == \"object\" and (.data.item.main.clickParam | type) == \"object\" and (.data.item.main.clickParam.args | type) == \"object\" and .data.item.main.clickParam.args.biz_type == \"item\")) else . end")
 
 # slim-local-home: 本地信息流：分区只留 item（来源 ddgksf2013）
-response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.local\.home(?:\/|\?|$)/ then response.json.jq(".data.sections |= map(select(.data.bizType == \"item\"))")
+response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.local\.home(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.sections | type) == \"array\" then .data.sections |= map(select(type == \"object\" and (.data | type) == \"object\" and .data.bizType == \"item\")) else . end")
 
 # slim-search-discover: 搜索发现页：原生点分路径删除 data.resultList（来源 ddgksf2013）
 response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlemtopsearch\.search\.discover(?:\/|\?|$)/ then response.json.delete("data.resultList")
 
 # slim-my-adapter: 我的页面：清空 ability 并只留 head/user/trade 分区（来源 ddgksf2013）
-response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.idle\.user\.page\.my\.adapter(?:\/|\?|$)/ then response.json.jq(".data.ability=[] | .data.container.sections |= map(select(.sectionBizCode | test(\"head|user|trade\")))")
+response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.idle\.user\.page\.my\.adapter(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.ability = [] | (if (.data.container | type) == \"object\" and (.data.container.sections | type) == \"array\" then .data.container.sections |= map(select(type == \"object\" and (.sectionBizCode | type) == \"string\" and (.sectionBizCode | test(\"head|user|trade\")))) else . end) else . end")
 
 # slim-buy-feeds: 我的页面底部商品推荐：原生点分路径删除 data.sections（来源 ddgksf2013）
 response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.buy\.feeds(?:\/|\?|$)/ then response.json.delete("data.sections")
 
 # slim-recommend-list: 商品推荐列表：整列清空 cardList（来源 fmz200）
-response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.recommend\.list(?:\/|\?|$)/ then response.json.jq(".data.cardList = []")
+response if ${cleanFeed} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.item\.recommend\.list(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.cardList = [] else . end")

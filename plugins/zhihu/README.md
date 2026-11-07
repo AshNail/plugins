@@ -1,8 +1,8 @@
 # 知乎 · 去广告与精简
 
-> 知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；同域商业化广告接口（commercial_api/ad-style-service）与推广/预置词默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 返回空字典防重试，零 JS 脚本）；核心问答/文章/个人页/图床/推送严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+> 知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；同域商业化广告接口（commercial_api/ad-style-service）、推广/预置词及首页推荐流（topstory/recommend）/关注流（moments_v3）内联广告卡片默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) + response.json.jq 字段级剥离，零 JS 脚本）；核心问答/文章/个人页/图床/推送严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.1.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -21,7 +21,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
-知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 开关控制，零 JS 脚本），对 13 条商业化广告、推荐流与预置词路径在 request 阶段直接返回 200 + 空字典（reject_dict(200)），使客户端认为广告/推广位已正常返回但无内容，阻断重试并实现干净展示。
+知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 开关控制，零 JS 脚本）：对 13 条纯商业化广告、推荐流与预置词路径在 request 阶段直接返回 200 + 空字典（reject_dict(200)），并对首页推荐流（topstory/recommend）与关注动态流（moments_v3）在 response 阶段用 response.json.jq 剥离内联广告卡片（feed_advert / adjson / promotion_extra），完整保留正常问答流。
 
 - 解密主机（`[MITM] hostname`，3 个，本层已默认生效）：`api.zhihu.com`, `www.zhihu.com`, `zhida.zhihu.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，3 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
@@ -30,7 +30,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 
 | 开关 | 默认 | 作用 |
 |---|---|---|
-| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：commercial_api、ad-style-service、回答底部推广、瀑布流推荐、搜索预置词、直答引导与营销气泡在 request 阶段直接 reject_dict(200) 终止。需已安装并信任 Loon 证书。 |
+| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：commercial_api、ad-style-service、回答底部推广、瀑布流推荐、搜索预置词、直答引导与营销气泡在 request 阶段直接 reject_dict(200) 终止；首页推荐流与关注流通过 response.json.jq 剔除内联广告卡片。需已安装并信任 Loon 证书。 |
 
 ### 净化复写（`[Rewrite]`）
 
@@ -49,6 +49,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 | `kill-homepage-card` | request | `reject_dict` | `cleanAds` | 个人主页推广卡片直接返回 200 + 空字典 |
 | `kill-www-commercial` | request | `reject_dict` | `cleanAds` | www.zhihu.com 网页/混合容器商业化广告接口整族直接返回 200 + 空字典 |
 | `kill-homepage-entry` | request | `reject_dict` | `cleanAds` | 个人中心推广入口模块直接返回 200 + 空字典 |
+| `clean-topstory-recommend` | response | `response.json.jq` | `cleanAds` | 首页推荐信息流：剔除 feed_advert 及携带 adjson/promotion_extra 的商业推广卡片 |
+| `clean-moments-feed` | response | `response.json.jq` | `cleanAds` | 关注动态信息流：剔除穿插的商业推广与内联广告卡片 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
 
@@ -69,8 +71,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 - 红线（绝不进任何拦截组）：passport.zhihu.com 账号与安全登录网关 / api.zhihu.com 知乎核心业务 API，问答与文章主服务 / zhuanlan.zhihu.com 知乎专栏核心域名 / unpkg.zhihu.com 前端静态资源与组件加载 / mqtt.zhihu.com 实时消息推送长连接通道 / lc-push.zhihu.com 移动端离线/在线推送通道 / pic1.zhimg.com 静态图片与用户头像图床。
 - 知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。
 - 知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配。
-- 能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；信息流穿插广告与推荐位走 Loon 原生 [Rewrite] v2 引擎复写（reject_dict(200)，HTTP 200 + 空字典），保持零 JS 脚本。
-- v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 13 条 request 阶段 reject_dict(200) 规则 + 3 台解密主机的 QUIC 回退，解决注释态增强层在订阅插件下无法直接开启的问题。
+- 能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；商业化接口走 Loon 原生 [Rewrite] v2（reject_dict(200)），首页推荐流与关注流内联广告走 response.json.jq 数组元素剥离，保持零 JS 脚本。
+- v1.2.0 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 13 条 request 阶段 reject_dict(200) 规则 + 2 条信息流/关注流 response.json.jq 规则（剥离 topstory/recommend 与 moments_v3 中的 feed_advert / adjson / promotion_extra 内联广告项）+ 3 台解密主机的 QUIC 回退。
 
 ## 证据与验证
 

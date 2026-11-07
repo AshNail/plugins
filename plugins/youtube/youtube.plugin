@@ -1,7 +1,7 @@
 #!name=YouTube · 广告字段清理（原生复写）
-#!desc=不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/ 与 api/stats/ads 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。
+#!desc=不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei.googleapis.com 的 youtubei/v1/log_event 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.1.0
+#!version=1.2.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/youtube/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/be/56/df/be56dfa2-70bd-feb2-b666-38277eb5be3b/logo_youtube_2024_q4_color-0-0-1x_U007emarketing-0-0-0-7-0-0-0-85-220.png/512x512bb.jpg
@@ -14,7 +14,7 @@
 # YouTube · 广告字段清理（原生复写）
 # ------------------------------------------------------------------------
 # 红线：*.youtube.com / *.googlevideo.com / *.ytimg.com / youtubei.googleapis.com 承载登录、播放、缩略图与 API；本插件只做 youtubei JSON 广告字段清理，不黑洞整域，不改播放地址。
-# v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 2 条原生复写规则 + 配套 QUIC 回退，并将 response.json.jq 统一为官方双引号 + \" 转义语法，解决远程订阅插件无法取消 # 注释导致 0 生效的问题。
+# v1.2.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 3 条原生复写规则 + 配套 QUIC 回退，并将 youtubei/v1/log_event 高频遥测上报移至 request 阶段直接 reject_dict(200) 阻断出网。
 # 可莉 YouTube 插件是纯 response/request 脚本（含上传、Shorts、字幕、日志事件参数）；本插件不复制、不依赖，只实现可由 Loon 原生 [Rewrite] v2 表达的广告路径拦截与字段删除。
 # 响应规则只删除 adPlacements/playerAds/adSlots/adBreakHeartbeatParams/adBreakParams；不改播放 URL、不碰 googlevideo 的 initplayback，避免把视频本体拦掉。
 # 本文件由 tools/build-apps.py 从 src/apps/youtube.json 生成，不要手改生成物。
@@ -30,7 +30,7 @@
 
 [Argument]
 
-cleanAds = switch,true,tag=YouTubei 广告字段净化（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：拦截 www.youtube.com 的 pagead/ 与 api/stats/ads 请求，并递归删除 youtubei.googleapis.com 响应中的广告字段。需已安装并信任 Loon 证书。
+cleanAds = switch,true,tag=YouTubei 广告字段净化（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：拦截 www.youtube.com 网页广告/统计路径与 youtubei/v1/log_event 事件上报，并递归删除 youtubei.googleapis.com 响应中的广告字段。需已安装并信任 Loon 证书。
 
 [Rule]
 
@@ -74,11 +74,14 @@ hostname = %APPEND% youtubei.googleapis.com, www.youtube.com
 # ------------------------------------------------------------
 # 请求阶段直接终止（reject_dict(200)）：网页广告与广告统计路径
 # ------------------------------------------------------------
-# kill-pagead: 网页广告加载与广告统计上报路径直接返回 200 + 空字典（来源 https://www.youtube.com/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/www\.youtube\.com\/(?:pagead\/|api\/stats\/ads)/ then reject_dict(200)
+# kill-pagead: 网页广告加载与广告统计/追踪上报路径直接返回 200 + 空字典（来源 https://www.youtube.com/）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/www\.youtube\.com\/(?:pagead\/|api\/stats\/(?:ads|atr|qoe)|ptracking|error_204)/ then reject_dict(200)
+
+# kill-youtubei-log-event: YouTube 客户端高频遥测/广告曝光事件上报（log_event）在请求阶段直接返回 200 + 空字典，避免出网（来源 https://www.youtube.com/）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/log_event(\?|$)/ then reject_dict(200)
 
 # ------------------------------------------------------------
 # 响应字段级净化（response.json.jq）：只删广告槽位，保留播放流
 # ------------------------------------------------------------
 # clean-youtubei-ads: YouTubei 响应递归删除广告字段；不改播放地址（来源 https://www.youtube.com/）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch|log_event|config)(\?|$)/ then response.json.jq("walk(if type == \"object\" then del(.adPlacements, .playerAds, .adSlots, .adBreakHeartbeatParams, .adBreakParams) else . end)")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch|config)(\?|$)/ then response.json.jq("walk(if type == \"object\" then del(.adPlacements, .playerAds, .adSlots, .adBreakHeartbeatParams, .adBreakParams) else . end)")

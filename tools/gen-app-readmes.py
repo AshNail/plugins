@@ -7,6 +7,9 @@ import sys
 from urllib.parse import quote
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from redlines import expand_rule  # noqa: E402
+
 APPS = ROOT / "src/apps"
 RAW = "https://raw.githubusercontent.com/AshNail/plugins/main/plugins"
 REPO = "https://github.com/AshNail/plugins"
@@ -75,7 +78,7 @@ def render(app, sdklib, ads_groups):
         if meta.get("adsGroup") and meta["adsGroup"] in ads_groups:
             src = ads_groups[meta["adsGroup"]]
             ents = src.get("rules", [])
-            meta["hosts"] = [e for e in ents if "," not in e]
+            meta["hosts"] = list(dict.fromkeys(h for e in ents if "," not in e for h in expand_rule(e)))
             meta["rules"] = [e for e in ents if "," in e]
             meta.setdefault("title", src.get("title", sid))
         n_h = len(meta.get("hosts", []))

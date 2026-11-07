@@ -2,7 +2,7 @@
 
 > 智慧房东（uni-app 打包+多广告网络聚合）:穿山甲/优量汇/快手联盟/倍孜黑洞,开屏、插屏、信息流广告位加载失败即本插件生效方式。通通锁控门与个推收租提醒零接触。零证书。
 
-版本 **1.0.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.0.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -17,11 +17,11 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihuifangdong/zh
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | uni-AD/DCloud 与易推 DSP（默认关,需真机抓包） | C | 默认关闭 | ad.dcloud.net.cn/uniad.dcloud.net.cn 为 DCloud uni-AD 公开文档域名,但本 App 真实请求域未经抓包证实;adfunlink/adintl/qttunion 的官网域与投放域未分离——按 AdTiming/Ogury 教训默认关。 |
-| 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 51 域 / 0 规则。 |
-| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 18 域 / 0 规则。 |
-| 快手联盟 / 快手广告（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 22 域 / 0 规则。 |
-| 百度广告 / 百青藤（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 40 域 / 0 规则。 |
-| 倍孜广告聚合（Beizi）（引用组） | A | 启用 | 证据同 plugins/ads v2.3.1（TopOn 之外的第三方聚合）。 共 2 域 / 0 规则。 |
+| 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 60 域 / 0 规则。 |
+| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 27 域 / 0 规则。 |
+| 快手联盟 / 快手广告（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 28 域 / 0 规则。 |
+| 百度广告 / 百青藤（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 44 域 / 0 规则。 |
+| 倍孜广告聚合（Beizi / AdScope）（引用组） | A | 启用 | 证据同 plugins/ads mobile_sdks 组（倍孜 Beizi / AdScope 国内第三方聚合 SDK 全家桶）。 共 16 域 / 0 规则。 |
 
 ## 红线与天花板（如实）
 
@@ -36,4 +36,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihuifangdong/zh
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/zhihuifangdong.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 135 条，[Rule] 0 条。
+统计：精确/通配黑洞 177 条，[Rule] 0 条。

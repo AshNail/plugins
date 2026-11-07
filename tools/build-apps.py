@@ -47,7 +47,14 @@ import re
 import sys
 from urllib.parse import urlsplit
 
-from redlines import describe, load_app_redlines, redline_hit, redline_roots, rule_redline_hits
+from redlines import (
+    describe,
+    expand_rule,
+    load_app_redlines,
+    redline_hit,
+    redline_roots,
+    rule_redline_hits,
+)
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 APPS = ROOT / "src/apps"
@@ -201,7 +208,8 @@ def collect_groups(app: dict, sdklib: dict) -> list[dict]:
     sdk 条目二选一：
       {"adsGroup": "<id>"}    引用 src/ads/domains.json 的已审组（hosts+rules 原样带过来）
       {"hosts": [...], "rules": [...]}  显式列表
-    `=` 前缀主机（ads 源的通配记法）转成 `*.`；引用 adsGroup 时非域名类规则行直接报错。
+    `=` 前缀主机（ads 源的整域记法）经 redlines.expand_rule 展开为精确主域 + `*.` 子域通配；
+    引用 adsGroup 时非域名类规则行直接报错。
     """
     groups = []
     ads_by_id = None
@@ -227,7 +235,7 @@ def collect_groups(app: dict, sdklib: dict) -> list[dict]:
                         raise BuildError(f"_sdk.json: adsGroup {sdk['adsGroup']!r} 含不支持的规则 {item!r}")
                     rules.append(item)
                 else:
-                    hosts.append(_normalize_host(item))
+                    hosts.extend(expand_rule(item))
         groups.append({"id": f"sdk:{key}", "title": title,
                        "note": sdk.get("note", ""), "tier": sdk.get("tier", "A"),
                        "sources": sdk.get("sources", []),
@@ -243,10 +251,6 @@ def collect_groups(app: dict, sdklib: dict) -> list[dict]:
         g.setdefault("sources", [])
         groups.append(g)
     return groups
-
-
-def _normalize_host(h: str) -> str:
-    return ("*." + h[1:]) if h.startswith("=") else h
 
 
 def dedup(seq: list[str]) -> list[str]:

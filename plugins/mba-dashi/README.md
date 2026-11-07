@@ -2,7 +2,7 @@
 
 > MBA大师（mbajm）开屏走穿山甲,课程列表插屏走优量汇;讲义/题库内嵌不可分。看广告领课程依赖这些 SDK——启用即断。零证书。
 
-版本 **1.0.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.0.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -16,8 +16,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mba-dashi/mba-das
 
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
-| 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 51 域 / 0 规则。 |
-| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 18 域 / 0 规则。 |
+| 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 60 域 / 0 规则。 |
+| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 27 域 / 0 规则。 |
 
 ## 红线与天花板（如实）
 
@@ -31,4 +31,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mba-dashi/mba-das
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/mba-dashi.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 69 条，[Rule] 0 条。
+统计：精确/通配黑洞 87 条，[Rule] 0 条。

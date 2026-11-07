@@ -212,7 +212,7 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|bet
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/me(?:\?|$)/ then response.json.delete("reward_ad_banner")
 
 # 更多面板：blocks 里只摘 type=related_video 的视频推广块（`\"` 转义写法来自 lpx，Loon 引擎吃这套）。
-response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/more-panel(?:\?|$)/ then response.json.jq(".blocks |= map(select(.type != \"related_video\"))")
+response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/more-panel(?:\?|$)/ then response.json.jq("if type == \"object\" and (.blocks | type) == \"array\" then .blocks |= map(select(type != \"object\" or .type != \"related_video\")) else . end")
 
 
 # ============================================================================

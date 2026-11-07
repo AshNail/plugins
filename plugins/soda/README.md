@@ -582,7 +582,7 @@ v3.3.0 起这一段另外多了 3 条 request 终止 + 2 条 response 字段级�
 request if ${splashClean} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/advert\/splash\/brand\/report/ then reject_dict(200)
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/api\.qishui\.com\/luna\/ads\/report\/dsp\/show/ then reject_dict(200)
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/media_ads(?:\?|$)/ then reject_dict(200)
-response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/more-panel(?:\?|$)/ then response.json.jq(".blocks |= map(select(.type != \"related_video\"))")
+response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/more-panel(?:\?|$)/ then response.json.jq("if type == \"object\" and (.blocks | type) == \"array\" then .blocks |= map(select(type != \"object\" or .type != \"related_video\")) else . end")
 ```
 
 注意不是 Surge 的 `url reject`。`reject_dict(status)` 的状态码范围是 100–599；HTTPS 命中需要该域名在 `[MITM]` 中。luna 的主机对必须两个都写（lint 的 luna host parity 门禁），`jq` 表达式里的引号按 lpx 口径写成 `\"`。

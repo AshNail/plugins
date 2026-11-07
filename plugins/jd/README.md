@@ -2,7 +2,7 @@
 
 > 京东 App：可 DNS 切断的是自建广告交易/点击监测域（生效：dsp-x 京媒 SDK、ads-union、ccc-x、addata、skdisplay；默认关：x.jd.com 族、埋点日志族）。首页/搜索信息流广告与商品同 API、同图床（mapi.m.jd.com、img*.360buyimg.com、img-x.jd.com），DNS 不可分；交易/风控/登录/推送/客服零接触。零证书，不提供 MITM 层。
 
-版本 **1.0.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.0.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -37,4 +37,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/jd/jd.plugin
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/jd.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 22 条，[Rule] 0 条。
+统计：精确/通配黑洞 29 条，[Rule] 0 条。

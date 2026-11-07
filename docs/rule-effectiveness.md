@@ -9,8 +9,8 @@
 两者都只数**声明**。这一份数**前提**：一条规则写在插件里，
 是否具备它命中所需的条件。
 
-- 共审计 **275** 条会依赖前提的配置行，分布在 `[Rule]` / `[Script]` / `[Rewrite]`。
-- **前提满足 265 条**（96%）：连接层可见，或插件已声明 `[MITM]`。
+- 共审计 **281** 条会依赖前提的配置行，分布在 `[Rule]` / `[Script]` / `[Rewrite]`。
+- **前提满足 271 条**（96%）：连接层可见，或插件已声明 `[MITM]`。
 - **仅明文 6 条**（2%）：正则锚定 `^http://`，不依赖解密，但也只吃明文 HTTP——现代 App 几乎全 HTTPS，实际命中率很低。
 - **存疑 4 条**（1%）：需要 HTTP 报文内容，但插件没有 `[MITM]`。
 
@@ -37,9 +37,9 @@
 | 插件 | `[MITM]` | 审计条数 | 前提满足 | 仅明文 | 存疑 |
 |---|---|---:|---:|---:|---:|
 | `ads.plugin` | **无** | 13 | 3 | 6 | 4 |
-| `amap.plugin` | 有 | 13 | 13 | 0 | 0 |
+| `amap.plugin` | 有 | 14 | 14 | 0 | 0 |
 | `banks.plugin` | **无** | 2 | 2 | 0 | 0 |
-| `bilibili.plugin` | 有 | 5 | 5 | 0 | 0 |
+| `bilibili.plugin` | 有 | 6 | 6 | 0 | 0 |
 | `douyin.plugin` | 有 | 30 | 30 | 0 | 0 |
 | `meituan.plugin` | 有 | 23 | 23 | 0 | 0 |
 | `netease.plugin` | 有 | 17 | 17 | 0 | 0 |
@@ -48,9 +48,9 @@
 | `soda.plugin` | 有 | 75 | 75 | 0 | 0 |
 | `taobao.plugin` | 有 | 15 | 15 | 0 | 0 |
 | `x.plugin` | **无** | 1 | 1 | 0 | 0 |
-| `xianyu.plugin` | 有 | 23 | 23 | 0 | 0 |
-| `youtube.plugin` | 有 | 4 | 4 | 0 | 0 |
-| `zhihu.plugin` | 有 | 16 | 16 | 0 | 0 |
+| `xianyu.plugin` | 有 | 24 | 24 | 0 | 0 |
+| `youtube.plugin` | 有 | 5 | 5 | 0 | 0 |
+| `zhihu.plugin` | 有 | 18 | 18 | 0 | 0 |
 
 ## 3. 存疑清单与豁免登记
 
@@ -79,7 +79,7 @@
 | `ads` | [Rule] | `^http:\/\/[0-9]+(\.[0-9]+){3}(:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d\|ss)[46` |
 | `ads` | [Rule] | `^http:\/\/\[[0-9a-fA-F:]+\](:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d\|ss)[46]?` |
 | `ads` | [Rule] | `^http:\/\/api\.weibo\.cn\/[0-9]+\/httpdns\/config` |
-| `ads` | [Rule] | `^http:\/\/amdc\.alipay\.com\/s\?query` |
+| `ads` | [Rule] | `^http:\/\/amdc\.alipay\.com\/s\??query` |
 | `ads` | [Rule] | `^http:\/\/.+\/sa(\.gif)?\?project=` |
 | `ads` | [Rule] | `^http:\/\/.+\/v[0-9]*\/(?:event\|log\|track)\/(?:report\|upload\|batch)` |
 

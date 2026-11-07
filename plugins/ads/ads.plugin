@@ -1,12 +1,12 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.20
+#!version=2.8.22
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06 11:40
+#!date=2026-11-07 20:35
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 
@@ -54,10 +54,10 @@ USER-AGENT,httpdns*,REJECT
 USER-AGENT,Httpdns*,REJECT
 USER-AGENT,httpsdns*,REJECT
 USER-AGENT,Httpsdns*,REJECT
-URL-REGEX,^http:\/\/[0-9]+(\.[0-9]+){3}(:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery)(?:\/|\?|$),REJECT
-URL-REGEX,^http:\/\/\[[0-9a-fA-F:]+\](:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery)(?:\/|\?|$),REJECT
+URL-REGEX,^http:\/\/[0-9]+(\.[0-9]+){3}(:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery|amdc\/mobileDispatch)(?:\/|\?|$),REJECT
+URL-REGEX,^http:\/\/\[[0-9a-fA-F:]+\](:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d|ss)[46]?|httpdns|resolve|squery|amdc\/mobileDispatch)(?:\/|\?|$),REJECT
 URL-REGEX,^http:\/\/api\.weibo\.cn\/[0-9]+\/httpdns\/config,REJECT
-URL-REGEX,^http:\/\/amdc\.alipay\.com\/s\?query,REJECT
+URL-REGEX,^http:\/\/amdc\.alipay\.com\/s\??query,REJECT
 # 埋点与上报防护：采用 REJECT-DICT 返回 200 + 空字典 {}，诱导统计 SDK（如神策）清空本地重试队列，避免存储膨胀与 CPU 频繁唤醒。
 URL-REGEX,^http:\/\/.+\/sa(\.gif)?\?project=,REJECT-DICT
 URL-REGEX,^http:\/\/.+\/v[0-9]*\/(?:event|log|track)\/(?:report|upload|batch),REJECT-DICT
@@ -374,6 +374,10 @@ pangolin-sdk-toutiao5.com = 127.0.0.1
 pangolin16.sgsnssdk.com = 127.0.0.1
 toblog.ctobsnssdk.com = 127.0.0.1
 tobapplog.ctobsnssdk.com = 127.0.0.1
+ads3-normal-gl2.zijieapi.com = 127.0.0.1
+ads5-normal-gl2.zijieapi.com = 127.0.0.1
+ads3-normal-hj.zijieapi.com = 127.0.0.1
+tr.byteurl.cn = 127.0.0.1
 
 # ============================================================================
 # 腾讯广告 / 优量汇（GDT）
@@ -403,7 +407,9 @@ mtrace.qq.com = 127.0.0.1
 btrace.qq.com = 127.0.0.1
 mdevstat.qqlive.qq.com = 127.0.0.1
 wit.qq.com = 127.0.0.1
+*.wit.qq.com = 127.0.0.1
 adnet.qq.com = 127.0.0.1
+*.adnet.qq.com = 127.0.0.1
 dmplog.qq.com = 127.0.0.1
 
 # ============================================================================
@@ -515,6 +521,11 @@ alimama.alicdn.com = 127.0.0.1
 tns.simba.taobao.com = 127.0.0.1
 alimama.cn = 127.0.0.1
 *.alimama.cn = 127.0.0.1
+wcp.taobao.com = 127.0.0.1
+audid-api.taobao.com = 127.0.0.1
+poplayer.template.alibaba.com = 127.0.0.1
+adashx.m.taobao.com = 127.0.0.1
+adash-emas.cn-hangzhou.aliyuncs.com = 127.0.0.1
 
 # ============================================================================
 # 中国广告联盟 / 媒体广告位 / 广告监测
@@ -544,6 +555,7 @@ cm.bilibili.com = 127.0.0.1
 ad.163.com = 127.0.0.1
 union.sogou.com = 127.0.0.1
 pub.funshion.com = 127.0.0.1
+*.pub.funshion.com = 127.0.0.1
 h-adashx.ut.taobao.com = 127.0.0.1
 eiv.baidu.com = 127.0.0.1
 adsame.com = 127.0.0.1
@@ -699,6 +711,7 @@ ads-video-qc.xhscdn.com = 127.0.0.1
 ads-video-al.xhscdn.com = 127.0.0.1
 adbox.sina.com.cn = 127.0.0.1
 go.sohu.com = 127.0.0.1
+*.go.sohu.com = 127.0.0.1
 union.china.com.cn = 127.0.0.1
 optimus-ads.amap.com = 127.0.0.1
 ad-cdn.qingting.fm = 127.0.0.1
@@ -720,7 +733,7 @@ tagtic.cn = 127.0.0.1
 xdrig.com = 127.0.0.1
 *.xdrig.com = 127.0.0.1
 atm.youku.com = 127.0.0.1
-m.atm.youku.com = 127.0.0.1
+*.atm.youku.com = 127.0.0.1
 ykad-gateway.youku.com = 127.0.0.1
 iyes.youku.com = 127.0.0.1
 da.mgtv.com = 127.0.0.1
@@ -728,6 +741,7 @@ da.mgtv.com = 127.0.0.1
 api.cupid.qiyi.com = 127.0.0.1
 iad.g.163.com = 127.0.0.1
 da.netease.com = 127.0.0.1
+*.da.netease.com = 127.0.0.1
 pr.nss.netease.com = 127.0.0.1
 gad.netease.com = 127.0.0.1
 ad.bn.netease.com = 127.0.0.1
@@ -763,17 +777,21 @@ adbehavior.ximalaya.com = 127.0.0.1
 adsehera.ximalaya.com = 127.0.0.1
 matwbp.iask.sina.com.cn = 127.0.0.1
 lu.sogou.com = 127.0.0.1
+*.lu.sogou.com = 127.0.0.1
 lu.sogoucdn.com = 127.0.0.1
+*.lu.sogoucdn.com = 127.0.0.1
 inte.sogou.com = 127.0.0.1
+*.inte.sogou.com = 127.0.0.1
 inte.sogoucdn.com = 127.0.0.1
+*.inte.sogoucdn.com = 127.0.0.1
 theta.sogoucdn.com = 127.0.0.1
+*.theta.sogoucdn.com = 127.0.0.1
 wuliao.epro.sogou.com = 127.0.0.1
 m.aty.sohu.com = 127.0.0.1
 assp.sohu.com = 127.0.0.1
 pv.sohu.com = 127.0.0.1
 fpb.sohu.com = 127.0.0.1
 reke.at.sohu.com = 127.0.0.1
-imp.go.sohu.com = 127.0.0.1
 gg.kugou.com = 127.0.0.1
 adserviceretry.kugou.com = 127.0.0.1
 apple.www.letv.com = 127.0.0.1
@@ -797,17 +815,15 @@ adse.test.ximalaya.com = 127.0.0.1
 adwbs.ximalaya.com = 127.0.0.1
 adbs.ximalaya.com = 127.0.0.1
 mobwsa.ximalaya.com = 127.0.0.1
-valf.atm.youku.com = 127.0.0.1
-val.atm.youku.com = 127.0.0.1
 l.ykimg.com = 127.0.0.1
 al.autohome.com.cn = 127.0.0.1
 pcmx.autohome.com.cn = 127.0.0.1
 ax.ifeng.com = 127.0.0.1
 deliver.ifeng.com = 127.0.0.1
+*.deliver.ifeng.com = 127.0.0.1
 dotcounter.douyutv.com = 127.0.0.1
 lianmeng.360.cn = 127.0.0.1
-api.so.lianmeng.360.cn = 127.0.0.1
-stat.lianmeng.360.cn = 127.0.0.1
+*.lianmeng.360.cn = 127.0.0.1
 huid.ad.360.cn = 127.0.0.1
 ads360.cn = 127.0.0.1
 *.ads360.cn = 127.0.0.1
@@ -820,15 +836,17 @@ agn.aty.sohu.com = 127.0.0.1
 vm.aty.sohu.com = 127.0.0.1
 vstat.my.tv.sohu.com = 127.0.0.1
 brand.sogou.com = 127.0.0.1
-dsp.brand.sogou.com = 127.0.0.1
+*.brand.sogou.com = 127.0.0.1
 image.p4p.sogou.com = 127.0.0.1
 erebor.douban.com = 127.0.0.1
 ad.doubanio.com = 127.0.0.1
 api-ad-adapter.wps.com = 127.0.0.1
 adsp.xunlei.com = 127.0.0.1
+*.adsp.xunlei.com = 127.0.0.1
 saad.ms.zhangyue.net = 127.0.0.1
 smad.ms.zhangyue.net = 127.0.0.1
 ad.zhangyue.com = 127.0.0.1
+*.ad.zhangyue.com = 127.0.0.1
 adui.tg.meitu.com = 127.0.0.1
 ma-adx.ctrip.com = 127.0.0.1
 udiab1.jianshu.com = 127.0.0.1
@@ -904,11 +922,26 @@ tg.jifen.2345.com = 127.0.0.1
 eclick.360doc.com = 127.0.0.1
 360shopping.com.cn = 127.0.0.1
 *.360shopping.com.cn = 127.0.0.1
+analytics-api.smzdm.com = 127.0.0.1
+zxid-api.mobileservice.cn = 127.0.0.1
+adv-sv-show.focus.cn = 127.0.0.1
+adv-sv-stat.focus.cn = 127.0.0.1
+ad.zui.com = 127.0.0.1
+adm.funshion.com = 127.0.0.1
+adstat.izuiyou.com = 127.0.0.1
+adx.36kr.com = 127.0.0.1
+cdn-ad.wtzw.com = 127.0.0.1
+adimg.liba.com = 127.0.0.1
+adstrategy.biz.weibo.com = 127.0.0.1
+adn.insight.ucweb.com = 127.0.0.1
+c.etoolads.cn = 127.0.0.1
+adx-api.zdmimg.com = 127.0.0.1
+aaid.uyunad.com = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
 # ----------------------------------------------------------------------------
-# 以下 9 个微博广告主机均为 2 家公开清单可证（anti-AD + AWAvenue/AdGuard/fmz200），低于默认生效层的 ≥3 源门槛，故整组默认注释：bootpreload=开屏预加载、fastimage=广告图、click=广告点击、wbapp=广告 SDK、dp.im=私信广告、ad.weibo.com=广告入口、adstrategy.biz=广告策略、biz.weibo.com.cn/alitui.weibo.com.cn=国内变体。刻意不收录 widget.weibo.com（anti-AD 有 @@ 白名单）与 uve.weibo.com 整域（RuCu6 插件显式 DIRECT）。逐条取消注释前先确认对应功能无异常。
+# 以下 8 个微博广告主机均为 2 家公开清单可证（anti-AD + AWAvenue/AdGuard/fmz200），低于默认生效层的 ≥3 源门槛，故整组默认注释：bootpreload=开屏预加载、fastimage=广告图、click=广告点击、wbapp=广告 SDK、dp.im=私信广告、ad.weibo.com=广告入口、biz.weibo.com.cn/alitui.weibo.com.cn=国内变体（adstrategy.biz.weibo.com 已达 5 源收录并升入 cn_union 默认生效组）。刻意不收录 widget.weibo.com（anti-AD 有 @@ 白名单）与 uve.weibo.com 整域（RuCu6 微博插件显式 DIRECT）。逐条取消注释前先确认对应功能无异常。
 #
 # ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
 # ============================================================================
@@ -918,7 +951,6 @@ eclick.360doc.com = 127.0.0.1
 # wbapp.uve.weibo.com = 127.0.0.1
 # dp.im.weibo.cn = 127.0.0.1
 # ad.weibo.com = 127.0.0.1
-# adstrategy.biz.weibo.com = 127.0.0.1
 # biz.weibo.com.cn = 127.0.0.1
 # alitui.weibo.com.cn = 127.0.0.1
 
@@ -956,6 +988,8 @@ admob.com = 127.0.0.1
 *.2mdn.net = 127.0.0.1
 googleadsserving.cn = 127.0.0.1
 *.googleadsserving.cn = 127.0.0.1
+googleadservices-cn.com = 127.0.0.1
+*.googleadservices-cn.com = 127.0.0.1
 doubleclick-cn.net = 127.0.0.1
 *.doubleclick-cn.net = 127.0.0.1
 adservice.google.com = 127.0.0.1
@@ -1110,11 +1144,13 @@ tracker.ai.xiaomi.com = 127.0.0.1
 sms.ads.oppomobile.com = 127.0.0.1
 ck.ads.oppomobile.com = 127.0.0.1
 bhwkju.vivo.com = 127.0.0.1
+adsfs.heytapimage.com = 127.0.0.1
+click.oneplus.cn = 127.0.0.1
 
 # ============================================================================
 # 全球移动广告 SDK / 聚合平台
 # ----------------------------------------------------------------------------
-# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。2026-10-30 频道补充 ws.tapjoyads.com（Tapjoy 广告 WebSocket/测量端点，4 源；已有 tapjoyads.com 精确主机覆盖不到该子域）。
+# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。2026-11-07 升级 applvn.com / tapjoyads.com / iads.unity3d.com / mediation.unity3d.com / mobfox.com / mobclix.com 为整域通配（覆盖 d/ms/rt.applvn.com、ws.tapjoyads.com、o-sdk.mediation.unity3d.com 等活跃子域分片），并补充 socdm / amobee / apptornado / leadboltads / adsbynimbus / intowow / mobilecore / playhaven / inner-active / admate 等多源移动广告 SDK 域。
 # ============================================================================
 applovin.com = 127.0.0.1
 *.applovin.com = 127.0.0.1
@@ -1124,7 +1160,9 @@ ssp.api.tappx.com = 127.0.0.1
 unityads.unity3d.com = 127.0.0.1
 *.unityads.unity3d.com = 127.0.0.1
 iads.unity3d.com = 127.0.0.1
+*.iads.unity3d.com = 127.0.0.1
 mediation.unity3d.com = 127.0.0.1
+*.mediation.unity3d.com = 127.0.0.1
 ads-ctv.unity3d.com = 127.0.0.1
 ironsrc.com = 127.0.0.1
 *.ironsrc.com = 127.0.0.1
@@ -1167,13 +1205,16 @@ bigoads.com = 127.0.0.1
 appodeal.com = 127.0.0.1
 *.appodeal.com = 127.0.0.1
 applvn.com = 127.0.0.1
+*.applvn.com = 127.0.0.1
 inmobicdn.net = 127.0.0.1
 *.inmobicdn.net = 127.0.0.1
 tapjoyads.com = 127.0.0.1
-ws.tapjoyads.com = 127.0.0.1
+*.tapjoyads.com = 127.0.0.1
 startapp.com = 127.0.0.1
 mobfox.com = 127.0.0.1
+*.mobfox.com = 127.0.0.1
 mobclix.com = 127.0.0.1
+*.mobclix.com = 127.0.0.1
 ads.unitychina.cn = 127.0.0.1
 unityads.unitychina.cn = 127.0.0.1
 ads.dataeye.com = 127.0.0.1
@@ -1246,7 +1287,6 @@ chartboosts.com = 127.0.0.1
 *.chartboosts.com = 127.0.0.1
 perf-events.cloud.unity3d.com = 127.0.0.1
 cdp.cloud.unity3d.com = 127.0.0.1
-o-sdk.mediation.unity3d.com = 127.0.0.1
 config.uca.cloud.unity3d.com = 127.0.0.1
 data-optout-service.uca.cloud.unity3d.com = 127.0.0.1
 logs.ironsrc.mobi = 127.0.0.1
@@ -1296,6 +1336,48 @@ admobile.vip = 127.0.0.1
 *.admobile.vip = 127.0.0.1
 admobile.net.cn = 127.0.0.1
 *.admobile.net.cn = 127.0.0.1
+leadboltapps.net = 127.0.0.1
+*.leadboltapps.net = 127.0.0.1
+ad-locus.com = 127.0.0.1
+*.ad-locus.com = 127.0.0.1
+ad-brix.com = 127.0.0.1
+*.ad-brix.com = 127.0.0.1
+inmobisdk-a.akamaihd.net = 127.0.0.1
+visit-server.inmobi-choice.io = 127.0.0.1
+ads.mobilityware.com = 127.0.0.1
+socdm.com = 127.0.0.1
+*.socdm.com = 127.0.0.1
+amobee.com = 127.0.0.1
+*.amobee.com = 127.0.0.1
+apptornado.com = 127.0.0.1
+*.apptornado.com = 127.0.0.1
+leadboltads.net = 127.0.0.1
+*.leadboltads.net = 127.0.0.1
+adsbynimbus.com = 127.0.0.1
+*.adsbynimbus.com = 127.0.0.1
+intowow.com = 127.0.0.1
+*.intowow.com = 127.0.0.1
+mobilecore.com = 127.0.0.1
+*.mobilecore.com = 127.0.0.1
+playhaven.com = 127.0.0.1
+*.playhaven.com = 127.0.0.1
+inner-active.com = 127.0.0.1
+*.inner-active.com = 127.0.0.1
+admate.cn = 127.0.0.1
+*.admate.cn = 127.0.0.1
+admatex.com = 127.0.0.1
+*.admatex.com = 127.0.0.1
+admatex.cn = 127.0.0.1
+*.admatex.cn = 127.0.0.1
+crosspromo.voodoo.io = 127.0.0.1
+prod.adjoe.zone = 127.0.0.1
+cdn.appnext.com = 127.0.0.1
+as.adfonic.net = 127.0.0.1
+appsrv.display.io = 127.0.0.1
+admarvel.s3.amazonaws.com = 127.0.0.1
+nativead.s3.amazonaws.com = 127.0.0.1
+adtago.s3.amazonaws.com = 127.0.0.1
+advice-ads.s3.amazonaws.com = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据
@@ -2067,6 +2149,54 @@ amoad.com = 127.0.0.1
 *.amoad.com = 127.0.0.1
 btloader.com = 127.0.0.1
 *.btloader.com = 127.0.0.1
+adadapted.com = 127.0.0.1
+*.adadapted.com = 127.0.0.1
+mediavine.com = 127.0.0.1
+*.mediavine.com = 127.0.0.1
+ad-m.asia = 127.0.0.1
+*.ad-m.asia = 127.0.0.1
+ad-srv.net = 127.0.0.1
+*.ad-srv.net = 127.0.0.1
+inpagepush.com = 127.0.0.1
+*.inpagepush.com = 127.0.0.1
+bfmio.com = 127.0.0.1
+*.bfmio.com = 127.0.0.1
+bounceexchange.com = 127.0.0.1
+*.bounceexchange.com = 127.0.0.1
+colossusssp.com = 127.0.0.1
+*.colossusssp.com = 127.0.0.1
+connectad.io = 127.0.0.1
+*.connectad.io = 127.0.0.1
+clrstm.com = 127.0.0.1
+*.clrstm.com = 127.0.0.1
+connextra.com = 127.0.0.1
+*.connextra.com = 127.0.0.1
+ad6media.fr = 127.0.0.1
+*.ad6media.fr = 127.0.0.1
+adforgames.com = 127.0.0.1
+*.adforgames.com = 127.0.0.1
+adgear.com = 127.0.0.1
+*.adgear.com = 127.0.0.1
+adhitzads.com = 127.0.0.1
+*.adhitzads.com = 127.0.0.1
+adtech.de = 127.0.0.1
+*.adtech.de = 127.0.0.1
+adtilt.com = 127.0.0.1
+*.adtilt.com = 127.0.0.1
+adversal.com = 127.0.0.1
+*.adversal.com = 127.0.0.1
+advertise.com = 127.0.0.1
+*.advertise.com = 127.0.0.1
+burstnet.com = 127.0.0.1
+*.burstnet.com = 127.0.0.1
+epom.com = 127.0.0.1
+*.epom.com = 127.0.0.1
+komoona.com = 127.0.0.1
+*.komoona.com = 127.0.0.1
+zedo.com = 127.0.0.1
+*.zedo.com = 127.0.0.1
+247realmedia.com = 127.0.0.1
+*.247realmedia.com = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告
@@ -2158,14 +2288,28 @@ adfox.net = 127.0.0.1
 yandexadexchange.net = 127.0.0.1
 *.yandexadexchange.net = 127.0.0.1
 adserver.yahoo.com = 127.0.0.1
+*.adserver.yahoo.com = 127.0.0.1
 geo.yahoo.com = 127.0.0.1
 iadsdk.apple.com = 127.0.0.1
+*.iadsdk.apple.com = 127.0.0.1
 adsdk.yandex.ru = 127.0.0.1
 advertising.yahoo.com = 127.0.0.1
+*.advertising.yahoo.com = 127.0.0.1
 events.brightline.tv = 127.0.0.1
 ads-api.x.com = 127.0.0.1
-ca.iadsdk.apple.com = 127.0.0.1
 ad.nettvservices.com = 127.0.0.1
+ad.flipboard.com = 127.0.0.1
+ad.lgappstv.com = 127.0.0.1
+ads.yimg.com = 127.0.0.1
+adserver.pandora.com = 127.0.0.1
+ads-resources.waze.com = 127.0.0.1
+ads-router-noneu.truecaller.com = 127.0.0.1
+ads-bidder-api.twitter.com = 127.0.0.1
+adsapi.snapchat.com = 127.0.0.1
+adsassets.waze.com = 127.0.0.1
+bingads.microsoft.com = 127.0.0.1
+outlookads.live.com = 127.0.0.1
+offerwall.yandex.net = 127.0.0.1
 
 # ============================================================================
 # 弹窗 / Popunder / 成人广告网络
@@ -2309,6 +2453,8 @@ httpdns-v6.gslb.yy.com = 127.0.0.1
 amdc.alipay.com.cn = 127.0.0.1
 httpdns-sdk.n.netease.com = 127.0.0.1
 httpdns.music.163.com = 127.0.0.1
+dnspod.meituan.httpdns.qcloud.com = 127.0.0.1
+dnspod.meituan.httpdns.start.qcloud.com = 127.0.0.1
 
 # ============================================================================
 # 公共 DoH 解析器（DNS 防泄漏）
@@ -2537,6 +2683,46 @@ doh.kommespaeter.de = 127.0.0.1
 # analytics.mobile.yandex.net = 127.0.0.1
 # amung.us = 127.0.0.1
 # *.amung.us = 127.0.0.1
+# catfront.dianping.com = 127.0.0.1
+# lx.meituan.net = 127.0.0.1
+# mon.zijieapi.com = 127.0.0.1
+# mcs.zijieapi.com = 127.0.0.1
+# log.zijieapi.com = 127.0.0.1
+# abtest-ch.snssdk.com = 127.0.0.1
+# mon.snssdk.com = 127.0.0.1
+# log.snssdk.com = 127.0.0.1
+# log.qishui.com = 127.0.0.1
+# f-cashloan.snssdk.com = 127.0.0.1
+# game.eve.mdt.qq.com = 127.0.0.1
+# game.str.mdt.qq.com = 127.0.0.1
+# galileotelemetry.tencent.com = 127.0.0.1
+# oss.weread.qq.com = 127.0.0.1
+# omgup.xiaojukeji.com = 127.0.0.1
+# omgup1.xiaojukeji.com = 127.0.0.1
+# metrics.icloud.com = 127.0.0.1
+# abtest.alibaba.com = 127.0.0.1
+# umengacs.m.taobao.com = 127.0.0.1
+# umengjmacs.m.taobao.com = 127.0.0.1
+# px.effirst.com = 127.0.0.1
+# px.ucweb.com = 127.0.0.1
+# config.jpush.cn = 127.0.0.1
+# sis.jpush.io = 127.0.0.1
+# smartop-sdkapi.jiguang.cn = 127.0.0.1
+# b-gtc.gepush.com = 127.0.0.1
+# h5-oneid.gepush.com = 127.0.0.1
+# h5c-oneid.gepush.com = 127.0.0.1
+# applog.zijieapi.com = 127.0.0.1
+# aegis.qq.com = 127.0.0.1
+# beaconcdn.qq.com = 127.0.0.1
+# log.tbs.qq.com = 127.0.0.1
+# s.jpush.cn = 127.0.0.1
+# config-ipv6.jpush.cn = 127.0.0.1
+# loggw-ex.alipay.com = 127.0.0.1
+# loggw-exsdk.alipay.com = 127.0.0.1
+# wreport1.meituan.net = 127.0.0.1
+# al-log.d.meituan.net = 127.0.0.1
+# log3-lf.qishui.com = 127.0.0.1
+# log5-lf.qishui.com = 127.0.0.1
 
 # ============================================================================
 # 与按 App 插件红线冲突的候选（默认注释）

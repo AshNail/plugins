@@ -267,6 +267,9 @@ ADS_FAMILY_COVERS = {
     "ads[0-9]-normal*.zijieapi.com": (
         "ads3-normal.zijieapi.com",
         "ads5-normal.zijieapi.com",
+        "ads3-normal-gl2.zijieapi.com",
+        "ads5-normal-gl2.zijieapi.com",
+        "ads3-normal-hj.zijieapi.com",
         "ads3-normal-hl.zijieapi.com",
         "ads5-normal-hl.zijieapi.com",
         "ads3-normal-lf.zijieapi.com",
@@ -1828,9 +1831,11 @@ def check_ads_family():
         "http://180.76.76.200/ss?",
         "http://180.76.76.200/v2/d?",
         "http://180.76.76.200/v2/resolve?",
+        "http://47.246.103.9/amdc/mobileDispatch",
         "http://[2400:3200::1]/resolve?",
         "http://api.weibo.cn/123/httpdns/config",
         "http://amdc.alipay.com/s?query",
+        "http://amdc.alipay.com/squery",
     )
     for sample in httpdns_url_samples:
         if not any(rx.search(sample) for rx in url_regexes):

@@ -1,12 +1,12 @@
 #!name=微信 · 广告素材黑洞
 #!desc=微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。
 #!author=edy
-#!version=1.1.4
+#!version=1.1.6
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/wechat/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/84/6b/3a/846b3ab8-9dea-e3e5-861e-f6ecaa0b3387/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-0-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-10-30
+#!date=2026-11-07
 #!tag=去广告,微信,优量汇,广点通
 #!type=normal
 
@@ -27,6 +27,7 @@
 
 # ------------------------------------------------------------
 # 腾讯广告 / 优量汇（GDT）（置信 A）
+*.adnet.qq.com = 127.0.0.1
 *.e.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
 *.gdtimg.com = 127.0.0.1
@@ -34,16 +35,24 @@
 *.tencentmind.com = 127.0.0.1
 *.ugdtimg.com = 127.0.0.1
 *.ugdturner.com = 127.0.0.1
+*.wit.qq.com = 127.0.0.1
 adnet.qq.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
 btrace.qq.com = 127.0.0.1
 dmplog.qq.com = 127.0.0.1
+e.qq.com = 127.0.0.1
+gdt.qq.com = 127.0.0.1
+gdtimg.com = 127.0.0.1
+l.qq.com = 127.0.0.1
 mdevstat.qqlive.qq.com = 127.0.0.1
 mtrace.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
 snowflake.qq.com = 127.0.0.1
+tencentmind.com = 127.0.0.1
+ugdtimg.com = 127.0.0.1
+ugdturner.com = 127.0.0.1
 wit.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------
@@ -87,7 +96,11 @@ xn--8rtx55n.cn = 127.0.0.1
 
 # ------------------------------------------------------------
 # 微信质量/崩溃统计（默认关）（置信 B）
-# monitor.weixin.qq.com=自家质量统计、badjs.weixinbridge.com=前端错误上报，拦掉只丢崩溃/错误上报，广告无关——默认不开。
+# monitor.weixin.qq.com / wetelemetry.weixin.qq.com=自家质量统计与客户端遥测、badjs.weixinbridge.com=前端错误上报、game.eve/str.mdt.qq.com 与 galileotelemetry.tencent.com=腾讯 MDT/伽利略小游戏遥测，拦掉只丢崩溃/错误上报，广告无关——默认不开。
 # （默认关闭的组：整组注释，取消注释即启用）
 # badjs.weixinbridge.com = 127.0.0.1
+# galileotelemetry.tencent.com = 127.0.0.1
+# game.eve.mdt.qq.com = 127.0.0.1
+# game.str.mdt.qq.com = 127.0.0.1
 # monitor.weixin.qq.com = 127.0.0.1
+# wetelemetry.weixin.qq.com = 127.0.0.1

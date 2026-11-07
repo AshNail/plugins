@@ -1,12 +1,12 @@
 #!name=Instagram · 像素与遥测瘦身
 #!desc=如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内广告 DNS 层≈0。黑洞 FB 转化像素、网页播放器 VAST 域与已死徽章服务;不碰 graph/gateway/fbcdn 主域。零证书。
 #!author=edy
-#!version=1.1.1
+#!version=1.1.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/instagram/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b0/91/85/b09185ca-7b74-87a4-adaf-1755d434ee22/Prod-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-10-28
+#!date=2026-11-07
 #!tag=隐私,遥测,Instagram
 #!type=normal
 
@@ -24,13 +24,12 @@
 
 # ------------------------------------------------------------
 # netseer IP 关联遥测（默认关,纯隐私收益）（置信 B）
-# Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）——按完整后缀 REJECT 专属子域,绝不升级为整域 fbcdn。netseer.com=被 Meta 收购的测量公司本体域（anti-AD/AdGuard/hagezi/StevenBlack 4 源收录,覆盖率审计反查出的缺口）。间接降低广告定向精度,不减少广告数量。
+# Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）。2026-11 真机 Loon 日志实锤客户端实际请求形态为 <uuid>-netseer-ipaddr-assoc.xy/xz.fbcdn.net（600+ 次，UUID 与 netseer 以连字符 '-' 拼接而非点号 '.'，导致旧版 DOMAIN-SUFFIX 100% 漏放），改用 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT 精确覆盖全部随机 UUID 分片且零触碰正常 *.fbcdn.net 图床。netseer.com=被 Meta 收购的测量公司本体域（4 源收录）。间接降低广告定向精度,不减少广告数量。
 # 证据: https://github.com/AdguardTeam/AdguardFilters/issues/217505
 # 证据: https://github.com/hagezi/dns-blocklists/issues/3010
 # 证据: https://anti-ad.net/domains.txt
 # （默认关闭的组：整组注释，取消注释即启用）
-# DOMAIN-SUFFIX,netseer-ipaddr-assoc.xy.fbcdn.net,REJECT
-# DOMAIN-SUFFIX,netseer-ipaddr-assoc.xz.fbcdn.net,REJECT
+# DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT
 
 [Host]
 
@@ -41,6 +40,11 @@
 *.analytics.facebook.com = 127.0.0.1
 *.b-graph.facebook.com = 127.0.0.1
 *.pixel.facebook.com = 127.0.0.1
+ads.facebook.com = 127.0.0.1
+an.facebook.com = 127.0.0.1
+analytics.facebook.com = 127.0.0.1
+b-graph.facebook.com = 127.0.0.1
+pixel.facebook.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # FB 像素与专属广告端点（A 级）（置信 A）
@@ -53,7 +57,7 @@ pixel.facebook.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # netseer IP 关联遥测（默认关,纯隐私收益）（置信 B）
-# Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）——按完整后缀 REJECT 专属子域,绝不升级为整域 fbcdn。netseer.com=被 Meta 收购的测量公司本体域（anti-AD/AdGuard/hagezi/StevenBlack 4 源收录,覆盖率审计反查出的缺口）。间接降低广告定向精度,不减少广告数量。
+# Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）。2026-11 真机 Loon 日志实锤客户端实际请求形态为 <uuid>-netseer-ipaddr-assoc.xy/xz.fbcdn.net（600+ 次，UUID 与 netseer 以连字符 '-' 拼接而非点号 '.'，导致旧版 DOMAIN-SUFFIX 100% 漏放），改用 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT 精确覆盖全部随机 UUID 分片且零触碰正常 *.fbcdn.net 图床。netseer.com=被 Meta 收购的测量公司本体域（4 源收录）。间接降低广告定向精度,不减少广告数量。
 # 证据: https://github.com/AdguardTeam/AdguardFilters/issues/217505
 # 证据: https://github.com/hagezi/dns-blocklists/issues/3010
 # 证据: https://anti-ad.net/domains.txt

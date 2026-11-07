@@ -1,12 +1,12 @@
 #!name=京东 · 去广告（自建广告交易层）
 #!desc=京东 App：可 DNS 切断的是自建广告交易/点击监测域（生效：dsp-x 京媒 SDK、ads-union、ccc-x、addata、skdisplay；默认关：x.jd.com 族、埋点日志族）。首页/搜索信息流广告与商品同 API、同图床（mapi.m.jd.com、img*.360buyimg.com、img-x.jd.com），DNS 不可分；交易/风控/登录/推送/客服零接触。零证书，不提供 MITM 层。
 #!author=edy
-#!version=1.0.2
+#!version=1.0.3
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/jd/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e9/e4/54/e9e454a9-8e0c-7559-d595-f19c7e4ab744/AppIcon-0-0-1x_U007epad-0-1-0-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-10-30
+#!date=2026-11-06
 #!tag=去广告,京东,JD
 #!type=normal
 
@@ -69,12 +69,19 @@ skdisplay.jd.com = 127.0.0.1
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
 # （默认关闭的组：整组注释，取消注释即启用）
+# anti-sdk-report.m.jd.com = 127.0.0.1
+# cltm.jd.com = 127.0.0.1
+# dsap.jd.com = 127.0.0.1
+# ex.m.jd.com = 127.0.0.1
 # hermes.jd.com = 127.0.0.1
 # jcm.jd.com = 127.0.0.1
+# jra.jd.com = 127.0.0.1
 # knicks.jd.com = 127.0.0.1
 # log.jd.com = 127.0.0.1
+# mars.jd.com = 127.0.0.1
 # mercury.jd.com = 127.0.0.1
 # mllog.jd.com = 127.0.0.1
 # orbit.jd.com = 127.0.0.1
+# sgm-m.jd.com = 127.0.0.1
 # uranus.jd.com = 127.0.0.1
 # xlog.jd.com = 127.0.0.1

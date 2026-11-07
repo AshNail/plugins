@@ -2,8 +2,8 @@
   "slug": "meituan",
   "name": "美团 · 去广告",
   "desc": "美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.3.0",
-  "date": "2026-11-06",
+  "version": "1.3.2",
+  "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,美团,点评",
   "comment": [
@@ -110,13 +110,14 @@
       "title": "美团/点评纯遥测家族（默认关）",
       "tier": "A",
       "disabled": true,
-      "note": "CAT 开源 APM(catfront)、dreport/wreport/hreport/report(BI 集群自证)、analytics.meituan.net、data-sdk-uuid-log/metrics-picture/maplocatesdksnapshot 分片、wx-md/cloudidv/orecct/athena——全部多源收录且与下单支付不同集群,拦掉只丢报表。athena=运营配置中心,拦后营销弹窗从「白屏」变「正常消失」。",
+      "note": "CAT 开源 APM(catfront)、灵犀埋点(lx.meituan.net)、dreport/wreport/hreport/report(BI 集群自证)、analytics.meituan.net、data-sdk-uuid-log/metrics-picture/maplocatesdksnapshot 分片、wx-md/cloudidv/orecct/athena——全部多源收录且与下单支付不同集群,拦掉只丢报表。athena=运营配置中心,拦后营销弹窗从「白屏」变「正常消失」。",
       "sources": [
         "https://github.com/privacy-protection-tools/anti-AD",
         "https://tech.meituan.com/2018/11/01/cat-in-depth-java-application-monitoring.html",
         "https://adguard.com/"
       ],
       "hosts": [
+        "al-log.d.meituan.net",
         "analytics.meituan.net",
         "athena.mymeituan.com",
         "catfront.dianping.com",
@@ -125,6 +126,7 @@
         "*.dreport.meituan.net",
         "hreport.meituan.com",
         "logreport-cloudidv-cbr.meituan.com",
+        "lx.meituan.net",
         "maplocatesdksnapshot.d.meituan.net",
         "metrics-picture.d.meituan.net",
         "orecct-rs.meituan.com",
@@ -133,7 +135,8 @@
         "reportonline.meituan.com",
         "wx-md.meituan.com",
         "wxreport.qcs.meituan.com",
-        "wreport.meituan.net"
+        "wreport.meituan.net",
+        "wreport1.meituan.net"
       ]
     },
     {
@@ -303,7 +306,7 @@
         "gate": "cleanAds",
         "endpoint": "group/v1/deal/searchpage/defaultword",
         "url": "^https://apimobile\\.meituan\\.com/group/v1/deal/searchpage/defaultword",
-        "action": "response.json.jq(\".searchIntroduceResponse.defaultWordRes.defaultWordItems = [] | .searchIntroduceResponse.HotWordInfos = []\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.searchIntroduceResponse | type) == \\\"object\\\" then .searchIntroduceResponse |= ((if (.defaultWordRes | type) == \\\"object\\\" then .defaultWordRes.defaultWordItems = [] else . end) | .HotWordInfos = []) else . end\")",
         "note": "清空搜索默认词与热词",
         "source": "https://t.me/Nzmgs"
       },
@@ -314,7 +317,7 @@
         "gate": "cleanAds",
         "endpoint": "group/v1/deal/searchpage/hotword/city/divide/hotrecommend/",
         "url": "^https://apimobile\\.meituan\\.com/group/v1/deal/searchpage/hotword/city/divide/hotrecommend/",
-        "action": "response.json.jq(\"(.data.segmentsV2[]?.hotwordSegments) |= map(select(.pageName != \\\"EntranceHotwordsV2Hotwords\\\" and .pageName != \\\"EntranceHotwordsV2ContentCard\\\")) | .data.aiSearchBubble.bubbleTexts = []\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data |= ((if (.segmentsV2 | type) == \\\"array\\\" then .segmentsV2 |= map(if type == \\\"object\\\" and (.hotwordSegments | type) == \\\"array\\\" then .hotwordSegments |= map(select(type != \\\"object\\\" or (.pageName != \\\"EntranceHotwordsV2Hotwords\\\" and .pageName != \\\"EntranceHotwordsV2ContentCard\\\"))) else . end) else . end) | (if (.aiSearchBubble | type) == \\\"object\\\" then .aiSearchBubble.bubbleTexts = [] else . end)) else . end\")",
         "note": "去掉搜索热词推荐与 AI 气泡",
         "source": "https://t.me/Nzmgs"
       },
@@ -325,7 +328,7 @@
         "gate": "cleanAds",
         "endpoint": "mop/entry/shoppingCartEntry",
         "url": "^https://mop\\.meituan\\.com/mop/entry/shoppingCartEntry",
-        "action": "response.json.jq(\"walk(if type == \\\"object\\\" and (.topBannerArea? | type) == \\\"array\\\" then .topBannerArea = [] else . end)\")",
+        "action": "response.json.jq(\"walk(if type == \\\"object\\\" and (.topBannerArea | type) == \\\"array\\\" then .topBannerArea = [] else . end)\")",
         "note": "清空购物车入口顶部 banner（topBannerArea）",
         "source": "https://t.me/Nzmgs"
       },
@@ -336,7 +339,7 @@
         "gate": "cleanAds",
         "endpoint": "api/entryModule/startupPicture",
         "url": "^https://mop\\.meituan\\.com/api/entryModule/startupPicture",
-        "action": "response.json.jq(\"walk(if type == \\\"object\\\" and (.startupPicArea? | type) == \\\"array\\\" then .startupPicArea = [] else . end)\")",
+        "action": "response.json.jq(\"walk(if type == \\\"object\\\" and (.startupPicArea | type) == \\\"array\\\" then .startupPicArea = [] else . end)\")",
         "note": "清空 mop 启动图（startupPicArea）",
         "source": "https://t.me/Nzmgs"
       },
@@ -347,7 +350,7 @@
         "gate": "slimUI",
         "endpoint": "aggroup/indexTab",
         "url": "^https://apimobile\\.meituan\\.com/aggroup/indexTab",
-        "action": "response.json.jq(\".data.resource.tabArea |= map(select(.tabName == \\\"homepage\\\" or .tabName == \\\"mine\\\"))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.resource | type) == \\\"object\\\" and (.data.resource.tabArea | type) == \\\"array\\\" then .data.resource.tabArea |= map(select(type != \\\"object\\\" or .tabName == \\\"homepage\\\" or .tabName == \\\"mine\\\")) else . end\")",
         "note": "隐藏 video/xiaotuan 底部 tab，只保留 homepage/mine",
         "source": "https://t.me/Nzmgs"
       },
@@ -358,7 +361,7 @@
         "gate": "slimUI",
         "endpoint": "lycoris/scene/",
         "url": "^https://feedguess\\.meituan\\.com/lycoris/scene/(?:gwc_feed1_2265|personalcenter_2154)",
-        "action": "response.json.jq(\".data = [] | .bottom = true | .ext.forbidByExp = true\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" then .data = [] | .bottom = true | (if (.ext | type) == \\\"object\\\" or .ext == null then .ext.forbidByExp = true else . end) else . end\")",
         "note": "清空购物车/个人中心推荐流",
         "source": "https://t.me/Nzmgs"
       },
@@ -369,7 +372,7 @@
         "gate": "slimUI",
         "endpoint": "usercenter/display",
         "url": "^https://mt-personalcenter\\.meituan\\.com/usercenter/display",
-        "action": "response.json.jq(\".children |= map(select(.name != \\\"mine_cross_recommend\\\"))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.children | type) == \\\"array\\\" then .children |= map(select(type != \\\"object\\\" or .name != \\\"mine_cross_recommend\\\")) else . end\")",
         "note": "我的页去掉交叉推荐模块",
         "source": "https://t.me/Nzmgs"
       },
@@ -380,7 +383,7 @@
         "gate": "slimUI",
         "endpoint": "assistant/getAppClientHornConfig",
         "url": "^https://assistify\\.meituan\\.com/assistant/getAppClientHornConfig",
-        "action": "response.json.jq(\".data |= (. as $orig | if type == \\\"string\\\" then (try (fromjson | if type == \\\"object\\\" and (.skills | type) == \\\"object\\\" then .skills = {} else . end | tojson) catch $orig) else . end)\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" then .data |= (. as $orig | if type == \\\"string\\\" then (try (fromjson | if type == \\\"object\\\" and (.skills | type) == \\\"object\\\" then .skills = {} else . end | tojson) catch $orig) else . end) else . end\")",
         "note": "清空 AI 技能配置（data 内嵌 JSON 的 skills 对象）",
         "source": "https://t.me/Nzmgs"
       }

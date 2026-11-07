@@ -1,8 +1,8 @@
 # YouTube · 广告字段清理（原生复写）
 
-> 不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/ 与 api/stats/ads 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。
+> 不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei.googleapis.com 的 youtubei/v1/log_event 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。
 
-版本 **1.1.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -20,7 +20,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/youtube/youtube.p
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
-YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.com，不可整域黑洞。本层默认启用 Loon 原生 [Rewrite] v2 复写（由 cleanAds 开关控制，零 JS 脚本）：① www.youtube.com 的 pagead/ 与 api/stats/ads 请求在 request 阶段 reject_dict(200) 直接终止；② youtubei.googleapis.com 响应递归删除 adPlacements / playerAds / adSlots / adBreakHeartbeatParams / adBreakParams，不改播放地址。
+YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.com，不可整域黑洞。本层默认启用 Loon 原生 [Rewrite] v2 复写（由 cleanAds 开关控制，零 JS 脚本）：① www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei/v1/log_event 在 request 阶段 reject_dict(200) 直接终止；② youtubei.googleapis.com 响应递归删除 adPlacements / playerAds / adSlots / adBreakHeartbeatParams / adBreakParams，不改播放地址。
 
 - 解密主机（`[MITM] hostname`，2 个，本层已默认生效）：`youtubei.googleapis.com`, `www.youtube.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，2 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
@@ -29,13 +29,14 @@ YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.
 
 | 开关 | 默认 | 作用 |
 |---|---|---|
-| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：拦截 www.youtube.com 的 pagead/ 与 api/stats/ads 请求，并递归删除 youtubei.googleapis.com 响应中的广告字段。需已安装并信任 Loon 证书。 |
+| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：拦截 www.youtube.com 网页广告/统计路径与 youtubei/v1/log_event 事件上报，并递归删除 youtubei.googleapis.com 响应中的广告字段。需已安装并信任 Loon 证书。 |
 
 ### 净化复写（`[Rewrite]`）
 
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
-| `kill-pagead` | request | `reject_dict` | `cleanAds` | 网页广告加载与广告统计上报路径直接返回 200 + 空字典 |
+| `kill-pagead` | request | `reject_dict` | `cleanAds` | 网页广告加载与广告统计/追踪上报路径直接返回 200 + 空字典 |
+| `kill-youtubei-log-event` | request | `reject_dict` | `cleanAds` | YouTube 客户端高频遥测/广告曝光事件上报（log_event）在请求阶段直接返回 200 + 空字典，避免出网 |
 | `clean-youtubei-ads` | response | `response.json.jq` | `cleanAds` | YouTubei 响应递归删除广告字段；不改播放地址 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
@@ -53,7 +54,7 @@ YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.
 ## 红线与天花板（如实）
 
 - 红线：*.youtube.com / *.googlevideo.com / *.ytimg.com / youtubei.googleapis.com 承载登录、播放、缩略图与 API；本插件只做 youtubei JSON 广告字段清理，不黑洞整域，不改播放地址。
-- v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 2 条原生复写规则 + 配套 QUIC 回退，并将 response.json.jq 统一为官方双引号 + \" 转义语法，解决远程订阅插件无法取消 # 注释导致 0 生效的问题。
+- v1.2.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 3 条原生复写规则 + 配套 QUIC 回退，并将 youtubei/v1/log_event 高频遥测上报移至 request 阶段直接 reject_dict(200) 阻断出网。
 - 可莉 YouTube 插件是纯 response/request 脚本（含上传、Shorts、字幕、日志事件参数）；本插件不复制、不依赖，只实现可由 Loon 原生 [Rewrite] v2 表达的广告路径拦截与字段删除。
 - 响应规则只删除 adPlacements/playerAds/adSlots/adBreakHeartbeatParams/adBreakParams；不改播放 URL、不碰 googlevideo 的 initplayback，避免把视频本体拦掉。
 

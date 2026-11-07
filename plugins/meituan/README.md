@@ -2,7 +2,7 @@
 
 > 美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.3.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -18,13 +18,13 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 |---|---|---|---|
 | 美团自建广告端点（曝光/竞价/聚合入口） | A | 启用 | impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口。与 ads 插件同域规则重叠属有意（按 App 开关语义）。 |
 | 开屏素材 CDN（专用子域） | A | 启用 | pd0-cdn-mcdn.m.meituan.net=开屏素材专用 mcdn(反黑名单收录);s3plus-pre=预发遥测端,生产不调用,黑洞零风险。开屏主路径(wmapi startpicture/s3plus brandcpt)同域不可分,预期只削掉 mcdn 分发的部分。 |
-| 美团/点评纯遥测家族（默认关） | A | 默认关闭 | CAT 开源 APM(catfront)、dreport/wreport/hreport/report(BI 集群自证)、analytics.meituan.net、data-sdk-uuid-log/metrics-picture/maplocatesdksnapshot 分片、wx-md/cloudidv/orecct/athena——全部多源收录且与下单支付不同集群,拦掉只丢报表。athena=运营配置中心,拦后营销弹窗从「白屏」变「正常消失」。 |
+| 美团/点评纯遥测家族（默认关） | A | 默认关闭 | CAT 开源 APM(catfront)、灵犀埋点(lx.meituan.net)、dreport/wreport/hreport/report(BI 集群自证)、analytics.meituan.net、data-sdk-uuid-log/metrics-picture/maplocatesdksnapshot 分片、wx-md/cloudidv/orecct/athena——全部多源收录且与下单支付不同集群,拦掉只丢报表。athena=运营配置中心,拦后营销弹窗从「白屏」变「正常消失」。 |
 | d.meituan.net 数据集群已知子域（默认关，验证后可升通配） | B | 默认关闭 | bd0.d 落 data-leopard 集群（CNAME 取证自证上报），S7 用 DOMAIN-SUFFIX,d.meituan.net,REJECT——但整后缀升通配前需实测商品图/地图完整性，这里只列已知子域。 |
 | 外卖广告独立子域（默认关，单源收录） | B | 默认关闭 | adgame.waimai.meituan.com=外卖广告小游戏;ad.e.waimai.sankuai.com=外卖广告请求域（CNAME 与业务 e.waimai.sankuai.com 不同集群,证据成立但仅 wool 单源）。抓包命中后升 A。 |
 | 优惠券弹窗/红包雨配置网关（默认关） | A | 默认关闭 | catdot/catreport.dianping.com=弹窗配置下发。拦掉=弹窗不弹,但每次请求要多等约 60s 超时——副作用可感知,默认关。 |
 | Sigmob（北京创智汇聚）（引用组） | A | 启用 | adservice/dc/track.sigmob.cn；anti-AD/AdGuard/hagezi 多源收录；ads 插件 mobile_sdks 组同源含此域。 共 4 域 / 0 规则。 |
-| ToBid 聚合（北京创致 / Sigmob 系）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。 共 2 域 / 0 规则。 |
-| 美数 AdMate（北京美数信息）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 第三方变现 SDK；anti-AD 收录。 共 4 域 / 0 规则。 |
+| ToBid 聚合（北京创致 / Sigmob 系）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点，同补 tobidad.cn 变体（ads mobile_sdks 同源）。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。 共 4 域 / 0 规则。 |
+| 美数 AdMate（北京美数信息）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 第三方变现 SDK；anti-AD 收录。 共 6 域 / 0 规则。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 8 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
@@ -96,4 +96,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/meituan.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 36 条，[Rule] 8 条。
+统计：精确/通配黑洞 43 条，[Rule] 8 条。

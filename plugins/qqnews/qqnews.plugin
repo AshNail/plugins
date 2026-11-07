@@ -1,12 +1,12 @@
 #!name=腾讯新闻 · 广告字段清理（原生复写）
 #!desc=不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.1.0
+#!version=1.1.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qqnews/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f9/23/e4/f923e456-9789-ebf6-7c18-caaacd244133/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06
+#!date=2026-11-07
 #!tag=去广告,腾讯新闻
 #!type=normal
 
@@ -83,4 +83,4 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/news\.ssp\.qq\.com\/app(
 response if ${cleanAds} == true && ${url} ~= /^https:\/\/r\.inews\.qq\.com\/(getQQNewsUnreadList|getTagFeedList|news_feed\/hot_module_list)(\?|$)/ then response.json.replace("adList", null)
 
 # clean-feed-widget: 专题详情/频道信息流：data.widget_list 过滤 widget_type=ad_list 的广告组件（来源 https://github.com/app2smile/rules/blob/master/js/qq-news.js）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/r\.inews\.qq\.com\/gw\/page\/(event_detail|channel_feed)(\?|$)/ then response.json.jq("if (.data.widget_list? != null) then .data.widget_list |= map(select(.widget_type != \"ad_list\")) else . end")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/r\.inews\.qq\.com\/gw\/page\/(event_detail|channel_feed)(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.widget_list | type) == \"array\" then .data.widget_list |= map(select(type != \"object\" or .widget_type != \"ad_list\")) else . end")

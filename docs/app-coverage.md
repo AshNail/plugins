@@ -91,11 +91,11 @@
 - `基础设施红线` ← `dns.*`, `blackhole*`, `h5speed.*`, `gia.*`, `gias.*`, `dgstatic.*`, `wl.jd.com`, `policy.*`, `kepler.*`, `union.jd.com`, `cps.*`, `jrclick.*`
 - `C 级单源不收` ← `u.x.jd.com`, `bdsp.x.jd.com`, `du.jd.com`, `nfa.jd.com`, `c-nfa.jd.com`, `firevent.jd.com`, `stat.m.jd.com`, `ads.union.jd.com`, `jzt.jd.com`
 
-## `mba-dashi` — 生效黑洞 63 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `mba-dashi` — 生效黑洞 67 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
-## `meituan` — 生效黑洞 10 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 4 条）
+## `meituan` — 生效黑洞 11 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 4 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -188,7 +188,7 @@
 - `米家业务` ← `*.mihome.xiaomi.net`
 - `MIUI 业务域` ← `app.miui.com`, `feedback.miui.com`, `hybrid.miui.com`, `mcc.miui.com`, `rus.miui.com`, `india.miui.com`, `testit.miui.com`, `privacy.miui.com`, `search.miui.com`, `intl.up.w.xk.miui.com`, `gtglobal.intl.miui.com`, `preload.xiaomi.com`, `*.sms.miui.com`
 
-## `qidian` — 生效黑洞 112 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `qidian` — 生效黑洞 116 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -198,11 +198,11 @@
 
 无 A/B 级缺口候选。
 
-## `ruankao-tong` — 生效黑洞 63 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `ruankao-tong` — 生效黑洞 67 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
-## `taobao` — 生效黑洞 14 域；缺口候选 A:0 B:0 C:8（已裁决排除 0 条；已收录但默认关闭 11 条）
+## `taobao` — 生效黑洞 18 域；缺口候选 A:0 B:0 C:8（已裁决排除 0 条；已收录但默认关闭 11 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -227,15 +227,14 @@
 |---|---|---|
 | `xmaterial.tu.qq.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `x` — 生效黑洞 3 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 3 条）
+## `x` — 生效黑洞 3 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 2 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
-| `ads-bidder-api.twitter.com` | 5: adaway,adguard-dns,adguard-mobile,hagezi-pro,stevenblack | 已收录·默认关 |
 | `analytics.twitter.com` | 3: adaway,anti-ad,stevenblack | 已收录·默认关 |
 | `scribe.twitter.com` | 3: anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
 
-## `xianyu` — 生效黑洞 10 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `xianyu` — 生效黑洞 15 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -247,7 +246,7 @@
 
 无 A/B 级缺口候选。
 
-## `zhihuifangdong` — 生效黑洞 127 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `zhihuifangdong` — 生效黑洞 137 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 

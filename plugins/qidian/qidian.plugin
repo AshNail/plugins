@@ -98,11 +98,14 @@ AND,((DOMAIN-SUFFIX,magev6.if.qidian.com),(PROTOCOL,QUIC)),REJECT
 *.pangolin-sdk-toutiao5.com = 127.0.0.1
 *.pglstatp-toutiao.com = 127.0.0.1
 *.tiktokpangle-cdn-us.com = 127.0.0.1
+ads3-normal-gl2.zijieapi.com = 127.0.0.1
+ads3-normal-hj.zijieapi.com = 127.0.0.1
 ads3-normal-hl.zijieapi.com = 127.0.0.1
 ads3-normal-lf.zijieapi.com = 127.0.0.1
 ads3-normal-lq.zijieapi.com = 127.0.0.1
 ads3-normal-xh.zijieapi.com = 127.0.0.1
 ads3-normal.zijieapi.com = 127.0.0.1
+ads5-normal-gl2.zijieapi.com = 127.0.0.1
 ads5-normal-hj.zijieapi.com = 127.0.0.1
 ads5-normal-hl.zijieapi.com = 127.0.0.1
 ads5-normal-lf.zijieapi.com = 127.0.0.1
@@ -128,6 +131,11 @@ pangolin-lf.snssdk.com = 127.0.0.1
 pangolin-lq.snssdk.com = 127.0.0.1
 pangolin-sdk-toutiao-b.com = 127.0.0.1
 pangolin-sdk-toutiao.com = 127.0.0.1
+pangolin-sdk-toutiao1.com = 127.0.0.1
+pangolin-sdk-toutiao2.com = 127.0.0.1
+pangolin-sdk-toutiao3.com = 127.0.0.1
+pangolin-sdk-toutiao4.com = 127.0.0.1
+pangolin-sdk-toutiao5.com = 127.0.0.1
 pangolin.snssdk.com = 127.0.0.1
 pangolin16.isnssdk.com = 127.0.0.1
 pangolin16.sgsnssdk.com = 127.0.0.1
@@ -138,9 +146,11 @@ tnc16-useast1a.isnssdk.com = 127.0.0.1
 tnc31-normal-alisg.isnssdk.com = 127.0.0.1
 tobapplog.ctobsnssdk.com = 127.0.0.1
 toblog.ctobsnssdk.com = 127.0.0.1
+tr.byteurl.cn = 127.0.0.1
 
 # ------------------------------------------------------------
 # 腾讯广告 / 优量汇（GDT）（置信 A）
+*.adnet.qq.com = 127.0.0.1
 *.e.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
 *.gdtimg.com = 127.0.0.1
@@ -148,16 +158,24 @@ toblog.ctobsnssdk.com = 127.0.0.1
 *.tencentmind.com = 127.0.0.1
 *.ugdtimg.com = 127.0.0.1
 *.ugdturner.com = 127.0.0.1
+*.wit.qq.com = 127.0.0.1
 adnet.qq.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
 btrace.qq.com = 127.0.0.1
 dmplog.qq.com = 127.0.0.1
+e.qq.com = 127.0.0.1
+gdt.qq.com = 127.0.0.1
+gdtimg.com = 127.0.0.1
+l.qq.com = 127.0.0.1
 mdevstat.qqlive.qq.com = 127.0.0.1
 mtrace.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
 snowflake.qq.com = 127.0.0.1
+tencentmind.com = 127.0.0.1
+ugdtimg.com = 127.0.0.1
+ugdturner.com = 127.0.0.1
 wit.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------

@@ -1,8 +1,8 @@
 # 高德地图 · 去广告与精简
 
-> 高德地图 iOS/iPadOS：日志与遥测（logs/dualstack-logs/amap-aos-info-nogw/adashx）+ 商业化广告域（optimus-ads）走 [Host] 127.0.0.1 零证书黑洞；同域开屏 alimama 广告、首页推荐流、路线规划推广卡片、订单 Tip、ASA 归因与天气推广默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 终止，零 JS 脚本）；核心逆地理编码（apsrgeo）、基站定位（cgicol）、路线规划网关（restapi）与轨迹定位（ts）严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+> 高德地图 iOS/iPadOS：日志与遥测（logs/dualstack-logs/amap-aos-info-nogw/adashx）+ 商业化广告域（optimus-ads）走 [Host] 127.0.0.1 零证书黑洞；同域开屏 alimama 广告、首页推荐流、路线规划推广卡片、订单 Tip、消息中心营销推送（msgbox/pull）、ASA 归因与天气推广默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 终止，零 JS 脚本）；核心逆地理编码（apsrgeo）、基站定位（cgicol）、路线规划网关（restapi）与轨迹定位（ts）严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.1.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -22,7 +22,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
-高德地图 iOS 的开屏广告、首页推荐流、路线规划推广卡片与打车页面推广信息与核心 API 共用 m5.amap.com、m5-zb.amap.com、center.amap.com 等接口，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 开关控制，零 JS 脚本），对 7 条广告与推广路径在 request 阶段直接返回 200 + 空字典（reject_dict(200)），使客户端认为推广位已正常返回但无内容，阻断重试并实现干净展示。
+高德地图 iOS 的开屏广告、首页推荐流、路线规划推广卡片、营销消息拉取与打车页面推广信息与核心 API 共用 m5.amap.com、m5-zb.amap.com、center.amap.com 等接口，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 开关控制，零 JS 脚本），对 8 条广告与推广路径在 request 阶段直接返回 200 + 空字典（reject_dict(200)），使客户端认为推广位已正常返回但无内容，阻断重试并实现干净展示。
 
 - 解密主机（`[MITM] hostname`，6 个，本层已默认生效）：`m5.amap.com`, `m5-zb.amap.com`, `center.amap.com`, `amap-aos-info-nogw.amap.com`, `ai.amap.com`, `optimus-ads.amap.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，6 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
@@ -31,7 +31,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
 
 | 开关 | 默认 | 作用 |
 |---|---|---|
-| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：alimama 开屏、AI 推荐流、路线规划推广卡片、打车订单 Tip、ASA 广告归因、场景推荐与天气推广位在 request 阶段直接 reject_dict(200) 终止。需已安装并信任 Loon 证书。 |
+| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：alimama 开屏、AI 推荐流、路线规划推广卡片、打车订单 Tip、消息中心营销拉取（msgbox/pull）、ASA 广告归因、场景推荐与天气推广位在 request 阶段直接 reject_dict(200) 终止。需已安装并信任 Loon 证书。 |
 
 ### 净化复写（`[Rewrite]`）
 
@@ -44,6 +44,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
 | `kill-asa-attribution` | request | `reject_dict` | `cleanAds` | ASA 广告归因上报接口直接返回 200 + 空字典 |
 | `kill-scene-recommend` | request | `reject_dict` | `cleanAds` | 首页场景推荐推广位直接返回 200 + 空字典 |
 | `kill-weather-ad` | request | `reject_dict` | `cleanAds` | 增值天气挂件推广卡片直接返回 200 + 空字典 |
+| `kill-msgbox-pull` | request | `reject_dict` | `cleanAds` | 消息中心营销推送与活动横幅拉取直接返回 200 + 空字典 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
 
@@ -64,7 +65,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
 - 高德地图业务共享根域 *.amap.com，禁止整域通配。
 - 高德基础地图数据共享根域 *.autonavi.com，禁止整域通配。
 - 能力天花板与原生设计：logs.amap.com、dualstack-logs.amap.com、amap-aos-info-nogw.amap.com、adashx.ut.amap.com、h-adashx.ut.amap.com、v6-adashx.ut.amap.com、optimus-ads.amap.com、optimus-ads-ykx.amap.com 八个日志遥测与广告域走 [Host] 127.0.0.1 零证书黑洞；开屏、信息流与路线规划推广走 Loon 原生 [Rewrite] v2 引擎复写（reject_dict(200)），零 JS 脚本。
-- v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 7 条 request 阶段 reject_dict(200) 规则 + 6 台解密主机的 QUIC 回退，解决注释态增强层在订阅插件下无法直接生效的问题。
+- v1.2.0 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 8 条 request 阶段 reject_dict(200) 规则（新增 ws/msgbox/pull 营销消息推送拉取终止）+ 6 台解密主机的 QUIC 回退。
 
 ## 证据与验证
 

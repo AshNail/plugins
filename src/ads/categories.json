@@ -6,7 +6,7 @@
     "analytics": ["analytics"],
     "dns_control": ["httpdns", "doh_public", "doh_public_cn"],
     "unverified": ["weibo_watchlist", "platform_watchlist"],
-    "protected_conflict": ["app_redline_overlap"]
+    "protected_conflict": ["app_redline_overlap", "baidu_disputed"]
   },
   "policy": {
     "classification_changes_runtime": false,

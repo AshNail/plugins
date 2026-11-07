@@ -2,17 +2,17 @@
   "slug": "xianyu",
   "name": "闲鱼 · 去广告（原生复写层）",
   "desc": "闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.6.0",
-  "date": "2026-11-06",
+  "version": "1.6.2",
+  "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,闲鱼,阿里",
   "comment": [
     "红线：*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能;acs.m.goofish.com 出现在个别模块的 REJECT 里是错误规则,打死整个 App——拒收。",
     "取证否决：m.goofish.com / awl.goofish.com 实测 NXDOMAIN（不存在）;xianyu.mobi 与 blackmatrix7 的 16 个乱码域是淘宝短链跳转服务（cname.tb.cn），拦=断分享链接;cdn.ynuf.aliapp.org=阿里无线安全 UMID 指纹,禁拦。",
-    "证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。",
+    "证据基线：闲鱼全部广告面在同域 API 名上——开屏 mtop.taobao.idlecommerce.splash.ads、切回前台场景恢复开屏 mtop.idle.idleadv.scene.restore、信息流 nextfresh bizType、底部推荐 bizType==mamaAD（字段名直接点名阿里妈妈）;素材共用 *.alicdn.com 共享 CDN。第三方列表 goofish 域零命中。",
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。",
     "第二轮取证复检(2026-10-28)：mma.alimama.com 实测 NXDOMAIN(网传『阿里妈妈端点』不存在,禁凭品牌造域);开屏素材无 alicdn 之外的独立 CDN(墨鱼 GoofishAds.conf 亦无单独素材域);h-adashx.ut.taobao.com=阿里 UT/AdashX 埋点,全阿里系 App 共享,属全局 ads 插件的决策面,不进本按 App 插件。",
-    "v1.6.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（默认开：6 条开屏/曝光/推广模块 request reject_dict(200) + 8 条商品推荐 mamaAD / 悬浮球 / 搜索暗词 / 省钱 Tab / 群聊圈子 Banner jq 剥离）与 cleanFeed（默认关：7 条激进信息流/我的页精简，其中 search.discover 与 item.buy.feeds 升级为原生 response.json.delete）双开关控制 21 条原生复写规则 + 配套 QUIC 回退。"
+    "v1.6.1 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（默认开：7 条开屏/场景恢复/曝光/推广模块 request reject_dict(200) + 8 条商品推荐 mamaAD / 悬浮球 / 搜索暗词 / 省钱 Tab / 群聊圈子 Banner jq 剥离）与 cleanFeed（默认关：7 条激进信息流/我的页精简，其中 search.discover 与 item.buy.feeds 升级为原生 response.json.delete）双开关控制 22 条原生复写规则 + 配套 QUIC 回退。"
   ],
   "redlines": [
     {"domain": "goofish.com", "kind": "family", "quote": "*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能", "why": "闲鱼主域整族=核心功能"},
@@ -84,7 +84,7 @@
         "name": "cleanAds",
         "default": "true",
         "tag": "mtop 同域开屏与广告位净化（默认开）",
-        "desc": "启用 Loon 原生 [Rewrite] v2 引擎复写：splash.ads、idle.ad.expose 等 6 个广告/模块端点在 request 阶段 reject_dict(200) 终止；商品推荐 mamaAD 卡片、悬浮球、搜索预填词、顶部省钱 Tab、群聊/圈子 Banner 通过 response.json.jq 精准剥离。需已安装并信任 Loon 证书。"
+        "desc": "启用 Loon 原生 [Rewrite] v2 引擎复写：splash.ads、idle.idleadv、idle.ad.expose 等 7 个广告/模块端点在 request 阶段 reject_dict(200) 终止；商品推荐 mamaAD 卡片、悬浮球、搜索预填词、顶部省钱 Tab、群聊/圈子 Banner 通过 response.json.jq 精准剥离。需已安装并信任 Loon 证书。"
       },
       {
         "name": "cleanFeed",
@@ -108,6 +108,17 @@
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop.*splash\\.ads",
         "action": "reject_dict(200)",
         "note": "闲鱼开屏广告 mtop 请求直接返回 200 + 空字典",
+        "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf"
+      },
+      {
+        "id": "kill-idleadv-restore",
+        "group": "请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "mtop.idle.idleadv.",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.idle\\.idleadv\\.",
+        "action": "reject_dict(200)",
+        "note": "闲鱼切回前台/场景恢复开屏与弹层广告请求（mtop.idle.idleadv.scene.restore 等）直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf"
       },
       {
@@ -172,7 +183,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.item.recommend",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.recommend(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.cardList |= map(select(.cardData.bizType != \\\"mamaAD\\\"))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.cardList | type) == \\\"array\\\" then .data.cardList |= map(select(type != \\\"object\\\" or (.cardData | type) != \\\"object\\\" or .cardData.bizType != \\\"mamaAD\\\")) else . end\")",
         "note": "商品底部推荐：只删 bizType=mamaAD 的阿里妈妈广告卡片",
         "source": "ddgksf2013"
       },
@@ -183,7 +194,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.user.strategy.list",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.user\\.strategy\\.list(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.strategies = [{}]\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.strategies = [{}] else . end\")",
         "note": "首页右下角悬浮球：留一个空 strategy 占位",
         "source": "ddgksf2013"
       },
@@ -194,7 +205,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idlemtopsearch.search.shade",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search\\.shade(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.singleShadeWords = [{}]\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.singleShadeWords = [{}] else . end\")",
         "note": "搜索框预填/热词：留一个空占位",
         "source": "ddgksf2013"
       },
@@ -205,7 +216,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idlemtopsearch.item.search.activate",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.item\\.search\\.activate(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.cardList = [{}]\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.cardList = [{}] else . end\")",
         "note": "搜索页「猜你可能找」推广卡片清空",
         "source": "ddgksf2013"
       },
@@ -216,7 +227,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idlehome.home.circle.list",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.home\\.circle\\.list(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.circleList |= map(select(.bizCode != \\\"saveMoney\\\"))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.circleList | type) == \\\"array\\\" then .data.circleList |= map(select(type != \\\"object\\\" or .bizCode != \\\"saveMoney\\\")) else . end\")",
         "note": "首页顶部 Tab：去掉 saveMoney 省钱推广位",
         "source": "ddgksf2013"
       },
@@ -227,7 +238,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.group.myself.banner",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.group\\.myself\\.banner(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.bannerList = []\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.bannerList = [] else . end\")",
         "note": "群聊/消息页 banner 位清空",
         "source": "fmz200"
       },
@@ -238,7 +249,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.circle.myself.banner",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.circle\\.myself\\.banner/1\\.0(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.bannerList = []\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.bannerList = [] else . end\")",
         "note": "圈子页 banner 位清空",
         "source": "fmz200"
       },
@@ -249,7 +260,7 @@
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.playboy.recommend",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.playboy\\.recommend/2\\.0(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.recommends = [] | .data.items = [] | .data.next = false\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.recommends = [] | .data.items = [] | .data.next = false else . end\")",
         "note": "消息页推荐位清空",
         "source": "fmz200"
       },
@@ -260,7 +271,7 @@
         "gate": "cleanFeed",
         "endpoint": "mtop.taobao.idlehome.home.nextfresh",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlehome\\.home\\.nextfresh(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.homeTopList |= [ .[0] ] | .data.sections |= map(select(.data.bizType == \\\"item\\\"))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data |= ((if (.homeTopList | type) == \\\"array\\\" and (.homeTopList | length) > 0 then .homeTopList |= [ .[0] ] else . end) | (if (.sections | type) == \\\"array\\\" then .sections |= map(select(type == \\\"object\\\" and (.data | type) == \\\"object\\\" and .data.bizType == \\\"item\\\")) else . end)) else . end\")",
         "note": "首页信息流：顶部只留首项、分区只留 item",
         "source": "ddgksf2013"
       },
@@ -271,7 +282,7 @@
         "gate": "cleanFeed",
         "endpoint": "mtop.taobao.idlemtopsearch.search",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idlemtopsearch\\.search(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.resultList |= map(select(.data.item.main.clickParam.args.biz_type == \\\"item\\\"))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.resultList | type) == \\\"array\\\" then .data.resultList |= map(select(type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.item | type) == \\\"object\\\" and (.data.item.main | type) == \\\"object\\\" and (.data.item.main.clickParam | type) == \\\"object\\\" and (.data.item.main.clickParam.args | type) == \\\"object\\\" and .data.item.main.clickParam.args.biz_type == \\\"item\\\")) else . end\")",
         "note": "搜索结果信息流：只留 item 结果",
         "source": "ddgksf2013"
       },
@@ -282,7 +293,7 @@
         "gate": "cleanFeed",
         "endpoint": "mtop.taobao.idle.local.home",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.local\\.home(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.sections |= map(select(.data.bizType == \\\"item\\\"))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.sections | type) == \\\"array\\\" then .data.sections |= map(select(type == \\\"object\\\" and (.data | type) == \\\"object\\\" and .data.bizType == \\\"item\\\")) else . end\")",
         "note": "本地信息流：分区只留 item",
         "source": "ddgksf2013"
       },
@@ -304,7 +315,7 @@
         "gate": "cleanFeed",
         "endpoint": "mtop.idle.user.page.my.adapter",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.idle\\.user\\.page\\.my\\.adapter(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.ability=[] | .data.container.sections |= map(select(.sectionBizCode | test(\\\"head|user|trade\\\")))\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.ability = [] | (if (.data.container | type) == \\\"object\\\" and (.data.container.sections | type) == \\\"array\\\" then .data.container.sections |= map(select(type == \\\"object\\\" and (.sectionBizCode | type) == \\\"string\\\" and (.sectionBizCode | test(\\\"head|user|trade\\\")))) else . end) else . end\")",
         "note": "我的页面：清空 ability 并只留 head/user/trade 分区",
         "source": "ddgksf2013"
       },
@@ -326,7 +337,7 @@
         "gate": "cleanFeed",
         "endpoint": "mtop.taobao.idle.item.recommend.list",
         "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.item\\.recommend\\.list(?:/|\\?|$)",
-        "action": "response.json.jq(\".data.cardList = []\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.cardList = [] else . end\")",
         "note": "商品推荐列表：整列清空 cardList",
         "source": "fmz200"
       }

@@ -31,15 +31,41 @@
       "adsGroup": "meta"
     },
     "beizi": {
-      "title": "倍孜广告聚合（Beizi）",
-      "hosts": ["beizi.biz", "adn-plus.com.cn"],
-      "note": "证据同 plugins/ads v2.3.1（TopOn 之外的第三方聚合）。"
+      "title": "倍孜广告聚合（Beizi / AdScope）",
+      "hosts": [
+        "beizi.biz",
+        "*.beizi.biz",
+        "beizi.online",
+        "*.beizi.online",
+        "beizi.info",
+        "*.beizi.info",
+        "adn-plus.com.cn",
+        "*.adn-plus.com.cn",
+        "adscope.cn",
+        "*.adscope.cn",
+        "adscope.com.cn",
+        "*.adscope.com.cn",
+        "ad-scope.com.cn",
+        "*.ad-scope.com.cn",
+        "adscope.xyz",
+        "*.adscope.xyz"
+      ],
+      "note": "证据同 plugins/ads mobile_sdks 组（倍孜 Beizi / AdScope 国内第三方聚合 SDK 全家桶）。"
     },
     "rayjump": {
       "title": "Mintegral / Rayjump",
-      "hosts": ["net.rayjump.com", "setting.rayjump.com", "cdn-adn-https.rayjump.com", "mintegral.com", "*.mintegral.net", "mtgglobals.com"],
+      "hosts": [
+        "rayjump.com",
+        "*.rayjump.com",
+        "mintegral.com",
+        "*.mintegral.com",
+        "mintegral.net",
+        "*.mintegral.net",
+        "mtgglobals.com",
+        "*.mtgglobals.com"
+      ],
       "rules": [],
-      "note": "证据同 plugins/ads v2.4.0 真机补齐。analytics.rayjump.com 拦掉会断 Mintegral 统计（正效果）。"
+      "note": "证据同 plugins/ads v2.4.0 真机补齐（rayjump / mintegral / mtgglobals 全族精确主域 + 子域通配）。"
     },
     "sigmob": {
       "title": "Sigmob（北京创智汇聚）",
@@ -48,12 +74,12 @@
     },
     "tobid": {
       "title": "ToBid 聚合（北京创致 / Sigmob 系）",
-      "hosts": ["tobidad.com", "*.tobidad.com"],
-      "note": "美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。"
+      "hosts": ["tobidad.com", "*.tobidad.com", "tobidad.cn", "*.tobidad.cn"],
+      "note": "美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点，同补 tobidad.cn 变体（ads mobile_sdks 同源）。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。"
     },
     "admate": {
       "title": "美数 AdMate（北京美数信息）",
-      "hosts": ["admate.cn", "admatex.com", "*.admatex.com", "admatex.cn"],
+      "hosts": ["admate.cn", "*.admate.cn", "admatex.com", "*.admatex.com", "admatex.cn", "*.admatex.cn"],
       "note": "美团官方 SDK 目录实证 iOS 第三方变现 SDK；anti-AD 收录。"
     }
   }

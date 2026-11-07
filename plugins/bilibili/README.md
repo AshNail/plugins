@@ -1,8 +1,8 @@
 # 哔哩哔哩 · 去广告与精简
 
-> 哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏/导航栏/首页推荐流/搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+> 哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏（含品牌/活动开屏）、导航栏、首页推荐流、视频详情页播放下相关推荐广告与搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.1.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -21,7 +21,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
-哔哩哔哩 iOS 的开屏广告、导航栏推广、首页推荐流广告卡片与核心业务 API 共用 app.bilibili.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 与 slimNav 开关控制，零 JS 脚本）：① 开屏接口 x/v2/splash/(list|show) 在 request 阶段直接 reject_dict(200) 终止；② 首页推荐流过滤商业广告卡片（cm_v2/cm_double_v9）与游戏卡片；③ 搜索广场过滤热搜中的推广与游戏；④ 顶部与底部导航栏过滤会员购/发布与游戏中心。
+哔哩哔哩 iOS 的开屏广告、导航栏推广、首页推荐流广告卡片、视频详情页下推荐广告位与核心业务 API 共用 app.bilibili.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 与 slimNav 开关控制，零 JS 脚本）：① 开屏接口 x/v2/splash/(list|show|brand/list|event/list2) 在 request 阶段直接 reject_dict(200) 终止；② 首页推荐流过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）与游戏卡片；③ 视频详情页 x/v2/view 剔除播放下方商业组件（cm_config/cms/cm_ipad）及推荐列表广告项；④ 搜索广场过滤热搜中的推广与游戏；⑤ 顶部与底部导航栏过滤会员购/发布与游戏中心。
 
 - 解密主机（`[MITM] hostname`，1 个，本层已默认生效）：`app.bilibili.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，1 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
@@ -30,15 +30,16 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 
 | 开关 | 默认 | 作用 |
 |---|---|---|
-| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：开屏 splash/(list|show) 请求直接 reject_dict(200) 终止；推荐信息流过滤商业广告卡片（cm_v2/cm_double_v9）与推广游戏；搜索广场过滤游戏与广告推广。需已安装并信任 Loon 证书。 |
+| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：开屏 splash/(list|show|brand/list|event/list2) 请求直接 reject_dict(200) 终止；推荐信息流过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）与推广游戏；视频详情页剔除播放下方广告组件与相关推荐广告；搜索广场过滤游戏与广告推广。需已安装并信任 Loon 证书。 |
 | `slimNav` | true | 过滤底部导航栏「会员购/发布」与顶部导航栏「游戏中心」。 |
 
 ### 净化复写（`[Rewrite]`）
 
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
-| `kill-splash` | request | `reject_dict` | `cleanAds` | 开屏广告列表与展示接口直接返回 200 + 空字典 |
-| `clean-feed-index` | response | `response.json.jq` | `cleanAds` | 推荐信息流：过滤商业广告卡片（cm_v2/cm_double_v9）、推广游戏与横幅广告 |
+| `kill-splash` | request | `reject_dict` | `cleanAds` | 开屏广告列表、展示及品牌/活动开屏接口直接返回 200 + 空字典 |
+| `clean-feed-index` | response | `response.json.jq` | `cleanAds` | 推荐信息流：过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）、推广游戏与横幅广告 |
+| `clean-view-relates` | response | `response.json.jq` | `cleanAds` | 视频详情页：剔除播放下方商业推广配置（cm_config/cms/cm_ipad）及关联推荐中的广告卡片 |
 | `clean-search-square` | response | `response.json.jq` | `cleanAds` | 搜索广场：过滤热搜词中的游戏与广告推广 |
 | `clean-nav-tab` | response | `response.json.jq` | `slimNav` | 导航栏精简：过滤底栏会员购/发布与顶栏游戏中心 |
 
@@ -65,7 +66,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 - 哔哩哔哩流媒体 CDN 业务共享根域 *.bilivideo.com，禁止整域通配。
 - 哔哩哔哩静态图片与封面共享根域 *.hdslb.com，禁止整域通配。
 - 能力天花板与原生设计：dataflow.biliapi.com、data.bilibili.com、tracker.chat.bilibili.com、ali-web-player-tracker.biliapi.net、hw-v2-web-player-tracker.biliapi.net、httpdns.bilivideo.com 六个自建遥测与 HTTPDNS 域走 [Host] 127.0.0.1 零证书黑洞；开屏与信息流商业广告位走 Loon 原生 [Rewrite] v2（reject_dict(200) + response.json.jq），零 JS 脚本。
-- v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（开屏与信息流去广告）与 slimNav（导航栏精简）两个开关驱动 4 条原生复写规则 + app.bilibili.com 的 QUIC 回退，解决注释态增强层在订阅插件下无法直接开启的问题。
+- v1.2.0 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（开屏/推荐流/播放页去广告）与 slimNav（导航栏精简）两个开关驱动 5 条原生复写规则 + app.bilibili.com 的 QUIC 回退——补齐 splash/(brand/list|event/list2) 品牌与活动开屏终止、首页推荐流 cm_v1/ad_av/ad_web_s 商业卡片过滤，以及 x/v2/view 视频详情页播放下方商业组件（cm_config/cms/cm_ipad）与相关推荐广告位过滤。
 
 ## 证据与验证
 

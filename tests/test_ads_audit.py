@@ -44,7 +44,7 @@ class AuditTests(unittest.TestCase):
 
     def test_category_inventory_and_dns_separation(self):
         groups = audit.load_categories()
-        self.assertEqual(len(groups), 22)
+        self.assertEqual(len(groups), 24)
         self.assertEqual(next(g['category'] for g in groups if g['id'] == 'doh_public'), 'dns_control')
         result = audit.classify_candidate('unknown-ad.example.com', groups, ['example.com'])
         self.assertEqual(result['categories'], ['unknown'])

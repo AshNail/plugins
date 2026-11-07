@@ -1,12 +1,12 @@
 #!name=淘宝 · 去广告（原生复写层）
 #!desc=淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——10 条广告 mtop 路径在 request 阶段 reject_dict(200) 终止，开屏大图路径用 reject_img(200) 返回 1px 透明图；不包含上游 JS，交易/登录/支付红线不动。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.2.0
+#!version=1.2.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/taobao/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/4f/52/d9/4f52d982-e707-ea87-6c93-a8cea98268ec/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06
+#!date=2026-11-07
 #!tag=去广告,淘宝,阿里
 #!type=normal
 
@@ -51,31 +51,46 @@ AND,((DOMAIN-SUFFIX,heic.alicdn.com),(PROTOCOL,QUIC)),REJECT
 *.alimama.com = 127.0.0.1
 *.mmstat.com = 127.0.0.1
 *.tanx.com = 127.0.0.1
+adash-emas.cn-hangzhou.aliyuncs.com = 127.0.0.1
+adashx.m.taobao.com = 127.0.0.1
 alimama.alicdn.com = 127.0.0.1
+alimama.cn = 127.0.0.1
+alimama.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
+audid-api.taobao.com = 127.0.0.1
+mmstat.com = 127.0.0.1
+poplayer.template.alibaba.com = 127.0.0.1
+tanx.com = 127.0.0.1
 tns.simba.taobao.com = 127.0.0.1
+wcp.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 阿里广告/UT 独立端点（置信 B）
-# h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材。可莉淘宝原插件默认 REJECT；均为精确广告子域，媒体主域 alicdn.com 不整域。 2026-11-03 App 覆盖率审计补 6 个 ≥3 源 A 候选：atanx.alicdn.com、tns/dsp/tmatch.simba.taobao.com、adashx.m.taobao.com、adashx4yt.m.taobao.com；均为精确广告/交易归因子域。
+# h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材。可莉淘宝原插件默认 REJECT；均为精确广告子域，媒体主域 alicdn.com 不整域。2026-11-03 补 6 个 ≥3 源 A 候选（atanx.alicdn.com、tns/dsp/tmatch.simba.taobao.com、adashx.m.taobao.com、adashx4yt.m.taobao.com）；2026-11-06 真机抓包补 wcp.taobao.com（/adstrack/track.json 广告打点）、audid-api.taobao.com（AUDID 广告设备指纹）与 poplayer.template.alibaba.com（PopLayer 营销弹层模板）。
 # 证据: https://kelee.one/
 # 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 adashx.m.taobao.com = 127.0.0.1
 adashx4yt.m.taobao.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
+audid-api.taobao.com = 127.0.0.1
 dsp.simba.taobao.com = 127.0.0.1
 h-adashx.ut.taobao.com = 127.0.0.1
 hudong.alicdn.com = 127.0.0.1
 ossgw.alicdn.com = 127.0.0.1
+poplayer.template.alibaba.com = 127.0.0.1
 tmatch.simba.taobao.com = 127.0.0.1
 tns.simba.taobao.com = 127.0.0.1
+wcp.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # UT 埋点（默认关）（置信 B）
-# ut.taobao.com=阿里 UT 埋点；关闭统计不等于去广告，默认关，需要隐私优先再开。
+# ut.taobao.com / umengacs.m.taobao.com / umengjmacs.m.taobao.com / abtest.alibaba.com=阿里 UT/友盟埋点与 AB 实验分流；关闭统计不等于去广告，默认关，需要隐私优先再开。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # （默认关闭的组：整组注释，取消注释即启用）
+# abtest.alibaba.com = 127.0.0.1
+# umengacs.m.taobao.com = 127.0.0.1
+# umengjmacs.m.taobao.com = 127.0.0.1
 # ut.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------

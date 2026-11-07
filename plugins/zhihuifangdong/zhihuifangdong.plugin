@@ -1,12 +1,12 @@
 #!name=智慧房东 · 去广告
 #!desc=智慧房东（uni-app 打包+多广告网络聚合）:穿山甲/优量汇/快手联盟/倍孜黑洞,开屏、插屏、信息流广告位加载失败即本插件生效方式。通通锁控门与个推收租提醒零接触。零证书。
 #!author=edy
-#!version=1.0.1
+#!version=1.0.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihuifangdong/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/28/c2/ef/28c2ef10-504d-1599-f531-1ec4d248e864/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-10-28
+#!date=2026-11-07
 #!tag=去广告,智慧房东,租房
 #!type=normal
 
@@ -36,11 +36,14 @@
 *.pangolin-sdk-toutiao5.com = 127.0.0.1
 *.pglstatp-toutiao.com = 127.0.0.1
 *.tiktokpangle-cdn-us.com = 127.0.0.1
+ads3-normal-gl2.zijieapi.com = 127.0.0.1
+ads3-normal-hj.zijieapi.com = 127.0.0.1
 ads3-normal-hl.zijieapi.com = 127.0.0.1
 ads3-normal-lf.zijieapi.com = 127.0.0.1
 ads3-normal-lq.zijieapi.com = 127.0.0.1
 ads3-normal-xh.zijieapi.com = 127.0.0.1
 ads3-normal.zijieapi.com = 127.0.0.1
+ads5-normal-gl2.zijieapi.com = 127.0.0.1
 ads5-normal-hj.zijieapi.com = 127.0.0.1
 ads5-normal-hl.zijieapi.com = 127.0.0.1
 ads5-normal-lf.zijieapi.com = 127.0.0.1
@@ -66,6 +69,11 @@ pangolin-lf.snssdk.com = 127.0.0.1
 pangolin-lq.snssdk.com = 127.0.0.1
 pangolin-sdk-toutiao-b.com = 127.0.0.1
 pangolin-sdk-toutiao.com = 127.0.0.1
+pangolin-sdk-toutiao1.com = 127.0.0.1
+pangolin-sdk-toutiao2.com = 127.0.0.1
+pangolin-sdk-toutiao3.com = 127.0.0.1
+pangolin-sdk-toutiao4.com = 127.0.0.1
+pangolin-sdk-toutiao5.com = 127.0.0.1
 pangolin.snssdk.com = 127.0.0.1
 pangolin16.isnssdk.com = 127.0.0.1
 pangolin16.sgsnssdk.com = 127.0.0.1
@@ -76,9 +84,11 @@ tnc16-useast1a.isnssdk.com = 127.0.0.1
 tnc31-normal-alisg.isnssdk.com = 127.0.0.1
 tobapplog.ctobsnssdk.com = 127.0.0.1
 toblog.ctobsnssdk.com = 127.0.0.1
+tr.byteurl.cn = 127.0.0.1
 
 # ------------------------------------------------------------
 # 腾讯广告 / 优量汇（GDT）（置信 A）
+*.adnet.qq.com = 127.0.0.1
 *.e.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
 *.gdtimg.com = 127.0.0.1
@@ -86,16 +96,24 @@ toblog.ctobsnssdk.com = 127.0.0.1
 *.tencentmind.com = 127.0.0.1
 *.ugdtimg.com = 127.0.0.1
 *.ugdturner.com = 127.0.0.1
+*.wit.qq.com = 127.0.0.1
 adnet.qq.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1
 btrace.qq.com = 127.0.0.1
 dmplog.qq.com = 127.0.0.1
+e.qq.com = 127.0.0.1
+gdt.qq.com = 127.0.0.1
+gdtimg.com = 127.0.0.1
+l.qq.com = 127.0.0.1
 mdevstat.qqlive.qq.com = 127.0.0.1
 mtrace.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
 snowflake.qq.com = 127.0.0.1
+tencentmind.com = 127.0.0.1
+ugdtimg.com = 127.0.0.1
+ugdturner.com = 127.0.0.1
 wit.qq.com = 127.0.0.1
 
 # ------------------------------------------------------------
@@ -108,12 +126,18 @@ wit.qq.com = 127.0.0.1
 *.open.kwaizt.com = 127.0.0.1
 ad.a.yximgs.com = 127.0.0.1
 ad.partner.gifshow.com = 127.0.0.1
+adkwai.com = 127.0.0.1
+adukwai.com = 127.0.0.1
 ali-ad.a.yximgs.com = 127.0.0.1
 api.e.kuaishou.com = 127.0.0.1
+e.kuaishou.cn = 127.0.0.1
+e.kuaishou.com = 127.0.0.1
 gdfp.gifshow.com = 127.0.0.1
 hw-ot-ad.a.yximgs.com = 127.0.0.1
 js-ad.a.yximgs.com = 127.0.0.1
 log-sdk.ksapisrv.com = 127.0.0.1
+open.kuaishouzt.com = 127.0.0.1
+open.kwaizt.com = 127.0.0.1
 promotion-partner.kuaishou.com = 127.0.0.1
 tx-ad.a.yximgs.com = 127.0.0.1
 ulog-sdk.gifshow.com = 127.0.0.1
@@ -140,6 +164,7 @@ cb.baidu.com = 127.0.0.1
 cbjs.baidu.com = 127.0.0.1
 click-bes.baidu.com = 127.0.0.1
 cm.baidu.com = 127.0.0.1
+cpro.baidu.com = 127.0.0.1
 cpro.baidustatic.com = 127.0.0.1
 drmcmm.baidu.com = 127.0.0.1
 duiwai.baidu.com = 127.0.0.1
@@ -159,7 +184,10 @@ iwanad.baidu.com = 127.0.0.1
 miniapp-ad.cdn.bcebos.com = 127.0.0.1
 mobads-logs.baidu.com = 127.0.0.1
 mobads-pre-config.cdn.bcebos.com = 127.0.0.1
+mobads.baidu.com = 127.0.0.1
 nadvideo2.baidu.com = 127.0.0.1
+popin.cc = 127.0.0.1
+pos.baidu.com = 127.0.0.1
 sestat.baidu.com = 127.0.0.1
 spcode.baidu.com = 127.0.0.1
 ubmcmm.baidustatic.com = 127.0.0.1
@@ -167,10 +195,24 @@ ubmcvideo.baidustatic.com = 127.0.0.1
 union.baidu.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 倍孜广告聚合（Beizi）（置信 A）
-# 证据同 plugins/ads v2.3.1（TopOn 之外的第三方聚合）。
+# 倍孜广告聚合（Beizi / AdScope）（置信 A）
+# 证据同 plugins/ads mobile_sdks 组（倍孜 Beizi / AdScope 国内第三方聚合 SDK 全家桶）。
+*.ad-scope.com.cn = 127.0.0.1
+*.adn-plus.com.cn = 127.0.0.1
+*.adscope.cn = 127.0.0.1
+*.adscope.com.cn = 127.0.0.1
+*.adscope.xyz = 127.0.0.1
+*.beizi.biz = 127.0.0.1
+*.beizi.info = 127.0.0.1
+*.beizi.online = 127.0.0.1
+ad-scope.com.cn = 127.0.0.1
 adn-plus.com.cn = 127.0.0.1
+adscope.cn = 127.0.0.1
+adscope.com.cn = 127.0.0.1
+adscope.xyz = 127.0.0.1
 beizi.biz = 127.0.0.1
+beizi.info = 127.0.0.1
+beizi.online = 127.0.0.1
 
 # ------------------------------------------------------------
 # uni-AD/DCloud 与易推 DSP（默认关,需真机抓包）（置信 C）

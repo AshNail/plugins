@@ -1,12 +1,12 @@
 #!name=哔哩哔哩 · 去广告与精简
-#!desc=哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏/导航栏/首页推荐流/搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+#!desc=哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏（含品牌/活动开屏）、导航栏、首页推荐流、视频详情页播放下相关推荐广告与搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.1.0
+#!version=1.2.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/bilibili/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b7/70/99/b7709979-0703-0722-b561-c97b2bf5b644/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06
+#!date=2026-11-07
 #!tag=去广告,哔哩哔哩
 #!type=normal
 
@@ -20,7 +20,7 @@
 # 哔哩哔哩流媒体 CDN 业务共享根域 *.bilivideo.com，禁止整域通配。
 # 哔哩哔哩静态图片与封面共享根域 *.hdslb.com，禁止整域通配。
 # 能力天花板与原生设计：dataflow.biliapi.com、data.bilibili.com、tracker.chat.bilibili.com、ali-web-player-tracker.biliapi.net、hw-v2-web-player-tracker.biliapi.net、httpdns.bilivideo.com 六个自建遥测与 HTTPDNS 域走 [Host] 127.0.0.1 零证书黑洞；开屏与信息流商业广告位走 Loon 原生 [Rewrite] v2（reject_dict(200) + response.json.jq），零 JS 脚本。
-# v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（开屏与信息流去广告）与 slimNav（导航栏精简）两个开关驱动 4 条原生复写规则 + app.bilibili.com 的 QUIC 回退，解决注释态增强层在订阅插件下无法直接开启的问题。
+# v1.2.0 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] 的 cleanAds（开屏/推荐流/播放页去广告）与 slimNav（导航栏精简）两个开关驱动 5 条原生复写规则 + app.bilibili.com 的 QUIC 回退——补齐 splash/(brand/list|event/list2) 品牌与活动开屏终止、首页推荐流 cm_v1/ad_av/ad_web_s 商业卡片过滤，以及 x/v2/view 视频详情页播放下方商业组件（cm_config/cms/cm_ipad）与相关推荐广告位过滤。
 # 本文件由 tools/build-apps.py 从 src/apps/bilibili.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -34,7 +34,7 @@
 
 [Argument]
 
-cleanAds = switch,true,tag=开屏与信息流去广告（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：开屏 splash/(list|show) 请求直接 reject_dict(200) 终止；推荐信息流过滤商业广告卡片（cm_v2/cm_double_v9）与推广游戏；搜索广场过滤游戏与广告推广。需已安装并信任 Loon 证书。
+cleanAds = switch,true,tag=开屏与信息流去广告（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：开屏 splash/(list|show|brand/list|event/list2) 请求直接 reject_dict(200) 终止；推荐信息流过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）与推广游戏；视频详情页剔除播放下方广告组件与相关推荐广告；搜索广场过滤游戏与广告推广。需已安装并信任 Loon 证书。
 slimNav = switch,true,tag=导航栏精简（默认开）,desc=过滤底部导航栏「会员购/发布」与顶部导航栏「游戏中心」。
 
 [Rule]
@@ -91,17 +91,20 @@ hostname = %APPEND% app.bilibili.com
 # ------------------------------------------------------------
 # 请求阶段直接终止（reject_dict(200)）：纯开屏广告端点
 # ------------------------------------------------------------
-# kill-splash: 开屏广告列表与展示接口直接返回 200 + 空字典（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/(list|show)(\?|$)/ then reject_dict(200)
+# kill-splash: 开屏广告列表、展示及品牌/活动开屏接口直接返回 200 + 空字典（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/(?:list|show|brand\/list|event\/list2)(\?|$)/ then reject_dict(200)
 
 # ------------------------------------------------------------
 # 响应字段级净化（response.json.jq）：保留业务数据流，只剥广告卡片与冗余入口
 # ------------------------------------------------------------
-# clean-feed-index: 推荐信息流：过滤商业广告卡片（cm_v2/cm_double_v9）、推广游戏与横幅广告（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index(\?|$)/ then response.json.jq("if (.data.items? != null) then .data.items |= map(select(.card_type != \"cm_v2\" and .card_type != \"cm_double_v9\" and .card_goto != \"game\" and (.banner_item? == null or (.banner_item | all(.type != \"ad\"))))) else . end")
+# clean-feed-index: 推荐信息流：过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）、推广游戏与横幅广告（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.items | type) == \"array\" then .data.items |= map(select(type != \"object\" or (.card_type != \"cm_v1\" and .card_type != \"cm_v2\" and .card_type != \"cm_double_v9\" and .card_type != \"ad_av\" and .card_goto != \"ad_web_s\" and .card_goto != \"game\" and ((.banner_item | type) != \"array\" or (.banner_item | all(type != \"object\" or .type != \"ad\")))))) else . end")
+
+# clean-view-relates: 视频详情页：剔除播放下方商业推广配置（cm_config/cms/cm_ipad）及关联推荐中的广告卡片（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/view(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data |= (del(.cm_config, .cms, .cm_ipad) | if (.relates | type) == \"array\" then .relates |= map(select(type != \"object\" or (.is_ad_loc != true and .ad_info == null))) else . end) else . end")
 
 # clean-search-square: 搜索广场：过滤热搜词中的游戏与广告推广（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/search\/square(\?|$)/ then response.json.jq("if (.data? != null) then .data |= map(select(.type != \"game\" and .type != \"ad\")) else . end")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/search\/square(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"array\" then .data |= map(select(type != \"object\" or (.type != \"game\" and .type != \"ad\"))) else . end")
 
 # clean-nav-tab: 导航栏精简：过滤底栏会员购/发布与顶栏游戏中心（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
-response if ${slimNav} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/resource\/show\/tab\/v[0-9]+(\?|$)/ then response.json.jq("(if (.data.bottom? != null) then .data.bottom |= map(select(.name != \"会员购\" and .tab_id != \"会员购Bottom\" and .name != \"发布\")) else . end) | (if (.data.top? != null) then .data.top |= map(select(.name != \"游戏中心\")) else . end)")
+response if ${slimNav} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/resource\/show\/tab\/v[0-9]+(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data |= ((if (.bottom | type) == \"array\" then .bottom |= map(select(type != \"object\" or (.name != \"会员购\" and .tab_id != \"会员购Bottom\" and .name != \"发布\"))) else . end) | (if (.top | type) == \"array\" then .top |= map(select(type != \"object\" or .name != \"游戏中心\")) else . end)) else . end")
