@@ -588,7 +588,7 @@
         "binary_body_mode": true,
         "debug": true,
         "timeout": 10,
-        "tag": "起点getconf净化v357",
+        "tag": "起点getconf净化v361",
         "note": "v3.5.0 起本绑定是 getconf/getconfSpecify 净化的主力：配合 [Rewrite] force-identity 压缩降级，由脚本做 30 项覆写 + 11 项删除 + 关发现 tab（handleClientConfig）。v3.5.3 补 binary_body_mode=true：16:21 日志实证不带该键时 $response.body 是按 UTF-8 硬解的乱码串（1f 8b 魔数检测失效、JSON.parse 直接抛），safeJsonParse 返回 null ⇒ 脚本跑完一个字段都没改。v3.5.4 起 with debug=true 常开（取证期）——但 21:35 日志判死了「debug 能把脚本 console 落主日志」：debug 常开后主日志仍 0 条锚点，官方口径 console.log 只写「当前脚本日志」，要看锚点得在 App 内脚本日志页。v3.5.5 把 build 号写进 tag：主日志的 match/Trigger/Finished 行带 tag，于是「设备到底加载的是哪一版接线」第一次变成可机读的——tag 还是旧名就说明插件没更新，不必再猜（开关更名 cleanAds→QDREADER_CLEAN_ENABLE 于 v3.6.0）"
       },
       {
@@ -630,7 +630,7 @@
         "debug": true,
         "timeout": 10,
         "probe": true,
-        "tag": "起点深度净化v357",
+        "tag": "起点深度净化v361",
         "note": "v3.5.2：混业务端点的字段级净化全部在本绑定执行（配合 [Rewrite] force-gzip 压缩降级）。v3.5.3 补 binary_body_mode=true —— 不开就是 16:21 日志那种「脚本 Finished 但零字段变更」：字符串形态的 gzip 体 1f 8b 魔数检测失效、JSON.parse 必抛。回写侧 respondJson 按来路形态还原字节，v3.5.5 起还把过期的 content-encoding 就地改写成 identity、content-length 改成新体字节数（删键在「Loon 合并脚本 headers」那种语义下等于没删，原始 gzip 声明会套在明文新体上，App 解压失败回落缓存 = 改了字段却看不见）。probe 标记仍然成立：request 阶段 reject_dict 覆盖到的纯广告端点不会走到脚本。v3.5.4 起 with debug=true 常开；v3.5.5 把 build 号写进 tag，理由同 getconf-clean"
       },
       {

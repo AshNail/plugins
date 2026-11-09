@@ -247,7 +247,7 @@ function debugLog(msg) {
 // 「parse=ok 但没字段」在设备上完全同形。所以①出口换成成功/失败都推，②[Rewrite] 不再逼
 // 上游压 gzip 而是直接要 identity——把 ungzip 与手写 UTF-8 解码这两层运行时依赖从主路上拿掉。
 // 净化确认稳定生效后本段降回 debugLog 门禁（整段可一次 revert）。
-const ANCHOR_BUILD = "3.5.7";
+const ANCHOR_BUILD = "3.6.1";
 
 // 必须在主入口 IIFE 之前声明：const 没有变量提升，放在 IIFE 之后会在同步响应路径触发 TDZ ReferenceError
 const CLEAN_RULES = {
