@@ -248,7 +248,12 @@ async function main() {
     for (const plugin of plugins) {
       const pluginFile = path.join(familyDir, plugin);
       for (const ref of pluginScriptRefs(pluginFile)) {
-        if (!ref.endsWith(".min.js")) {
+        // Vendored 引擎（qidian v3.6.0 起换挂，config 范式）：scripts/<name>.js 与上游
+        // 逐字节一致地落盘分发，不压缩成 .min.js——引擎源就是交付形状，再压缩一次只会
+        // 造出第三份口径漂移的副本。豁免与 tests/lint-plugins.py 的 check_no_legacy_syntax
+        // 同一则：只认相对 scripts/ 路径，远程 URL 仍然报 not-minified / missing。
+        const vendored = /^scripts\/[A-Za-z0-9][A-Za-z0-9._-]*\.js$/.test(ref);
+        if (!ref.endsWith(".min.js") && !vendored) {
           console.error(`error plugins/${family}/${plugin}: script is not minified: ${ref}`);
           missingRefs += 1;
           continue;

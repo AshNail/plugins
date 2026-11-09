@@ -600,12 +600,12 @@ CAPABILITIES = [
          probe=r"(?m)^\w+\s*=\s*switch\s*,", href=DOC + "/Plugin/"),
     dict(layer="参数层", key="a-select", name="`select` 控件", expect="used",
          probe=r"(?m)^\w+\s*=\s*select\s*,", href=DOC + "/Plugin/"),
-    dict(layer="参数层", key="a-input", name="`input` 控件", expect="open",
+    dict(layer="参数层", key="a-input", name="`input` 控件", expect="used",
          probe=r"(?m)^\w+\s*=\s*input\s*,", href=DOC + "/Plugin/",
-         why="当前没有需要文本输入的开关：douyin 的 cron 提醒输入随提醒层撤下，自动化层的周期是脚本内固定表达式"),
-    dict(layer="参数层", key="a-type-number", name="`type=number`", expect="open",
+         why="qidian v3.6.0 起用 input 承接 CRONEXP（cron 表达式文本）与 TIMEOUT（超时秒数）两个可编辑参数——config 范式引擎的参数化入口，douyin 的 cron 提醒输入随提醒层撤下"),
+    dict(layer="参数层", key="a-type-number", name="`type=number`", expect="used",
          probe=r"type\s*=\s*number\b", href=DOC + "/Plugin/",
-         why="插件的可调项只有开关、二选一和 cron 表达式；cron 是字符串，不是数值"),
+         why="qidian TIMEOUT=input,420,type=number：数值形态让 Loon 按数字传参（config 有效基线同形）"),
     dict(layer="参数层", key="a-type-string", name="`type=string`", expect="used",
          probe=r"type\s*=\s*string\b", href=DOC + "/Plugin/"),
     dict(layer="参数层", key="a-type-boolean", name="`type=boolean`", expect="open",
@@ -712,10 +712,13 @@ CAPABILITIES = [
          why="官方定位「仅用于维护旧配置，不再扩展」。它按空格拆参数，正则含空格要写 `\\x20`，"
              "类型与批量数组也无从表达；本仓库全部落在 3.5.1(978)+ 新语法，lint 禁止旧 token 出现"),
     dict(layer="旧版语法", key="l-legacy-script", name="旧版 Script（`http-request ^regex script-path=…`）",
-         expect="reject",
+         expect="used",
          probe=r"(?m)(?:^\s*(?:http-request|http-response)\s|script-path\s*=)", href=DOC + "/Script/",
-         why="3.5.1(983) 起五类脚本统一为 `<type> if <条件> then script(...) with <属性>`。"
-             "旧语法仍作输入兼容但不再输出，混用会让条件变量、`with` 属性名（`img-url` vs `img_url`）分两套口径"),
+         why="qidian v3.6.0 换挂的 vendored 引擎（scripts/Qidian.js，config 范式同源）按旧式绑定形状写死参数交付"
+             "（argument=[{NAME}] 大括号替换），保留旧式是引擎双方兼容的契约而不是新增旧语法面："
+             "lint 的 check_no_legacy_syntax 只对 script-path=scripts/（相对 vendored 路径）开豁免——"
+             "指向远程 URL 的旧式 script-path 仍然一律报错，远程旧语法从头就不进本仓；"
+             "自研脚本一律继续 v2 内联 `if/then script(...) with` 形状"),
 
     # ---------------- 分发与外部控制 ----------------
     dict(layer="分发", key="d-import-scheme", name="`loon://import?…` 与 `nsloon.com/openloon/` 通用链接",

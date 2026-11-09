@@ -483,6 +483,12 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
         lines += render_active_layer(enh, where, bool(cron_lines))
     if enh:
         lines += render_enhance(enh, where, roots, active=active_enh)
+    # legacy vendored 引擎指针必须真实落盘：相对 script-path 在 build 期就验存在——
+    # 生成一个引用不存在文件的插件等于生成一个静默不执行的绑定（比不引用更糟）。
+    blob = "\n".join(lines)
+    for rel in sorted(set(re.findall(r"script-path=(scripts/[A-Za-z0-9][A-Za-z0-9._-]*\.js)", blob))):
+        if not (ROOT / "plugins" / slug / rel).exists():
+            raise BuildError(f"{where}: legacy 绑定引用的 vendored 脚本不存在: plugins/{slug}/{rel}")
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
@@ -494,6 +500,18 @@ def escape_regex_slashes(pattern: str) -> str:
 # active=true 的 App 才允许出现 [Argument]/[MITM]/[Script] 三类默认生效配置，
 # 且每一行都要能被源逐行重述（tests/lint-plugins.py 的 check_app_plugins 复审）。
 BIND_KINDS = {"request", "response", "cron", "generic"}
+# [Argument] 控件白名单：官方只定义 switch / input / select 三类。app-json 源目前只用到
+# switch 与 input（input 用于 CRONEXP/TIMEOUT 这类文本参数，见 config 范式的 QDREADER_* 体系）。
+ARG_TYPES = ("switch", "input")
+# legacy（旧式）绑定的 vendored 引擎指针：只能是插件目录内的相对路径，禁远程 URL——
+# 旧式 script-path 一旦指向远程，就变成第三方热更依赖，与「本仓自包含」纪律冲突。
+VENDORED_PATH_RE = re.compile(r"^scripts/[A-Za-z0-9][A-Za-z0-9._-]*\.js$")
+# legacy 绑定里的 [Argument] 占位：旧语法用 {NAME} 指代参数（config 有效基线的逐字形状）。
+TIMEOUT_PH = "{TIMEOUT}"
+CRON_PH = "{CRONEXP}"
+# legacy(旧式) 绑定的阶段行首：config 有效基线的逐字形状（v2 的 request/response 前缀是
+# 内联 if/then 语法专用，旧语法下不成立——写错 Loon 会当无效行静默丢弃）。
+LEGACY_STAGE = {"request": "http-request", "response": "http-response"}
 # active 增强层的引擎复写层（[Rewrite]）：Loon v2 复写语法，一条规则一行。
 # 为什么要这一层而不是脚本：起点 Argus 的响应带 Content-Encoding，[Script] 侧读响应体
 # 就得先对付压缩，而脚本层只有 $utils.ungzip（gzip）——收到 br/zstd 就是乱码，低 Build 连
@@ -514,7 +532,7 @@ REWRITE_ID_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 DOT_PATH_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
 SCALAR_JSON_RE = re.compile(r'^(?:".*"|-?\d+(?:\.\d+)?|true|false|null)$')
 CRON_EXPR_RE = re.compile(r"^\S+ \S+ \S+ \S+ \S+$")
-ARG_NAME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9]*$")
+ARG_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 SCRIPT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -570,41 +588,98 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
             raise BuildError(f"{where}: enhance.arguments.name 非法: {name!r}")
         if name in names:
             raise BuildError(f"{where}: 开关重名 {name!r}")
-        if a.get("default") not in ("true", "false"):
-            raise BuildError(f"{where}: 开关 {name!r} 的默认值必须是 true/false")
+        typ = a.get("type", "switch")
+        if typ not in ARG_TYPES:
+            raise BuildError(f"{where}: 开关 {name!r} 的 type {typ!r} 不在 {list(ARG_TYPES)}（select 未使用）")
+        if typ == "switch":
+            if a.get("default") not in ("true", "false"):
+                raise BuildError(f"{where}: 开关 {name!r} 的默认值必须是 true/false")
+        else:  # input：default 是一行文本；number=true 声明数值形态（Loon type=number）
+            default = a.get("default", "")
+            if not isinstance(default, str) or not default or "\n" in default or "\r" in default:
+                raise BuildError(f"{where}: input {name!r} 的 default 必须是一行非空字符串: {default!r}")
+            if "," in default or default.startswith('"'):
+                raise BuildError(
+                    f"{where}: input {name!r} 的 default 不许含英文逗号或以引号开头: {default!r}"
+                )
+            if a.get("number") and not re.fullmatch(r"[0-9]+", default):
+                raise BuildError(
+                    f"{where}: input {name!r} 声明 number=true 但 default 不是 0-9 数字: {default!r}"
+                )
         if not a.get("tag") or not a.get("desc"):
             raise BuildError(f"{where}: 开关 {name!r} 缺 tag/desc")
+        for text in (a.get("tag", ""), a.get("desc", "")):
+            if "," in text:
+                raise BuildError(
+                    f"{where}: 开关 {name!r} 的 tag/desc 含英文逗号（Loon 按逗号切属性）: {text!r}"
+                )
         names.append(name)
-    if bindings and "debugLog" not in names:
-        raise BuildError(f"{where}: active 脚本层必须有 debugLog 开关（所有绑定都接 with debug=）")
+    debug_arg = enh.get("debug_arg") or "debugLog"
+    if any(not b.get("legacy") for b in bindings) and debug_arg not in names:
+        raise BuildError(
+            f"{where}: active 脚本层必须有 {debug_arg} 开关"
+            f"（v2 绑定都接 with debug=${{{debug_arg}}}）；纯 legacy 引擎绑定可省略"
+        )
     lines: list[str] = []
     for b in bindings:
         bid = b.get("id", "?")
         kind = b.get("kind")
         if kind not in BIND_KINDS:
             raise BuildError(f"{where}: bindings[{bid}].kind {kind!r} 不在 {sorted(BIND_KINDS)}")
-        script = b.get("script", "")
-        if not SCRIPT_NAME_RE.match(script):
-            raise BuildError(f"{where}: bindings[{bid}].script 非法: {script!r}")
+        legacy = b.get("legacy") is True
+        if legacy:
+            # config 范式的引擎绑定：本体 vendored 相对路径 + 旧语法 {NAME} 占位参数。
+            if not VENDORED_PATH_RE.match(b.get("path", "")):
+                raise BuildError(
+                    f"{where}: bindings[{bid}].path 需为相对 vendored 指针/scripts/<name>.js: {b.get('path')!r}"
+                )
+            if b.get("args"):
+                raise BuildError(
+                    f"{where}: bindings[{bid}] legacy 绑定不吃 args（引擎参数走 argument=[{{NAME}}]）"
+                )
+        else:
+            script = b.get("script", "")
+            if not SCRIPT_NAME_RE.match(script):
+                raise BuildError(f"{where}: bindings[{bid}].script 非法: {script!r}")
         if not b.get("tag"):
             raise BuildError(f"{where}: bindings[{bid}] 缺 tag")
+        if "," in b.get("tag", ""):
+            raise BuildError(
+                f"{where}: bindings[{bid}].tag 含英文逗号（Loon 按逗号切属性）: {b.get('tag')!r}"
+            )
         timeout = b.get("timeout")
-        if not isinstance(timeout, int) or not 1 <= timeout <= 600:
-            raise BuildError(f"{where}: bindings[{bid}].timeout 需在 1..600: {timeout!r}")
+        if legacy and timeout == TIMEOUT_PH:
+            pass
+        elif not isinstance(timeout, int) or not 1 <= timeout <= 600:
+            raise BuildError(
+                f"{where}: bindings[{bid}].timeout 需在 1..600 或 {{TIMEOUT}} 占位（legacy）: {timeout!r}"
+            )
         for arg in b.get("args", []):
             if arg not in names:
                 raise BuildError(f"{where}: bindings[{bid}] 透传了未声明的开关 {arg!r}")
         switch = b.get("switch")
         if switch is not None and switch not in names:
             raise BuildError(f"{where}: bindings[{bid}].switch {switch!r} 不在 arguments 里")
-        if kind in ("request", "response", "cron") and not switch:
+        if not legacy and kind in ("request", "response", "cron") and not switch:
             raise BuildError(
-                f"{where}: bindings[{bid}] 是 {kind} 型绑定，必须带 switch（自动化不得默认生效）"
+                f"{where}: bindings[{bid}] 是 {kind} 型绑定，必须带 switch（自动化不得默认生效）；"
+                "legacy 引擎绑定例外——config 范式的任务取舍由 argument=[{SWITCH}] 参数控制，"
+                "且 cron/generic 绑定官方纪律是「不得被 enable 门控」（门控会让 cron 静默消失）"
             )
+        if legacy and b.get("argument"):
+            for arg in b["argument"]:
+                if arg not in names:
+                    raise BuildError(
+                        f"{where}: bindings[{bid}].argument 里的 {arg!r} 不是已声明的参数"
+                    )
         if kind in ("request", "response"):
             pattern = b.get("pattern", "")
-            if not pattern.startswith("^https://"):
-                raise BuildError(f"{where}: bindings[{bid}].pattern 必须以 ^https:// 开头")
+            ok_prefix = (
+                pattern.startswith(("^https://", "^https?:"))
+                if legacy else pattern.startswith("^https://")
+            )
+            if not ok_prefix:
+                raise BuildError(f"{where}: bindings[{bid}].pattern 必须以 ^https:// 开头（legacy 允许 ^https?:）")
             try:
                 re.compile(pattern)
             except re.error as e:
@@ -626,8 +701,12 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
                     raise BuildError(
                         f"{where}: bindings[{bid}] 声明 {h!r}，但正则里找不到它的后缀 {suffix!r}"
                     )
-        if kind == "cron" and not CRON_EXPR_RE.match(b.get("cron", "")):
-            raise BuildError(f"{where}: bindings[{bid}].cron 需 5 段: {b.get('cron')!r}")
+        if kind == "cron":
+            cron = b.get("cron", "")
+            if not (legacy and cron == CRON_PH) and not CRON_EXPR_RE.match(cron):
+                raise BuildError(
+                    f"{where}: bindings[{bid}].cron 需 5 段或 legacy {CRON_PH} 占位: {cron!r}"
+                )
         if b.get("probe"):
             if kind not in ("request", "response"):
                 raise BuildError(
@@ -639,24 +718,30 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
                     f"{where}: bindings[{bid}].probe 声称「等着被 enhance.rewrite 抑制」，"
                     "但源里一条复写规则都没有"
                 )
-        lines.append(render_binding(b))
+        lines.append(render_binding(b, enh.get("debug_arg") or "debugLog"))
     validate_rewrite(enh, where, names, bindings)
     return lines
 
 
-def render_binding(b: dict) -> str:
-    """一条现代语法绑定。形状与 soda/douyin 手写接线一致：属性顺序 debug→enable→requires_body→binary_body_mode→timeout→tag。
+def render_binding(b: dict, debug_arg: str = "debugLog") -> str:
+    """v2 绑定：形状与 soda/douyin 手写接线一致，属性顺序 debug→enable→requires_body→binary_body_mode→timeout→tag。
 
     binding.debug=true 把这一条的 with debug 常开（取证期用）。注意 21:35 真机日志判死了
     「debug=true 会把脚本 console 落主日志」——官方口径是 console.log 写「当前脚本日志」，
     导出的主日志结构上没有它；debug 常开只保住 App 内那份脚本日志。真正会出现在主日志里的
     是 tag 字面量（match/Trigger/Finished 行原样带），所以取证期的 build 指纹要往 tag 里放。
+
+    legacy=True 的绑定走 render_binding_legacy（config 有效基线的旧式形状）——引擎本体
+    （vendored Qidian.js）的参数体系是按旧式 argument=[{NAME}] 写的，v2 换形状等于换
+    交付语义，所以这类绑定整体保形状。
     """
+    if b.get("legacy"):
+        return render_binding_legacy(b)
     kind = b["kind"]
     args = ", ".join(f"${{{a}}}" for a in b.get("args", []))
     call = f'script("scripts/{b["script"]}.min.js"'
     call += f", {{{args}}})" if args else ")"
-    attrs = ["debug=true" if b.get("debug") is True else "debug=${debugLog}"]
+    attrs = ["debug=true" if b.get("debug") is True else f"debug=${{{debug_arg}}}"]
     if b.get("switch"):
         attrs.append(f'enable=${{{b["switch"]}}}')
     head = ""
@@ -679,6 +764,49 @@ def render_binding(b: dict) -> str:
         attrs.append(f"timeout={b['timeout']}")
         head = f"generic then {call} with "
     return head + ", ".join(attrs)
+
+
+def render_binding_legacy(b: dict) -> str:
+    """config 有效基线（Plugin/qidian.plugin [Script]）的旧式绑定逐字形状。
+
+    http-request <pattern> script-path=<path>, requires-body=..., timeout=..., tag=<tag>[, enable={SW}][, argument=[{N1},...]]
+    cron {CRONEXP} / generic 同形（前缀不同）。引擎本体 vendored Qidian.js 的参数
+    体系按旧式 argument=[{NAME}] 写成，绑定形状必须与 config 同源——这是 B 方案
+    用户裁决的「引擎不换形」边界。属性顺序按 config：script-path → requires-body →
+    timeout → tag → enable → argument；tag 不加引号（config原文），故 tag 禁 ASCII
+    逗号（validate 已拦）；`{NAME}` 是旧式 [Argument] 占位，Loon 在加载期替换。
+    """
+    kind = b["kind"]
+    attrs = [f"script-path={b['path']}"]
+    if kind in ("request", "response"):
+        attrs.append(f"requires-body={'true' if b.get('requires_body') else 'false'}")
+    attrs.append(f"timeout={b['timeout']}")
+    attrs.append(f"tag={b['tag']}")
+    if b.get("switch"):
+        attrs.append(f"enable={{{b['switch']}}}")
+    if b.get("argument"):
+        attrs.append("argument=[" + ",".join("{" + a + "}" for a in b["argument"]) + "]")
+    if kind in ("request", "response"):
+        # 旧语法里 request/response 阶段的行首是 http-request / http-response
+        # （config 有效基线原文）；不带 if/then 也没有 script()——那是 v2 的形状。
+        head = f'{LEGACY_STAGE.get(kind, kind)} {escape_regex_slashes(b["pattern"])} '
+    elif kind == "cron":
+        head = f'cron {b["cron"]} '
+    else:
+        head = "generic "
+    return head + ", ".join(attrs)
+
+
+def render_argument_line(a: dict) -> str:
+    """[Argument] 的一行。switch 形态沿用仓库惯例（不引号 value）；input 形态对
+    含空白/特殊值加双引号（config 形状：CRONEXP=input,"11 2 * * *"，TIMEOUT=input,420,type=number）。"""
+    if a.get("type") == "input":
+        default = str(a["default"])
+        if "," in default or re.search(r"[\s*?()\[\]{}]", default):
+            default = f'"{default}"'
+        meta = ",type=number" if a.get("number") else ""
+        return f'{a["name"]} = input,{default}{meta},tag={a["tag"]},desc={a["desc"]}'
+    return f'{a["name"]} = switch,{a["default"]},tag={a["tag"]},desc={a["desc"]}'
 
 
 def split_action_args(text: str) -> list[str]:
@@ -945,17 +1073,15 @@ def render_arguments(enh: dict, where: str) -> list[str]:
         "# " + "=" * 72,
         "# 开关（源：src/apps/<slug>.json 的 enhance.arguments；改开关改源后 npm run build:apps）",
         "# " + "-" * 72,
-        "# 净化类默认开、自动化类默认关——finishWatch 重放、代领奖、广告时长 patch 都是",
-        "# 「代打卡/伪造完成」，不默认生效，也不随净化开关一起被打开。",
+        "# 净化类默认开。自动化类的默认值是显式源内裁决（v3.6.0 起 QDREADER_* 六开关默认"
+        "# 开——用户裁决接受服务端风控后果）；每个开关都仍可单独关掉切面停用。",
         "# " + "=" * 72,
         "",
         "[Argument]",
         "",
     ]
     for a in enh.get("arguments", []):
-        out.append(
-            f'{a["name"]} = switch,{a["default"]},tag={a["tag"]},desc={a["desc"]}'
-        )
+        out.append(render_argument_line(a))
     out.append("")
     return out
 
@@ -987,8 +1113,10 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
             "# " + "=" * 72,
             "# 脚本层（绑定行由 enhance.bindings 生成，lint 逐行对账）",
             "# " + "-" * 72,
-            "# 同名脚本 auto-task.min.js 按 URL 分流：捕获 / 净化 / 秒播 / 重放 / 领奖。",
-            "# 源码 src/<slug>/auto-task.js（可读）→ plugins/<slug>/scripts/auto-task.min.js。",
+            "# 自研净化链用 v2 内联语法（scripts/auto-task.min.js 按 URL 分流：净化/秒播/阅读积分）；",
+            "# 换挂的 vendored 引擎 scripts/Qidian.js 走旧式绑定（config 范式逐字形状，",
+            "# 参数经 argument=[{NAME}] 传入）。同一条 URL 上两种绑定只有净化组与引擎的",
+            "# 深净化/客户端配置净化不重叠——B 方案的注册边界。",
             "# " + "=" * 72,
             "",
             "[Script]",
@@ -998,7 +1126,7 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
         note = b.get("note")
         if note:
             out.append(f'# {b["id"]}: {note}')
-        out.append(render_binding(b))
+        out.append(render_binding(b, enh.get("debug_arg") or "debugLog"))
         out.append("")
     return out
 

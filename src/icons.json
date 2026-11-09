@@ -133,13 +133,6 @@
       "trackId": 414478124,
       "seller": "Tencent Technology (Shenzhen) Company Limited"
     },
-    "qidian-pro": {
-      "app": "起点读书（起点全能助手 Pro 复用同一条官方条目）",
-      "bundleId": "m.qidian.QDReaderAppStore",
-      "trackId": 534174796,
-      "alias_of": "qidian",
-      "seller": "Shanghai Xuan Ting Entertainment Information & technology CO.,LTD"
-    },
     "banks": {
       "app": "云闪付（banks 聚合插件当前图标所指）",
       "bundleId": "com.unionpay.chsp",

@@ -194,8 +194,33 @@ const CONFIG = {
 // 必须放顶层：handleClientConfig / handleAccountPage / doSignIn / doLottery 等
 // 顶层函数会调用它；放在主 IIFE 里时这些调用会解析成未定义变量，真机表现为
 // ReferenceError → 兜底空 $done() → getconf/账户页净化与签到/抽奖静默失效。
+// v3.6.0 起 [Argument] 换 config 范式的 QDREADER_* 体系，这里做双名兼容读取：
+// ① v2 绑定 argument 对象按名取 QDREADER_DEBUG（旧的 debugLog 键兜底）；
+// ② 引擎 legacy 绑定的旧式 argument=[{QDREADER_DEBUG}] 被 Loon 替换成一行
+//    `[false,true,...]` 或 JSON 串时，按第一项位置取值——占位顺序在 binding.argument
+//    里与 QDREADER_DEBUG 对齐（engine-cron/engine-manual 的第 1 项）。
+// 任一形态拿不到都按 false 兜底，与 v3.5.x 行为一致。
 const DEBUG = (() => {
-  try { return String($argument?.debugLog || "false") === "true"; } catch (e) { return false; }
+  try {
+    const a = $argument;
+    if (typeof a === "string") {
+      const m = /(?:QDREADER_DEBUG|debugLog)\s*[:=]\s*"?([a-z]+)"?/i.exec(a);
+      if (m) return String(m[1]).toLowerCase() === "true";
+      try {
+        const arr = JSON.parse(a);
+        if (Array.isArray(arr)) return arr[0] === true || arr[0] === "true";
+      } catch (e) { /* 非 JSON 串，走 false */ }
+      return false;
+    }
+    if (Array.isArray(a)) {
+      return a[0] === true || a[0] === "true";
+    }
+    if (a && typeof a === "object") {
+      if (a.QDREADER_DEBUG !== undefined) return String(a.QDREADER_DEBUG) === "true";
+      return String(a.debugLog || "false") === "true";
+    }
+    return false;
+  } catch (e) { return false; }
 })();
 
 function debugLog(msg) {

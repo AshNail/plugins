@@ -2895,7 +2895,11 @@ def check_app_plugins():
             for extra in got_tail[len(want_bindings):]:
                 errors.append(f"apps/{slug}: [Script] 多出源里没有的绑定行: {extra}")
             for b in enh.get("bindings", []):
-                dist = ROOT / "plugins" / slug / "scripts" / f"{b.get('script')}.min.js"
+                if b.get("legacy"):
+                    # legacy 绑定的 path 字段自带 scripts/ 前缀（相对 vendored 指针）
+                    dist = ROOT / "plugins" / slug / str(b.get("path") or "")
+                else:
+                    dist = ROOT / "plugins" / slug / "scripts" / f"{b.get('script')}.min.js"
                 if not dist.exists():
                     errors.append(f"apps/{slug}: missing {dist.relative_to(ROOT)} (run npm run build)")
         rewrite_lines = parsed.get("Rewrite", [])
@@ -3113,10 +3117,22 @@ def check_app_plugins():
                         f"apps/{slug}: active 层的 [MITM] 必须是唯一一行 {want_hostname!r}，"
                         f"实际 {parsed.get('MITM', [])}"
                     )
-                want_args = [
-                    f'{a.get("name")} = switch,{a.get("default")},tag={a.get("tag")},desc={a.get("desc")}'
-                    for a in enh.get("arguments", [])
-                ]
+                want_args = []
+                for a in enh.get("arguments", []):
+                    if a.get("type") == "input":
+                        default = str(a.get("default"))
+                        if "," in default or re.search(r"[\s*?()\[\]{}]", default):
+                            default = f'"{default}"'
+                        meta = ",type=number" if a.get("number") else ""
+                        want_args.append(
+                            f'{a.get("name")} = input,{default}{meta},'
+                            f'tag={a.get("tag")},desc={a.get("desc")}'
+                        )
+                    else:
+                        want_args.append(
+                            f'{a.get("name")} = switch,{a.get("default")},'
+                            f'tag={a.get("tag")},desc={a.get("desc")}'
+                        )
                 if parsed.get("Argument", []) != want_args:
                     errors.append(
                         f"apps/{slug}: [Argument] 与 enhance.arguments 不一致（rebuild to resync）\n"
@@ -3237,6 +3253,10 @@ def check_app_plugins():
 
 # 旧版 Rewrite / Script 语法 token：官方定位「仅维护旧配置，不再扩展」，本仓库全部走
 # 3.5.1(978/983)+ 新语法。这里只查小写旧 token——[Rule] 里的 REJECT-DICT 等大写动作不受影响。
+# 例外（v3.6.0 起 qidian）：换挂的 vendored 引擎 scripts/Qidian.js 走 config 范式的旧式绑定
+# （script-path=scripts/ 相对路径 + argument=[{NAME}] 参数体系）——引擎按旧式参数交付写死，
+# 换 v2 形状等于换引擎行为面。豁免只认「相对 vendored 路径」这一种活口：指向远程 URL 的
+# 旧式 script-path 仍然一律报错，第三方热更依赖从头就不进本仓。
 LEGACY_TOKENS = (
     r"script-path\s*=",
     r"\bhttp-(?:request|response)\s+\S",
@@ -3249,12 +3269,17 @@ LEGACY_TOKENS = (
 
 
 def check_no_legacy_syntax():
-    """插件的有效配置行不得出现旧版 Rewrite/Script 语法 token（注释行允许，用于说明来源）。"""
+    """插件的有效配置行不得出现旧版 Rewrite/Script 语法 token（注释行允许，用于说明来源）。
+
+    豁免：script-path=scripts/…（相对 vendored 引擎绑定，见 LEGACY_TOKENS 注释）。
+    """
     hits = 0
     for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
         rel = path.relative_to(ROOT)
         for num, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if line.lstrip().startswith(("#", ";")):
+                continue
+            if "script-path=scripts/" in line:
                 continue
             for rx in LEGACY_TOKENS:
                 if re.search(rx, line):

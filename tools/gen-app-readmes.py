@@ -154,21 +154,37 @@ def render(app, sdklib, ads_groups):
                 )
             bindings = enh.get("bindings") or []
             if bindings:
-                lines += [
-                    "",
-                    "> 净化类默认开、自动化类默认关：领奖/签到/重放这条线不默认启用是仓库纪律，"
-                    "要用就把 `autoTask` 改成 true。",
-                    "",
-                    "### 绑定（`[Script]`）",
-                    "",
-                    "| 脚本 | 触发面 | 开关 | 行为 |",
-                    "|---|---|---|---|",
-                ]
+                argmap = {
+                    a.get("name"): a.get("default") for a in enh.get("arguments", [])
+                }
+                bound_switches = [b.get("switch") for b in bindings if b.get("switch")]
+                all_on = all(argmap.get(s) == "true" for s in bound_switches if s in argmap)
+                if all_on:
+                    note = (
+                        "> 本层绑定引用的开关默认全开（用户显式裁决，服务端风控后果自担）："
+                        "任何一个开关单独关掉即切面停用，不必动插件其余部分。"
+                    )
+                else:
+                    note = (
+                        "> 净化类默认开、自动化类默认关：领奖/签到/重放这条线不默认启用是仓库纪律，"
+                        "要用就把引用开关的默认值改成 true。"
+                    )
+                legacy = [b.get("path") for b in bindings if b.get("legacy")]
+                if legacy:
+                    note = note.rstrip("。") + (
+                        "。legacy 引擎绑定（"
+                        + "、".join(f"`{p}`" for p in sorted(set(legacy)))
+                        + "）按 config 范式不设 enable 门控——cron/generic 一旦门控会静默消失，"
+                        "任务取舍由 `argument=[{NAME}]` 参数承担，`{…}` 是 Loon 加载期对 "
+                        "`[Argument]` 的占位替换。"
+                    )
+                lines += ["", note, "", "### 绑定（`[Script]`）", "", "| 脚本 | 触发面 | 开关 | 行为 |", "|---|---|---|---|"]
                 for b in bindings:
                     face = b.get("pattern") or b.get("cron") or "generic"
                     probe = "（探针）" if b.get("probe") else ""
+                    script_ref = b.get("path") if b.get("legacy") else b.get("script")
                     lines.append(
-                        f"| `{b.get('script')}` | `{face}` | `{b.get('switch') or '—'}` | "
+                        f"| `{script_ref}` | `{face}` | `{b.get('switch') or '—'}` | "
                         f"{b.get('note', b.get('tag', ''))}{probe} |"
                     )
             rewrite_items = enh.get("rewrite") or []
