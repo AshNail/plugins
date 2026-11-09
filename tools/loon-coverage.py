@@ -579,7 +579,7 @@ CAPABILITIES = [
          probe=r"with[^\n]*\btimeout\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-body", name="`requires_body`", expect="used",
          probe=r"with[^\n]*\brequires_body\s*=", href=DOC + "/Script/script_v2"),
-    dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="used",
+    dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="reject",
          probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2",
          why="v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）开启它：真机 16:21 日志证伪了"
              "「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 "
@@ -588,10 +588,12 @@ CAPABILITIES = [
              "v3.5.7 起它从「主路」降为「兜底」：[Rewrite] 不再逼上游压 gzip 而是直接要 identity，"
              "主路只剩 JSON.parse 一步；保留该键是因为万一某条 CDN 无视 identity 仍回 gzip，只有字节形态"
              "还能救（字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，不可逆）。"
-             "注：形态镜像是防御性冗余而非必需——API 手册明写 `$done().body` 接受字符串**或** `Uint8Array`，"
-             "v3.5.1 那句「回字符串会被 Loon 丢弃」手册无据，已撤回；headers 侧 §11.3/§11.5「提供 headers 时"
-             "应先复制原 Header」读实为整包替换语义，所以我们从复制原始头起步、并对过期的 "
-             "content-encoding/content-length 就地改写而非删键，两种语义都无害"),
+             "v3.6.2 判死：HAR 实证脚本跑了（Trigger/Finished 齐全）但返回的修改被 Loon 丢弃——"
+             "响应头没有 X-Qidian-Plugin，响应体大小与原始相同，ActivityCenterModule 等营销模块还在。"
+             "根因是 binary_body_mode=true 下，脚本返回的 Uint8Array 被 Loon 当成普通对象处理，"
+             "JSON.stringify 后变成 {\"0\":123,\"1\":34,...}，不是有效的 JSON，App 解析失败后回落缓存。"
+             "修复：删除 getconf-clean 和 deep-clean 绑定的 binary_body_mode=true，"
+             "respondJson 统一返回字符串，不再根据来路形态返回不同形态。"),
     dict(layer="脚本属性", key="o-img", name="`img_url`", expect="used",
          probe=r"with[^\n]*\bimg_url\s*=", href=DOC + "/Script/script_v2"),
 

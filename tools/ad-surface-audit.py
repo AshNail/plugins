@@ -311,10 +311,10 @@ SURFACES = [
         ],
         ceiling="strong", achieved="partial", next_to="partial",
         probes=[
-            ("plugins/soda/soda.plugin", r"commerce\\?/(?:upsell|\(\?:upsell)", False),
+            ("plugins/soda/soda.plugin", r"commerce\\/(?:upsells|v2\\/upsell)", False),
             # douyin 只绑 v2（v1 无抓包证据，不挂空转路由）；探针跟着真实绑定走，
             # 不能拿 soda 的 v1 命中替 douyin 顶数。
-            ("plugins/douyin/douyin.plugin", r"commerce\\?/v2\\?/upsell", False),
+            ("plugins/douyin/douyin.plugin", r"commerce\\/v2\\/upsell", False),
         ],
         limits="与会员状态、支付流程同域同接口，剥错会让会员页空白；部分 App 用 WebView 渲染，"
                "弹窗内容在页面里；「限时优惠」倒计时是端上逻辑，删网络改不了。",

@@ -20,14 +20,14 @@
 | Host 层 | 2 | 4 | 2 | 0 | 0 | **33%** |
 | 复写层 | 7 | 7 | 13 | 0 | 0 | **50%** |
 | 脚本层 | 22 | 13 | 12 | 0 | 0 | **63%** |
-| 脚本属性 | 7 | 0 | 0 | 0 | 0 | **100%** |
+| 脚本属性 | 6 | 0 | 1 | 0 | 0 | **100%** |
 | 参数层 | 5 | 1 | 0 | 0 | 0 | **83%** |
 | 插件段落 | 8 | 2 | 3 | 0 | 0 | **80%** |
 | 主配置 | 0 | 0 | 2 | 9 | 0 | **0%** |
 | 旧版语法 | 1 | 0 | 1 | 0 | 0 | **100%** |
 | 分发 | 0 | 0 | 0 | 2 | 0 | **0%** |
 | 元数据 | 11 | 1 | 1 | 0 | 2 | **92%** |
-| **合计** | **77** | **37** | **46** | **12** | **4** | **68%** |
+| **合计** | **76** | **37** | **47** | **12** | **4** | **67%** |
 
 ## 传输层
 
@@ -183,7 +183,7 @@
 | `debug`（可动态） | ✅ 已用 | v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死：两条净化绑定 debug 常开后主日志仍 0 条 [起点锚点]（match/Trigger/Finished 齐全）。官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」，主日志导出不含它，锚点只能在 App 内脚本日志页看。debug 仍常开（保住 App 内那份脚本日志），但远程取证面只剩两个：`tag` 字面量会原样出现在主日志的 match/Trigger/Finished 行里（v3.5.5 起把 build 号写进 tag），以及响应头 X-Qidian-Plugin |
 | `timeout` | ✅ 已用 | 已落地 |
 | `requires_body` | ✅ 已用 | 已落地 |
-| `binary_body_mode` | ✅ 已用 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）开启它：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。v3.5.7 起它从「主路」降为「兜底」：[Rewrite] 不再逼上游压 gzip 而是直接要 identity，主路只剩 JSON.parse 一步；保留该键是因为万一某条 CDN 无视 identity 仍回 gzip，只有字节形态还能救（字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，不可逆）。注：形态镜像是防御性冗余而非必需——API 手册明写 `$done().body` 接受字符串**或** `Uint8Array`，v3.5.1 那句「回字符串会被 Loon 丢弃」手册无据，已撤回；headers 侧 §11.3/§11.5「提供 headers 时应先复制原 Header」读实为整包替换语义，所以我们从复制原始头起步、并对过期的 content-encoding/content-length 就地改写而非删键，两种语义都无害 |
+| `binary_body_mode` | ❌ 判死 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）开启它：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。v3.5.7 起它从「主路」降为「兜底」：[Rewrite] 不再逼上游压 gzip 而是直接要 identity，主路只剩 JSON.parse 一步；保留该键是因为万一某条 CDN 无视 identity 仍回 gzip，只有字节形态还能救（字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，不可逆）。v3.6.2 判死：HAR 实证脚本跑了（Trigger/Finished 齐全）但返回的修改被 Loon 丢弃——响应头没有 X-Qidian-Plugin，响应体大小与原始相同，ActivityCenterModule 等营销模块还在。根因是 binary_body_mode=true 下，脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 {"0":123,"1":34,...}，不是有效的 JSON，App 解析失败后回落缓存。修复：删除 getconf-clean 和 deep-clean 绑定的 binary_body_mode=true，respondJson 统一返回字符串，不再根据来路形态返回不同形态。 |
 | `img_url` | ✅ 已用 | 已落地 |
 
 ## 参数层

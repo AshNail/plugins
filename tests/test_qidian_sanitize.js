@@ -131,7 +131,8 @@ function shapeMatches(bodyIn, out) {
     check("content-length 改写为新体字节数", Number(h["content-length"]) === out.body.length,
       h["content-length"] + " vs " + out.body.length);
     check("其它响应头保留", h.server === "stub");
-    check("字节进 → 字节出（binary_body_mode 契约）", shapeMatches(gz, out), Object.prototype.toString.call(out && out.body));
+    // v3.6.2 修复：统一返回字符串，不再根据来路形态返回不同形态
+    check("字节进 → 字符串出（v3.6.2 修复）", typeof out.body === "string", Object.prototype.toString.call(out && out.body));
     check("X-Qidian-Plugin 带 build 与来路形态", String(h["X-Qidian-Plugin"] || "").includes(";b=") && String(h["X-Qidian-Plugin"] || "").includes(";in=u8"),
       String(h["X-Qidian-Plugin"]));
     check("变更条数也进头部（主日志没有脚本 stdout，一份 HAR 就要能读出改了几项）",
@@ -316,7 +317,8 @@ function shapeMatches(bodyIn, out) {
     const mj = parse(main.out);
     check("明文字节体不需要 ungzip 就能改写", mj && mj.Data.PangleEnable === "0" && mj.Data.ActivityIcon === undefined,
       JSON.stringify(mj && mj.Data && Object.keys(mj.Data).slice(0, 4)));
-    check("回写形态仍是字节（来路 u8）", main.out.body instanceof Uint8Array, typeof main.out.body);
+    // v3.6.2 修复：统一返回字符串，不再根据来路形态返回不同形态
+    check("回写形态是字符串（v3.6.2 修复）", typeof main.out.body === "string", typeof main.out.body);
     check("来路没有 content-encoding 就不发明它", main.out.headers["content-encoding"] === undefined,
       JSON.stringify(main.out.headers));
     check("content-length 就地改写成新体字节数", main.out.headers["content-length"] === String(main.out.body.length),

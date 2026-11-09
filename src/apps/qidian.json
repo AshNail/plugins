@@ -1,18 +1,20 @@
 {
   "slug": "qidian",
   "name": "起点读书 · 看书激励助手",
-  "desc": "起点读书·看书激励助手 v3.6.1(自动化层整体移植自/community 范式):去广告与响应净化保持 v3.5.7 自研链——[Rewrite] request 阶段把 Accept-Encoding 复写成 identity(上游本就该照客户端声明决定编码,本机 16:21 日志实证写什么回什么)并用 reject_dict(200) 整条终止 17 个纯广告端点(开屏/书架运营位/书城悬浮卡/广告位批量拉取/批量弹窗/推送弹窗/播放条/热词与分片搜索词/章末/青少年/新手引导/猜你喜欢/经典书目/活动列表/推送消息;22:15 日志实证:命中这 17 条的 36 个流零建连、零 URL 落行,请求根本没出本机),混业务端点与 getconf 一律在 [Script] 字段级剥离(getconf 30 项覆写 + 11 项删除 + 关发现 tab、账户页 9 键删除 + 功能区 13→5 白名单 + 引导开关置 0、福利中心营销模块删除与激励任务条目剪枝、每日导读、书架悬浮位、红点、兑换页、发现信息流 AdvItem、发现页 NEW_*+DISCOVER_* 6 项白名单、Deeplink ActionUrl)。自动化(签到+激励+每周兑换+章节卡)从 v3.6.0 起整体换挂 config 范式的 Qidian.js 引擎——Token/Cookie 捕获走独立开关 QDREADER_COOKIE_ENABLE(解除 autoTask 默认关导致的凭据链死锁),定时签到与高阶任务由引擎按 QDREADER_ADV_JOB_ENABLE/EXTRA/LOTTERY/WEEKLY/CHAPTER_CARD/MESSAGE_BOX 六开关粒度驱动,finishWatch 重放与 6 端点领奖、广告 SDK 时长 patch 均由引擎内置逻辑承接;广告 SDK 秒播与每日阅读积分两条响应绑定保留自研(同 URL 端点归属唯一)。引擎本体 vendored 在插件目录 scripts/Qidian.js(与「起点 Pro」同源、相对路径分发、离线可用;引擎升级时手动同步本地副本)。限时激励任务(mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」)不再剪枝：当轮 TaskId/Total 落盘 Qidian_LimitedTasks，引擎 finishWatch 重放按 Total 自动完成(v3.6.1 本地补丁)。净化开(默认)、Token 捕获开(默认)、自动化六开关开(默认,true)——服务端风控后果自担,万一抖动,关 QDREADER_* 任何子开关即可切面停用,不必泄状态。",
-  "version": "3.6.1",
+  "desc": "起点读书·看书激励助手 v3.6.2(自动化层整体移植自/community 范式):去广告与响应净化保持 v3.5.7 自研链——[Rewrite] request 阶段把 Accept-Encoding 复写成 identity(上游本就该照客户端声明决定编码,本机 16:21 日志实证写什么回什么)并用 reject_dict(200) 整条终止 17 个纯广告端点(开屏/书架运营位/书城悬浮卡/广告位批量拉取/批量弹窗/推送弹窗/播放条/热词与分片搜索词/章末/青少年/新手引导/猜你喜欢/经典书目/活动列表/推送消息;22:15 日志实证:命中这 17 条的 36 个流零建连、零 URL 落行,请求根本没出本机),混业务端点与 getconf 一律在 [Script] 字段级剥离(getconf 30 项覆写 + 11 项删除 + 关发现 tab、账户页 9 键删除 + 功能区 13→5 白名单 + 引导开关置 0、福利中心营销模块删除与激励任务条目剪枝、每日导读、书架悬浮位、红点、兑换页、发现信息流 AdvItem、发现页 NEW_*+DISCOVER_* 6 项白名单、Deeplink ActionUrl)。自动化(签到+激励+每周兑换+章节卡)从 v3.6.0 起整体换挂 config 范式的 Qidian.js 引擎——Token/Cookie 捕获走独立开关 QDREADER_COOKIE_ENABLE(解除 autoTask 默认关导致的凭据链死锁),定时签到与高阶任务由引擎按 QDREADER_ADV_JOB_ENABLE/EXTRA/LOTTERY/WEEKLY/CHAPTER_CARD/MESSAGE_BOX 六开关粒度驱动,finishWatch 重放与 6 端点领奖、广告 SDK 时长 patch 均由引擎内置逻辑承接;广告 SDK 秒播与每日阅读积分两条响应绑定保留自研(同 URL 端点归属唯一)。引擎本体 vendored 在插件目录 scripts/Qidian.js(与「起点 Pro」同源、相对路径分发、离线可用;引擎升级时手动同步本地副本)。限时激励任务(mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」)不再剪枝：当轮 TaskId/Total 落盘 Qidian_LimitedTasks，引擎 finishWatch 重放按 Total 自动完成(v3.6.2 本地补丁)。净化开(默认)、Token 捕获开(默认)、自动化六开关开(默认,true)——服务端风控后果自担,万一抖动,关 QDREADER_* 任何子开关即可切面停用,不必泄状态。",
+  "version": "3.6.2",
   "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "看书,激励,起点读书,阅文,纯净阅读,自动签到,激励任务,自动领奖,响应净化",
   "comment": [
+    "v3.6.2 修复 binary_body_mode 导致净化不生效的问题（用户裁决 2026-11-09）：HAR 实证脚本跑了（Trigger/Finished 齐全）但返回的修改被 Loon 丢弃——响应头没有 X-Qidian-Plugin，响应体大小与原始相同，ActivityCenterModule 等营销模块还在。根因是 binary_body_mode=true 下，脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 {\"0\":123,\"1\":34,...}，不是有效的 JSON，App 解析失败后回落缓存。修复：① 删除 getconf-clean 和 deep-clean 绑定的 binary_body_mode=true；② respondJson 统一返回字符串，不再根据来路形态返回不同形态；③ 更新测试用例。",
     "v3.6.1 限时激励任务（用户裁决 2026-11-09）：mainPage 响应里的 ReadingPageTaskModule（TaskType 300，标题「【限时】广告·加点！」）有 6 条限时激励任务。此前它们虽未被 pruneAdTaskItems 剪掉（关键词不匹配），但正常激励条目（VideoRewardTab 三条「完成N个广告任务得奖励/做任务得白泽宇航员装扮」）一直被按文案剪除，限时任务因此没有可参照的自动完成路径。本轮按「不要过滤掉 + 参考正常激励自动完成」落地：① handleMainPage 不再调用 pruneAdTaskItems，VideoRewardTab / ReadingPageTaskModule 的任务条目全量保留；② 限时任务的当轮 TaskId/Total 写入持久化键 Qidian_LimitedTasks；③ vendored 引擎 wrapper 增加本地动态映射（位于加密 blob 之外，同步上游引擎时必须保留），finishWatch 请求命中名单后按 Total-1 次重放，与 config TaskMapping 的 count-1 同口径。响应侧不改 IsFinished/Status/Process：完成态由看播重放达成，不做字段伪造。取证锚点：`福利中心 … 限时任务=N [id*total / …]`；引擎日志 `识别任务: 限时激励:… , 重放 N 次`。",
     "v3.6.0 自动化层整体移植（用户研判结论 2026-11-09）：3kaiu/config 维护的 Qidian.js 引擎（v6.x）在同机真机上「签到 + 每日广告任务 + 抽奖 + 每周兑换 + 章节卡」全链有效；本仓自研 auto-task.js 的同构实现在真机上从未给出签到/激励成功的痕迹（v3.5.1→v3.5.7 多轮取证全部停在失败侧），按 config 范式复盘这不全是净化层解析链的错，关键是【自动签到/激励凭据链断裂】：① Token 捕获被 autoTask 门控死锁——autoTask 默认关，Token 从未捕获；即便后来打开，也要等下一次 App 触发 getlogininfo/getconf 请求才可签到。config 2026-09-30 的结案教训是同型缺陷（Cookie 捕获曾挂在 CAPTURE_ENABLE 上），它用独立的 QDREADER_COOKIE_ENABLE 解耦，本仓下同此裁决；② config 引擎的高阶任务依赖外部签名方 api.120399.xyz /qdreader/sign（ENGINE-MANIFEST.json 登记为 runtime egress 禁拦区），本仓自研实现无该通道；③ 激励视频的广告素材走 Pangle/GDT 供给，被本插件 [Host] 黑洞断流。移植边界（用户裁决）：B 方案——净化保留自研（v3.5.7 形态：[Rewrite] force-identity + 17 条 request reject_dict + [Script] getconf/深净化字段级剥离不动）；自动化整体换挂 vendored 引擎 Qidian.js（config 范式同源，已从本仓 config 克隆件逐字节落到 plugins/qidian/scripts/Qidian.js——克隆件 plugins/qidian-pro 已随其取证使命退役删除，引擎现在唯一栖身 plugins/qidian/scripts/Qidian.js 相对路径分发，与本仓自包含原则一致；引擎可从 config 上游远程热更，本地落盘仅作运行时资产）；[Argument] 换 config 的 QDREADER_* 体系（cleanAds/autoTask/debugLog 三个名字退役，Token 捕获独立开关 QDREADER_COOKIE_ENABLE，新增 CRONEXP/TIMEOUT 两个 input，自动化粒度对齐 config 的 ADV_JOB/EXTRA/LOTTERY/WEEKLY/CHAPTER_CARD/MESSAGE_BOX 六开关）；[Host] 撤出 sdks 里的 pangle/gdt 两组黑洞（保激励），其广告净化改由 [Rewrite]/[Script] 字段级处置承担。[Script] 适配本仓分层的迁移规则：config 7 条引擎绑定里，【客户端配置净化】【深度净化】两条大族响应绑定不注册——与本仓 getconf-clean/deep-clean 在同一 URL 上重叠，Loon「同响应最多选一条 Response Script」会造成不确定执行归属，且职责等价（30 覆写/11 删自研已覆盖）；【每日阅读积分】保留自研 readtime-patch（引擎的 readpage 处理是相同职责）；其余【自动重放】【获取Token】【获取Cookie】【自动签到 cron】【手动自检 generic】五条按 config 原样落接。引擎侧全部用旧式语法（config 有效基线的逐字形状），自研侧继续用 v2 内联语法——Loon 两式绑定并存合法。**同机不要同时开「起点 Pro」的限制延续**（config 引擎的内置高阶任务会抢自研 [Script] 的响应归属）；本仓 config 克隆件 plugins/qidian-pro 已随 v3.6.0 移植退役删除，新装机用户不会再拿到它，也不再需要处理它与 qidian 的双开问题。",
     "v3.5.7 同时改传输与取证出口,起因是 22:15 之后设备的答复:调试模式开着、锁屏一条通知都没有、UI 也没净化。把这个观察摊开看:净化绑定 match/Trigger/Finished 19/19/19 齐全说明脚本确实被调到并跑完,而 v3.5.6 的通知只在 respondJson 里推,零通知就等于respondJson 一次都没被调用——断点在 safeJsonParse 返回 null,不在传输层。这同时废掉了我此前的一条判读口径:「Finished 齐全」根本不能证明脚本内部没抛异常,v3.5.2 那次 TDZ ReferenceError 就是从 catch 里空 $done() 走掉、日志照样打 Finished 的。官方 Script API §8.5 明写 ungzip 是同步、入参 Uint8Array、返回 Uint8Array,§11.5 明写改 body 后 Loon 自己处理 Content-Length/Transfer-Encoding/Content-Encoding,§11.3/11.5 还提醒「提供 headers 时应先复制原 Header」(respondHeaders 早就是 Object.assign 起步,Content-Type 没丢),三条都对得上我们的写法,所以「gzip 链本身错在哪」在纸面上定不下来——那就把它绕过去:① force-gzip 改名 force-identity,复写值换成 identity。依据是本机 16:21 日志已经证明「写 gzip 上游就真回 gzip」,即上游照客户端声明走,那么写 identity 就拿到明文;而 identity 同样是脚本解不动的 br/zstd 的解法,且更彻底。gzip 分支与binary_body_mode 保留作兜底(万一某条 CDN 无视 identity),不是主路。② forensicNotice() 换成 forensicReport(kind, detail):ok 与 fail 各用一个$persistentStore 节流键、15s 互不挤掉,失败侧把「字符串体 parse 失败 / ungzip 抛错 / ungzip 缺失 / 不认的 object 形态 / 明文与 gzip 字节体 parse失败(附首段 24 字符)」原样推到锁屏。一次真机运行就能三分叉:两条都没有 ⇒ 脚本没被调到(绑定/URL 匹配问题);只有 fail ⇒ 明文也没解动,看 detail 定位;有 ok 且 n>0 而 UI 没变 ⇒ 剩下的只有 App 侧缓存,走卸载重装首启。③ safeJsonParse 的对象早退收紧:原先「不是 Uint8Array/ArrayBuffer 的对象」一律当已解析 JSON 原样返回,运行时桥接来的二进制包装一旦 instanceof 认不出,下游就是 obj.Data===undefined 的静默透传、或 respondJson 里被 stringify 成{\"0\":31,\"1\":139,…} 的坏包;现在只认数组与朴素对象,其余判失败并报出去。tag 随 build 走 v357。回滚单位:force-identity 复写值换回 gzip 一行 +forensicReport 的 fail 分支调用。",
     "v3.5.6 上线后第一份 22:15:05.log(33 秒)把「广告拒绝层」从三轮未验证判成实证生效,起点净化剩下的未知第一次收窄到一条:真机 UI。① 版号与生命周期都对上:`起点深度净化v356` match=19/Trigger=19/Finished=19(四份日志里第一次一条不漏——21:05 是 29/27、22:06 是 17/16)、`起点getconf净化v356` 2/2/2、`起点每日阅读积分` 2/2/2、`起点Token捕获` 4/4/4、`id:28` 命中 121 次、id 29–45 命中 36 次、0 次 75.00s、锚点仍 0 条(与 console 判死一致);通知在这份导出日志里天然不可见(全日志只有 1 行 `Schedule task notification`,脚本侧通知不落任何行),所以锁屏那条只能由设备回答。② 读出一条能双向对账的新机制:正常流在 request 读完后必打 `Request ended before remote selected. ruleSearchs:8 state:67 cacheBody:0 url:…`(此前的 URL 普查就靠这行),而被 request 阶段 reject_dict(200) 终止的流根本走不到它——按 (conn,req) 归并后,36 条命中 id 29–45 的流里 0 条有 URL 行、0 条建连、0 条 submit、0 条响应头、0 条 script;反方向同样干净,全日志 204 条 URL 行、50 个唯一 URL,零条落在 17 个 reject 路径上 ⇒ 终止发生在选远端之前,广告请求没出本机。③ 上一轮登记的净化面缺口按 10:28 HAR 逐端点看完体量后判定不是缺口:`widget/getContent` 只有签到组件 `Data.CheckInInfo`(删它就是打掉签到入口)、`bookshelf/getHighLevelBookReadInfo` 那份样本是 Result -301 未登录连 Data 都没有、`widget/daily/rec` 是每日荐书正文加阅读时长、`client/ostar` 的 Data 是一段 84B 加密位、`v3/client/r1` 的 Data 为 0;可莉 QiDian_remove_ads.lpx 同样没碰这些路径。唯一还挂着的是 `checkin/simpleinfo`(HAR 无样本,既不定罪也不洗白)。",
     "v3.5.6 把自证面推到锁屏——22:06:12.log(32 秒冷启动)第一次做到了「版本可机读」:主日志里 `match http-response script:起点深度净化v355`×17/Trigger=16/Finished=16、`起点getconf净化v355` 2/2/2、`起点每日阅读积分` 2/2/2、`起点Token捕获` 4/4/4，全日志 0 次 75.00s、id:28 命中 110 次、id 29–45 命中 31 次，而锚点仍 0 条(与 console 判死一致)。这一步同时排除了一直悬着的那个解释:远端 v3.5.5 确实装到了设备上(日志里没有 per-plugin 版本行，`Load plugin:起点读书 · 看书激励助手` 只有名字，所以只能靠 tag)——「插件没更新」不再是候选原因。剩下唯一未知的仍是「改写后的送达形态」，而主日志结构上给不出答案:全日志 0 次提到 content-encoding/gzip，没有任何一行会打印脚本改的 body 或 headers。于是本轮把同一串证据换个出口:respondJson 在回写前调 forensicNotice()，插件的「调试模式」(debugLog)开着、且本次净化有变更计数(getconf/账户页/福利页三处)时，用 $notification.post 把 `b=<build> in=<形态> n=<条数>` 推到锁屏，副标题带端点路径，正文说明 n=0 的含义；$persistentStore 记上次时间做 15s 节流，一次冷启动最多一两条，不会刷屏。这样用户不需要 HAR、不需要翻 App 内脚本日志，开调试模式用一遍起点就能直接看到「脚本改了几项」——如果通知出现且 n>0 而 UI 仍不变，那就只剩 App 侧缓存与 CDN 回源两条线可查；如果通知根本不出现而 tag 已是 v356，说明这三处一个都没走到 respondJson，即 safeJsonParse 仍在返回 null，直接切路线 B(Accept-Encoding 复写改 identity)。净化逻辑与规则内容本轮一行未动。",
-    "v3.5.5 换取证面 + 堵一个能解释「脚本跑了、字段改了、UI 却没变」的头语义洞——21:35:23.log(v3.5.4 上线后第一份)按 (conn,req) 归并:起点深度净化 match=20/Finished=19、起点getconf净化 2/2/2、起点Token捕获 4/4/4、全日志 0 次 75.00s、装载行 Load 1974 rules. 257 scripts. 106 rewrites. 与 21:05 那份逐字相同。两条判死:① v3.5.4 押的「绑定带 debug=true 脚本 console 就落主日志」不成立——两条净化绑定的 debug 已常开,主日志仍 0 条 [起点锚点],官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」,所以锚点只能在 App 内脚本日志页看,主日志对脚本内部行为是结构性失明(此前六份日志同理,不是净化失败的证据);② 竞争排除——全日志 http-response script 只有起点自家三个 tag,既没有第二份起点响应脚本抢「同一响应最多选择一条 Response Script」,也没有任何 response.json.* 复写命中起点(mitm 里 0 条),所以「Response Body Rewrite 命中时 Response Script 不执行」这条短路在本机不适用。同时用本机 10:28 的 69MB HAR(440_1793932089145,Loon 存的是已解压的 base64 明文)逐字段核对了净化规则内容:getaccountpage 的 FunctionButtonList 13 项 PositionMark 与保留白名单 5 项逐字命中(mypagenew_WOFABUDE/GUANZHUSHOUCANG/WODEQUANDING/LIULANJILU/WODEDINGZHI),BenefitButtonList 6 项(福利中心/活动中心/我的阅历/卡牌广场/周边商城/游戏中心)与 9 个删除键全对得上,getconf 的 168 个 Data 键里 PangleEnable/ActivityIcon/ActivityPopup/LuckBag/ClassicBookInfo/ClientLocalNotify2/PushDialogScenes/RewardSatisfyDialog/FansClubPropInfo/AdVideoPositionConfig/GDT 确实存在,NewFeedsDiscover 与 WolfEye/TeenShowFreq 也在——规则内容不是短板,短板只剩「改写后的响应有没有按 App 期待的外形送达」。本轮改三处:① respondHeaders 不再删除过期的 content-encoding/content-length,而是**就地改写**为 identity 与新体字节数,且只在原始键存在时改写(绝不凭空发明头:原体是 chunked 时塞 content-length 反而违规)。动机是手册没保证 Loon 对脚本给的 headers 是替换还是合并——若为合并,delete 一个键等于「不改」,原始 `Content-Encoding: gzip` 就会套在明文新体上,App inflate 必失败并静默回落本地缓存,而起点把 getaccountpage/reddot/getdot 明确列进了 CacheIsolationPathList,这正是「跑了却看不见」的形状。② build 号写进 tag(起点getconf净化v355/起点深度净化v355):tag 是字面量且原样出现在主日志的 match/Trigger/Finished 行里,「设备加载的是哪一版接线」第一次可机读——v3.5.3/3.5.4/3.5.5 三版的 Load 计数完全不变、日志里也没有任何 per-plugin 版本或 hash 行(remoteHashes=7 pluginHashes=24 只是数量),此前「没更新」与「更新了但看不到」在日志上是同一个样子。③ respondJson 新增可选的变更条数参数，getconf(30 覆写+11 删除的计数)、账户页(删除键+剪除任务条目)、福利页(删除模块+剪除条目)三处把它写成响应头的 `;n=<N>`——锚点导不出来，changes=N 就只有这一条通道，一份 HAR 同时回答「跑没跑到、拿到字节还是字符串、改了几项」。④ 净化面缺口按真机流量登记但本轮不扩规则(缺字段级证据):widget/getContent(4 次,Data.CheckInInfo 带 ActionUrl/PicUrl/ShowText)、widget/daily/rec(2)、bookshelf/getHighLevelBookReadInfo(5,本份只回 Message/Result)、client/ostar(2)、v3/client/r1(2)、checkin/simpleinfo(5) 都进了起点域名却不在任何净化绑定内,可莉 QiDian_remove_ads.lpx 同样没碰 widget/*,所以先记账不动手。判读顺序更新:①主日志有没有 script:起点深度净化v355(没有=插件没更新,先去详情页刷新+重新导入);②HAR 里净化端点响应头有没有 X-Qidian-Plugin: qidian-sanitize;b=3.5.5(没有=脚本没走到 respondJson,即 safeJsonParse 仍返回 null);③该头里 in=u8 还是 in=str(binary_body_mode 有没有把字节交到手);④Content-Encoding 是否已是 identity(还是 gzip 就说明 Loon 合并了头,本轮改写的洞就是真因);⑤头部里的 `;n=<N>` 就是本次变更条数(App 内脚本日志的 changes=N 是同一件事的另一份抄本)。回滚单位:respondHeaders 的 write() 两行 + `;n=` 一处 + 两处 tag 后缀。tag 后缀随 build 号走，v3.5.6 起是 v356。",    "v3.5.4 不改净化逻辑,只把取证面补齐——21:05:22.log(Loon 3.5.3(1014) / iPhone18,4 / iOS 27.2)是 v3.5.3 上线后第一份,能证明的与不能证明的都清楚了。能证明:① 传输层已彻底不挂——全日志 0 次 75.00s、仅 1 次 Force closed、57 次 h2 is not negotiated→Transform to http1.1 全部正常释放;② [Rewrite] 层活着——id:28(那条 Accept-Encoding=gzip 复写)命中 191 次,id:29–45 的 17 条 request reject_dict 命中 54 次(其中 4 条本轮没被请求);③ 净化绑定在跑——起点getconf净化 match=4/Trigger=4/Finished=4、起点深度净化 match=29/Trigger=27、MITM 解密 8 次命中 magev6/h5。不能证明:这份日志里 [起点锚点] 一条都没有,而全库 24 个插件的脚本 console 输出同样一条都没有——Loon 只在绑定 `with debug=true` 时把脚本 console 落主日志,我们的绑定写的是 `debug=${debugLog}` 且 debugLog 默认 false。所以「Trigger/Finished 齐全但看不到 changes=N」不是净化失败的证据,也不是成功的证据;顺带把上一轮从日志里读的「Trigger→Finished 0ms vs 999ms」也作废:同一端点(reddot/getdot?positionMark=BOTTOM_TAB)两种值都出现,999ms 且严格贴近 1s 是 Loon 的异步 $done 刷写节拍,不是脚本工作量,时长在这份日志里没有判读价值。本轮补两件让下一次自证的事:① getconf-clean / deep-clean 的 `with debug` 由 build-apps.py 新增的 binding.debug=true 直出常开(取证期,回滚单位=删这两条 debug 键),这样用户不需要动插件开关,锚点必落主日志;② respondHeaders 的 `X-Qidian-Plugin` 从裸 tag 改成 `<tag>;b=<build>;in=<形态>`,形态 u8/ab/str 直接回答「binary_body_mode 有没有把字节交到脚本手上」——头部标记不受 console 门禁,一份 HAR 就能判死或判成。判读优先级:先看 HAR 里净化端点响应有没有 X-Qidian-Plugin(没有=脚本没走到 respondJson,即 safeJsonParse 仍返回 null),再看锚点 `body=[u8:…] enc=gzip` 后是否跟 `json parse=ok gzip bytes=…`。",
+    "v3.5.5 换取证面 + 堵一个能解释「脚本跑了、字段改了、UI 却没变」的头语义洞——21:35:23.log(v3.5.4 上线后第一份)按 (conn,req) 归并:起点深度净化 match=20/Finished=19、起点getconf净化 2/2/2、起点Token捕获 4/4/4、全日志 0 次 75.00s、装载行 Load 1974 rules. 257 scripts. 106 rewrites. 与 21:05 那份逐字相同。两条判死:① v3.5.4 押的「绑定带 debug=true 脚本 console 就落主日志」不成立——两条净化绑定的 debug 已常开,主日志仍 0 条 [起点锚点],官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」,所以锚点只能在 App 内脚本日志页看,主日志对脚本内部行为是结构性失明(此前六份日志同理,不是净化失败的证据);② 竞争排除——全日志 http-response script 只有起点自家三个 tag,既没有第二份起点响应脚本抢「同一响应最多选择一条 Response Script」,也没有任何 response.json.* 复写命中起点(mitm 里 0 条),所以「Response Body Rewrite 命中时 Response Script 不执行」这条短路在本机不适用。同时用本机 10:28 的 69MB HAR(440_1793932089145,Loon 存的是已解压的 base64 明文)逐字段核对了净化规则内容:getaccountpage 的 FunctionButtonList 13 项 PositionMark 与保留白名单 5 项逐字命中(mypagenew_WOFABUDE/GUANZHUSHOUCANG/WODEQUANDING/LIULANJILU/WODEDINGZHI),BenefitButtonList 6 项(福利中心/活动中心/我的阅历/卡牌广场/周边商城/游戏中心)与 9 个删除键全对得上,getconf 的 168 个 Data 键里 PangleEnable/ActivityIcon/ActivityPopup/LuckBag/ClassicBookInfo/ClientLocalNotify2/PushDialogScenes/RewardSatisfyDialog/FansClubPropInfo/AdVideoPositionConfig/GDT 确实存在,NewFeedsDiscover 与 WolfEye/TeenShowFreq 也在——规则内容不是短板,短板只剩「改写后的响应有没有按 App 期待的外形送达」。本轮改三处:① respondHeaders 不再删除过期的 content-encoding/content-length,而是**就地改写**为 identity 与新体字节数,且只在原始键存在时改写(绝不凭空发明头:原体是 chunked 时塞 content-length 反而违规)。动机是手册没保证 Loon 对脚本给的 headers 是替换还是合并——若为合并,delete 一个键等于「不改」,原始 `Content-Encoding: gzip` 就会套在明文新体上,App inflate 必失败并静默回落本地缓存,而起点把 getaccountpage/reddot/getdot 明确列进了 CacheIsolationPathList,这正是「跑了却看不见」的形状。② build 号写进 tag(起点getconf净化v355/起点深度净化v355):tag 是字面量且原样出现在主日志的 match/Trigger/Finished 行里,「设备加载的是哪一版接线」第一次可机读——v3.5.3/3.5.4/3.5.5 三版的 Load 计数完全不变、日志里也没有任何 per-plugin 版本或 hash 行(remoteHashes=7 pluginHashes=24 只是数量),此前「没更新」与「更新了但看不到」在日志上是同一个样子。③ respondJson 新增可选的变更条数参数，getconf(30 覆写+11 删除的计数)、账户页(删除键+剪除任务条目)、福利页(删除模块+剪除条目)三处把它写成响应头的 `;n=<N>`——锚点导不出来，changes=N 就只有这一条通道，一份 HAR 同时回答「跑没跑到、拿到字节还是字符串、改了几项」。④ 净化面缺口按真机流量登记但本轮不扩规则(缺字段级证据):widget/getContent(4 次,Data.CheckInInfo 带 ActionUrl/PicUrl/ShowText)、widget/daily/rec(2)、bookshelf/getHighLevelBookReadInfo(5,本份只回 Message/Result)、client/ostar(2)、v3/client/r1(2)、checkin/simpleinfo(5) 都进了起点域名却不在任何净化绑定内,可莉 QiDian_remove_ads.lpx 同样没碰 widget/*,所以先记账不动手。判读顺序更新:①主日志有没有 script:起点深度净化v355(没有=插件没更新,先去详情页刷新+重新导入);②HAR 里净化端点响应头有没有 X-Qidian-Plugin: qidian-sanitize;b=3.5.5(没有=脚本没走到 respondJson,即 safeJsonParse 仍返回 null);③该头里 in=u8 还是 in=str(binary_body_mode 有没有把字节交到手);④Content-Encoding 是否已是 identity(还是 gzip 就说明 Loon 合并了头,本轮改写的洞就是真因);⑤头部里的 `;n=<N>` 就是本次变更条数(App 内脚本日志的 changes=N 是同一件事的另一份抄本)。回滚单位:respondHeaders 的 write() 两行 + `;n=` 一处 + 两处 tag 后缀。tag 后缀随 build 号走，v3.5.6 起是 v356。",
+    "v3.5.4 不改净化逻辑,只把取证面补齐——21:05:22.log(Loon 3.5.3(1014) / iPhone18,4 / iOS 27.2)是 v3.5.3 上线后第一份,能证明的与不能证明的都清楚了。能证明:① 传输层已彻底不挂——全日志 0 次 75.00s、仅 1 次 Force closed、57 次 h2 is not negotiated→Transform to http1.1 全部正常释放;② [Rewrite] 层活着——id:28(那条 Accept-Encoding=gzip 复写)命中 191 次,id:29–45 的 17 条 request reject_dict 命中 54 次(其中 4 条本轮没被请求);③ 净化绑定在跑——起点getconf净化 match=4/Trigger=4/Finished=4、起点深度净化 match=29/Trigger=27、MITM 解密 8 次命中 magev6/h5。不能证明:这份日志里 [起点锚点] 一条都没有,而全库 24 个插件的脚本 console 输出同样一条都没有——Loon 只在绑定 `with debug=true` 时把脚本 console 落主日志,我们的绑定写的是 `debug=${debugLog}` 且 debugLog 默认 false。所以「Trigger/Finished 齐全但看不到 changes=N」不是净化失败的证据,也不是成功的证据;顺带把上一轮从日志里读的「Trigger→Finished 0ms vs 999ms」也作废:同一端点(reddot/getdot?positionMark=BOTTOM_TAB)两种值都出现,999ms 且严格贴近 1s 是 Loon 的异步 $done 刷写节拍,不是脚本工作量,时长在这份日志里没有判读价值。本轮补两件让下一次自证的事:① getconf-clean / deep-clean 的 `with debug` 由 build-apps.py 新增的 binding.debug=true 直出常开(取证期,回滚单位=删这两条 debug 键),这样用户不需要动插件开关,锚点必落主日志;② respondHeaders 的 `X-Qidian-Plugin` 从裸 tag 改成 `<tag>;b=<build>;in=<形态>`,形态 u8/ab/str 直接回答「binary_body_mode 有没有把字节交到脚本手上」——头部标记不受 console 门禁,一份 HAR 就能判死或判成。判读优先级:先看 HAR 里净化端点响应有没有 X-Qidian-Plugin(没有=脚本没走到 respondJson,即 safeJsonParse 仍返回 null),再看锚点 `body=[u8:…] enc=gzip` 后是否跟 `json parse=ok gzip bytes=…`。",
     "v3.5.3 把 v3.5.2 那个没成立的前提改掉:Loon 不替脚本解压 gzip。v3.5.2 的修法是「[Rewrite] 强制 Accept-Encoding:gzip ⇒ 引擎自动解成 UTF-8 字符串 ⇒ 脚本 JSON.parse」,但 16:21:50 日志(登记在 tests/test_qidian_sanitize.js 头部)已经给出反证——起点净化脚本 match/Trigger/Finished 一应俱全、getconf 0ms 结束、一个字段没改:不带 binary_body_mode 时 $response.body 是 Loon 按 UTF-8 硬解的字节串,0x8b 之类高位字节已成 U+FFFD,`charCodeAt(1)===0x8b` 魔数检测必然失效、JSON.parse 必然抛,而 safeJsonParse 抛错就是 return null ⇒ 全端点 passthrough。本机 HAR 又证实这些 Argus 响应本来就带 Content-Encoding:gzip(App 自己就在请求里带 gzip),所以「强制 gzip」既没换来解压也没换来明文,只是把 br/zstd 消掉而已(这条仍然有价值:脚本层只有 $utils.ungzip,收到 br 一样是乱码)。v3.5.3 两头对齐:① getconf-clean 与 deep-clean 两条净化绑定开 binary_body_mode=true(其余绑定不动——adsec-*/readtime 的 handleAdSkip 走的是字符串正则,改成字节会直接命中它的 non-string 放行分支而失效,且它们归 autoTask 默认关);② 新增 utf8Encode 并让 respondJson 按来路形态回写(进 Uint8Array 就回 Uint8Array,进 ArrayBuffer 就回 .buffer,进字符串就回字符串),因为 v3.5.1 的失败正是「开了 binary_body_mode 却回 JSON.stringify 字符串」被 Loon 静默丢弃。回滚单位:两条绑定各删一行 binary_body_mode=true(脚本侧 respondJson 的按形态回写对字符串路径是无害的,可以留着)。判据(需先打开「是否开启调试模式」):`[起点锚点] b=3.5.3 phase=response POST/GET …/client/getconf ungzip=present debug=true body=[u8:NNNN] enc=gzip` 之后必须跟 `json parse=ok gzip bytes=NNNN` 与 `getconf parsed=1 changes=N`;若仍看到 `json parse=fail str` 说明 Loon 在 binary 模式下也没给字节,那唯一剩下的路是把 force-gzip 改成 `Accept-Encoding: identity`(代价:soda 侧实测过明文膨胀 5~10 倍,起点这几个接口体量小,可接受)。",
     "v3.5.2 三份真机日志(14:34:17 / 16:21:50 / 17:50:03)联合结案,彻底修通起点去广告链路:① 为什么不能恢复 response.json.*:14:34:17.log 逐流对账证明客户端到 Loon 是 H2Tunnel,Loon 到起点上游握手后打 `h2 is not negotiated -> Transform to http1.1`,在此 H2-to-H1 桥接流上只要命中 response.json.*(id:44..59),Loon 改完响应体后不发 H2 END_STREAM,左端流严格挂起 75.000s(如 req 130 getHoverAdv 14:34:26:061->14:35:41:067、req 94 getconf 14:34:26:321->14:35:41:329、req 238 getaccountpage 14:34:28:289->14:35:43:288)直到上游 Nginx keepalive_timeout 75s 到期断开触发 `H1 socket closed, Force closed left stream`;而 request 阶段 reject_dict(200) 与 [Script] requires_body=true 均在 1~10ms 正常 `Left stream dealloc`,零 75s 挂死。② 为什么 v3.5.1(17:50:03.log)仍不生效:v3.5.1 给 5 条响应脚本加了 binary_body_mode=true,这既让 $response.body 变成 Uint8Array 并要求 $done({body}) 回传字节流(而 respondJson 回传的是 JSON.stringify 字符串),又导致 Loon 缓存旧版脚本时 typeof body !== 'string' 0ms 直接返回 null 透传;同时 qidian.plugin 缺少 soda/douyin 同款的 `[Rewrite] request.header.set(\"Accept-Encoding\", \"gzip\")`。修法:撤回全部 binary_body_mode=true,在 [Rewrite] 顶部加 force-gzip 将 h5/mage/magev6 的 Accept-Encoding 统一压为 gzip,由 Loon HTTP 引擎原生解压成 UTF-8 字符串再交脚本(safeJsonParse 仍保留 Uint8Array+$utils.ungzip+utf8Decode 兜底)。③ 修复 src/qidian/auto-task.js 两处运行时缺陷:`const CLEAN_RULES` 原先声明在主 IIFE 之后(第 747 行),同步执行到 matchCleanRule(path) 时触发 Temporal Dead Zone ReferenceError 跳进 catch 空 $done(),导致 reddot/getdot、video/adv/mainPageDialog、checkin/checkinexchangepage 100% 崩溃透传;同时用纯 ES5 extractPath(url) 替换 new URL(url) 消除 JSC 环境兼容隐患。④ 补齐 v3.5.0 撤回复写时遗漏未同步到 auto-task.js 的净化规则:DiscoverKeepKeys 补齐 DISCOVER_TUIJIAN/DISCOVER_ZHUANLAN/DISCOVER_SHUDAN(保留顶栏 3 tab + 宫格 3 项);handleAccountPage 补齐 9 个营销键删除 + FunctionButtonList 13→5 PositionMark 白名单 + FreshManGuideSwitch 置 0;handleMainPage 补齐 ActivityCenterModule/CharityModule 删除(保留 SurpriseBenefit 限时福利);[Rewrite] 新增 kill-floatcard(booksquare/getfloatcard,16:21/17:50 日志均捕获)。",
     "v3.5.0 复写层撤案(2026-11-06 14:34 真机日志,14219 行,iQDReaderAppStore/5.9.484 / iOS 27.2):v3.3.0 的判断错在把「命中」当成「生效」。按 (conn,req) 归并日志事件后:本层 30 条复写在 Loon 的 rewrite snapshot 里占 id 28-57(request 终止族 28-43、response.json.* 14 条 44-57),47 条起点请求命中 response.json.*、165 条没命中。没命中的 165 条端到端 0.00s 且零失败;命中的 47 条中位 20.02s、p90 75.28s、最长 75.74s,其中 15 条在 14:35:41-14:35:50 一并以 `[38/*] h2 remote did disconnect with error:Error Domain=kCFStreamErrorDomainSSL Code=6` 断掉,全库 SSL Code=6 只有这 15 条且 15/15 都落在命中 response.json.* 的请求上——引擎复写 gzip 的 Argus 响应不是接管,是把流挂到超时再掐。用户看到的三个症状是同一条链:①我的页网络错误(getaccountpage 命中 id 50,日志里 26 次请求=反复重试;它还额外命中 id 58/59,即同机另有一份复写压在同一响应上,最可能是「起点 Pro」——故本层 desc 明确写了不要同开);②发现 tab 还是 4 个(conf-tabs=47 命中了,但 getconf 响应根本没送到 App,NewFeedsDiscover 与全部云端配置一起丢);③净化面整体不稳。处置:14 条 response.json.* 复写整段删除,字段级净化回到 [Script](同一段日志证明脚本侧 `Finished execute http-response script:起点getconf净化` 正常跑完且请求不死),16 条 request reject_dict 保留(request 阶段不碰响应体,本份日志无命中样本,属未验证但不是已知有害)。gzip 顾虑回到实测:本机 Build 1005/1014 ≥ 988,$utils.ungzip 在,v3.3.0 那条「低版本静默 passthrough」的前提在这台机器上不成立.",
@@ -319,7 +321,7 @@
       "h5.if.qidian.com"
     ],
     "rewrite": [
-    {
+      {
         "id": "force-identity",
         "group": "压缩协商（request 阶段）：强制 identity，让上游根本不压，脚本直接拿到明文 JSON",
         "stage": "request",
@@ -329,7 +331,7 @@
         "note": "v3.5.7 路线 B：gzip 那条路要串行吃三个未经真机确认的运行时前提（binary_body_mode 给字节、$utils.ungzip 同步返回 Uint8Array、手写 UTF-8 解码），任何一个不成立都是「脚本 Finished 却一个字段没改」；改成 identity 后上游不压，脚本只剩 JSON.parse 一步，而 identity 同样消掉脚本解不了的 br/zstd——目标本来就是「别让上游压成脚本解不动的形态」，identity 比 gzip 更彻底。体量代价：这几个 Argus 接口明文膨胀 5~10 倍（soda 侧实测），单机可接受。真机 22:15 判据：调试模式开着、v356 绑定 19/19/19 齐全、锁屏零通知 ⇒ respondJson 一次都没走到，解析链就是断点。",
         "source": "官方 Script API §11.5「修改响应 Body 后 Loon 按传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」· 2026-11-06 真机日志"
       },
-    {
+      {
         "id": "kill-splash",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -340,7 +342,7 @@
         "note": "开屏广告。HAR 实证 Data.List=3 条素材（AdPlatform/SplashTime 同体，但纯广告载荷）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-topoperation",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -351,7 +353,7 @@
         "note": "书架置顶运营位。HAR 实证 Data.Items=3 + MainInfo.AdId",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-getad",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -362,7 +364,7 @@
         "note": "书架广告位（脚本 DirectKill 面）。HAR 实证 Data.GameUrl=QDReader://app/gameCenterMainPage",
         "source": "起点 Pro 2026-09-30 等价化集 · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-iosad",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -373,7 +375,7 @@
         "note": "iOS 广告位列表（HAR 当期返回空 Data，仍按纯广告端点终止）",
         "source": "起点 Pro 2026-09-30 等价化集"
       },
-    {
+      {
         "id": "kill-playstrip",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -384,7 +386,7 @@
         "note": "维护播放条/滚动运营条",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
       },
-    {
+      {
         "id": "kill-getdialog",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -395,7 +397,7 @@
         "note": "推送弹窗（App 内营销弹窗的唯一来源，getconf 的 PushDialogFrequency 只压频次）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
       },
-    {
+      {
         "id": "kill-hotwords",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -406,7 +408,7 @@
         "note": "搜索框填充热词与分片推广搜索词（HAR 实证 v2/booksearch/shardWord，同时保留 hotWords 兼容）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-chapterend",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -417,7 +419,7 @@
         "note": "章节末尾订阅读者/运营模块",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
       },
-    {
+      {
         "id": "kill-youngconf",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -428,7 +430,7 @@
         "note": "青少年模式引导弹窗配置（HAR 实证 Data.TeenShowFreq=1 + Tips 文案）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-freshman",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -439,7 +441,7 @@
         "note": "新手引导：书架按钮「更多福利点击领取」与引导弹窗（HAR 实证 ActionUrl=QDReader://app/openTaskCenter）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-recommendbook",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -450,7 +452,7 @@
         "note": "书架「猜你喜欢」推荐位（HAR 实证 BookShelfRecBookList=10）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-classicbook",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -461,7 +463,7 @@
         "note": "书页经典书目运营模块（HAR 实证 Data.Items=2）",
         "source": "起点 Pro 2026-09-30 等价化集"
       },
-    {
+      {
         "id": "kill-activitylist",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -472,7 +474,7 @@
         "note": "运营活动列表",
         "source": "起点 Pro 2026-09-30 等价化集"
       },
-    {
+      {
         "id": "kill-popup",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -483,7 +485,7 @@
         "note": "批量弹窗（HAR 实证 Data.PopupList=1）",
         "source": "起点 Pro 2026-09-30 等价化集 · 本机 HAR 11-06"
       },
-    {
+      {
         "id": "kill-message",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -494,7 +496,7 @@
         "note": "推送消息与运营/社交 push 拉取",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
       },
-    {
+      {
         "id": "kill-adv-family",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -505,7 +507,7 @@
         "note": "广告位拉取整族（getadvlist 与 getadvlistbatch 一条覆盖）：脚本侧 handleAdListBatch 的豁免只看 URL 里有没有 AdWhitelist 关键词，本机 HAR 8 样本 + 日志 12 次请求的 positions 全是 bookstore/usercenter/checkin/comment 类，零命中关键词 ⇒ 脚本本来就是把 Data 整个清空，引擎直接终止等价且少走一次回包",
         "source": "本机 HAR 440 + 日志 11-06 13:09 + kelee QiDian_remove_ads.lpx adv/ 前缀 + 仓库注释态 URL-REGEX 基线"
       },
-    {
+      {
         "id": "kill-floatcard",
         "group": "整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段",
         "stage": "request",
@@ -523,7 +525,11 @@
         "kind": "request",
         "legacy": true,
         "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/finishWatch",
-        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com",
+          "mage.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
         "path": "scripts/Qidian.js",
         "requires_body": true,
         "timeout": 120,
@@ -535,7 +541,11 @@
         "kind": "request",
         "legacy": true,
         "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v\\d+/(client/getconf|checkin/checkin|checkin/simpleinfo)",
-        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com",
+          "mage.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
         "path": "scripts/Qidian.js",
         "requires_body": false,
         "timeout": 10,
@@ -547,12 +557,16 @@
         "kind": "response",
         "legacy": true,
         "pattern": "^https?://h5\\.if\\.qidian\\.com/argus/api/v1/user/getlogininfo",
-        "hosts": ["h5.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com"
+        ],
         "path": "scripts/Qidian.js",
         "requires_body": true,
         "timeout": 10,
         "switch": "QDREADER_COOKIE_ENABLE",
-        "argument": ["QDREADER_DEBUG"],
+        "argument": [
+          "QDREADER_DEBUG"
+        ],
         "tag": "起点读书获取Cookie",
         "note": "config 2026-09-30 解耦形态在本仓落地：getlogininfo 响应带完整用户凭据，独立开关 QDREADER_COOKIE_ENABLE 门控——旧的 autoTask 门控死锁（默认关 ⇒ Token 永不捕获）在本仓表现为自动签到长期失效的根因之一"
       },
@@ -563,7 +577,15 @@
         "cron": "{CRONEXP}",
         "path": "scripts/Qidian.js",
         "timeout": "{TIMEOUT}",
-        "argument": ["QDREADER_DEBUG", "QDREADER_ADV_JOB_ENABLE", "QDREADER_EXTRA_ADV_JOB_ENABLE", "QDREADER_LOTTERY_ENABLE", "QDREADER_WEEKLY_EXCHANGE_ENABLE", "QDREADER_CHAPTER_CARD_ENABLE", "QDREADER_MESSAGE_BOX_ENABLE"],
+        "argument": [
+          "QDREADER_DEBUG",
+          "QDREADER_ADV_JOB_ENABLE",
+          "QDREADER_EXTRA_ADV_JOB_ENABLE",
+          "QDREADER_LOTTERY_ENABLE",
+          "QDREADER_WEEKLY_EXCHANGE_ENABLE",
+          "QDREADER_CHAPTER_CARD_ENABLE",
+          "QDREADER_MESSAGE_BOX_ENABLE"
+        ],
         "tag": "起点读书自动签到(包含高阶任务)",
         "note": "config 同形：CRONEXP/TIMEOUT 两个 input 参数化定时与超时（默认 11 2 * * * / 420 秒）；7 个 argument 开关控制任务取舍；官方纪律 cron 不得被 enable 门控——门了会静默消失"
       },
@@ -573,7 +595,15 @@
         "legacy": true,
         "path": "scripts/Qidian.js",
         "timeout": "{TIMEOUT}",
-        "argument": ["QDREADER_DEBUG", "QDREADER_ADV_JOB_ENABLE", "QDREADER_EXTRA_ADV_JOB_ENABLE", "QDREADER_LOTTERY_ENABLE", "QDREADER_WEEKLY_EXCHANGE_ENABLE", "QDREADER_CHAPTER_CARD_ENABLE", "QDREADER_MESSAGE_BOX_ENABLE"],
+        "argument": [
+          "QDREADER_DEBUG",
+          "QDREADER_ADV_JOB_ENABLE",
+          "QDREADER_EXTRA_ADV_JOB_ENABLE",
+          "QDREADER_LOTTERY_ENABLE",
+          "QDREADER_WEEKLY_EXCHANGE_ENABLE",
+          "QDREADER_CHAPTER_CARD_ENABLE",
+          "QDREADER_MESSAGE_BOX_ENABLE"
+        ],
         "tag": "起点手动签到/自检(与自动签到同任务)",
         "note": "config 同形：官方 generic 为 cron 的手动自检位——CRONEXP 写错时定时脚本静默不执行，generic 同脚本同参数点一下即跑一次；不得被任何 enable 门控（config 的安全论证自检口保留）"
       },
@@ -581,12 +611,18 @@
         "id": "getconf-clean",
         "kind": "response",
         "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/client/getconf",
-        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com",
+          "mage.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
         "script": "auto-task",
         "switch": "QDREADER_CLEAN_ENABLE",
-        "args": ["QDREADER_DEBUG", "QDREADER_CLEAN_ENABLE"],
+        "args": [
+          "QDREADER_DEBUG",
+          "QDREADER_CLEAN_ENABLE"
+        ],
         "requires_body": true,
-        "binary_body_mode": true,
         "debug": true,
         "timeout": 10,
         "tag": "起点getconf净化v361",
@@ -596,10 +632,17 @@
         "id": "adsec-gdt-inner-view",
         "kind": "response",
         "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/gdt_inner_view",
-        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com",
+          "mage.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
         "script": "auto-task",
         "switch": "QDREADER_EXTRA_ADV_JOB_ENABLE",
-        "args": ["QDREADER_DEBUG", "QDREADER_EXTRA_ADV_JOB_ENABLE"],
+        "args": [
+          "QDREADER_DEBUG",
+          "QDREADER_EXTRA_ADV_JOB_ENABLE"
+        ],
         "requires_body": true,
         "timeout": 10,
         "tag": "起点广告SDK秒播(gdt_inner_view)",
@@ -609,10 +652,17 @@
         "id": "adsec-get-ads",
         "kind": "response",
         "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/get_ads",
-        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com",
+          "mage.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
         "script": "auto-task",
         "switch": "QDREADER_EXTRA_ADV_JOB_ENABLE",
-        "args": ["QDREADER_DEBUG", "QDREADER_EXTRA_ADV_JOB_ENABLE"],
+        "args": [
+          "QDREADER_DEBUG",
+          "QDREADER_EXTRA_ADV_JOB_ENABLE"
+        ],
         "requires_body": true,
         "timeout": 10,
         "tag": "起点广告SDK秒播(get_ads)",
@@ -622,12 +672,18 @@
         "id": "deep-clean",
         "kind": "response",
         "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/user/getaccountpage|v[0-9]+/user/getsimplediscover|v[0-9]+/discovery/getdiscoverpagefeeds)",
-        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com",
+          "mage.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
         "script": "auto-task",
         "switch": "QDREADER_CLEAN_ENABLE",
-        "args": ["QDREADER_DEBUG", "QDREADER_CLEAN_ENABLE"],
+        "args": [
+          "QDREADER_DEBUG",
+          "QDREADER_CLEAN_ENABLE"
+        ],
         "requires_body": true,
-        "binary_body_mode": true,
         "debug": true,
         "timeout": 10,
         "probe": true,
@@ -638,10 +694,17 @@
         "id": "readtime-patch",
         "kind": "response",
         "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/readtime/readpage",
-        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
+        "hosts": [
+          "h5.if.qidian.com",
+          "mage.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
         "script": "auto-task",
         "switch": "QDREADER_EXTRA_ADV_JOB_ENABLE",
-        "args": ["QDREADER_DEBUG", "QDREADER_EXTRA_ADV_JOB_ENABLE"],
+        "args": [
+          "QDREADER_DEBUG",
+          "QDREADER_EXTRA_ADV_JOB_ENABLE"
+        ],
         "requires_body": true,
         "timeout": 10,
         "tag": "起点每日阅读积分",

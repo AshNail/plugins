@@ -632,9 +632,10 @@ function forensicReport(kind, detail) {
 function respondJson(E, obj, tag, n) {
   if (n !== undefined) BODY_OUT.n = n;
   const text = JSON.stringify(obj);
-  const body = BODY_OUT.shape === "str" ? text
-    : BODY_OUT.shape === "ab" ? utf8Encode(text).buffer
-    : utf8Encode(text);
+  // v3.6.2 修复：binary_body_mode=true 下，Loon 可能把 Uint8Array 当成普通对象处理，
+  // JSON.stringify 后变成 {"0":123,"1":34,...}，不是有效的 JSON，App 解析失败后回落缓存。
+  // 改为统一返回字符串，让 Loon 自己处理编码。
+  const body = text;
   forensicReport("ok", "n=" + BODY_OUT.n);
   E.done({ body: body, headers: respondHeaders(tag, text) });
 }
