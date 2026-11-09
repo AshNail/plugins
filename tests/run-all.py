@@ -37,6 +37,7 @@ SUITES = [
     "test_encoding_guard.js",
     "test_args_schema.js",
     "test_qidian_sanitize.js",
+    "test_qidian_limited.js",
 ]
 
 parser = argparse.ArgumentParser()

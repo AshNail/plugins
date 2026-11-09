@@ -1,0 +1,148 @@
+/*
+ * qidian/auto-task.js + scripts/Qidian.js · mainPage 限时激励任务（v3.6.1）
+ * ------------------------------------------------------------
+ * 真机 mainPage 响应（tests/fixtures/qidian_mainpage_limited.json）里：
+ *   · ReadingPageTaskModule 有 6 条「【限时】广告·加点！」(TaskType 300, Total=3)
+ *   · VideoRewardTab 有 3 条正常激励任务（完成 N 个广告任务得奖励）
+ * 用户裁决：不要过滤掉；有的话参考正常激励自动完成。实现分三段：
+ *   1. handleMainPage 不再调用 pruneAdTaskItems，两个模块的任务条目全量保留；
+ *   2. 限时任务的当轮 TaskId/Total 写入 Qidian_LimitedTasks；
+ *   3. 引擎 wrapper 的动态映射让 finishWatch 命中名单后按 Total-1 重放
+ *      （与 config TaskMapping 的 count-1 同口径），响应侧不改完成态。
+ * 本套件对 src 与 dist 两套 auto-task 各跑一遍；引擎段始终读 plugins/qidian/scripts/Qidian.js。
+ */
+const fs = require("fs");
+const path = require("path");
+const src = require("./load-script")("auto-task.js", "qidian");
+
+const ROOT = path.resolve(__dirname, "..");
+const FIXTURE = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "qidian_mainpage_limited.json"), "utf8"));
+const MAINPAGE_URL = "https://magev6.if.qidian.com/argus/api/v2/video/adv/mainPage";
+const ENGINE = fs.readFileSync(path.join(ROOT, "plugins", "qidian", "scripts", "Qidian.js"), "utf8");
+
+function runSanitizer(body) {
+  return new Promise((resolve) => {
+    let out;
+    const logs = [];
+    const writes = [];
+    const done = (v) => {
+      out = v === undefined ? {} : v;
+      resolve({ out, logs, writes });
+    };
+    const fn = new Function(
+      "$request", "$response", "$done", "console", "$argument", "$utils",
+      "$persistentStore", "$notification", "$httpClient", src
+    );
+    fn(
+      { url: MAINPAGE_URL, method: "GET", headers: {} },
+      { body: JSON.stringify(body), headers: {} },
+      done,
+      { log: (...a) => logs.push(a.join(" ")) },
+      { QDREADER_DEBUG: "true", QDREADER_CLEAN_ENABLE: "true", QDREADER_EXTRA_ADV_JOB_ENABLE: "true" },
+      undefined,
+      {
+        read: () => null,
+        write: (v, k) => { writes.push({ k, v }); return true; },
+      },
+      { post: () => {} },
+      {}
+    );
+    setTimeout(() => resolve({ out: out === undefined ? { __timeout: true } : out, logs, writes }), 2000);
+  });
+}
+
+function runEngine(body, store, opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    const calls = [];
+    const notifications = [];
+    let out;
+    const realSetTimeout = global.setTimeout;
+    global.setTimeout = (fn, ms, ...args) => {
+      if (ms && ms > 100) { fn(...args); return 0; }
+      return realSetTimeout(fn, ms, ...args);
+    };
+    try {
+      new Function(
+        "$request", "$response", "$done", "$argument", "$persistentStore",
+        "$notification", "$httpClient", "$loon", "console", ENGINE
+      )(
+        { method: "POST", url: MAINPAGE_URL.replace(/mainPage$/, "finishWatch"), headers: {}, body: JSON.stringify(body) },
+        undefined,
+        (o) => { out = o; },
+        {},
+        {
+          read: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+          write: () => true,
+        },
+        { post: (...a) => notifications.push(a) },
+        {
+          post: (o, cb) => {
+            calls.push(o);
+            cb(null, { status: 200, headers: {} }, JSON.stringify({ Result: 0 }));
+          },
+        },
+        {},
+        { log: () => {} }
+      );
+    } catch (e) {
+      global.setTimeout = realSetTimeout;
+      resolve({ calls, notifications, out, error: String(e) });
+      return;
+    }
+    realSetTimeout(() => {
+      global.setTimeout = realSetTimeout;
+      resolve({ calls, notifications, out });
+    }, opts.waitMs || 400);
+  });
+}
+
+let pass = 0, fail = 0;
+function check(name, cond, extra) {
+  if (cond) { pass++; console.log("  ok  " + name); }
+  else { fail++; console.log("  FAIL " + name + (extra ? " :: " + extra : "")); }
+}
+
+(async () => {
+  console.log("\n[1] mainPage 净化：限时任务与正常激励全量保留，TaskId/Total 落盘");
+  let r = await runSanitizer(FIXTURE);
+  const j = r.out && r.out.body ? JSON.parse(r.out.body) : null;
+  check("响应可解析", !!j && !!j.Data);
+  check("ReadingPageTaskModule 保留 6 条", !!j && j.Data.ReadingPageTaskModule
+    && j.Data.ReadingPageTaskModule.TaskList.length === 6);
+  check("限时任务标题未被改写", !!j && j.Data.ReadingPageTaskModule.TaskList.every(
+    (t) => t.Title === "【限时】广告·加点！"));
+  check("VideoRewardTab 保留 3 条正常激励", !!j && j.Data.VideoRewardTab
+    && j.Data.VideoRewardTab.TaskList.length === 3);
+  check("正常激励标题未被剪除", !!j && j.Data.VideoRewardTab.TaskList.some(
+    (t) => t.Title === "完成1个广告任务得奖励"));
+
+  const write = r.writes.find((w) => w.k === "Qidian_LimitedTasks");
+  const stored = write ? JSON.parse(write.v) : null;
+  check("写入 Qidian_LimitedTasks", !!stored && Array.isArray(stored));
+  check("落盘 6 个限时 TaskId", !!stored && stored.length === 6);
+  check("落盘 Total 与响应一致", !!stored && stored.every((t) => t.total === 3));
+  check("落盘 TaskId 与响应一致", !!stored && j
+    && stored.map((t) => t.id).join(",") === j.Data.ReadingPageTaskModule.TaskList.map((t) => t.TaskId).join(","));
+  check("锚点报告限时任务条数", r.logs.join("\n").includes("限时任务=6"), r.logs.join("\n").slice(-120));
+
+  console.log("\n[2] 引擎 finishWatch：名单命中按 Total-1 重放，未知 taskId 不放行");
+  const limitedStore = {
+    Qidian_LimitedTasks: JSON.stringify([
+      { id: "1283964019879641088", total: 3, title: "【限时】广告·加点！" },
+    ]),
+  };
+  let e = await runEngine({ taskId: "1283964019879641088" }, limitedStore);
+  check("限时任务重放 Total-1=2 次", e.calls.length === 2, String(e.calls.length));
+  check("重放 body 带原 TaskId", e.calls.every((c) => String(c.body).includes("1283964019879641088")));
+  check("通知摘要标记限时激励", JSON.stringify(e.notifications).includes("限时激励"));
+
+  e = await runEngine({ taskId: "9999999" }, {});
+  check("未知 taskId 不重放（config 原语义）", e.calls.length === 0, String(e.calls.length));
+
+  e = await runEngine({ taskId: "1218712929269776384" }, {});
+  check("正常激励静态映射仍生效（9 次 -> 重放 8 次）", e.calls.length === 8, String(e.calls.length));
+
+  console.log("\nPASS=" + pass + " FAIL=" + fail);
+  process.exit(fail ? 1 : 0);
+})();

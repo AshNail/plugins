@@ -519,11 +519,35 @@ function handleVideoReplace() {
   }
 }
 
+// ── LOCAL PATCH (AshNail/plugins v3.6.1)：限时激励任务动态映射 ──
+// mainPage 的 ReadingPageTaskModule 会把当轮限时任务 {id,total,title} 写到
+// Qidian_LimitedTasks（由本仓 auto-task.js 落盘）；这里并入 TaskMapping，
+// 重放次数 = total - 1（与正常激励同口径）。加密 blob 之外的补丁，
+// 同步上游引擎时必须保留本段。
+function limitedTaskMapping() {
+  try {
+    const list = $.get("Qidian_LimitedTasks");
+    const arr = Array.isArray(list) ? list : [];
+    const out = {};
+    arr.forEach(t => {
+      if (t && t.id) {
+        out[String(t.id)] = {
+          name: "限时激励:" + (t.title || "任务"),
+          count: Math.max(1, Number(t.total) || 1)
+        };
+      }
+    });
+    return out;
+  } catch (e) { return {}; }
+}
+
 async function handleReplay(request) {
   const body = request.body || "";
-  const match = Object.keys(CONFIG.TaskMapping).find(id => body.includes(id));
+  const dynamic = limitedTaskMapping();
+  const match = Object.keys(CONFIG.TaskMapping).find(id => body.includes(id))
+    || Object.keys(dynamic).find(id => body.includes(id));
   if (!match) { $.done(); return; }
-  const task = CONFIG.TaskMapping[match];
+  const task = CONFIG.TaskMapping[match] || dynamic[match];
   // ⚠️ 修复(v5.9): Loon 下保持原次数(timeout=120s足够)
   const replayCount = task.count - 1;
   if (replayCount <= 0) { $.done(); return; }

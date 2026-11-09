@@ -787,12 +787,44 @@ function handleMainPage(E, response) {
     if (data[k] !== undefined) { removed.push(k); delete data[k]; }
   });
   const kept = data.SurpriseBenefit !== undefined ? ["SurpriseBenefit"] : [];
-  const pruned = [];
-  pruneAdTaskItems(data, pruned);
+  // v3.6.1（用户裁决 2026-11-09）：mainPage 的激励任务整段保留，不再按文案剪条目——
+  // 正常激励（VideoRewardTab）与限时激励（ReadingPageTaskModule，TaskType 300 /
+  // 「【限时】广告·加点！」）都要能显示；限时任务的当轮 TaskId/Total 落盘，
+  // 供引擎 finishWatch 重放按 Total 自动完成（重放次数 = Total - 1）。
+  const limited = collectLimitedTasks(data);
+  try {
+    $persistentStore.write(JSON.stringify(limited), "Qidian_LimitedTasks");
+  } catch (e) { /* 存储不可用时只记录锚点，不影响净化 */ }
   anchor("福利中心 removed=[" + removed.join(",") + "] kept=[" + kept.join(",") +
-    "] 任务条目=" + pruned.length + (pruned.length ? " [" + pruned.join(" / ") + "]" : ""));
+    "] 限时任务=" + limited.length +
+    (limited.length ? " [" + limited.map(t => t.id + "*" + t.total).join(" / ") + "]" : ""));
   E.log("福利中心净化完成");
-  respondJson(E, obj, "qidian-sanitize", removed.length + pruned.length);
+  respondJson(E, obj, "qidian-sanitize", removed.length);
+}
+
+// v3.6.1：限时激励任务来自 mainPage 的 ReadingPageTaskModule（TaskType 300，标题
+// 「【限时】广告·加点！」）。不在响应里改完成态（与 config 同口径：保留原始状态，
+// 由看播重放完成），只把当轮 TaskId/Total 落盘给引擎做动态映射。
+function collectLimitedTasks(data) {
+  const out = [];
+  const seen = {};
+  const add = (it) => {
+    if (!it || typeof it !== "object") return;
+    const title = typeof it.Title === "string" ? it.Title : "";
+    const isLimited = it.TaskType === 300 || title.indexOf("限时") >= 0 || /广告[·.]?加点/.test(title);
+    if (!isLimited) return;
+    const id = it.TaskId || it.SubTaskId;
+    if (!id || seen[String(id)]) return;
+    seen[String(id)] = true;
+    out.push({
+      id: String(id),
+      total: Number(it.Total) > 0 ? Number(it.Total) : 1,
+      title: title || "限时激励",
+    });
+  };
+  const mod = data.ReadingPageTaskModule;
+  if (mod && Array.isArray(mod.TaskList)) mod.TaskList.forEach(add);
+  return out;
 }
 
 // 只剥数组里命中文案的那一条元素，不动模块、不动结构——「限时福利」和广告任务
