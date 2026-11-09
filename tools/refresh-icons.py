@@ -34,6 +34,10 @@ logo CDN」这件事不需要另外找——它就是图标文件的原始出处
     python3 tools/refresh-icons.py --write    取在线 URL 并写回源
 
 `--check` 需要网络；离线时它报「取不到」并按失败处理，不静默通过。
+`--check` 对 Apple CDN 的 `<hash>` 段做**身份级比对**：hash 不同但源里那条 URL
+HEAD 仍是 `200 image/*` 时判 `token-ok`（CDN 换了分配串，图标没坏）；
+只有源 URL 真的被回收成 404、或非 hash 部分变了才报 drift。
+这样既不会被同一次会话里来回变的 token 误报，也不会放过「图标已死」。
 生成物（`plugins/<slug>/<slug>.plugin` 里由 `tools/build-apps.py` 渲染的那些）
 只改源——改生成物会在下一次 `npm run build:apps` 被覆盖，这是仓库的既定纪律。
 """
@@ -54,6 +58,19 @@ UA = "AshNail-plugins-icon-refresh/1.0"
 TIMEOUT = 20
 
 ICON_LINE_RE = re.compile(r'^(!#icon|"icon")\s*[=:]\s*"?(https://[^"\s]+)"?[,;]?\s*$', re.M)
+# /v4/<hash>/ 里的 hash 是 Apple 按构建产物分配的串，不是图标身份：
+# 同一次 lookup 就可能返回多个等价 token，逐字比对会误报漂移。
+# 两种真实形态都要盖住（x / youtube 用分层短段，soda 用单段 UUID）：
+#   /v4/a16db478-33e0-fc41-bc84-d5dd33f10762/AppIcon...
+#   /v4/ce/44/5f/ce445f10-c40b-8aa9-9d18-32d97dade1fb/ProductionAppIcon...
+CDN_TOKEN_RE = re.compile(
+    r"(/v\d+/)(?:[0-9a-fA-F]{2}/)*[0-9a-fA-F-]{20,}(?=/)"
+)
+
+
+def cdn_identity(url: str) -> str:
+    """把 CDN 分配串抹掉，只留图标身份（bundle 版本段 / 文件名 / 尺寸段）。"""
+    return CDN_TOKEN_RE.sub(r"\1<token>", url)
 
 
 def load_spec() -> dict:
@@ -191,6 +208,22 @@ def main(argv: list[str]) -> int:
         if have == want:
             rows.append({"slug": slug, "state": "ok", "target": rel,
                          "detail": f"{name} · {verified}"})
+            continue
+        # hash 段漂移不等于图标坏了：源 URL 还能 200 image/* 就仍是同一张图。
+        # 反过来，旧串被 CDN 回收（404）必须继续报 dead，不能靠放宽比较蒙过去。
+        if checking and have.startswith(MZSTATIC_PREFIX) and \
+                cdn_identity(have) == cdn_identity(want):
+            try:
+                live = head_ok(have)
+            except (urllib.error.URLError, LookupError, ValueError, TimeoutError):
+                live = ""
+            if live.startswith("200"):
+                rows.append({"slug": slug, "state": "token-ok", "target": rel,
+                             "detail": f"{name} · CDN token 漂移，原 URL 仍 {live}"})
+                continue
+            rows.append({"slug": slug, "state": "dead", "target": rel,
+                         "detail": f"{name} · 原 URL 已失效（{live or 'HEAD 失败'}），需 --write"})
+            failures += 1
             continue
         state = "drift" if have else "missing"
         rows.append({"slug": slug, "state": state, "target": rel,

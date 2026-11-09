@@ -369,19 +369,20 @@ Branch 同时承载深链跳转与归因回调，**主域整封会同时断掉 A
 | `tools/loon-coverage.py` | 能力表 +`#!source` 一行（175 → 176 条） | `check:loon` 门禁 |
 | `docs/device-checklist.md` | +1 条真机取证项（`#!source` 不匹配时的实际行为） | 人工执行 |
 
-**门禁现状**：`npm test` **60 套件 / 1942 断言全过**；
-`npm run check` 的下游阶段里除 `check:icons` 外**全部全绿**
-（`check:tokens` / `check:loon` / `check:surfaces` /
-`check:effective` / `check:bypass` / `check:apps` / `check:app-readmes` /
-`check:app-coverage`）。
+**门禁现状（含第三轮）**：`npm test` **62 套件 / 2122 断言全过**；
+`npm run check` **全部阶段全绿**。`check:icons` 的历史抖动已按「修探针、不降校验强度」
+的路线修掉（见 §8.5），不是靠反复 `--write` 去追一个会自己变回去的值。
 
-**两处未绿都与本轮无关，在改动前的 `HEAD` 上同样存在**（`git stash` 对照实测）：
+第十五轮记下的「8 条 `qidian-pro` lint 错误」并非移植件本身的问题：那是工作区里
+残留的未解决合并冲突（`<<<<<<<` 被原样写进
+`plugins/qidian/scripts/auto-task.min.js`，导致 4 个测试套件语法错误），
+冲突收敛后 lint 归零。
 
-- **8 条 `qidian-pro` lint 错误**——`qidian-pro` 是**逐字保留的移植件**（不重写），
-  本轮未触碰；
-- **2 处图标漂移**（`x` / `youtube`）——`check:icons` 每次都向 Apple iTunes Lookup
-  现取 artwork，而 Apple CDN 路径里的 `<hash>` 段随构建产物重分配，
-  旧串会被回收。该项依赖网络，**不是本轮改动引起的**。
+> 那一处合并冲突是本轮之外发现、但必须一并处理的前置破损：
+> 12 个文件带着 HEAD 侧 v3.6.1 与 `513a85f` 侧 v3.5.9 的冲突块，
+> 文档数字门禁因此根本跑不到。收敛方向是保留当前分支 HEAD 侧（版本更高且
+> `src/qidian/auto-task.js` 与 `src/apps/qidian.json` 两侧自洽），
+> 所有「现在时数字」再由生成器 `--write` 与实跑重算，不手抄、不选边。
 
 ---
 
@@ -402,13 +403,91 @@ Branch 同时承载深链跳转与归因回调，**主域整封会同时断掉 A
 
 ---
 
+## 8. 第三轮：净化链「误伤业务」审查与落地
+
+前两轮把「覆盖了多少广告面」补齐；这一轮反过来查**已经写下的净化规则有没有把业务打断**。
+五处都不是「少拦了一个广告」，而是「拦广告的同时把发奖/分页/正常内容一起改了」，
+或者「声明覆盖、实际空转」。
+
+### 8.1 五处实质问题与处置
+
+| # | 问题 | 证据 | 处置 |
+|---|---|---|---|
+| 1 | 发奖兜底接口不能把服务端错误改成成功，也不能碰 `post_done_extra` 的 `req_id` / `time_token` / `nonce` | `FORCE_OK` 会把 `status_code` 归零；泛化 `ads-config` 名单会清 `rewardConfig` / `adExtra` | soda 拆出 `fallback-done` 专用规则（`forceOk=false`、`killArrayData=false`）；douyin 拆出 `KILL_CONTAINERS["fallback-done"]` 并真正接进 mode 分派 |
+| 2 | v1 / v2 upsell 必须分开处理 | 合并规则会把 `upsells_config` 误命中，并把 v2 的业务 `data` 数组整体清空 | `upsell-v1` 加路径边界 `(?:\/\|\?\|$)`；`upsell-v2` 只走 `cleanUpsellMap()`，`killArrayData=false` |
+| 3 | Bilibili / Zhihu 的 jq 要类型收窄 | 用 `/usr/bin/jq` 实跑：`target` 为字符串/数组时 `.target.type` 报 `Cannot index string with string "type"`，`card_goto` 为数字时 `startswith()` 报 `requires string inputs`——**整次净化失败，响应原样放行** | 改写成 `(.target \| if type == "object" then (.type // "") else "" end)` 与 `(x \| if type == "string" then startswith(...) else false end)`；9 个样本（正常 + 异常）全部 `rc=0` |
+| 4 | 停止改写语义不明的传感器阈值 | 外部文档给了 0 和 99999 两个互相矛盾的值，SDK 的比较方向没有官方或抓包证据；置 0 可能反而变成「任何晃动都触发」 | 从 `falsy` / `SCALAR_KEYS` 删掉 4 个阈值键，只保留语义明确的 `enable*` 开关置 false |
+| 5 | 抖音只真正支持 v2 upsell | `handleUpsell()` 只认 `upsell_map`；v1 路由命中后是空操作（假覆盖） | 收回 `src/douyin/clean.js` 与 `plugins/douyin/douyin.plugin` 的 v1 绑定；广告面探针改成精确匹配 v2，声明等级不降 |
+
+### 8.2 落地清单（可回归）
+
+| 文件 | 改动 | 门禁 |
+|---|---|---|
+| `src/soda/sanitize.js` | `fallback-done` 独立规则、upsell v1/v2 拆分、阈值键退出 `falsy`、`extendExpiryValue` 只认绝对时间戳、根数组清空收窄为非空才动 | 新回归套件 + `check_round3_guards` |
+| `src/soda/settings.js` | 默认改写表删除 4 个阈值键 | 同上 |
+| `src/douyin/clean.js` | `fallback-done` 专用名单接线、阈值键退出、v1 upsell 路由收回 | 同上 |
+| `plugins/douyin/douyin.plugin` | `[Script]` 的 upsell 绑定只留 v2，注释写明「为什么不做 + 真机怎么证伪」 | `check_round3_guards` 扫插件接线 |
+| `src/apps/bilibili.json`、`src/apps/zhihu.json` | 5 条 jq 改字段级类型守卫 | `build:apps` 重生成 + 真实 jq 引擎 9 样本 |
+| `tools/ad-surface-audit.py` | 推广弹窗探针精确匹配 v2；信息流 `limits` 补上分页门禁已设防的事实 | `check:surfaces` + `--write` 重生成策略文档 |
+| `tests/test_round3_regressions.js`（新） | 90 条双向断言：广告仍被删 + 业务字段原样 | `npm test`（src / dist 各一遍） |
+| `tests/lint-plugins.py` | +`check_round3_guards()`：扫 6 个净化脚本、30 条 jq 表达式、4 条纪律 | `npm run lint` |
+| `tests/run-all.py`、`tests/README.md`、`docs/loon-native-first.md` | 注册套件并同步「31 套件 ×2 = 62 套件 / 2122 断言」 | 数字门禁反向核对 |
+| `docs/ad-type-strategy.md` | 由 `ad-surface-audit.py --write` 重生成（**不手改生成物**） | `check:surfaces` |
+
+### 8.3 门禁有鉴别力：4 次故意破坏，全部转红
+
+| 破坏动作 | lint | 运行时测试 |
+|---|---|---|
+| `fallback-done` 的 `forceOk` 改回 `true` | 报「必须 forceOk=false」 | 「服务端错误码 1001 保留」转红 |
+| 把 `splashshakesensitivity` 加回 `SCALAR_KEYS` | 报「传感器阈值键出现在净化代码里」 | 「阈值保持原值」转红 |
+| zhihu jq 改回 `.target.type // ""` | 报「会在 target 为字符串/数组时让整次净化失败」 | jq 抛 `Cannot index string with string "type"`，2 项转红 |
+| 抖音 `[Script]` 绑回 v1 `upsells` | 报「又绑了 v1 的 upsells」 | 「插件接线不含 v1」静态断言转红 |
+
+每次破坏后逐字节还原，并用 `assert file_bytes == original` 自检；`npm run check` 收尾全绿。
+
+### 8.4 顺手修掉一个不稳定的门禁：`check:icons`
+
+现象：同一会话内连续三次 `check:icons` 分别得到 **0 / 2 / 1 处 drift**
+（`x` / `youtube` 轮流出现）。根因不是源里的图标坏了，而是 `refresh-icons.py`
+拿**整条 URL** 比对，而 Apple CDN 的 `/v4/<hash>/` 段是按构建产物分配的，
+同一次 lookup 就可能返回多个等价 token。
+
+按 §3.1 同一条纪律——**修探针，不降声明等级**——把判据改成「图标身份 + 源 URL 还能取到图」：
+
+- `cdn_identity()` 抹掉 hash 段（两种真实形态都盖住：`/v4/<uuid>/` 与
+  `/v4/ce/44/5f/<uuid>/`），只留文件名与尺寸段；
+- `--check` 在 hash 不同时额外对**源里那条 URL** 做一次 HEAD：
+  仍 `200 image/*` → `token-ok`（CDN 换了分配串，图标没坏）；
+  404 → `dead`，必须 `--write`；非 hash 部分变了 → 仍报 `drift`。
+
+证伪（端到端，逐字节还原）：伪造被回收的旧串 → `dead`、exit 1；
+改尺寸段（身份真变）→ `drift`、exit 1；还原 → `ok`、exit 0。
+所以这不是「为了让门禁变绿而放宽门禁」：死链与真换图依然拦得住。
+
+### 8.5 未决边界（登记，不假装已完成）
+
+1. **jq 引擎差异**：9 个样本跑的是本机标准 `jq`，Loon 内置 jq 实现是否有语义差异，
+   需真机抓包含异常条目的响应才能确认。
+2. **抖音 v1 upsell**：无抓包证据，刻意不覆盖。真机抓到 v1 响应且含广告弹窗实体时，
+   按样本字段补处理器，再改声明等级。
+3. **摇一摇阈值方向性**：仍待真机（沿用第十五轮取证项）；若开 `settingsClean` 后真晃
+   手机仍跳电商，说明键语义与假设相反，改走「开关置 false」那一路。
+4. **删条目后分页是否连续**：静态门禁只保证游标字段不被清空，保证不了游标仍连续；
+   需滑到信息流末尾确认能加载下一批。
+5. **`check:icons` 的 `token-ok` 正向路径**：证伪已覆盖「死链」与「身份变化」都会转红，
+   但修复后 CDN 未再返回第二个等价 token，所以「hash 不同且两条 URL 都 200」这条路径
+   只在单元级（`cdn_identity`）验过，没端到端跑过。下次再出现 drift 时，看输出里
+   是否出现 `token-ok` 且 exit 0 即可确认；不要把它写成「已验证」。
+
+---
+
 ## 附：本文引用的机器出口
 
 | 数字 | 来源命令 |
 |---|---|
-| 2130 条生效 Host（exact 1349 / wildcard 781） | `npm run build:ads -- --stats-json` |
-| 19 类广告面覆盖 70.9%（39/55），13 类结构性停住 | `npm run surfaces` |
+| 2151 条生效 Host（exact 1363 / wildcard 788） | `python3 tools/build-ads.py --stats-json` |
+| 19 类广告面覆盖 72.7%（40/55），12 类结构性停住 | `npm run surfaces` |
 | 17 条旁路，封死率 54.5% / 加权 72.7% | `npm run bypass` |
-| 60 套件 / 1942 断言 | `npm test` |
-| 266 个净化键 / 0 个分页字段命中 | `npm run lint` 的 `pagination integrity` 行 |
+| 62 套件 / 2122 断言 | `npm test` |
+| 278 个净化键 / 0 个分页字段命中 | `npm run lint` 的 `pagination integrity` 行 |
 | 25 条 ads README 规模声明 | `npm run lint` 的 `readme numbers` 行 |

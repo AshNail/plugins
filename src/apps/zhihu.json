@@ -286,7 +286,7 @@
         "gate": "cleanAds",
         "endpoint": "topstory/recommend",
         "url": "^https://api\\.zhihu\\.com/topstory/recommend(\\?|$)",
-        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"array\\\" then .data |= map(select(type != \\\"object\\\" or (.type != \\\"feed_advert\\\" and ((.target.type // \\\"\\\") != \\\"advert\\\") and .adjson == null and .promotion_extra == null))) else . end\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"array\\\" then .data |= map(select(type != \\\"object\\\" or (.type != \\\"feed_advert\\\" and ((.target | if type == \\\"object\\\" then (.type // \\\"\\\") else \\\"\\\" end) != \\\"advert\\\") and .adjson == null and .promotion_extra == null))) else . end\")",
         "note": "首页推荐信息流：剔除 feed_advert、target.type=advert 及携带 adjson/promotion_extra 的商业推广卡片",
         "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
       },
@@ -297,7 +297,7 @@
         "gate": "cleanAds",
         "endpoint": "moments_v3",
         "url": "^https://api\\.zhihu\\.com/moments_v3(\\?|$)",
-        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"array\\\" then .data |= map(select(type != \\\"object\\\" or (.type != \\\"feed_advert\\\" and ((.target.type // \\\"\\\") != \\\"advert\\\") and .adjson == null and .promotion_extra == null))) else . end\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"array\\\" then .data |= map(select(type != \\\"object\\\" or (.type != \\\"feed_advert\\\" and ((.target | if type == \\\"object\\\" then (.type // \\\"\\\") else \\\"\\\" end) != \\\"advert\\\") and .adjson == null and .promotion_extra == null))) else . end\")",
         "note": "关注动态信息流：剔除穿插的商业推广与内联广告卡片",
         "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
       }

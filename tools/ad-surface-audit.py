@@ -165,7 +165,9 @@ SURFACES = [
             ("plugins/qqnews/qqnews.plugin", r"getQQNewsUnreadList", False),
         ],
         limits="字段名每个 App 不同；删多了会破分页游标（`cursor`/`has_more` 与广告数耦合）；"
-               "广告与推荐混在同一 `cards` 数组时，删除会导致索引错位。",
+               "广告与推荐混在同一 `cards` 数组时，删除会导致索引错位。"
+               "本仓库已用 `check_pagination_integrity` 门禁 + `test_pagination_integrity.js` "
+               "双向断言挡住「游标被清」与「为保游标连广告也不摘」两种坏修法。",
         next="文档不再承诺「抽公共模块就能提档」：soda/douyin 的规则表都已到各自端点上限，再提档只能加第三个 App（要抓包读它的 JSON）。没有代码可写。",
         blocked="结构性：私有 JSON 字段名逐 App 不同，提档 = 多适配一个 App，不是多写一段代码。",
     ),
@@ -310,11 +312,15 @@ SURFACES = [
         ceiling="strong", achieved="partial", next_to="partial",
         probes=[
             ("plugins/soda/soda.plugin", r"commerce\\?/(?:upsell|\(\?:upsell)", False),
-            ("plugins/douyin/douyin.plugin", r"commerce\\?/(?:upsell|\(\?:upsell)", False),
+            # douyin 只绑 v2（v1 无抓包证据，不挂空转路由）；探针跟着真实绑定走，
+            # 不能拿 soda 的 v1 命中替 douyin 顶数。
+            ("plugins/douyin/douyin.plugin", r"commerce\\?/v2\\?/upsell", False),
         ],
         limits="与会员状态、支付流程同域同接口，剥错会让会员页空白；部分 App 用 WebView 渲染，"
                "弹窗内容在页面里；「限时优惠」倒计时是端上逻辑，删网络改不了。",
-        next="soda 的 /commerce/upsells 与 /commerce/v2/upsell 已覆盖，douyin 的 cleanUpsell 覆盖 upsell_map。两边都到各自端点上限，再提档只能加 App。",
+        next="soda 的 /commerce/upsells 与 /commerce/v2/upsell 已覆盖，douyin 的 cleanUpsell 只覆盖 v2 的 upsell_map。"
+             "douyin v1（/commerce/upsells）无真机样本，刻意不绑：绑了也是「路由命中、处理器空转」的假覆盖；"
+             "抓到 v1 响应且含广告弹窗实体再按样本补处理器。两边都到各自端点上限，再提档只能加 App。",
         blocked="结构性：弹窗配置与会员状态、支付流程同域同接口，每加一个 App 都要重新确认哪些键安全。",
     ),
 

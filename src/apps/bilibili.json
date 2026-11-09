@@ -171,7 +171,7 @@
         "gate": "cleanAds",
         "endpoint": "x/v2/feed/index",
         "url": "^https://app\\.bilibili\\.com/x/v2/feed/index(\\?|$)",
-        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.items | type) == \\\"array\\\" then .data.items |= map(select(type != \\\"object\\\" or (.ad_info == null and ((.card_goto // \\\"\\\") | startswith(\\\"ad_\\\") | not) and ((.card_type // \\\"\\\") | (startswith(\\\"cm_\\\") or startswith(\\\"ad_\\\")) | not) and .card_goto != \\\"game\\\" and ((.banner_item | type) != \\\"array\\\" or (.banner_item | all(type != \\\"object\\\" or .type != \\\"ad\\\")))))) else . end\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.items | type) == \\\"array\\\" then .data.items |= map(select(type != \\\"object\\\" or (.ad_info == null and ((.card_goto | if type == \\\"string\\\" then startswith(\\\"ad_\\\") else false end) | not) and ((.card_type | if type == \\\"string\\\" then (startswith(\\\"cm_\\\") or startswith(\\\"ad_\\\")) else false end) | not) and .card_goto != \\\"game\\\" and ((.banner_item | type) != \\\"array\\\" or (.banner_item | all(type != \\\"object\\\" or .type != \\\"ad\\\")))))) else . end\")",
         "note": "推荐信息流：按前缀通杀商业广告卡片（cm_*/ad_*）、ad_info 节点、推广游戏与横幅广告",
         "source": "https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin"
       },
@@ -182,7 +182,7 @@
         "gate": "cleanAds",
         "endpoint": "x/v2/feed/index/story",
         "url": "^https://app\\.bilibili\\.com/x/v2/feed/index/story(\\?|$)",
-        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.items | type) == \\\"array\\\" then .data.items |= map(select(type != \\\"object\\\" or (.ad_info == null and ((.card_goto // \\\"\\\") | startswith(\\\"ad_\\\") | not)))) else . end\")",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.items | type) == \\\"array\\\" then .data.items |= map(select(type != \\\"object\\\" or (.ad_info == null and ((.card_goto | if type == \\\"string\\\" then startswith(\\\"ad_\\\") else false end) | not)))) else . end\")",
         "note": "竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* 广告视频",
         "source": "https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin"
       },

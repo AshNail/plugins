@@ -4218,6 +4218,166 @@ def check_source_hash():
     )
 
 
+def check_round3_guards():
+    """第三轮净化审查的静态守卫：防「看起来改了、其实回潮」。
+
+    tests/test_round3_regressions.js 负责运行时双向断言；这里把纪律钉在源码
+    与生成物上，防止后来者把危险写法加回来：
+      ① 方向不明的传感器阈值键不许进任何净化键表（比较方向未知，置 0 可能
+         反而让任何晃动都触发广告）；
+      ② 抖音 v1 upsell 不许再挂空转路由（处理器只认 v2 的 upsell_map）；
+      ③ 发奖兜底接口必须用专用规则：不得 forceOk、不得清业务/凭证字段；
+      ④ response.json.jq 的字段级访问必须有类型守卫（异常条目不能让整次
+         净化失败）。
+    """
+    problems = 0
+    threshold_keys = {
+        "splashshakesensitivity", "shakesensitivity",
+        "splashaccelerationthreshold", "splashrotationthreshold",
+    }
+    purify_scripts = (
+        "src/soda/sanitize.js",
+        "src/soda/settings.js",
+        "src/douyin/clean.js",
+        "plugins/soda/scripts/sanitize.min.js",
+        "plugins/soda/scripts/settings.min.js",
+        "plugins/douyin/scripts/clean.min.js",
+    )
+
+    def uncomment(text):
+        # 只去块注释：JS 里的 `//` 大量出现在 URL / 正则字面量中，按行删会误伤。
+        return re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+
+    # ① 阈值键不进净化键表（源码与压缩产物都要扫）
+    checked = 0
+    for rel in purify_scripts:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"round3 guards: missing script {rel}")
+            problems += 1
+            continue
+        code = uncomment(path.read_text(encoding="utf-8", errors="ignore"))
+        for literal in re.findall(r"[\"']([A-Za-z][A-Za-z0-9_-]*)[\"']", code):
+            norm = literal.lower().replace("_", "").replace("-", "")
+            if norm not in threshold_keys:
+                continue
+            errors.append(
+                f"{rel}: 传感器阈值键 {literal!r} 出现在净化代码里——"
+                "比较方向无官方/抓包证据，置 0 可能变成「任何晃动都触发」。"
+                "只关语义明确的 enable* 开关，阈值保持服务端原值。"
+            )
+            problems += 1
+        checked += 1
+
+    # ② 抖音 v1 upsell 不挂空转路由
+    clean_path = ROOT / "src/douyin/clean.js"
+    clean_code = uncomment(clean_path.read_text(encoding="utf-8", errors="ignore"))
+    if re.search(r"commerce.{0,80}upsells", clean_code, flags=re.S):
+        errors.append(
+            "src/douyin/clean.js: upsell 路由里又出现 v1 的 `upsells`——"
+            "handleUpsell() 只认 v2 的 upsell_map，绑 v1 是「路由命中、处理器空转」的假覆盖。"
+        )
+        problems += 1
+    plugin_path = ROOT / "plugins/douyin/douyin.plugin"
+    for num, line in enumerate(plugin_path.read_text(encoding="utf-8").splitlines(), 1):
+        if line.lstrip().startswith("#"):
+            continue
+        if "commerce" in line and "script(" in line and "upsells" in line:
+            errors.append(
+                f"plugins/douyin/douyin.plugin:{num}: [Script] 又绑了 v1 的 `upsells`——"
+                "无抓包证据的空转路由，见 src/douyin/clean.js 的分派注释。"
+            )
+            problems += 1
+
+    # ③ 发奖兜底接口的专用规则
+    credential_keys = {
+        "postdoneextra", "reqid", "timetoken", "nonce",
+        "rewardconfig", "adextra", "data", "rewarddetails",
+    }
+    soda_code = uncomment((ROOT / "src/soda/sanitize.js").read_text(encoding="utf-8"))
+    marker = 'id: "fallback-done"'
+    at = soda_code.find(marker)
+    if at < 0:
+        errors.append("src/soda/sanitize.js: 找不到 fallback-done 专用规则")
+        problems += 1
+    else:
+        nxt = soda_code.find('id: "', at + len(marker))
+        block = uncomment(soda_code[at: nxt if nxt > 0 else at + 900])
+        if "forceOk: false" not in block:
+            errors.append(
+                "src/soda/sanitize.js: fallback-done 必须 forceOk=false——"
+                "把服务端拒绝改成成功等于伪造发奖结果。"
+            )
+            problems += 1
+        if "killArrayData: false" not in block:
+            errors.append(
+                "src/soda/sanitize.js: fallback-done 必须 killArrayData=false——"
+                "业务 data 数组不能被整体清空。"
+            )
+            problems += 1
+        kill = re.search(r"kill:\s*\[(.*?)\]", block, flags=re.S)
+        for k in re.findall(r"[\"']([^\"']+)[\"']", kill.group(1) if kill else ""):
+            if k.lower().replace("_", "").replace("-", "") in credential_keys:
+                errors.append(
+                    f"src/soda/sanitize.js: fallback-done 的 kill 名单含业务/凭证字段 {k!r}"
+                )
+                problems += 1
+
+    if 'KILL_CONTAINERS["fallback-done"]' not in clean_code or \
+            'mode === "fallback-done"' not in clean_code:
+        errors.append(
+            "src/douyin/clean.js: fallback-done 规则定义了却没接线——"
+            "会退回泛化 ads-config 名单，清掉 rewardConfig/adExtra。"
+        )
+        problems += 1
+    fb = re.search(r'"fallback-done":\s*\{(.*?)\n\s*\}', clean_code, flags=re.S)
+    if not fb:
+        errors.append("src/douyin/clean.js: 找不到 KILL_CONTAINERS['fallback-done'] 定义")
+        problems += 1
+    else:
+        for k in re.findall(r"[\"']([^\"']+)[\"']", fb.group(1)):
+            if k.lower().replace("_", "").replace("-", "") in credential_keys:
+                errors.append(
+                    f"src/douyin/clean.js: fallback-done 的 kill 名单含业务/凭证字段 {k!r}"
+                )
+                problems += 1
+
+    # ④ jq 字段级访问必须有类型守卫
+    jq_count = 0
+    for cfg in sorted((ROOT / "src/apps").glob("*.json")):
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+        for rule in (data.get("enhance") or {}).get("rewrite") or []:
+            action = rule.get("action", "")
+            m = re.search(r'response\.json\.jq\("(.*)"\)', action)
+            if not m:
+                continue
+            jq_count += 1
+            expr = m.group(1).replace('\\"', '"')
+            if 'if type == "object"' not in expr:
+                errors.append(
+                    f"{cfg.name}:{rule.get('id')}: jq 缺少顶层对象类型守卫"
+                )
+                problems += 1
+            if ".target.type //" in expr:
+                errors.append(
+                    f"{cfg.name}:{rule.get('id')}: `.target.type // ...` 会在 "
+                    "target 为字符串/数组时让整次净化失败；改用 "
+                    "(.target | if type == \"object\" then ... else ... end)"
+                )
+                problems += 1
+            if '// "") | startswith' in expr:
+                errors.append(
+                    f"{cfg.name}:{rule.get('id')}: `(x // \"\") | startswith` "
+                    "在 x 为数字/数组时会报错；改用 "
+                    "(x | if type == \"string\" then startswith(...) else false end)"
+                )
+                problems += 1
+    print(
+        f"round3 guards: {checked} purify script(s), {jq_count} jq expression(s) "
+        f"checked, {problems} problem(s)"
+    )
+
+
 check_shared_scripts()
 check_switch_labels()
 check_argument_schema()
@@ -4227,6 +4387,7 @@ check_encoding_guard()
 check_script_safety()
 check_pagination_integrity()
 check_source_hash()
+check_round3_guards()
 check_bypass_dns_guard()
 check_no_legacy_syntax()
 check_loon_version_gate()

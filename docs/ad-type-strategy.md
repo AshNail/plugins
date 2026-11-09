@@ -98,7 +98,7 @@
 
 **覆盖**　上限 `full`（完全）· 现状 `partial`（部分）
 
-**局限**　字段名每个 App 不同；删多了会破分页游标（`cursor`/`has_more` 与广告数耦合）；广告与推荐混在同一 `cards` 数组时，删除会导致索引错位。
+**局限**　字段名每个 App 不同；删多了会破分页游标（`cursor`/`has_more` 与广告数耦合）；广告与推荐混在同一 `cards` 数组时，删除会导致索引错位。本仓库已用 `check_pagination_integrity` 门禁 + `test_pagination_integrity.js` 双向断言挡住「游标被清」与「为保游标连广告也不摘」两种坏修法。
 
 **为什么停在这**　结构性：私有 JSON 字段名逐 App 不同，提档 = 多适配一个 App，不是多写一段代码。
 
