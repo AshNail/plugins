@@ -3,7 +3,7 @@ const code = load("homepage-tabs.js", "soda");
 
 const URL = "https://api.qishui.com/aweme/homepage/combine/?device_id=x";
 
-function run(body, argument) {
+function run(body, argument, headers) {
   let out = null;
   const logs = [];
   const fn = new Function(
@@ -11,7 +11,7 @@ function run(body, argument) {
   );
   fn(
     { url: URL },
-    { body: typeof body === "string" ? body : JSON.stringify(body), headers: {} },
+    { body: typeof body === "string" ? body : JSON.stringify(body), headers: headers || {} },
     (v) => { out = v; },
     { log: (...a) => logs.push(a.join(" ")) },
     argument
@@ -156,6 +156,36 @@ console.log("\n== 7. 非 JSON / 空响应：原样放行 ==");
 {
   check("非 JSON 放行", !(run("not json", { listenOnly: true }).out || {}).body);
   check("空响应放行", !(run("", { listenOnly: true }).out || {}).body);
+}
+
+console.log("\n== 8. 字符串布尔开关与陈旧压缩头剥离 ==");
+{
+  const sFalse = run(makeHomepageResponse(), { listenOnly: "false", hideDouyinTab: "false" });
+  check("字符串 \"false\" 视为关闭、不改写 body", !(sFalse.out && sFalse.out.body));
+
+  const sMixed = run(makeHomepageResponse(), { listenOnly: "false", hideDouyinTab: "true" });
+  const oMixed = parse(sMixed.out);
+  const listMixed = oMixed && oMixed.data.bottom_tab_data.tab_list;
+  check("listenOnly=\"false\" + hideDouyinTab=\"true\" 只删听抖音（剩 11 个）",
+    listMixed && listMixed.length === 11, listMixed ? String(listMixed.length) : "");
+
+  const rw = run(makeHomepageResponse(), { listenOnly: true }, {
+    "Content-Encoding": "gzip",
+    "Content-Length": "4096",
+    "X-Keep": "ok"
+  });
+  const h = (rw.out && rw.out.headers) || {};
+  check("改写 body 时剥离 Content-Encoding", !("Content-Encoding" in h), JSON.stringify(h));
+  check("改写 body 时剥离 Content-Length", !("Content-Length" in h), JSON.stringify(h));
+  check("改写 body 时保留无关响应头", h["X-Keep"] === "ok", JSON.stringify(h));
+
+  const skip = run("not json", { listenOnly: true }, {
+    "Content-Encoding": "br",
+    "Content-Length": "8"
+  });
+  const sh = (skip.out && skip.out.headers) || {};
+  check("跳过分支保留原始 Content-Encoding", sh["Content-Encoding"] === "br", JSON.stringify(sh));
+  check("跳过分支标记 ce=br", /ce=br/.test(sh["X-Soda-Plugin"] || ""), JSON.stringify(sh));
 }
 
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +

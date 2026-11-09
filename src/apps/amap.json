@@ -2,7 +2,7 @@
   "slug": "amap",
   "name": "高德地图 · 去广告与精简",
   "desc": "高德地图 iOS/iPadOS：日志与遥测（logs/dualstack-logs/amap-aos-info-nogw/adashx）+ 商业化广告域（optimus-ads）走 [Host] 127.0.0.1 零证书黑洞；同域开屏 alimama 广告、首页推荐流、路线规划推广卡片、订单 Tip、消息中心营销推送（msgbox/pull）、ASA 归因与天气推广默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 终止，零 JS 脚本）；核心逆地理编码（apsrgeo）、基站定位（cgicol）、路线规划网关（restapi）与轨迹定位（ts）严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,高德地图",
@@ -11,7 +11,7 @@
     "高德地图业务共享根域 *.amap.com，禁止整域通配。",
     "高德基础地图数据共享根域 *.autonavi.com，禁止整域通配。",
     "能力天花板与原生设计：logs.amap.com、dualstack-logs.amap.com、amap-aos-info-nogw.amap.com、adashx.ut.amap.com、h-adashx.ut.amap.com、v6-adashx.ut.amap.com、optimus-ads.amap.com、optimus-ads-ykx.amap.com 八个日志遥测与广告域走 [Host] 127.0.0.1 零证书黑洞；开屏、信息流与路线规划推广走 Loon 原生 [Rewrite] v2 引擎复写（reject_dict(200)），零 JS 脚本。",
-    "v1.2.0 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 8 条 request 阶段 reject_dict(200) 规则（新增 ws/msgbox/pull 营销消息推送拉取终止）+ 6 台解密主机的 QUIC 回退。"
+    "v1.2.1 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 8 条 request 阶段 reject_dict(200) 规则（覆盖 ws/(aos|valueadded)/alimama/splash_screen 与 ws/msgbox/pull 等）+ 4 台同域业务主机的 QUIC 回退（已从 [MITM] 移出已在 [Host] 黑洞的 amap-aos-info-nogw 与 optimus-ads）。"
   ],
   "redlines": [
     {
@@ -136,9 +136,7 @@
       "m5.amap.com",
       "m5-zb.amap.com",
       "center.amap.com",
-      "amap-aos-info-nogw.amap.com",
-      "ai.amap.com",
-      "optimus-ads.amap.com"
+      "ai.amap.com"
     ],
     "rewrite": [
       {
@@ -146,10 +144,10 @@
         "group": "请求阶段直接终止（reject_dict(200)）：同域开屏与推广卡片路径",
         "stage": "request",
         "gate": "cleanAds",
-        "endpoint": "ws/aos/alimama/splash_screen",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/ws/aos/alimama/splash_screen(\\?|$)",
+        "endpoint": "alimama/splash_screen",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/ws/(?:aos|valueadded)/alimama/splash_screen(\\?|$)",
         "action": "reject_dict(200)",
-        "note": "高德 alimama 开屏广告接口直接返回 200 + 空字典",
+        "note": "高德 alimama 开屏广告接口（aos 与 valueadded 双路径）直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
       },
       {
@@ -158,7 +156,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ai_rec/",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/v[0-9]/ai_rec/",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/v[0-9]/ai_rec/",
         "action": "reject_dict(200)",
         "note": "AI 智能推荐卡片流直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
@@ -169,7 +167,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ws/faas/amap-navigation/card-service-route-plan",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/ws/faas/amap-navigation/card-service-route-plan(\\?|$)",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/ws/faas/amap-navigation/card-service-route-plan(\\?|$)",
         "action": "reject_dict(200)",
         "note": "路线规划底部推广服务卡片直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
@@ -180,7 +178,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ws/boss/order_web/",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/ws/boss/order_web/\\w{8}_information(\\?|$)",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/ws/boss/order_web/\\w{8}_information(\\?|$)",
         "action": "reject_dict(200)",
         "note": "打车/订单页顶部营销提示横幅直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
@@ -191,7 +189,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ws/asa/ads_attribution",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/ws/asa/ads_attribution(\\?|$)",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/ws/asa/ads_attribution(\\?|$)",
         "action": "reject_dict(200)",
         "note": "ASA 广告归因上报接口直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
@@ -202,7 +200,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ws/shield/scene/recommend",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/ws/shield/scene/recommend(\\?|$)",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/ws/shield/scene/recommend(\\?|$)",
         "action": "reject_dict(200)",
         "note": "首页场景推荐推广位直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
@@ -213,7 +211,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ws/valueadded/weather",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/ws/valueadded/weather(\\?|$)",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/ws/valueadded/weather(\\?|$)",
         "action": "reject_dict(200)",
         "note": "增值天气挂件推广卡片直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
@@ -224,7 +222,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ws/msgbox/pull",
-        "url": "^https://(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\\.amap\\.com/ws/msgbox/pull(\\?|$)",
+        "url": "^https://(?:m5|m5-zb|center|ai)\\.amap\\.com/ws/msgbox/pull(\\?|$)",
         "action": "reject_dict(200)",
         "note": "消息中心营销推送与活动横幅拉取直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"

@@ -37,15 +37,9 @@
 
 无 A/B 级缺口候选。
 
-## `instagram` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:7（已裁决排除 0 条；已收录但默认关闭 2 条）
+## `instagram` — 生效黑洞 7 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 0 条）
 
-| A 候选（≥3 源） | 源 | 状态 |
-|---|---|---|
-| `netseer.com` | 5: adguard-dns,adguard-mobile,anti-ad,hagezi-pro,stevenblack | 已收录·默认关 |
-
-| B 候选（2 源） | 源 | 状态 |
-|---|---|---|
-| `cm.netseer.com` | 2: anti-ad,stevenblack | 已收录·默认关 |
+无 A/B 级缺口候选。
 
 ## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:13（已裁决排除 11 条；已收录但默认关闭 17 条）
 
@@ -91,7 +85,7 @@
 - `基础设施红线` ← `dns.*`, `blackhole*`, `h5speed.*`, `gia.*`, `gias.*`, `dgstatic.*`, `wl.jd.com`, `policy.*`, `kepler.*`, `union.jd.com`, `cps.*`, `jrclick.*`
 - `C 级单源不收` ← `u.x.jd.com`, `bdsp.x.jd.com`, `du.jd.com`, `nfa.jd.com`, `c-nfa.jd.com`, `firevent.jd.com`, `stat.m.jd.com`, `ads.union.jd.com`, `jzt.jd.com`
 
-## `mba-dashi` — 生效黑洞 67 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `mba-dashi` — 生效黑洞 68 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -188,21 +182,30 @@
 - `米家业务` ← `*.mihome.xiaomi.net`
 - `MIUI 业务域` ← `app.miui.com`, `feedback.miui.com`, `hybrid.miui.com`, `mcc.miui.com`, `rus.miui.com`, `india.miui.com`, `testit.miui.com`, `privacy.miui.com`, `search.miui.com`, `intl.up.w.xk.miui.com`, `gtglobal.intl.miui.com`, `preload.xiaomi.com`, `*.sms.miui.com`
 
-## `qidian` — 生效黑洞 116 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `qidian` — 生效黑洞 117 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `qdp.qidian.com` | 3: adrules,anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `qqnews` — 生效黑洞 0 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `qqnews` — 生效黑洞 0 域；缺口候选 A:0 B:0 C:1（已裁决排除 3 条；已收录但默认关闭 0 条）
+
+| B 候选（2 源） | 源 | 状态 |
+|---|---|---|
+| `ssp.qq.com` | 2: anti-ad,hagezi-pro | 排除·腾讯共享 SSP 根域（news.ssp 父域，仅做路径级复写） |
+| `uplog.inews.qq.com` | 2: adguard-dns,hagezi-pro | 排除·遥测/日志（隐私面，非广告） |
+| `w.inews.qq.com` | 2: anti-ad,hagezi-pro | 排除·业务·H5 新闻与分享页 API |
+
+裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
+- `业务·H5 新闻与分享页 API` ← `w.inews.qq.com`
+- `腾讯共享 SSP 根域（news.ssp 父域，仅做路径级复写）` ← `ssp.qq.com`
+- `遥测/日志（隐私面，非广告）` ← `uplog.inews.qq.com`
+
+## `ruankao-tong` — 生效黑洞 68 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
-## `ruankao-tong` — 生效黑洞 67 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
-
-无 A/B 级缺口候选。
-
-## `taobao` — 生效黑洞 18 域；缺口候选 A:0 B:0 C:8（已裁决排除 0 条；已收录但默认关闭 11 条）
+## `taobao` — 生效黑洞 19 域；缺口候选 A:0 B:0 C:8（已裁决排除 0 条；已收录但默认关闭 11 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
@@ -221,7 +224,7 @@
 | `textlink.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `v6-adashx.ut.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
-## `wechat` — 生效黑洞 33 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `wechat` — 生效黑洞 34 域；缺口候选 A:0 B:0 C:3（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|

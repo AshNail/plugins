@@ -2,7 +2,7 @@
 
 > 不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei.googleapis.com 的 youtubei/v1/log_event 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。
 
-版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -36,8 +36,8 @@ YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
 | `kill-pagead` | request | `reject_dict` | `cleanAds` | 网页广告加载与广告统计/追踪上报路径直接返回 200 + 空字典 |
-| `kill-youtubei-log-event` | request | `reject_dict` | `cleanAds` | YouTube 客户端高频遥测/广告曝光事件上报（log_event）在请求阶段直接返回 200 + 空字典，避免出网 |
-| `clean-youtubei-ads` | response | `response.json.jq` | `cleanAds` | YouTubei 响应递归删除广告字段；不改播放地址 |
+| `kill-youtubei-log-event` | request | `reject_dict` | `cleanAds` | YouTube 客户端中插广告点拉取（player/ad_break）及高频遥测/广告归因上报（log_event、att/log）在请求阶段直接返回 200 + 空字典 |
+| `clean-youtubei-ads` | response | `response.json.jq` | `cleanAds` | YouTubei 响应（含 Shorts reel_item_watch 与播放中 updated_metadata）递归删除广告字段；不改播放地址 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
 

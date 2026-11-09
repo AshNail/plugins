@@ -27,6 +27,26 @@
   ],
   "sdks": [],
   "groups": [],
+  "triage_exclude": [
+    {
+      "label": "业务·H5 新闻与分享页 API",
+      "globs": [
+        "w.inews.qq.com"
+      ]
+    },
+    {
+      "label": "腾讯共享 SSP 根域（news.ssp 父域，仅做路径级复写）",
+      "globs": [
+        "ssp.qq.com"
+      ]
+    },
+    {
+      "label": "遥测/日志（隐私面，非广告）",
+      "globs": [
+        "uplog.inews.qq.com"
+      ]
+    }
+  ],
   "enhance": {
     "active": true,
     "intro": "腾讯新闻的广告与正文共用 HTTPS JSON（news.ssp.qq.com、r.inews.qq.com），不可 DNS 黑洞。本层默认启用 Loon 原生 [Rewrite] v2 复写（由 cleanAds 开关控制，零 JS 脚本）：① news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 直接终止；② 列表类接口（开屏/要闻/财经/地方专区）用原生 response.json.replace 将 adList 置为 null；③ 专题详情/频道信息流（gw/page/event_detail、channel_feed）用原生 response.json.jq 过滤 widget_type=ad_list。",
@@ -83,5 +103,5 @@
       }
     ]
   },
-  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f9/23/e4/f923e456-9789-ebf6-7c18-caaacd244133/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg"
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/66/29/a5/6629a5e9-2cf1-0112-c944-4874266f771e/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg"
 }

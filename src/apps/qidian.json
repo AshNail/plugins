@@ -2,8 +2,8 @@
   "slug": "qidian",
   "name": "起点读书 · 看书激励助手",
   "desc": "起点读书看书激励助手 v3.5.7(改走 identity 版:真机 22:15 实证「调试模式开着、v356 净化绑定 19/19/19 齐全、锁屏零通知、UI 没净化」⇒ respondJson 一次都没走到，断点在响应体解析链而非传输层。于是两刀一起动——① [Rewrite] 不再逼上游压 gzip 而是直接要 identity，把 binary_body_mode/$utils.ungzip/手写 UTF-8 解码这三层未经真机确认的前提从主路上摘掉；② 锁屏取证从「只在改写成功时推」改成成功与解析失败都推(ok/fail 各 15s 节流)，此前所有 parse 失败只写 console，设备上「没解析成功」和「解析成功但没字段可改」完全同形):净化默认开:净化默认开、自动化默认关。净化(cleanAds 默认开)分两层——[Rewrite] 层负责 request 阶段把 Accept-Encoding 复写成 identity(上游本就该照客户端声明决定编码,本机 16:21 日志已实证写 gzip 就真回 gzip;identity 同样消掉脚本解不了的 br/zstd 且更彻底,不必再解压)并用 reject_dict(200) 整条终止 17 个纯广告端点(开屏/书架运营位/书城悬浮卡/广告位批量拉取/批量弹窗/推送弹窗/播放条/热词/章末/青少年/新手引导/猜你喜欢/经典书目/活动列表/推送消息;22:15 日志实证:命中这 17 条的 36 个流零建连、零 URL 落行,请求根本没出本机),混业务端点与 getconf 一律在 [Script] 层做字段级剥离(getconf 30 项覆写 + 11 项删除 + 关发现 tab、账户页 9 键删除 + 功能区 13→5 白名单 + 引导开关置 0、福利中心营销模块删除与激励任务条目剪枝、每日导读、书架悬浮位、红点、兑换页、发现信息流 AdvItem、发现页 NEW_*+DISCOVER_* 6 项白名单、Deeplink ActionUrl)。为什么不用 response.json.*:2026-11-06 14:34 日志实证 magev6/h5 上游从 H2 降级为 HTTP/1.1(Transform to http1.1),Loon 的 response.json.* 改写响应体后不会关闭左端 H2 流,导致请求严格卡满 Nginx keepalive_timeout 75.00 秒才以 H1 socket closed, Force closed left stream 断连;而 request 阶段 reject_dict(200) 与 [Script] 响应脚本均在 1~10ms 内正常释放流。同机不要同时开「起点 Pro」。",
-  "version": "3.5.7",
-  "date": "2026-11-06",
+  "version": "3.5.8",
+  "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "看书,激励,起点读书,阅文,纯净阅读,自动签到,激励任务,自动领奖,响应净化",
   "comment": [
@@ -272,7 +272,7 @@
         "group": "压缩协商（request 阶段）：强制 identity，让上游根本不压，脚本直接拿到明文 JSON",
         "stage": "request",
         "endpoint": "argus/api/",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/",
         "action": "request.header.set(\"Accept-Encoding\", \"identity\")",
         "note": "v3.5.7 路线 B：gzip 那条路要串行吃三个未经真机确认的运行时前提（binary_body_mode 给字节、$utils.ungzip 同步返回 Uint8Array、手写 UTF-8 解码），任何一个不成立都是「脚本 Finished 却一个字段没改」；改成 identity 后上游不压，脚本只剩 JSON.parse 一步，而 identity 同样消掉脚本解不了的 br/zstd——目标本来就是「别让上游压成脚本解不动的形态」，identity 比 gzip 更彻底。体量代价：这几个 Argus 接口明文膨胀 5~10 倍（soda 侧实测），单机可接受。真机 22:15 判据：调试模式开着、v356 绑定 19/19/19 齐全、锁屏零通知 ⇒ respondJson 一次都没走到，解析链就是断点。",
         "source": "官方 Script API §11.5「修改响应 Body 后 Loon 按传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」· 2026-11-06 真机日志"
@@ -283,7 +283,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "client/getsplashscreen",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/client/getsplashscreen(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/client/getsplashscreen(\\?|$)",
         "action": "reject_dict(200)",
         "note": "开屏广告。HAR 实证 Data.List=3 条素材（AdPlatform/SplashTime 同体，但纯广告载荷）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
@@ -294,7 +294,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "bookshelf/getTopOperation",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/bookshelf/getTopOperation(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/bookshelf/getTopOperation(\\?|$)",
         "action": "reject_dict(200)",
         "note": "书架置顶运营位。HAR 实证 Data.Items=3 + MainInfo.AdId",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
@@ -305,7 +305,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "getad",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/bookshelf/getad(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/bookshelf/getad(\\?|$)",
         "action": "reject_dict(200)",
         "note": "书架广告位（脚本 DirectKill 面）。HAR 实证 Data.GameUrl=QDReader://app/gameCenterMainPage",
         "source": "起点 Pro 2026-09-30 等价化集 · 本机 HAR 11-06"
@@ -316,7 +316,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "client/iosad",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/client/iosad(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/client/iosad(\\?|$)",
         "action": "reject_dict(200)",
         "note": "iOS 广告位列表（HAR 当期返回空 Data，仍按纯广告端点终止）",
         "source": "起点 Pro 2026-09-30 等价化集"
@@ -327,7 +327,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "maintain/playstrip",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/maintain/playstrip(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/maintain/playstrip(\\?|$)",
         "action": "reject_dict(200)",
         "note": "维护播放条/滚动运营条",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
@@ -338,7 +338,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "push/getdialog",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/push/getdialog(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/push/getdialog(\\?|$)",
         "action": "reject_dict(200)",
         "note": "推送弹窗（App 内营销弹窗的唯一来源，getconf 的 PushDialogFrequency 只压频次）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
@@ -349,7 +349,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "booksearch/hotWords",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/booksearch/hotWords(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/booksearch/hotWords(\\?|$)",
         "action": "reject_dict(200)",
         "note": "搜索框填充热词。⚠ 本机 HAR 当期只见 v2/booksearch/shardWord，hotWords 零命中——保留上游规则，但「搜索词还在」时先怀疑这条已过期",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
@@ -360,7 +360,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "followsubscribe/showChapterEndModule",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/followsubscribe/showChapterEndModule(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/followsubscribe/showChapterEndModule(\\?|$)",
         "action": "reject_dict(200)",
         "note": "章节末尾订阅读者/运营模块",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
@@ -371,7 +371,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "young/getconf",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/young/getconf(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/young/getconf(\\?|$)",
         "action": "reject_dict(200)",
         "note": "青少年模式引导弹窗配置（HAR 实证 Data.TeenShowFreq=1 + Tips 文案）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
@@ -382,7 +382,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "freshman/",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)(\\?|$)",
         "action": "reject_dict(200)",
         "note": "新手引导：书架按钮「更多福利点击领取」与引导弹窗（HAR 实证 ActionUrl=QDReader://app/openTaskCenter）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
@@ -393,7 +393,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "dailyrecommend/recommendBook",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/dailyrecommend/recommendBook(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/dailyrecommend/recommendBook(\\?|$)",
         "action": "reject_dict(200)",
         "note": "书架「猜你喜欢」推荐位（HAR 实证 BookShelfRecBookList=10）",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06"
@@ -404,7 +404,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "interaction/getclassicbookinfo",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/interaction/getclassicbookinfo(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/interaction/getclassicbookinfo(\\?|$)",
         "action": "reject_dict(200)",
         "note": "书页经典书目运营模块（HAR 实证 Data.Items=2）",
         "source": "起点 Pro 2026-09-30 等价化集"
@@ -415,7 +415,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "ploy/getactivitylist",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/ploy/getactivitylist(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/ploy/getactivitylist(\\?|$)",
         "action": "reject_dict(200)",
         "note": "运营活动列表",
         "source": "起点 Pro 2026-09-30 等价化集"
@@ -426,7 +426,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "popup/batchget",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/popup/batchget(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/popup/batchget(\\?|$)",
         "action": "reject_dict(200)",
         "note": "批量弹窗（HAR 实证 Data.PopupList=1）",
         "source": "起点 Pro 2026-09-30 等价化集 · 本机 HAR 11-06"
@@ -437,7 +437,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "message/",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/message/(getpushedmessagelist|pullOperationPush|pullSocialPush)(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/message/(getpushedmessagelist|pullOperationPush|pullSocialPush)(\\?|$)",
         "action": "reject_dict(200)",
         "note": "推送消息与运营/社交 push 拉取",
         "source": "kelee QiDian_remove_ads.lpx + 起点 Pro"
@@ -448,7 +448,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "adv/getadvlist",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/adv/getadvlist(batch)?(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/adv/getadvlist(batch)?(\\?|$)",
         "action": "reject_dict(200)",
         "note": "广告位拉取整族（getadvlist 与 getadvlistbatch 一条覆盖）：脚本侧 handleAdListBatch 的豁免只看 URL 里有没有 AdWhitelist 关键词，本机 HAR 8 样本 + 日志 12 次请求的 positions 全是 bookstore/usercenter/checkin/comment 类，零命中关键词 ⇒ 脚本本来就是把 Data 整个清空，引擎直接终止等价且少走一次回包",
         "source": "本机 HAR 440 + 日志 11-06 13:09 + kelee QiDian_remove_ads.lpx adv/ 前缀 + 仓库注释态 URL-REGEX 基线"
@@ -459,7 +459,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "booksquare/getfloatcard",
-        "url": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/booksquare/getfloatcard(\\?|$)",
+        "url": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/booksquare/getfloatcard(\\?|$)",
         "action": "reject_dict(200)",
         "note": "书城/书架悬浮运营卡片（2026-11-06 16:21 与 17:50 真机日志均捕获到 /argus/api/v1/booksquare/getfloatcard 请求）",
         "source": "仓库注释态 URL-REGEX 基线 + 本机日志 11-06 16:21/17:50"
@@ -482,8 +482,8 @@
       {
         "id": "capture-conf-checkin",
         "kind": "request",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]/(client/getconf|checkin/)",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]/(client/getconf|checkin/)",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "autoTask",
         "args": ["debugLog", "autoTask"],
@@ -495,8 +495,8 @@
       {
         "id": "getconf-clean",
         "kind": "response",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v1/client/getconf",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v1/client/getconf",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "cleanAds",
         "args": ["debugLog", "cleanAds"],
@@ -510,8 +510,8 @@
       {
         "id": "finishwatch-replay",
         "kind": "request",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/finishWatch",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/finishWatch",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "autoTask",
         "args": ["debugLog", "autoTask"],
@@ -523,8 +523,8 @@
       {
         "id": "receive-reward",
         "kind": "request",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/receiveTaskReward",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/receiveTaskReward",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "autoTask",
         "args": ["debugLog", "autoTask"],
@@ -536,8 +536,8 @@
       {
         "id": "adsec-gdt-inner-view",
         "kind": "response",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/gdt_inner_view",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/gdt_inner_view",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "autoTask",
         "args": ["debugLog", "autoTask"],
@@ -549,8 +549,8 @@
       {
         "id": "adsec-get-ads",
         "kind": "response",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/get_ads",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/video/adv/get_ads",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "autoTask",
         "args": ["debugLog", "autoTask"],
@@ -562,8 +562,8 @@
       {
         "id": "deep-clean",
         "kind": "response",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/user/getaccountpage|v[0-9]+/user/getsimplediscover|v[0-9]+/discovery/getdiscoverpagefeeds)",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/(v[0-9]+/video/adv/mainPage(?!Dialog)|v[0-9]+/video/adv/mainPageDialog|v[0-9]+/video/adv/reportDialog|v[0-9]+/deeplink/geturl|v[0-9]+/dailyrecommend|v[0-9]+/checkin/(lottery|checkinexchangepage)|v[0-9]+/bookshelf/(getHoverAdv|getTopOperation|getad)|v[0-9]+/client/iosad|v[0-9]+/push/getdialog|v[0-9]+/maintain/playstrip|v[0-9]+/young/getconf|v[0-9]+/freshman/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+/message/(pullOperationPush|pullSocialPush)|v[0-9]+/followsubscribe/showChapterEndModule|v[0-9]+/client/getsplashscreen|v[0-9]+/reddot/getdot|v[0-9]+/popup/batchget|v[0-9]+/ploy/getactivitylist|v[0-9]+/interaction/getclassicbookinfo|v[0-9]+/user/getaccountpage|v[0-9]+/user/getsimplediscover|v[0-9]+/discovery/getdiscoverpagefeeds)",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "cleanAds",
         "args": ["debugLog", "cleanAds"],
@@ -578,8 +578,8 @@
       {
         "id": "readtime-patch",
         "kind": "response",
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/readtime/readpage",
-        "hosts": ["h5.if.qidian.com", "magev6.if.qidian.com"],
+        "pattern": "^https://(h5|mage|magev6)\\.if\\.qidian\\.com/argus/api/v[0-9]+/readtime/readpage",
+        "hosts": ["h5.if.qidian.com", "mage.if.qidian.com", "magev6.if.qidian.com"],
         "script": "auto-task",
         "switch": "autoTask",
         "args": ["debugLog", "autoTask"],
@@ -625,5 +625,5 @@
       "URL-REGEX,^https?://magev?6?\\.if\\.qidian\\.com/argus/api/v[0-9]/booksquare/getfloatcard,REJECT-DICT"
     ]
   },
-  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d8/0b/85/d80b8512-93fa-f1ee-f1f8-6e0356fb2b66/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg"
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/8e/f8/13/8ef8132f-e3d6-84c2-5157-e85a8d4c75d0/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg"
 }

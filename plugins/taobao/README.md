@@ -2,7 +2,7 @@
 
 > 淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——10 条广告 mtop 路径在 request 阶段 reject_dict(200) 终止，开屏大图路径用 reject_img(200) 返回 1px 透明图；不包含上游 JS，交易/登录/支付红线不动。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.2.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -16,12 +16,12 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
-| 阿里广告/UT 独立端点 | B | 启用 | h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材。可莉淘宝原插件默认 REJECT；均为精确广告子域，媒体主域 alicdn.com 不整域。2026-11-03 补 6 个 ≥3 源 A 候选（atanx.alicdn.com、tns/dsp/tmatch.simba.taobao.com、adashx.m.taobao.com、adashx4yt.m.taobao.com）；2026-11-06 真机抓包补 wcp.taobao.com（/adstrack/track.json 广告打点）、audid-api.taobao.com（AUDID 广告设备指纹）与 poplayer.template.alibaba.com（PopLayer 营销弹层模板）。 |
+| 阿里广告/UT 独立端点 | B | 启用 | h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch.simba.taobao.com=Simba 直通车竞价与定向子域（其余 atanx、tns.simba、adashx.m、wcp、audid-api、poplayer、rtb.julang 已由上方 sdks:["alimama"] 统一注入，此处不重复声明）。均为精确广告子域，媒体主域 alicdn.com 不整域。 |
 | UT 埋点（默认关） | B | 默认关闭 | ut.taobao.com / umengacs.m.taobao.com / umengjmacs.m.taobao.com / abtest.alibaba.com=阿里 UT/友盟埋点与 AB 实验分流；关闭统计不等于去广告，默认关，需要隐私优先再开。 |
 | 淘宝客/联盟归因（默认关） | B | 默认关闭 | tunion-api.m.taobao.com=淘宝联盟 CPS 归因；拦了会影响淘宝客取链/返利，默认关。 |
 | 阿里 AMDC HTTPDNS 调度（默认关） | B | 默认关闭 | amdc.m.taobao.com / amdcopen.m.taobao.com=阿里 HTTPDNS 调度；拦后若 App 无回退可能拖慢建连，默认关。 |
 | 阿里妈妈直通车点击跳转/外链（默认关） | B | 默认关闭 | mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。 |
-| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 16 域 / 0 规则。 |
+| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 17 域 / 0 规则。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 4 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
@@ -80,4 +80,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/taobao.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 38 条，[Rule] 4 条。
+统计：精确/通配黑洞 33 条，[Rule] 4 条。

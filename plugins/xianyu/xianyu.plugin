@@ -1,7 +1,7 @@
 #!name=闲鱼 · 去广告（原生复写层）
 #!desc=闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.6.2
+#!version=1.6.3
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/xianyu/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d0/d6/bb/d0d6bb22-8497-3abb-aa74-a303ce7e599c/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
@@ -60,6 +60,7 @@ atanx.alicdn.com = 127.0.0.1
 audid-api.taobao.com = 127.0.0.1
 mmstat.com = 127.0.0.1
 poplayer.template.alibaba.com = 127.0.0.1
+rtb.julang.taobao.com = 127.0.0.1
 tanx.com = 127.0.0.1
 tns.simba.taobao.com = 127.0.0.1
 wcp.taobao.com = 127.0.0.1
@@ -75,10 +76,9 @@ iyes.youku.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 淘宝客/阿里妈妈 API 端点（置信 B）
-# tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、全局 ads 插件的 =alimama.com 整域黑洞罩不到它,故在此精确单列;afpapi.alimama.com 已由 ads 插件 alibaba 组整域覆盖,此处只作按 App 开关的完整起见。DoH 实测 afpapi CNAME 终结于 adsz.wagbridge.tanx.alimama.com(Tanx=阿里妈妈 AdX)。
+# tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、上方 sdks:["alimama"] 的 *.alimama.com 整域黑洞罩不到它,故在此精确单列(afpapi.alimama.com 已由 sdks:["alimama"] 的 *.alimama.com 通配覆盖,不重复声明)。
 # 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list
 # 证据: https://www.alimama.com/about.htm
-afpapi.alimama.com = 127.0.0.1
 tunion-api.m.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
@@ -94,11 +94,10 @@ tunion-api.m.taobao.com = 127.0.0.1
 # ========================================================================
 # 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 # ------------------------------------------------------------------------
-# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——
-# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，
-# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。
-# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，
-# 解密不等于拦截。
+# 不装证书 = 上述主机的 TLS 握手会被客户端拒绝，本 App 内容加载会失败——
+# 这是同域 HTTPS 路径拦截与 JSON 字段净化的必要前置（远程订阅插件无法手工取消
+# 注释，故在确认无证书固定后由源显式声明 active=true 默认启用）。
+# 若源里登记了注释态 URL-REGEX 路径黑洞，文末仍保持注释：红线业务主机只解密不整域黑洞。
 # ========================================================================
 
 [MITM]
@@ -109,12 +108,11 @@ hostname = %APPEND% acs.m.goofish.com, g-acs.m.goofish.com
 # ========================================================================
 # 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
 # ------------------------------------------------------------------------
-# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；
-# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，
-# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、
-# reject_* 自己终止响应，gzip 面整个消失。
-# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，
-# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。
+# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在
+# 出网前就地返回合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与
+# 字段级改写（不依赖脚本层 $utils.ungzip），Accept-Encoding 协商保护同域脚本链。
+# 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径
+# 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。
 # ========================================================================
 
 [Rewrite]
@@ -122,8 +120,8 @@ hostname = %APPEND% acs.m.goofish.com, g-acs.m.goofish.com
 # ------------------------------------------------------------
 # 请求阶段直接终止（reject_dict(200)）：mtop 纯广告与推广模块接口
 # ------------------------------------------------------------
-# kill-splash-ads: 闲鱼开屏广告 mtop 请求直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop.*splash\.ads/ then reject_dict(200)
+# kill-splash-ads: 闲鱼开屏广告 mtop 请求直接返回 200 + 空字典（限定路径段，不跨查询串贪婪匹配）（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop[^?]*splash\.ads/ then reject_dict(200)
 
 # kill-idleadv-restore: 闲鱼切回前台/场景恢复开屏与弹层广告请求（mtop.idle.idleadv.scene.restore 等）直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.idle\.idleadv\./ then reject_dict(200)

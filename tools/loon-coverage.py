@@ -363,7 +363,7 @@ CAPABILITIES = [
          why="同上，视频素材域名不进 MITM"),
     dict(layer="复写层", key="w-req-header", name="`request.header.add/set/del/replace`", expect="used",
          probe=r"then\s+request\.header\.(add|set|del|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="用 `set` 把 Accept-Encoding 降到 gzip"),
+         why="用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian），防止 br/zstd 压缩响应穿透脚本层"),
     dict(layer="复写层", key="w-res-header", name="`response.header.add/set/del/replace`", expect="open",
          probe=r"then\s+response\.header\.(add|set|del|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖"),
@@ -378,12 +378,12 @@ CAPABILITIES = [
          why="本插件不改请求体；请求侧无广告载荷需要剥"),
     dict(layer="复写层", key="w-res-json-field", name="`response.json.add/delete/replace`", expect="used",
          probe=r"then\s+response\.json\.(?:add|delete|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="qidian / qqnews / xianyu 净化层主力（getconf 30 键 replace + 11 项 delete、书架/福利/兑换页字段级删除、腾讯新闻 adList 置 null、闲鱼 search.discover/item.buy.feeds 删键）："
+         why="soda / qqnews / xianyu 等固定键级净化主力（soda `/luna/me` 删 `reward_ad_banner`、qqnews 列表 `adList` 置 `null`、xianyu `search.discover`/`item.buy.feeds` 删键）："
              "引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。"
-             "soda/douyin 仍交由脚本处理（原生 JSON 改写命中后同阶段脚本不执行，会跳过「保奖励」判断）"),
+             "qidian 因 getconf 平行数组改写曾触发挂起已于 v3.5.0 迁回 `[Script]`；soda/douyin 激励与信息流端点仍交由脚本处理（保奖励判断）"),
     dict(layer="复写层", key="w-res-json-jq", name="`response.json.jq`", expect="used",
          probe=r"then\s+response\.json\.jq\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="netease / qidian / qqnews / youtube / bilibili / meituan / xianyu 全面启用原生 jq（统一采用官方双引号 + `\\\"` 转义语法，修复历史反引号语法导致未执行的问题）"),
+         why="soda / netease / qqnews / youtube / bilibili / meituan / xianyu / taobao / zhihu 全面启用原生 jq（统一采用官方双引号 + `\\\"` 转义与顶层类型防御守卫，修复历史反引号语法导致未执行的问题）"),
     dict(layer="复写层", key="w-res-json-jq-file", name="`response.json.jq_file`", expect="reject",
          probe=r"then\s+response\.json\.jq_file\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="插件资源文件会引入包外依赖；本仓库要求自包含"),

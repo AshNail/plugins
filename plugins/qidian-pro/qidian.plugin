@@ -6,8 +6,7 @@
 #!loon_version = 3.5.1(978)
 #!tag = 起点,去广告,签到
 #!type = normal
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d8/0b/85/d80b8512-93fa-f1ee-f1f8-6e0356fb2b66/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
-
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/8e/f8/13/8ef8132f-e3d6-84c2-5157-e85a8d4c75d0/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
 [Argument]
 CAPTURE_ENABLE=switch,"true","false",tag=是否开启抓取重写, desc=是否开启抓取重写（[Rewrite] 接管广告净化）。**关掉它广告改由 [Script] 接管，但不影响 Cookie 捕获** —— 见 QDREADER_COOKIE_ENABLE
 QDREADER_COOKIE_ENABLE=switch,"true","false",tag=是否捕获Cookie, desc=是否捕获起点读书 Cookie（签到/自动兑换章节卡/福利签到的唯一数据源）。**2026-09-30 从 CAPTURE_ENABLE 解耦**：原先 Cookie 捕获挂在 CAPTURE_ENABLE 上，而该开关同时决定 [Rewrite]/[Script] 互斥，于是"关掉抓包重写让脚本接管广告"必然连带签到全废 —— 现已拆开

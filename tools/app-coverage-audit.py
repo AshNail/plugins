@@ -48,6 +48,7 @@ PATTERNS: dict[str, re.Pattern] = {
     "bilibili": re.compile(r"bilibili|biliapi|bilivideo|hdslb|biligame"),
     "amap": re.compile(r"amap|autonavi"),
     "youtube": re.compile(r"youtube|googlevideo|ytimg|youtubei"),
+    "qqnews": re.compile(r"(^|\.)inews\.qq\.com|(^|\.)ssp\.qq\.com|news\.l\.qq\.com"),
 }
 
 # 品牌根域白名单：候选的 registrable root 必须属于 App 主体（拒掉 typosquat/第三方站点/社区站）
@@ -71,6 +72,7 @@ BRAND_ROOTS: dict[str, set[str]] = {
     "bilibili": {"bilibili.com", "biliapi.com", "biliapi.net", "bilivideo.com", "hdslb.com", "biligame.com"},
     "amap": {"amap.com", "autonavi.com"},
     "youtube": {"youtube.com", "googlevideo.com", "ytimg.com", "googleapis.com"},
+    "qqnews": {"qq.com", "gtimg.com", "gtimg.cn"},
 }
 
 # 整 root 不进候选（共享主域/CDN/网关，命中再多也不是「广告专用域」）

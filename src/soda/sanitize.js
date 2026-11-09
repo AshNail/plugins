@@ -92,7 +92,7 @@ const RULES = [
   },
   {
     id: "ads",
-    match: /\/luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info)/,
+    match: /\/+luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info)/,
     /*
      * 取证：luna/ads/retrieve 的广告对象用 ad_launch / ad_launch_list；
      * 信息流广告块用 ads_blocks / ads_info（0x1147cde48、0x1147ce218）。

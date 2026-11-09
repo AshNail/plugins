@@ -2,7 +2,7 @@
   "slug": "taobao",
   "name": "淘宝 · 去广告（原生复写层）",
   "desc": "淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——10 条广告 mtop 路径在 request 阶段 reject_dict(200) 终止，开屏大图路径用 reject_img(200) 返回 1px 透明图；不包含上游 JS，交易/登录/支付红线不动。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,淘宝,阿里",
@@ -77,7 +77,7 @@
       "id": "ali_ad_hosts",
       "title": "阿里广告/UT 独立端点",
       "tier": "B",
-      "note": "h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材。可莉淘宝原插件默认 REJECT；均为精确广告子域，媒体主域 alicdn.com 不整域。2026-11-03 补 6 个 ≥3 源 A 候选（atanx.alicdn.com、tns/dsp/tmatch.simba.taobao.com、adashx.m.taobao.com、adashx4yt.m.taobao.com）；2026-11-06 真机抓包补 wcp.taobao.com（/adstrack/track.json 广告打点）、audid-api.taobao.com（AUDID 广告设备指纹）与 poplayer.template.alibaba.com（PopLayer 营销弹层模板）。",
+      "note": "h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch.simba.taobao.com=Simba 直通车竞价与定向子域（其余 atanx、tns.simba、adashx.m、wcp、audid-api、poplayer、rtb.julang 已由上方 sdks:[\"alimama\"] 统一注入，此处不重复声明）。均为精确广告子域，媒体主域 alicdn.com 不整域。",
       "sources": [
         "https://kelee.one/",
         "https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list",
@@ -87,15 +87,9 @@
         "h-adashx.ut.taobao.com",
         "ossgw.alicdn.com",
         "hudong.alicdn.com",
-        "atanx.alicdn.com",
-        "tns.simba.taobao.com",
-        "adashx.m.taobao.com",
         "adashx4yt.m.taobao.com",
         "dsp.simba.taobao.com",
-        "tmatch.simba.taobao.com",
-        "wcp.taobao.com",
-        "audid-api.taobao.com",
-        "poplayer.template.alibaba.com"
+        "tmatch.simba.taobao.com"
       ]
     },
     {
@@ -304,5 +298,5 @@
       }
     ]
   },
-  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/4f/52/d9/4f52d982-e707-ea87-6c93-a8cea98268ec/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg"
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/59/ef/48/59ef4826-1909-6c34-542d-9a55aae79c6c/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg"
 }

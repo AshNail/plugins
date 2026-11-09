@@ -1,8 +1,8 @@
 # Instagram · 像素与遥测瘦身
 
-> 如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内广告 DNS 层≈0。黑洞 FB 转化像素、网页播放器 VAST 域与已死徽章服务;不碰 graph/gateway/fbcdn 主域。零证书。
+> 如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内原生赞助帖 DNS 层≈0。默认黑洞 Meta 广告/转化像素 SDK、已停用徽章域与真机高频 netseer 公网 IP 关联遥测(DOMAIN-KEYWORD 精准命中随机 UUID 分片);不碰 graph/gateway/fbcdn 主域。零证书。
 
-版本 **1.1.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -16,8 +16,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/instagram/instagr
 
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
-| FB 像素与专属广告端点（A 级） | A | 启用 | pixel.facebook.com=网页转化像素(Conversions API);an.facebook.com=网页播放器片头广告 VAST 标签;badges.instagram.com=已停用的旧徽章服务。 |
-| netseer IP 关联遥测（默认关,纯隐私收益） | B | 默认关闭 | Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）。2026-11 真机 Loon 日志实锤客户端实际请求形态为 <uuid>-netseer-ipaddr-assoc.xy/xz.fbcdn.net（600+ 次，UUID 与 netseer 以连字符 '-' 拼接而非点号 '.'，导致旧版 DOMAIN-SUFFIX 100% 漏放），改用 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT 精确覆盖全部随机 UUID 分片且零触碰正常 *.fbcdn.net 图床。netseer.com=被 Meta 收购的测量公司本体域（4 源收录）。间接降低广告定向精度,不减少广告数量。 |
+| IG 专属废弃徽章端点（A 级） | A | 启用 | badges.instagram.com=已停用的旧徽章服务（pixel.facebook.com 与 an.facebook.com 已由上方 sdks:["meta"] 统一提供，此处不重复声明）。 |
+| netseer 公网 IP 关联与广告归因遥测（A 级） | A | 启用 | Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010 / anti-AD 多源收录）。2026-11 真机 Loon 日志实锤客户端实际请求形态为 <uuid>-netseer-ipaddr-assoc.xy/xz.fbcdn.net（单窗口 600+ 次，UUID 与 netseer 以连字符 '-' 拼接），用 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT 精确覆盖全部随机 UUID 分片且零触碰正常 *.fbcdn.net 图床；netseer.com=被 Meta 收购的测量公司本体域（4 源收录）。默认启用以阻断跨网络 IP 定向归因。 |
 | Meta / Audience Network（FAN）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 10 域 / 0 规则。 |
 
 ## 红线与天花板（如实）
@@ -33,4 +33,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/instagram/instagr
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/instagram.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 15 条，[Rule] 1 条。
+统计：精确/通配黑洞 13 条，[Rule] 1 条。

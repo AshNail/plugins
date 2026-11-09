@@ -107,13 +107,13 @@
 | `reject_img(status)` | ✅ 已用 | 共享图床（meituan p[0-9]/flowplus/img.meituan.net、taobao gw.alicdn.com）下的广告目录路径在 request 阶段返回 200 + 1px GIF，避免图片加载器进入破损图重试分支，并支持 `${cleanAds} == true` 开关控制 |
 | `reject_array(status)` | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` 全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条：样本 + enhance.url_regex 白名单 + 来源登记 |
 | `reject_video(status)` | ❌ 判死 | 同上，视频素材域名不进 MITM |
-| `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 降到 gzip |
+| `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian），防止 br/zstd 压缩响应穿透脚本层 |
 | `response.header.add/set/del/replace` | 🟡 可用未用 | 响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖 |
 | `request.body.replace` | ❌ 判死 | 正文级正则对 JSON 不安全（可能命中字符串内部的同名字段） |
 | `response.body.replace` | ❌ 判死 | 同上；且命中后同阶段脚本不再执行，等于用正则换掉全部 JSON 逻辑 |
 | `request.json.*` | ❌ 判死 | 本插件不改请求体；请求侧无广告载荷需要剥 |
-| `response.json.add/delete/replace` | ✅ 已用 | qidian / qqnews / xianyu 净化层主力（getconf 30 键 replace + 11 项 delete、书架/福利/兑换页字段级删除、腾讯新闻 adList 置 null、闲鱼 search.discover/item.buy.feeds 删键）：引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。soda/douyin 仍交由脚本处理（原生 JSON 改写命中后同阶段脚本不执行，会跳过「保奖励」判断） |
-| `response.json.jq` | ✅ 已用 | netease / qidian / qqnews / youtube / bilibili / meituan / xianyu 全面启用原生 jq（统一采用官方双引号 + `\"` 转义语法，修复历史反引号语法导致未执行的问题） |
+| `response.json.add/delete/replace` | ✅ 已用 | soda / qqnews / xianyu 等固定键级净化主力（soda `/luna/me` 删 `reward_ad_banner`、qqnews 列表 `adList` 置 `null`、xianyu `search.discover`/`item.buy.feeds` 删键）：引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。qidian 因 getconf 平行数组改写曾触发挂起已于 v3.5.0 迁回 `[Script]`；soda/douyin 激励与信息流端点仍交由脚本处理（保奖励判断） |
+| `response.json.jq` | ✅ 已用 | soda / netease / qqnews / youtube / bilibili / meituan / xianyu / taobao / zhihu 全面启用原生 jq（统一采用官方双引号 + `\"` 转义与顶层类型防御守卫，修复历史反引号语法导致未执行的问题） |
 | `response.json.jq_file` | ❌ 判死 | 插件资源文件会引入包外依赖；本仓库要求自包含 |
 | `request.body.mock` | ❌ 判死 | 同上：改写请求体不属于本插件职责 |
 | `response.body.mock` | ❌ 判死 | 包络写错＝白屏，且会把同 URL 的脚本全废掉；收益只在「省一次解码」 |

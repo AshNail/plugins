@@ -34,7 +34,7 @@ const VERBOSE = true;
 /* ---------------- 被禁 Tab ID（归一化：小写、去 _ - 空格） ---------------- */
 const DOUYIN_IDS = [
   "listen_douyin", "listen_video", "listen_video_tab", "listen_video_tab_module",
-  "listen_video", "douyin_music", "douyin_tab"
+  "douyin_music", "douyin_tab"
 ];
 
 const NON_MUSIC_IDS = DOUYIN_IDS.concat([
@@ -234,25 +234,142 @@ function walk(node, listenOnly, log, path, depth) {
   }
 }
 
+/* ---------------- 通用工具：插件参数 / 响应体解码 / 诊断标记 ---------------- */
+function pargs(keys) {
+  var o = {}, r;
+  try { r = (typeof $argument === "undefined") ? null : $argument; } catch (_e) { r = null; }
+  if (r === null || r === undefined) return null;
+  var t = Object.prototype.toString.call(r);
+  if (t === "[object Object]") {
+    for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k];
+    return o;
+  }
+  if (t === "[object Array]") {
+    for (var i = 0; i < r.length && keys && i < keys.length; i++) o[keys[i]] = r[i];
+    return o;
+  }
+  if (typeof r === "string") {
+    var p = r.split(/[&;,]/);
+    for (var j = 0; j < p.length; j++) {
+      var kv = p[j].split("=");
+      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    }
+    return o;
+  }
+  return null;
+}
+
+function pflag(args, name, fallback) {
+  if (!args || !(name in args)) return fallback;
+  var v = args[name];
+  if (v === true || v === "true" || v === 1 || v === "1") return true;
+  if (v === false || v === "false" || v === 0 || v === "0") return false;
+  return fallback;
+}
+
+function utf8(bytes) {
+  var out = "", i = 0, n = bytes.length;
+  while (i < n) {
+    var b = bytes[i++] & 0xff;
+    if (b < 0x80) {
+      out += String.fromCharCode(b);
+    } else if (b >= 0xc0 && b < 0xe0) {
+      out += String.fromCharCode(((b & 0x1f) << 6) | (bytes[i++] & 0x3f));
+    } else if (b >= 0xe0 && b < 0xf0) {
+      out += String.fromCharCode(((b & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f));
+    } else {
+      var cp = ((b & 0x07) << 18) | ((bytes[i++] & 0x3f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+      out += String.fromCodePoint(cp);
+    }
+  }
+  return out;
+}
+
+function readBody(resp) {
+  var raw = (resp && resp.body) || "";
+  var bytes = null;
+  if (typeof Uint8Array !== "undefined" && raw instanceof Uint8Array) {
+    bytes = raw;
+  } else if (typeof raw === "string" && raw.length > 1 &&
+             raw.charCodeAt(0) === 0x1f && raw.charCodeAt(1) === 0x8b) {
+    bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i) & 0xff;
+  } else {
+    return typeof raw === "string" ? raw : "";
+  }
+  try {
+    if (typeof $utils !== "undefined" && $utils && typeof $utils.ungzip === "function") {
+      return utf8($utils.ungzip(bytes));
+    }
+  } catch (e) {
+    console.log("[soda] homepage-tabs ungzip failed: " + e);
+  }
+  return utf8(bytes);
+}
+
+function ceTag(resp) {
+  try {
+    var h = (resp && resp.headers) || {};
+    var ce = "";
+    for (var k in h) {
+      if (String(k).toLowerCase() === "content-encoding") { ce = h[k]; break; }
+    }
+    ce = String(ce == null ? "" : ce).trim().toLowerCase();
+    if (!ce || ce === "gzip" || ce === "x-gzip" || ce === "identity") return "";
+    return ";ce=" + ce.replace(/[^a-z0-9,._-]/g, "");
+  } catch (_e) {
+    return "";
+  }
+}
+
+function markHeaders(reason, bodyChanged) {
+  try {
+    var h = Object.assign({}, ($response && $response.headers) || {});
+    h["X-Soda-Plugin"] = reason;
+    if (bodyChanged) {
+      var drop = [];
+      for (var k in h) {
+        if (!Object.prototype.hasOwnProperty.call(h, k)) continue;
+        var lk = String(k).toLowerCase();
+        if (lk === "content-encoding" || lk === "content-length") drop.push(k);
+      }
+      for (var i = 0; i < drop.length; i++) delete h[drop[i]];
+    }
+    return h;
+  } catch (_e) {
+    return null;
+  }
+}
+
 /* ---------------- 主逻辑 ---------------- */
 (function main() {
-  if (!ENABLED || (!$argument.hideDouyinTab && !$argument.listenOnly)) {
+  const args = pargs(["hideDouyinTab", "listenOnly", "debugLog"]);
+  const hideDouyin = pflag(args, "hideDouyinTab", false);
+  const listenOnly = pflag(args, "listenOnly", false);
+  const debugOn = pflag(args, "debugLog", false);
+
+  if (!ENABLED || (!hideDouyin && !listenOnly)) {
     $done({});
     return;
   }
 
-  const listenOnly = !!$argument.listenOnly;
-  const raw = $response.body;
-  const url = $request.url;
+  const raw = readBody($response);
+  const url = ($request && $request.url) || "";
 
-  if ($argument.debugLog) {
+  if (debugOn) {
     console.log("[soda-trace] RESP homepage-tabs url=" + url +
       " len=" + (raw && raw.length) + " mode=" +
-      (listenOnly ? "listenOnly" : "hideDouyinTab"));
+      (listenOnly ? "listenOnly" : "hideDouyinTab") + ceTag($response));
   }
 
   if (!raw || typeof raw !== "string" || raw.length === 0) {
-    $done({});
+    $done({ headers: markHeaders("soda-homepage-tabs;skip=no-body") });
+    return;
+  }
+
+  const head = raw.trimStart().slice(0, 1);
+  if (head !== "{" && head !== "[") {
+    $done({ headers: markHeaders("soda-homepage-tabs;skip=not-json" + ceTag($response)) });
     return;
   }
 
@@ -260,16 +377,16 @@ function walk(node, listenOnly, log, path, depth) {
   const fastCheck = /(?:"[a-z_-]*tab[a-z_-]*"\s*:)|listen[-_]douyin|listen[-_]video[-_]tab/i;
   if (!fastCheck.test(raw)) {
     if (VERBOSE) console.log("[soda] homepage-tabs: no tab config, passthrough: " + url);
-    $done({});
+    $done({ headers: markHeaders("soda-homepage-tabs;noop=no-marker") });
     return;
   }
 
   let obj;
   try {
     obj = JSON.parse(raw);
-  } catch (e) {
+  } catch (_e) {
     console.log("[soda] homepage-tabs: JSON parse failed, passthrough: " + url);
-    $done({});
+    $done({ headers: markHeaders("soda-homepage-tabs;skip=json-parse" + ceTag($response)) });
     return;
   }
 
@@ -278,7 +395,7 @@ function walk(node, listenOnly, log, path, depth) {
 
   if (log.length === 0) {
     if (VERBOSE) console.log("[soda] homepage-tabs: no blocked tab found, passthrough: " + url);
-    $done({});
+    $done({ headers: markHeaders("soda-homepage-tabs;noop=clean") });
     return;
   }
 
@@ -287,11 +404,12 @@ function walk(node, listenOnly, log, path, depth) {
 
   if (DRY_RUN) {
     console.log("[soda] homepage-tabs: DRY_RUN, passthrough");
-    $done({});
+    $done({ headers: markHeaders("soda-homepage-tabs;skip=dry-run") });
     return;
   }
 
-  const headers = $response.headers || {};
-  headers["X-Soda-Plugin"] = "homepage-tabs";
-  $done({ body: JSON.stringify(obj), headers: headers });
+  $done({
+    body: JSON.stringify(obj),
+    headers: markHeaders("soda-homepage-tabs;changed=" + log.length, true)
+  });
 })();

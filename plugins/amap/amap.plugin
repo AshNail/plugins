@@ -1,7 +1,7 @@
 #!name=高德地图 · 去广告与精简
 #!desc=高德地图 iOS/iPadOS：日志与遥测（logs/dualstack-logs/amap-aos-info-nogw/adashx）+ 商业化广告域（optimus-ads）走 [Host] 127.0.0.1 零证书黑洞；同域开屏 alimama 广告、首页推荐流、路线规划推广卡片、订单 Tip、消息中心营销推送（msgbox/pull）、ASA 归因与天气推广默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 终止，零 JS 脚本）；核心逆地理编码（apsrgeo）、基站定位（cgicol）、路线规划网关（restapi）与轨迹定位（ts）严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.2.0
+#!version=1.2.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/amap/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e5/df/cd/e5dfcd1f-948d-681f-29da-8d5c00e0ae45/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
@@ -17,7 +17,7 @@
 # 高德地图业务共享根域 *.amap.com，禁止整域通配。
 # 高德基础地图数据共享根域 *.autonavi.com，禁止整域通配。
 # 能力天花板与原生设计：logs.amap.com、dualstack-logs.amap.com、amap-aos-info-nogw.amap.com、adashx.ut.amap.com、h-adashx.ut.amap.com、v6-adashx.ut.amap.com、optimus-ads.amap.com、optimus-ads-ykx.amap.com 八个日志遥测与广告域走 [Host] 127.0.0.1 零证书黑洞；开屏、信息流与路线规划推广走 Loon 原生 [Rewrite] v2 引擎复写（reject_dict(200)），零 JS 脚本。
-# v1.2.0 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 8 条 request 阶段 reject_dict(200) 规则（新增 ws/msgbox/pull 营销消息推送拉取终止）+ 6 台解密主机的 QUIC 回退。
+# v1.2.1 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 8 条 request 阶段 reject_dict(200) 规则（覆盖 ws/(aos|valueadded)/alimama/splash_screen 与 ws/msgbox/pull 等）+ 4 台同域业务主机的 QUIC 回退（已从 [MITM] 移出已在 [Host] 黑洞的 amap-aos-info-nogw 与 optimus-ads）。
 # 本文件由 tools/build-apps.py 从 src/apps/amap.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -39,11 +39,9 @@ cleanAds = switch,true,tag=同域开屏与卡片去广告（默认开）,desc=�
 # QUIC 回退（增强层配套 · 拒的是 HTTP/3 协议，回落 TCP 后正文不受影响）
 # MITM 只解密 TCP；App 走 HTTP/3 时下面这些主机的响应脚本会静默收不到。本组只对 PROTOCOL,QUIC 生效，同一主机的 TCP 请求（正文/书架/章节）零影响。
 AND,((DOMAIN-SUFFIX,ai.amap.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,amap-aos-info-nogw.amap.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,center.amap.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,m5-zb.amap.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,m5.amap.com),(PROTOCOL,QUIC)),REJECT
-AND,((DOMAIN-SUFFIX,optimus-ads.amap.com),(PROTOCOL,QUIC)),REJECT
 
 [Host]
 
@@ -72,27 +70,25 @@ optimus-ads.amap.com = 127.0.0.1
 # ========================================================================
 # 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 # ------------------------------------------------------------------------
-# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——
-# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，
-# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。
-# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，
-# 解密不等于拦截。
+# 不装证书 = 上述主机的 TLS 握手会被客户端拒绝，本 App 内容加载会失败——
+# 这是同域 HTTPS 路径拦截与 JSON 字段净化的必要前置（远程订阅插件无法手工取消
+# 注释，故在确认无证书固定后由源显式声明 active=true 默认启用）。
+# 若源里登记了注释态 URL-REGEX 路径黑洞，文末仍保持注释：红线业务主机只解密不整域黑洞。
 # ========================================================================
 
 [MITM]
 
-hostname = %APPEND% m5.amap.com, m5-zb.amap.com, center.amap.com, amap-aos-info-nogw.amap.com, ai.amap.com, optimus-ads.amap.com
+hostname = %APPEND% m5.amap.com, m5-zb.amap.com, center.amap.com, ai.amap.com
 
 
 # ========================================================================
 # 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
 # ------------------------------------------------------------------------
-# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；
-# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，
-# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、
-# reject_* 自己终止响应，gzip 面整个消失。
-# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，
-# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。
+# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在
+# 出网前就地返回合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与
+# 字段级改写（不依赖脚本层 $utils.ungzip），Accept-Encoding 协商保护同域脚本链。
+# 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径
+# 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。
 # ========================================================================
 
 [Rewrite]
@@ -100,26 +96,26 @@ hostname = %APPEND% m5.amap.com, m5-zb.amap.com, center.amap.com, amap-aos-info-
 # ------------------------------------------------------------
 # 请求阶段直接终止（reject_dict(200)）：同域开屏与推广卡片路径
 # ------------------------------------------------------------
-# kill-splash: 高德 alimama 开屏广告接口直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/ws\/aos\/alimama\/splash_screen(\?|$)/ then reject_dict(200)
+# kill-splash: 高德 alimama 开屏广告接口（aos 与 valueadded 双路径）直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/(?:aos|valueadded)\/alimama\/splash_screen(\?|$)/ then reject_dict(200)
 
 # kill-ai-rec: AI 智能推荐卡片流直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/v[0-9]\/ai_rec\// then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/v[0-9]\/ai_rec\// then reject_dict(200)
 
 # kill-route-card: 路线规划底部推广服务卡片直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/ws\/faas\/amap-navigation\/card-service-route-plan(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/faas\/amap-navigation\/card-service-route-plan(\?|$)/ then reject_dict(200)
 
 # kill-order-tip: 打车/订单页顶部营销提示横幅直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/ws\/boss\/order_web\/\w{8}_information(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/boss\/order_web\/\w{8}_information(\?|$)/ then reject_dict(200)
 
 # kill-asa-attribution: ASA 广告归因上报接口直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/ws\/asa\/ads_attribution(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/asa\/ads_attribution(\?|$)/ then reject_dict(200)
 
 # kill-scene-recommend: 首页场景推荐推广位直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/ws\/shield\/scene\/recommend(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/shield\/scene\/recommend(\?|$)/ then reject_dict(200)
 
 # kill-weather-ad: 增值天气挂件推广卡片直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/ws\/valueadded\/weather(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/valueadded\/weather(\?|$)/ then reject_dict(200)
 
 # kill-msgbox-pull: 消息中心营销推送与活动横幅拉取直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|amap-aos-info-nogw|ai|optimus-ads)\.amap\.com\/ws\/msgbox\/pull(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/msgbox\/pull(\?|$)/ then reject_dict(200)

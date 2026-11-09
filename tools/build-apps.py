@@ -357,12 +357,23 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     if active_enh and enh.get("quic_fallback"):
         groups.append(quic_fallback_group(enh, where, roots))
         rules += groups[-1]["rules"]
+    active_hosts_seen: dict[str, str] = {}
+    active_wildcards_seen: dict[str, str] = {}
     for g in groups:
         gid = g.get("id", "?")
         redlines = [] if g.get("disabled") else all_redlines
         for h in g["hosts"]:
             validate_host(h, f"{where}:{gid}", roots)
             check_redline(h, f"{where}:{gid}", redlines)
+            if not g.get("disabled"):
+                hl = h.lower()
+                if hl in active_hosts_seen:
+                    raise BuildError(
+                        f"{where}:{gid}: 生效 [Host] {h!r} 与前序组 {active_hosts_seen[hl]!r} 重复"
+                    )
+                active_hosts_seen[hl] = gid
+                if hl.startswith("*."):
+                    active_wildcards_seen[hl[2:]] = gid
         if g.get("raw"):
             # QUIC 回退组：validate_rule 的形状表只收域名拦截类，所以形状跳过、
             # 红线判定不跳过——protocol_scoped_composite 认得「AND + PROTOCOL」不黑洞域名。
@@ -374,6 +385,25 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
             check_rule_redline(r, f"{where}:{gid}", redlines)
         hosts += g["hosts"]
         rules += g["rules"]
+
+    for hl, gid in active_hosts_seen.items():
+        if hl.startswith("*."):
+            continue
+        for base, wgid in active_wildcards_seen.items():
+            if hl != base and hl.endswith("." + base):
+                raise BuildError(
+                    f"{where}:{gid}: 生效 [Host] {hl!r} 已被 {wgid!r} 的 '*.{base}' 通配覆盖（冗余规则）"
+                )
+    if active_enh:
+        for mh in enh.get("mitm_hosts", []):
+            mhl = mh.lower()
+            if mhl in active_hosts_seen or any(
+                mhl != base and mhl.endswith("." + base) for base in active_wildcards_seen
+            ):
+                raise BuildError(
+                    f"{where}: enhance.mitm_hosts 中的 {mh!r} 同时在生效 [Host] 中被黑洞到 127.0.0.1"
+                    "（DNS 阶段即阻断，MITM/Rewrite 永不可达——请从一侧移除）"
+                )
 
     has_wildcard = any(r.startswith("DOMAIN-WILDCARD,") for r in rules)
     if has_wildcard:
@@ -414,6 +444,7 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
 
     def section(name: str, items: list[str], emit):
         out = [f"[{name}]", ""]
+        seen_active: set[str] = set()
         for g in groups:
             gitems = g[name == "Rule" and "rules" or "hosts"]
             if not gitems:
@@ -431,7 +462,12 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
             if marked:
                 out.append("# （默认关闭的组：整组注释，取消注释即启用）")
             for item in dedup(sorted(gitems)):
-                out.append(prefix + emit(item))
+                line = emit(item)
+                if not marked:
+                    if line in seen_active:
+                        continue
+                    seen_active.add(line)
+                out.append(prefix + line)
             out.append("")
         return out
 
@@ -876,12 +912,11 @@ def render_rewrite_section(enh: dict, where: str) -> list[str]:
         "# " + "=" * 72,
         "# 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）",
         "# " + "-" * 72,
-        "# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；",
-        "# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，",
-        "# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、",
-        "# reject_* 自己终止响应，gzip 面整个消失。",
-        "# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，",
-        "# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。",
+        "# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在",
+        "# 出网前就地返回合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与",
+        "# 字段级改写（不依赖脚本层 $utils.ungzip），Accept-Encoding 协商保护同域脚本链。",
+        "# 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径",
+        "# 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。",
         "# " + "=" * 72,
         "",
         "[Rewrite]",
@@ -934,11 +969,10 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
         "# " + "=" * 72,
         "# 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）",
         "# " + "-" * 72,
-        "# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——",
-        "# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，",
-        "# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。",
-        "# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，",
-        "# 解密不等于拦截。",
+        "# 不装证书 = 上述主机的 TLS 握手会被客户端拒绝，本 App 内容加载会失败——",
+        "# 这是同域 HTTPS 路径拦截与 JSON 字段净化的必要前置（远程订阅插件无法手工取消",
+        "# 注释，故在确认无证书固定后由源显式声明 active=true 默认启用）。",
+        "# 若源里登记了注释态 URL-REGEX 路径黑洞，文末仍保持注释：红线业务主机只解密不整域黑洞。",
         "# " + "=" * 72,
         "",
         "[MITM]",

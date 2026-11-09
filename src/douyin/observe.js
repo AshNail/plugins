@@ -389,8 +389,8 @@ function ceTag(resp) {
     else if (/\/luna\/advert\/incentive\/config/.test(url)) observeIncentiveConfig(obj);
     else if (/\/luna\/advert\/incentive\/retrieve/.test(url)) observeIncentiveRetrieve(obj);
     else if (/\/luna\/advert\/incentive\/done/.test(url)) observeIncentiveDone(obj);
-    else if (/\/luna\/advert\/fallback\/done\/info/.test(url)) observeFallback(obj);
-    else if (/\/luna\/ads\/(?:config|dsp\/retrieve)/.test(url)) observeFeedAds(obj);
+    else if (/\/+luna\/advert\/fallback\/done\/info/.test(url)) observeFallback(obj);
+    else if (/\/+luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) observeFeedAds(obj);
     else if (/\/luna\/commerce\/v2\/upsell/.test(url)) observeUpsell(obj);
     else if (/zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/.test(url)) {
       observeAdPlatform(obj, url);

@@ -7,14 +7,17 @@
 
 [一键导入](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fnetease%2Fnetease.plugin)
 
-## 内容
+## 内容（v1.1.0）
 
-- 域名：由 ads 插件与公开主配置覆盖；插件只保留 MITM/Rewrite。
-- `[Rewrite]`：7 条 request 阶段 `reject_dict(200)`，对应上游 Map Local 的空 JSON
-  端点（广告、免流推广、Tab 框架、搜索默认词、资源曝光、直播入口、商店配置等）。
-- 响应阶段：9 条原生 `response.json.jq`，对首页、发现、我的、收银台、评论区、
-  `/batch`、`v1/user/info`、推荐页、关注推荐删除广告字段；不复制上游 JS。
-- `[MITM]`：`music.163.com`、`interface[3/9].music.163.com`、`ipv4.music.163.com`。
+- `[Argument]`：
+  - `cleanAds`（默认开启）：控制全部广告/推广请求短路与 9 条响应侧 `jq` 字段剥离。
+  - `slimUI`（默认关闭）：按需隐藏侧边栏小程序、云贝入口、商城入口与红点。
+- `[Host]`：自包含 8 个网易云专属 HTTPDNS（`httpdns.music.163.com`、`music.httpdns.c.163.com`、`httpdns.n.netease.com`、`httpdns-sdk.n.netease.com`）与独立广告素材 CDN（`iadmat*.nosdn.127.net`、`iadmusicmat*.music.126.net`）黑洞，不依赖外部插件即可防绕过且不触碰音频流媒体与封面图 CDN。
+- `[Rule]`：`AND,((DOMAIN-SUFFIX,music.163.com),(PROTOCOL,QUIC)),REJECT` 强制 HTTP/3 回落 TCP，保障 MITM 生效。
+- `[Rewrite]`：
+  - 请求阶段：6 条广告/推广 `reject_dict(200)`（`cleanAds` 控制）+ 3 条界面精简 `reject_dict(200)`（`slimUI` 控制）；**已剔除上游误伤「我的收藏歌手」（`user/sub/artist`）与手动检查更新（`ios/version`）的两个端点**；`/api/ad` 收紧尾边界避免前缀误伤。
+  - 响应阶段：9 条原生 `response.json.jq`，对首页、发现、我的、收银台、评论区、`/batch`、`v1/user/info`、推荐页、关注推荐递归删除广告与曝光监控字段；零第三方 JS。
+- `[MITM]`：`%APPEND% music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com`（覆盖 `interface0..9` 全分片及 IPv4/IPv6 入口，不覆盖主配置其它 MITM 域名）。
 
 ## 边界
 

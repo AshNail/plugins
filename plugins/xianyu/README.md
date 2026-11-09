@@ -2,7 +2,7 @@
 
 > 闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.6.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.6.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -17,9 +17,9 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | 阿里广告 SDK 端点（闲鱼净化模块唯一 REJECT 域） | A | 启用 | iyes.youku.com=阿里广告 SDK 端点（apiv4-iyes 为其分片,整域+通配）;anti-AD/AdGuard/hagezi/wool XianYu 模块四源收录。 |
-| 淘宝客/阿里妈妈 API 端点 | B | 启用 | tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、全局 ads 插件的 =alimama.com 整域黑洞罩不到它,故在此精确单列;afpapi.alimama.com 已由 ads 插件 alibaba 组整域覆盖,此处只作按 App 开关的完整起见。DoH 实测 afpapi CNAME 终结于 adsz.wagbridge.tanx.alimama.com(Tanx=阿里妈妈 AdX)。 |
+| 淘宝客/阿里妈妈 API 端点 | B | 启用 | tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、上方 sdks:["alimama"] 的 *.alimama.com 整域黑洞罩不到它,故在此精确单列(afpapi.alimama.com 已由 sdks:["alimama"] 的 *.alimama.com 通配覆盖,不重复声明)。 |
 | 淘宝系 AMDC HTTPDNS 调度（默认关） | B | 默认关闭 | amdc.m/amdcopen.m.taobao.com=阿里 HTTPDNS 调度;闲鱼净化脚本专改 /amdc/mobileDispatch。拦=广告域解析绕过消失,但阿里系 App 若无回退逻辑可能拖慢建连——默认关,验证后再开。 |
-| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 16 域 / 0 规则。 |
+| 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 17 域 / 0 规则。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 2 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
@@ -40,7 +40,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/xianyu/xianyu.plu
 
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
-| `kill-splash-ads` | request | `reject_dict` | `cleanAds` | 闲鱼开屏广告 mtop 请求直接返回 200 + 空字典 |
+| `kill-splash-ads` | request | `reject_dict` | `cleanAds` | 闲鱼开屏广告 mtop 请求直接返回 200 + 空字典（限定路径段，不跨查询串贪婪匹配） |
 | `kill-idleadv-restore` | request | `reject_dict` | `cleanAds` | 闲鱼切回前台/场景恢复开屏与弹层广告请求（mtop.idle.idleadv.scene.restore 等）直接返回 200 + 空字典 |
 | `kill-ad-expose` | request | `reject_dict` | `cleanAds` | 闲鱼广告曝光计数上报接口直接返回 200 + 空字典 |
 | `kill-whale-modulet` | request | `reject_dict` | `cleanAds` | 首页顶部营销模块（home.whale.modulet）直接返回 200 + 空字典 |

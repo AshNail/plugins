@@ -4,7 +4,7 @@
 #!version=1.1.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qqnews/README.md
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f9/23/e4/f923e456-9789-ebf6-7c18-caaacd244133/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/66/29/a5/6629a5e9-2cf1-0112-c944-4874266f771e/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-07
 #!tag=去广告,腾讯新闻
@@ -45,11 +45,10 @@ AND,((DOMAIN-SUFFIX,r.inews.qq.com),(PROTOCOL,QUIC)),REJECT
 # ========================================================================
 # 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 # ------------------------------------------------------------------------
-# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——
-# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，
-# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。
-# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，
-# 解密不等于拦截。
+# 不装证书 = 上述主机的 TLS 握手会被客户端拒绝，本 App 内容加载会失败——
+# 这是同域 HTTPS 路径拦截与 JSON 字段净化的必要前置（远程订阅插件无法手工取消
+# 注释，故在确认无证书固定后由源显式声明 active=true 默认启用）。
+# 若源里登记了注释态 URL-REGEX 路径黑洞，文末仍保持注释：红线业务主机只解密不整域黑洞。
 # ========================================================================
 
 [MITM]
@@ -60,12 +59,11 @@ hostname = %APPEND% news.ssp.qq.com, r.inews.qq.com
 # ========================================================================
 # 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
 # ------------------------------------------------------------------------
-# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；
-# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，
-# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、
-# reject_* 自己终止响应，gzip 面整个消失。
-# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，
-# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。
+# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在
+# 出网前就地返回合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与
+# 字段级改写（不依赖脚本层 $utils.ungzip），Accept-Encoding 协商保护同域脚本链。
+# 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径
+# 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。
 # ========================================================================
 
 [Rewrite]

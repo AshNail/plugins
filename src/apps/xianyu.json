@@ -2,7 +2,7 @@
   "slug": "xianyu",
   "name": "闲鱼 · 去广告（原生复写层）",
   "desc": "闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,闲鱼,阿里",
@@ -44,14 +44,13 @@
       "id": "tunion_cps",
       "title": "淘宝客/阿里妈妈 API 端点",
       "tier": "B",
-      "note": "tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、全局 ads 插件的 =alimama.com 整域黑洞罩不到它,故在此精确单列;afpapi.alimama.com 已由 ads 插件 alibaba 组整域覆盖,此处只作按 App 开关的完整起见。DoH 实测 afpapi CNAME 终结于 adsz.wagbridge.tanx.alimama.com(Tanx=阿里妈妈 AdX)。",
+      "note": "tunion-api.m.taobao.com=淘宝联盟(Tunion) CPS 广告归因接口,taobao.com 是共享主域、上方 sdks:[\"alimama\"] 的 *.alimama.com 整域黑洞罩不到它,故在此精确单列(afpapi.alimama.com 已由 sdks:[\"alimama\"] 的 *.alimama.com 通配覆盖,不重复声明)。",
       "sources": [
         "https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list",
         "https://www.alimama.com/about.htm"
       ],
       "hosts": [
-        "tunion-api.m.taobao.com",
-        "afpapi.alimama.com"
+        "tunion-api.m.taobao.com"
       ]
     },
     {
@@ -105,9 +104,9 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "splash.ads",
-        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop.*splash\\.ads",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop[^?]*splash\\.ads",
         "action": "reject_dict(200)",
-        "note": "闲鱼开屏广告 mtop 请求直接返回 200 + 空字典",
+        "note": "闲鱼开屏广告 mtop 请求直接返回 200 + 空字典（限定路径段，不跨查询串贪婪匹配）",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/GoofishAds.conf"
       },
       {

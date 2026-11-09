@@ -2,7 +2,7 @@
 
 > 美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.3.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -25,14 +25,14 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 | Sigmob（北京创智汇聚）（引用组） | A | 启用 | adservice/dc/track.sigmob.cn；anti-AD/AdGuard/hagezi 多源收录；ads 插件 mobile_sdks 组同源含此域。 共 4 域 / 0 规则。 |
 | ToBid 聚合（北京创致 / Sigmob 系）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点，同补 tobidad.cn 变体（ads mobile_sdks 同源）。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。 共 4 域 / 0 规则。 |
 | 美数 AdMate（北京美数信息）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 第三方变现 SDK；anti-AD 收录。 共 6 域 / 0 规则。 |
-| QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 8 条。 |
+| QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 10 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
 美团 iOS 未做证书固定：开屏广告/启动配置走 wmapi.meituan.com 的具体路径（与业务 API 同主机，黑洞整域=废掉点外卖），广告图片走 p[0-9].meituan.net / flowplus.meituan.net / img.meituan.net 共享图床的广告目录段。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（零 JS 脚本）：cleanAds（默认开）拦截开屏 JSON、用 reject_img(200) 返回 1px GIF 替换广告图片（避免图片加载器进入破损图重试分支）、并用 response.json.jq 清空搜索热词与启动图/购物车 Banner；slimUI（默认关）用于精简底部 Tab 与推荐信息流。
 
-- 解密主机（`[MITM] hostname`，9 个，本层已默认生效）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p?.meituan.net`, `flowplus.meituan.net`, `img.meituan.net`, `feedguess.meituan.com`, `mt-personalcenter.meituan.com`, `assistify.meituan.com`, `mop.meituan.com`
-- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，8 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
+- 解密主机（`[MITM] hostname`，10 个，本层已默认生效）：`wmapi.meituan.com`, `apimobile.meituan.com`, `p0.meituan.net`, `p1.meituan.net`, `flowplus.meituan.net`, `img.meituan.net`, `feedguess.meituan.com`, `mt-personalcenter.meituan.com`, `assistify.meituan.com`, `mop.meituan.com`
+- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，10 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
 
 ### 开关（`[Argument]`）
 
@@ -45,10 +45,10 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
-| `kill-openscreen` | request | `reject_dict` | `cleanAds` | 美团外卖/主站 openscreen 开屏广告请求返回 200 + 空字典 |
+| `kill-openscreen` | request | `reject_dict` | `cleanAds` | 美团外卖/主站 openscreen 开屏广告请求（不依赖参数顺序）返回 200 + 空字典 |
 | `kill-startpicture` | request | `reject_dict` | `cleanAds` | wmapi 启动图广告请求返回 200 + 空字典 |
 | `kill-loadinfo` | request | `reject_dict` | `cleanAds` | wmapi 启动加载广告信息请求返回 200 + 空字典 |
-| `kill-img-p-cdn` | request | `reject_img` | `cleanAds` | p[0-9].meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图返回 200 + 1px GIF |
+| `kill-img-p-cdn` | request | `reject_img` | `cleanAds` | p0/p1.meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图（含 webp/png/gif）返回 200 + 1px GIF |
 | `kill-img-flowplus` | request | `reject_img` | `cleanAds` | flowplus.meituan.net 玲珑推广素材图返回 200 + 1px GIF |
 | `kill-img-brandcpt` | request | `reject_img` | `cleanAds` | img.meituan.net 品牌 CPT 广告图返回 200 + 1px GIF |
 | `kill-img-adunion` | request | `reject_img` | `cleanAds` | img.meituan.net 广告联盟/展示广告目录图片返回 200 + 1px GIF |
@@ -65,7 +65,6 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 
 > 全层由 `src/apps/meituan.json` 的 `enhance` 整段生成（`tools/build-apps.py`），lint 逐行对账产物——直接改生成物会在下一次构建被覆盖。
 
-- 通配主机（`p?.meituan.net`）无法用 `DOMAIN-SUFFIX` 表达 QUIC 回退，启用该层的这一域时需另行处理。
 前提与步骤：①Loon 装并信任证书（本层已默认解密这些主机） → ②要自动化就把 `[Argument]` 里的对应开关改成 true（默认关的那几个） → ③确认可用：冷启动后看日志里复写装载计数（`Reload rewrites:`）与脚本侧锚点行，再用探针绑定判断复写是否接管（探针消失 = 复写命中）。
 
 > 证书固定红线：银行/微信/米家类 App 做了证书固定，MITM 直接失败甚至触发风控，那些插件不提供本层；本层只对未做证书固定的 App 提供，且每条路径都有下方公开证据。
@@ -96,4 +95,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/meituan.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 43 条，[Rule] 8 条。
+统计：精确/通配黑洞 43 条，[Rule] 10 条。

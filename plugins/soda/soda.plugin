@@ -1,13 +1,13 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐全能助手 v3.3.1(撤出 7 台固定证书的 API 分片 MITM——v3.3.0 起汽水整 App 网络错误的根因):整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),已连同配套 QUIC 回退与 gzip 降级一起补进静态层——本轮零新增绑定,只是把取证通道打开。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条本插件零覆盖的端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡;另 6 条按激励链路与共主机成本刻意不采纳,理由写在 [Rewrite] 段头。汽水在本机日志里零流量,这 5+2 条尚未取证——判据见 README「汽水净化取证」。致谢:起点读书 finishWatch 重放机制启发。
+#!desc=汽水音乐全能助手 v3.3.2(补齐 homepage-tabs gzip 解码/陈旧头剥离与布尔开关解析 + 真机 v2/feed/listen-video/reminder、//luna/advert/fallback/done/info、beta-luna sign_in_detail 路由):整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),v3.3.1 已撤出 7 台固定证书的 API 分片 MITM。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡。致谢:起点读书 finishWatch 重放机制启发。
 #!author=edy
-#!version=3.3.1
+#!version=3.3.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/a1/6d/b4/a16db478-33e0-fc41-bc84-d5dd33f10762/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS
 #!loon_version=3.5.1(983)
-#!date=2026-11-06
+#!date=2026-11-07
 #!tag=汽水音乐,统一,开关,Loon,自动化,激励任务
 
 # ============================================================================
@@ -22,19 +22,21 @@
 #
 # 开关：
 #   rewardSafe      保奖励模式（默认开）
-#   cleanAds        去广告脚本（默认关：广告配置/信息流/福利页广告任务）
+#   cleanAds        去广告脚本（默认开：广告配置/信息流/福利页广告任务）
 #   killRewardAds   断激励素材（默认关：领奖会变 amount=-1）
 #   blockAdDomains  广告域名拦截（默认关：MITM + http-request 脚本）
-#   settingsClean   设置层净化（默认关，实验）
-#   skipUpdateCheck 版本检查静音（默认关，实验：只动 luna/check-update 的 has_update）
-#   hideDouyinEntry 隐藏设置层【听抖音】入口（默认关，可与保奖励同开）
+#   settingsClean   设置层净化（默认开）
+#   skipUpdateCheck 版本检查静音（默认开：只动 luna/check-update 的 has_update）
+#   hideDouyinEntry 隐藏设置层【听抖音】入口（默认开，可与保奖励同开）
 #   blockSplashAd   拦截穿山甲开屏请求（默认开：不碰激励广告与发奖）
 #   debugLog        只读日志（默认关）
-#   logTaskTitles   日志带任务标题（默认关）
+#   logTaskTitles   日志带任务标题（默认开）
 #   splashClean     清开屏品牌广告（默认开）
-#   hideDouyinTab   隐藏福利页【听抖音】tab/任务 + 底部 Tab 栏【听抖音】（默认关）
+#   hideDouyinTab   隐藏福利页【听抖音】tab/任务 + 底部 Tab 栏【听抖音】（默认开）
 #   listenOnly      纯听歌模式：底部 Tab 只留推荐/发现/我的，移除听抖音/直播/视频/朋友/社区/创作/AI 聊天/消息/一起听/娱乐（默认关，激励奖励保护）
 #   statusNotify    状态自检按钮的通知模式（notification/silent）
+#   autoTask        激励任务自动化v2（默认开）
+#   autoSignIn      自动签到v2（默认开）
 #
 # 推荐组合：
 #   正常领奖励：rewardSafe=true，其余默认（blockSplashAd + splashClean 开屏双层已默认开）
@@ -205,8 +207,8 @@ request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|bet
 # 运营活动列表：同上，纯运营载荷。
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/activities(?:\?|$)/ then reject_dict(200)
 
-# 看视频听歌提醒弹窗：广告向引导，不含业务字段。
-request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/listen-video\/reminder(?:\?|$)/ then reject_dict(200)
+# 看视频听歌提醒弹窗：广告向引导，不含业务字段（同时覆盖 /luna/listen-video/reminder 与真机 /luna/v2/feed/listen-video/reminder）。
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/(?:v2\/feed\/)?listen-video\/reminder(?:\?|$)/ then reject_dict(200)
 
 # 「我的」页：只剥激励广告 banner 字段，页面其余结构保留（lpx 原文是裸键，汽水响应无包络）。
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/me(?:\?|$)/ then response.json.delete("reward_ad_banner")
@@ -326,7 +328,7 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/treasure\/task\/browse_mall\/do_action/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/growth\/activity_entrance/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/growth\/activity\/finish/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
-response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/advert\/fallback\/done\/info/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/+luna\/advert\/fallback\/done\/info/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell_sort_decision/ then script("scripts/reward-observe.min.js", {${logTaskTitles}}) with debug=${debugLog}, enable=${debugLog}, requires_body=true, timeout=10, tag="soda response"
 
 # ---- 激励任务自动化 v2.0.0（MITM 响应注入方案） ----
@@ -365,7 +367,7 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell(?:\?|$)/ then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="🚫 Upsell弹窗清空"
 
 # 签到详情观测
-response if ${url} ~= /^https?:\/\/(?:aweme\.snssdk\.com|api\.qishui\.com)\/.*\/sign_in\/sign_in_detail/ then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="签到详情观测"
+response if ${url} ~= /^https?:\/\/(?:aweme\.snssdk\.com|api\.qishui\.com|beta-luna\.douyin\.com)\/.*\/sign_in\/sign_in_detail/ then script("scripts/auto-task.min.js", {${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="签到详情观测"
 
 # 自动签到 cron 任务（每天9点触发）
 cron "0 9 * * *" then script("scripts/auto-task.min.js", {${autoSignIn}}) with debug=${debugLog}, enable=${autoSignIn}, timeout=60, tag="每日自动签到v2"

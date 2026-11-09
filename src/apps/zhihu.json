@@ -2,7 +2,7 @@
   "slug": "zhihu",
   "name": "知乎 · 去广告与精简",
   "desc": "知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；同域商业化广告接口（commercial_api/ad-style-service）、推广/预置词及首页推荐流（topstory/recommend）/关注流（moments_v3）内联广告卡片默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) + response.json.jq 字段级剥离，零 JS 脚本）；核心问答/文章/个人页/图床/推送严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,知乎",
@@ -11,7 +11,7 @@
     "知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。",
     "知乎图片素材与静态资产共享根域 *.zhimg.com，禁止整域通配。",
     "能力天花板与原生设计：zhihu-web-analytics、sugar、crash2、udd1i5 四个自建数据与遥测域走 [Host] 127.0.0.1 零证书黑洞；商业化接口走 Loon 原生 [Rewrite] v2（reject_dict(200)），首页推荐流与关注流内联广告走 response.json.jq 数组元素剥离，保持零 JS 脚本。",
-    "v1.2.0 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 13 条 request 阶段 reject_dict(200) 规则 + 2 条信息流/关注流 response.json.jq 规则（剥离 topstory/recommend 与 moments_v3 中的 feed_advert / adjson / promotion_extra 内联广告项）+ 3 台解密主机的 QUIC 回退。"
+    "v1.2.1 升级 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：删除被 commercial_api/ 整族前缀完全覆盖的 2 条冗余子规则，新增顶部横幅（growth/mobile_top_banner）、搜索高亮推广词（entity_word）与问题相关搜索词（questions/related-search）3 条规则，通过 [Argument] cleanAds 开关（默认开）驱动 14 条 request 阶段 reject_dict(200) 规则 + 2 条信息流/关注流 response.json.jq 规则 + 3 台解密主机的 QUIC 回退。"
   ],
   "redlines": [
     {
@@ -92,7 +92,7 @@
   ],
   "enhance": {
     "active": true,
-    "intro": "知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 开关控制，零 JS 脚本）：对 13 条纯商业化广告、推荐流与预置词路径在 request 阶段直接返回 200 + 空字典（reject_dict(200)），并对首页推荐流（topstory/recommend）与关注动态流（moments_v3）在 response 阶段用 response.json.jq 剥离内联广告卡片（feed_advert / adjson / promotion_extra），完整保留正常问答流。",
+    "intro": "知乎 iOS 的信息流广告、开屏及推荐位与核心 API 共用 api.zhihu.com、www.zhihu.com、zhida.zhihu.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 开关控制，零 JS 脚本）：对 14 条纯商业化广告、推荐流与预置词路径在 request 阶段直接返回 200 + 空字典（reject_dict(200)），并对首页推荐流（topstory/recommend）与关注动态流（moments_v3）在 response 阶段用 response.json.jq 剥离内联广告卡片（feed_advert / adjson / promotion_extra），完整保留正常问答流。",
     "sources": [
       "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx",
       "https://kelee.one/",
@@ -136,36 +136,14 @@
         "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
       },
       {
-        "id": "kill-float-corner",
-        "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
-        "stage": "request",
-        "gate": "cleanAds",
-        "endpoint": "app_float_corner",
-        "url": "^https://api\\.zhihu\\.com/commercial_api/banners_v\\d+/app_float_corner",
-        "action": "reject_dict(200)",
-        "note": "右下角悬浮角标推广位直接返回 200 + 空字典",
-        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
-      },
-      {
-        "id": "kill-answer-bottom",
-        "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
-        "stage": "request",
-        "gate": "cleanAds",
-        "endpoint": "commercial_api/answer/",
-        "url": "^https://api\\.zhihu\\.com/commercial_api/answer/\\d+/bottom-v\\d+",
-        "action": "reject_dict(200)",
-        "note": "回答底部商业推广位直接返回 200 + 空字典",
-        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
-      },
-      {
         "id": "kill-next-render",
         "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "next-render",
-        "url": "^https://api\\.zhihu\\.com/next-render\\?id=\\d+&type=answer",
+        "url": "^https://api\\.zhihu\\.com/next-render\\?(?=[^#]*\\btype=answer\\b)",
         "action": "reject_dict(200)",
-        "note": "回答下方穿插渲染卡片直接返回 200 + 空字典",
+        "note": "回答下方穿插渲染卡片（不依赖查询参数顺序）直接返回 200 + 空字典",
         "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
       },
       {
@@ -255,6 +233,39 @@
         "action": "reject_dict(200)",
         "note": "个人中心推广入口模块直接返回 200 + 空字典",
         "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "kill-top-banner",
+        "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "growth/mobile_top_banner",
+        "url": "^https://(?:api|www)\\.zhihu\\.com/api/v\\d+/growth/mobile_top_banner",
+        "action": "reject_dict(200)",
+        "note": "移动端顶部应用推广引导横幅直接返回 200 + 空字典",
+        "source": "https://github.com/limbopro/Adblock4limbo/blob/main/Zhihu.conf"
+      },
+      {
+        "id": "kill-entity-word",
+        "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "entity_word",
+        "url": "^https://(?:api|www)\\.zhihu\\.com/api/v\\d+/entity_word",
+        "action": "reject_dict(200)",
+        "note": "正文内联搜索高亮推广词（放大镜蓝字广告词）直接返回 200 + 空字典",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "kill-related-search",
+        "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "related-search",
+        "url": "^https://www\\.zhihu\\.com/api/v\\d+/questions/\\d+/related-search",
+        "action": "reject_dict(200)",
+        "note": "问题页底部「大家都在搜」推广搜索词直接返回 200 + 空字典",
+        "source": "https://github.com/limbopro/Adblock4limbo/blob/main/Zhihu.conf"
       },
       {
         "id": "clean-topstory-recommend",

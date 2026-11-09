@@ -1,12 +1,12 @@
 #!name=起点读书 · 看书激励助手
 #!desc=起点读书看书激励助手 v3.5.7(改走 identity 版:真机 22:15 实证「调试模式开着、v356 净化绑定 19/19/19 齐全、锁屏零通知、UI 没净化」⇒ respondJson 一次都没走到，断点在响应体解析链而非传输层。于是两刀一起动——① [Rewrite] 不再逼上游压 gzip 而是直接要 identity，把 binary_body_mode/$utils.ungzip/手写 UTF-8 解码这三层未经真机确认的前提从主路上摘掉；② 锁屏取证从「只在改写成功时推」改成成功与解析失败都推(ok/fail 各 15s 节流)，此前所有 parse 失败只写 console，设备上「没解析成功」和「解析成功但没字段可改」完全同形):净化默认开:净化默认开、自动化默认关。净化(cleanAds 默认开)分两层——[Rewrite] 层负责 request 阶段把 Accept-Encoding 复写成 identity(上游本就该照客户端声明决定编码,本机 16:21 日志已实证写 gzip 就真回 gzip;identity 同样消掉脚本解不了的 br/zstd 且更彻底,不必再解压)并用 reject_dict(200) 整条终止 17 个纯广告端点(开屏/书架运营位/书城悬浮卡/广告位批量拉取/批量弹窗/推送弹窗/播放条/热词/章末/青少年/新手引导/猜你喜欢/经典书目/活动列表/推送消息;22:15 日志实证:命中这 17 条的 36 个流零建连、零 URL 落行,请求根本没出本机),混业务端点与 getconf 一律在 [Script] 层做字段级剥离(getconf 30 项覆写 + 11 项删除 + 关发现 tab、账户页 9 键删除 + 功能区 13→5 白名单 + 引导开关置 0、福利中心营销模块删除与激励任务条目剪枝、每日导读、书架悬浮位、红点、兑换页、发现信息流 AdvItem、发现页 NEW_*+DISCOVER_* 6 项白名单、Deeplink ActionUrl)。为什么不用 response.json.*:2026-11-06 14:34 日志实证 magev6/h5 上游从 H2 降级为 HTTP/1.1(Transform to http1.1),Loon 的 response.json.* 改写响应体后不会关闭左端 H2 流,导致请求严格卡满 Nginx keepalive_timeout 75.00 秒才以 H1 socket closed, Force closed left stream 断连;而 request 阶段 reject_dict(200) 与 [Script] 响应脚本均在 1~10ms 内正常释放流。同机不要同时开「起点 Pro」。
 #!author=edy
-#!version=3.5.7
+#!version=3.5.8
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qidian/README.md
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d8/0b/85/d80b8512-93fa-f1ee-f1f8-6e0356fb2b66/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/8e/f8/13/8ef8132f-e3d6-84c2-5157-e85a8d4c75d0/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06
+#!date=2026-11-07
 #!tag=看书,激励,起点读书,阅文,纯净阅读,自动签到,激励任务,自动领奖,响应净化
 #!type=normal
 
@@ -98,6 +98,7 @@ AND,((DOMAIN-SUFFIX,magev6.if.qidian.com),(PROTOCOL,QUIC)),REJECT
 *.pangolin-sdk-toutiao5.com = 127.0.0.1
 *.pglstatp-toutiao.com = 127.0.0.1
 *.tiktokpangle-cdn-us.com = 127.0.0.1
+ad.toutiao.com = 127.0.0.1
 ads3-normal-gl2.zijieapi.com = 127.0.0.1
 ads3-normal-hj.zijieapi.com = 127.0.0.1
 ads3-normal-hl.zijieapi.com = 127.0.0.1
@@ -275,11 +276,10 @@ ywlog.reader.qq.com = 127.0.0.1
 # ========================================================================
 # 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 # ------------------------------------------------------------------------
-# 不装证书 = 这些主机的 TLS 会被客户端掐断，起点内容加载会失败——
-# 这是「净化要看响应体」的代价，用户裁决于 v3.2.0（v4.0.0 曾手工开在生成物上，
-# 被一次 build:apps 覆盖回注释态，于是整个净化层真机上静默零执行）。
-# URL-REGEX 路径级黑洞仍在文末保持注释：magev6/mage/h5.if 是本 App 的红线主机，
-# 解密不等于拦截。
+# 不装证书 = 上述主机的 TLS 握手会被客户端拒绝，本 App 内容加载会失败——
+# 这是同域 HTTPS 路径拦截与 JSON 字段净化的必要前置（远程订阅插件无法手工取消
+# 注释，故在确认无证书固定后由源显式声明 active=true 默认启用）。
+# 若源里登记了注释态 URL-REGEX 路径黑洞，文末仍保持注释：红线业务主机只解密不整域黑洞。
 # ========================================================================
 
 [MITM]
@@ -290,12 +290,11 @@ hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com, h5.if.qidian.com
 # ========================================================================
 # 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
 # ------------------------------------------------------------------------
-# 起点 Argus 响应带 Content-Encoding: gzip，脚本读响应体必须先解压；
-# 而 $utils.ungzip 只有 Build ≥ 988 提供，低版本 = 静默 passthrough，
-# 这就是净化一直不生效的那条链。改由引擎做复写：response.json.* 自己解压、
-# reject_* 自己终止响应，gzip 面整个消失。
-# 探针纪律：标了 probe=true 的 [Script] 绑定与复写同 URL，按官方口径会被静默抑制，
-# 所以锚定日志里它们「有没有出现」就是「复写有没有命中」的判据。
+# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在
+# 出网前就地返回合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与
+# 字段级改写（不依赖脚本层 $utils.ungzip），Accept-Encoding 协商保护同域脚本链。
+# 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径
+# 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。
 # ========================================================================
 
 [Rewrite]
@@ -304,61 +303,61 @@ hostname = %APPEND% magev6.if.qidian.com, mage.if.qidian.com, h5.if.qidian.com
 # 压缩协商（request 阶段）：强制 identity，让上游根本不压，脚本直接拿到明文 JSON
 # ------------------------------------------------------------
 # force-identity: v3.5.7 路线 B：gzip 那条路要串行吃三个未经真机确认的运行时前提（binary_body_mode 给字节、$utils.ungzip 同步返回 Uint8Array、手写 UTF-8 解码），任何一个不成立都是「脚本 Finished 却一个字段没改」；改成 identity 后上游不压，脚本只剩 JSON.parse 一步，而 identity 同样消掉脚本解不了的 br/zstd——目标本来就是「别让上游压成脚本解不动的形态」，identity 比 gzip 更彻底。体量代价：这几个 Argus 接口明文膨胀 5~10 倍（soda 侧实测），单机可接受。真机 22:15 判据：调试模式开着、v356 绑定 19/19/19 齐全、锁屏零通知 ⇒ respondJson 一次都没走到，解析链就是断点。（来源 官方 Script API §11.5「修改响应 Body 后 Loon 按传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」· 2026-11-06 真机日志）
-request if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\// then request.header.set("Accept-Encoding", "identity")
+request if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\// then request.header.set("Accept-Encoding", "identity")
 
 # ------------------------------------------------------------
 # 整条终止（request 阶段 reject_dict(200)）：纯广告/运营端点，响应体里没有业务字段
 # ------------------------------------------------------------
 # kill-splash: 开屏广告。HAR 实证 Data.List=3 条素材（AdPlatform/SplashTime 同体，但纯广告载荷）（来源 kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/client\/getsplashscreen(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/client\/getsplashscreen(\?|$)/ then reject_dict(200)
 
 # kill-topoperation: 书架置顶运营位。HAR 实证 Data.Items=3 + MainInfo.AdId（来源 kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/bookshelf\/getTopOperation(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/bookshelf\/getTopOperation(\?|$)/ then reject_dict(200)
 
 # kill-getad: 书架广告位（脚本 DirectKill 面）。HAR 实证 Data.GameUrl=QDReader://app/gameCenterMainPage（来源 起点 Pro 2026-09-30 等价化集 · 本机 HAR 11-06）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/bookshelf\/getad(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/bookshelf\/getad(\?|$)/ then reject_dict(200)
 
 # kill-iosad: iOS 广告位列表（HAR 当期返回空 Data，仍按纯广告端点终止）（来源 起点 Pro 2026-09-30 等价化集）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/client\/iosad(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/client\/iosad(\?|$)/ then reject_dict(200)
 
 # kill-playstrip: 维护播放条/滚动运营条（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/maintain\/playstrip(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/maintain\/playstrip(\?|$)/ then reject_dict(200)
 
 # kill-getdialog: 推送弹窗（App 内营销弹窗的唯一来源，getconf 的 PushDialogFrequency 只压频次）（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/push\/getdialog(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/push\/getdialog(\?|$)/ then reject_dict(200)
 
 # kill-hotwords: 搜索框填充热词。⚠ 本机 HAR 当期只见 v2/booksearch/shardWord，hotWords 零命中——保留上游规则，但「搜索词还在」时先怀疑这条已过期（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/booksearch\/hotWords(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/booksearch\/hotWords(\?|$)/ then reject_dict(200)
 
 # kill-chapterend: 章节末尾订阅读者/运营模块（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/followsubscribe\/showChapterEndModule(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/followsubscribe\/showChapterEndModule(\?|$)/ then reject_dict(200)
 
 # kill-youngconf: 青少年模式引导弹窗配置（HAR 实证 Data.TeenShowFreq=1 + Tips 文案）（来源 kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/young\/getconf(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/young\/getconf(\?|$)/ then reject_dict(200)
 
 # kill-freshman: 新手引导：书架按钮「更多福利点击领取」与引导弹窗（HAR 实证 ActionUrl=QDReader://app/openTaskCenter）（来源 kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/freshman\/(bookshelfbtn|freshmanGuidePopup)(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/freshman\/(bookshelfbtn|freshmanGuidePopup)(\?|$)/ then reject_dict(200)
 
 # kill-recommendbook: 书架「猜你喜欢」推荐位（HAR 实证 BookShelfRecBookList=10）（来源 kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/dailyrecommend\/recommendBook(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/dailyrecommend\/recommendBook(\?|$)/ then reject_dict(200)
 
 # kill-classicbook: 书页经典书目运营模块（HAR 实证 Data.Items=2）（来源 起点 Pro 2026-09-30 等价化集）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/interaction\/getclassicbookinfo(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/interaction\/getclassicbookinfo(\?|$)/ then reject_dict(200)
 
 # kill-activitylist: 运营活动列表（来源 起点 Pro 2026-09-30 等价化集）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/ploy\/getactivitylist(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/ploy\/getactivitylist(\?|$)/ then reject_dict(200)
 
 # kill-popup: 批量弹窗（HAR 实证 Data.PopupList=1）（来源 起点 Pro 2026-09-30 等价化集 · 本机 HAR 11-06）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/popup\/batchget(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/popup\/batchget(\?|$)/ then reject_dict(200)
 
 # kill-message: 推送消息与运营/社交 push 拉取（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/message\/(getpushedmessagelist|pullOperationPush|pullSocialPush)(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/message\/(getpushedmessagelist|pullOperationPush|pullSocialPush)(\?|$)/ then reject_dict(200)
 
 # kill-adv-family: 广告位拉取整族（getadvlist 与 getadvlistbatch 一条覆盖）：脚本侧 handleAdListBatch 的豁免只看 URL 里有没有 AdWhitelist 关键词，本机 HAR 8 样本 + 日志 12 次请求的 positions 全是 bookstore/usercenter/checkin/comment 类，零命中关键词 ⇒ 脚本本来就是把 Data 整个清空，引擎直接终止等价且少走一次回包（来源 本机 HAR 440 + 日志 11-06 13:09 + kelee QiDian_remove_ads.lpx adv/ 前缀 + 仓库注释态 URL-REGEX 基线）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/adv\/getadvlist(batch)?(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/adv\/getadvlist(batch)?(\?|$)/ then reject_dict(200)
 
 # kill-floatcard: 书城/书架悬浮运营卡片（2026-11-06 16:21 与 17:50 真机日志均捕获到 /argus/api/v1/booksquare/getfloatcard 请求）（来源 仓库注释态 URL-REGEX 基线 + 本机日志 11-06 16:21/17:50）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/booksquare\/getfloatcard(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/booksquare\/getfloatcard(\?|$)/ then reject_dict(200)
 
 # ========================================================================
 # 脚本层（绑定行由 enhance.bindings 生成，lint 逐行对账）
@@ -373,28 +372,28 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\
 response if ${url} ~= /^https:\/\/h5\.if\.qidian\.com\/argus\/api\/v1\/user\/getlogininfo/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点Token捕获"
 
 # capture-conf-checkin: getconf/checkin 请求自带 auth headers，作为 getlogininfo 的补充捕获口
-request if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]\/(client\/getconf|checkin\/)/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, timeout=10, tag="起点Token捕获(补充)"
+request if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]\/(client\/getconf|checkin\/)/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, timeout=10, tag="起点Token捕获(补充)"
 
 # getconf-clean: v3.5.0 起本绑定是 getconf/getconfSpecify 净化的主力：配合 [Rewrite] force-gzip 压缩降级，由脚本做 30 项覆写 + 11 项删除 + 关发现 tab（handleClientConfig）。v3.5.3 补 binary_body_mode=true：16:21 日志实证不带该键时 $response.body 是按 UTF-8 硬解的乱码串（1f 8b 魔数检测失效、JSON.parse 直接抛），safeJsonParse 返回 null ⇒ 脚本跑完一个字段都没改。v3.5.4 起 with debug=true 常开（取证期）——但 21:35 日志判死了「debug 能把脚本 console 落主日志」：debug 常开后主日志仍 0 条锚点，官方口径 console.log 只写「当前脚本日志」，要看锚点得在 App 内脚本日志页。v3.5.5 把 build 号写进 tag：主日志的 match/Trigger/Finished 行带 tag，于是「设备到底加载的是哪一版接线」第一次变成可机读的——tag 还是旧名就说明插件没更新，不必再猜
-response if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf/ then script("scripts/auto-task.min.js", {${debugLog}, ${cleanAds}}) with debug=true, enable=${cleanAds}, requires_body=true, binary_body_mode=true, timeout=10, tag="起点getconf净化v357"
+response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf/ then script("scripts/auto-task.min.js", {${debugLog}, ${cleanAds}}) with debug=true, enable=${cleanAds}, requires_body=true, binary_body_mode=true, timeout=10, tag="起点getconf净化v357"
 
 # finishwatch-replay: 按 body 里的 taskId 重放 finishWatch（激励视频 9 次 / 福利任务 3 次，递增 2s 间隔）——代打卡性质，默认关
-request if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/finishWatch/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=120, tag="起点激励任务重放"
+request if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/finishWatch/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=120, tag="起点激励任务重放"
 
 # receive-reward: 缓存 receiveTaskReward 请求，再由脚本重放到 6 个领奖端点——代领取性质，默认关
-request if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/receiveTaskReward/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点自动领奖"
+request if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/receiveTaskReward/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点自动领奖"
 
 # adsec-gdt-inner-view: 把广告时长字段 patch 成 1 秒 + 1 秒黑屏素材——伪造观看完成，归 autoTask 且默认关，不挂净化开关
-response if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/gdt_inner_view/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点广告SDK秒播(gdt_inner_view)"
+response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/gdt_inner_view/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点广告SDK秒播(gdt_inner_view)"
 
 # adsec-get-ads: 同上：时长 patch 属激励完成伪造，不随 cleanAds 默认生效
-response if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/get_ads/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点广告SDK秒播(get_ads)"
+response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/get_ads/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点广告SDK秒播(get_ads)"
 
 # deep-clean: v3.5.2：混业务端点的字段级净化全部在本绑定执行（配合 [Rewrite] force-gzip 压缩降级）。v3.5.3 补 binary_body_mode=true —— 不开就是 16:21 日志那种「脚本 Finished 但零字段变更」：字符串形态的 gzip 体 1f 8b 魔数检测失效、JSON.parse 必抛。回写侧 respondJson 按来路形态还原字节，v3.5.5 起还把过期的 content-encoding 就地改写成 identity、content-length 改成新体字节数（删键在「Loon 合并脚本 headers」那种语义下等于没删，原始 gzip 声明会套在明文新体上，App 解压失败回落缓存 = 改了字段却看不见）。probe 标记仍然成立：request 阶段 reject_dict 覆盖到的纯广告端点不会走到脚本。v3.5.4 起 with debug=true 常开；v3.5.5 把 build 号写进 tag，理由同 getconf-clean
-response if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/(v[0-9]+\/video\/adv\/mainPage(?!Dialog)|v[0-9]+\/video\/adv\/mainPageDialog|v[0-9]+\/video\/adv\/reportDialog|v[0-9]+\/deeplink\/geturl|v[0-9]+\/dailyrecommend|v[0-9]+\/checkin\/(lottery|checkinexchangepage)|v[0-9]+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v[0-9]+\/client\/iosad|v[0-9]+\/push\/getdialog|v[0-9]+\/maintain\/playstrip|v[0-9]+\/young\/getconf|v[0-9]+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+\/message\/(pullOperationPush|pullSocialPush)|v[0-9]+\/followsubscribe\/showChapterEndModule|v[0-9]+\/client\/getsplashscreen|v[0-9]+\/reddot\/getdot|v[0-9]+\/popup\/batchget|v[0-9]+\/ploy\/getactivitylist|v[0-9]+\/interaction\/getclassicbookinfo|v[0-9]+\/user\/getaccountpage|v[0-9]+\/user\/getsimplediscover|v[0-9]+\/discovery\/getdiscoverpagefeeds)/ then script("scripts/auto-task.min.js", {${debugLog}, ${cleanAds}}) with debug=true, enable=${cleanAds}, requires_body=true, binary_body_mode=true, timeout=10, tag="起点深度净化v357"
+response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/(v[0-9]+\/video\/adv\/mainPage(?!Dialog)|v[0-9]+\/video\/adv\/mainPageDialog|v[0-9]+\/video\/adv\/reportDialog|v[0-9]+\/deeplink\/geturl|v[0-9]+\/dailyrecommend|v[0-9]+\/checkin\/(lottery|checkinexchangepage)|v[0-9]+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v[0-9]+\/client\/iosad|v[0-9]+\/push\/getdialog|v[0-9]+\/maintain\/playstrip|v[0-9]+\/young\/getconf|v[0-9]+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v[0-9]+\/message\/(pullOperationPush|pullSocialPush)|v[0-9]+\/followsubscribe\/showChapterEndModule|v[0-9]+\/client\/getsplashscreen|v[0-9]+\/reddot\/getdot|v[0-9]+\/popup\/batchget|v[0-9]+\/ploy\/getactivitylist|v[0-9]+\/interaction\/getclassicbookinfo|v[0-9]+\/user\/getaccountpage|v[0-9]+\/user\/getsimplediscover|v[0-9]+\/discovery\/getdiscoverpagefeeds)/ then script("scripts/auto-task.min.js", {${debugLog}, ${cleanAds}}) with debug=true, enable=${cleanAds}, requires_body=true, binary_body_mode=true, timeout=10, tag="起点深度净化v357"
 
 # readtime-patch: readpage 响应把 TodayReadTime 改满值 + TaskList 全部标完成——这是激励完成伪造，不是去广告，v3.4.0 起从 cleanAds 探针里摘出来挂 autoTask（默认关）。HAR 440 里该端点零样本，字段名沿用脚本侧 ReadInfo/TaskModule
-response if ${url} ~= /^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/readtime\/readpage/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点每日阅读积分"
+response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/readtime\/readpage/ then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, requires_body=true, timeout=10, tag="起点每日阅读积分"
 
 # cron-sign-in: 每天 02:11 复用缓存 headers POST /argus/api/v2/checkin/checkin + /checkin/checkinlottery 抽奖；Token 过期即失败
 cron "11 2 * * *" then script("scripts/auto-task.min.js", {${debugLog}, ${autoTask}}) with debug=${debugLog}, enable=${autoTask}, timeout=420, tag="起点自动签到"

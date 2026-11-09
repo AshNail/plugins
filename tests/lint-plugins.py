@@ -420,6 +420,8 @@ BINDING_SAMPLES = {
             "https://conf.qishui.com/service/settings/v3/?device_id=x",
             "https://api.qishui.com/aweme/homepage/combine/?device_id=x",
             "https://api.qishui.com/luna/user/sign_in/sign_in_detail",
+            "https://beta-luna.douyin.com/luna/user/sign_in/sign_in_detail",
+            "https://beta-luna.douyin.com//luna/advert/fallback/done/info",
         ),
     },
     "douyin": {
@@ -441,6 +443,7 @@ BINDING_SAMPLES = {
             "https://beta-luna.douyin.com/luna/advert/incentive/retrieve",
             "https://beta-luna.douyin.com/luna/advert/incentive/done",
             "https://beta-luna.douyin.com/luna/advert/fallback/done/info",
+            "https://beta-luna.douyin.com//luna/advert/fallback/done/info",
             "https://beta-luna.douyin.com/luna/commerce/v2/upsell",
             "https://beta-luna.douyin.com/luna/growth/music_festival/performance_details",
             "https://polaris.zijieapi.com/luckycat/activity/settings/v1/x",
@@ -515,6 +518,7 @@ ENCODING_GUARD_SCRIPTS = (
     "src/soda/sanitize.js",
     "src/soda/settings.js",
     "src/soda/reward-observe.js",
+    "src/soda/homepage-tabs.js",
     "src/douyin/clean.js",
     "src/douyin/treasure.js",
     "src/douyin/observe.js",
@@ -1125,8 +1129,8 @@ def parse_plugin(path):
 
 
 def regex_literal(line):
-    """从新版语法里取出 /.../ 正则字面量（到 " then " 为止，避免被转义斜杠截断）。"""
-    m = re.search(r"\$\{url\} ~\= (/.+?)(?: then |$)", line)
+    """从新版语法里取出 /.../ 正则字面量（兼容转义斜杠 \\/ 与尾部修饰符如 /i）。"""
+    m = re.search(r"\$\{url\}\s*~=\s*(/(?:\\.|[^/])+/)([a-z]*)(?:\s*(?:then|&&|\))|$)", line)
     if not m:
         return None
     body = m.group(1)
@@ -2968,12 +2972,29 @@ def check_app_plugins():
                     "app plugins must stay importable on App Store stable (3.5.2/996) — "
                     "use [Host] '*.domain' blackhole instead"
                 )
+        seen_active_hosts: set[str] = set()
+        seen_active_wildcards: set[str] = set()
         for line in parsed.get("Host", []):
             if not APP_HOST_RE.match(line):
                 errors.append(f"apps/{slug}: bad [Host] line: {line}")
-            host = line.split("=")[0].strip().removeprefix("*.")
+            raw_host = line.split("=")[0].strip().lower()
+            if raw_host in seen_active_hosts:
+                errors.append(f"apps/{slug}: duplicate active [Host] entry: {raw_host}")
+            seen_active_hosts.add(raw_host)
+            if raw_host.startswith("*."):
+                seen_active_wildcards.add(raw_host[2:])
+            host = raw_host.removeprefix("*.")
             if host in protected:
                 errors.append(f"apps/{slug}: [Host] blackholes a protected root: {host}")
+        if active_enh:
+            for mh in (enh or {}).get("mitm_hosts", []):
+                mhl = mh.lower()
+                if mhl in seen_active_hosts or any(
+                    mhl != base and mhl.endswith("." + base) for base in seen_active_wildcards
+                ):
+                    errors.append(
+                        f"apps/{slug}: [MITM] host {mh!r} is simultaneously blackholed in active [Host]"
+                    )
         for url in collect_source_urls(plugin):
             if not url.startswith("https://"):
                 errors.append(f"apps/{slug}: evidence url not https: {url}")
@@ -3535,7 +3556,7 @@ def section_lines(path, want):
             yield s.startswith("#"), s
 
 
-FILTER_RX = re.compile(r"~=\s*(/.*?/)\s*then")
+FILTER_RX = re.compile(r"~=\s*(/(?:\\.|[^/])+/)([a-z]*)\s*(?:then|&&|\))")
 
 
 def regex_host_tail(rx):
@@ -3612,10 +3633,12 @@ def regex_host_glob(seg):
     r"""主机段正则 → 可与 `[MITM]` hostname 通配比较的形态。
 
     `*`/`+` 一律折成 `*`（否则 `[0-9-]*` 变成「一个字符 + 任意」会把分片族读窄），
-    `\.` 还原成 `.`，字符类按 Loon hostname 的 `?` 语义保留单字符位。
+    `\.` 还原成 `.`，字符类与 `\d`/`\w` 按 Loon hostname 的 `?` 语义保留单字符位。
     """
     s = re.sub(r"\[[^\]]*\][*+]", "*", seg)
     s = re.sub(r"\[[^\]]*\]", "?", s)
+    s = re.sub(r"\\[dDwWsS][*+]", "*", s)
+    s = re.sub(r"\\[dDwWsS]", "?", s)
     s = s.replace("\\.", ".").replace("\\", "")
     s = s.replace(".?", ".").replace("*?", "*")
     s = re.sub(r"[*+]{2,}", "*", s)
@@ -3815,7 +3838,8 @@ def check_luna_host_parity():
                     continue
                 for m in FILTER_RX.finditer(s):
                     rx = m.group(1)[1:-1]
-                    if "/luna" not in rx.replace("\\/", "/"):
+                    rx_norm = re.sub(r"/\+", "/", rx.replace("\\/", "/"))
+                    if "/luna" not in rx_norm:
                         continue
                     checked += 1
                     missing = [h for h, t in zip(hosts, tokens) if t not in rx]

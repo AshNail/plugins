@@ -17,9 +17,9 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihuifangdong/zh
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | uni-AD/DCloud 与易推 DSP（默认关,需真机抓包） | C | 默认关闭 | ad.dcloud.net.cn/uniad.dcloud.net.cn 为 DCloud uni-AD 公开文档域名,但本 App 真实请求域未经抓包证实;adfunlink/adintl/qttunion 的官网域与投放域未分离——按 AdTiming/Ogury 教训默认关。 |
-| 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 60 域 / 0 规则。 |
+| 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 61 域 / 0 规则。 |
 | 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 27 域 / 0 规则。 |
-| 快手联盟 / 快手广告（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 28 域 / 0 规则。 |
+| 快手联盟 / 快手广告（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 27 域 / 0 规则。 |
 | 百度广告 / 百青藤（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 44 域 / 0 规则。 |
 | 倍孜广告聚合（Beizi / AdScope）（引用组） | A | 启用 | 证据同 plugins/ads mobile_sdks 组（倍孜 Beizi / AdScope 国内第三方聚合 SDK 全家桶）。 共 16 域 / 0 规则。 |
 

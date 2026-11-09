@@ -1,8 +1,8 @@
 {
   "slug": "instagram",
   "name": "Instagram · 像素与遥测瘦身",
-  "desc": "如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内广告 DNS 层≈0。黑洞 FB 转化像素、网页播放器 VAST 域与已死徽章服务;不碰 graph/gateway/fbcdn 主域。零证书。",
-  "version": "1.1.2",
+  "desc": "如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内原生赞助帖 DNS 层≈0。默认黑洞 Meta 广告/转化像素 SDK、已停用徽章域与真机高频 netseer 公网 IP 关联遥测(DOMAIN-KEYWORD 精准命中随机 UUID 分片);不碰 graph/gateway/fbcdn 主域。零证书。",
+  "version": "1.2.0",
   "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,遥测,Instagram",
@@ -27,25 +27,22 @@
   "groups": [
     {
       "id": "pixels",
-      "title": "FB 像素与专属广告端点（A 级）",
+      "title": "IG 专属废弃徽章端点（A 级）",
       "tier": "A",
-      "note": "pixel.facebook.com=网页转化像素(Conversions API);an.facebook.com=网页播放器片头广告 VAST 标签;badges.instagram.com=已停用的旧徽章服务。",
+      "note": "badges.instagram.com=已停用的旧徽章服务（pixel.facebook.com 与 an.facebook.com 已由上方 sdks:[\"meta\"] 统一提供，此处不重复声明）。",
       "sources": [
         "https://github.com/AdguardTeam/AdGuardSDNSFilter",
         "https://github.com/privacy-protection-tools/anti-AD"
       ],
       "hosts": [
-        "pixel.facebook.com",
-        "an.facebook.com",
         "badges.instagram.com"
       ]
     },
     {
       "id": "netseer",
-      "title": "netseer IP 关联遥测（默认关,纯隐私收益）",
-      "tier": "B",
-      "disabled": true,
-      "note": "Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010）。2026-11 真机 Loon 日志实锤客户端实际请求形态为 <uuid>-netseer-ipaddr-assoc.xy/xz.fbcdn.net（600+ 次，UUID 与 netseer 以连字符 '-' 拼接而非点号 '.'，导致旧版 DOMAIN-SUFFIX 100% 漏放），改用 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT 精确覆盖全部随机 UUID 分片且零触碰正常 *.fbcdn.net 图床。netseer.com=被 Meta 收购的测量公司本体域（4 源收录）。间接降低广告定向精度,不减少广告数量。",
+      "title": "netseer 公网 IP 关联与广告归因遥测（A 级）",
+      "tier": "A",
+      "note": "Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010 / anti-AD 多源收录）。2026-11 真机 Loon 日志实锤客户端实际请求形态为 <uuid>-netseer-ipaddr-assoc.xy/xz.fbcdn.net（单窗口 600+ 次，UUID 与 netseer 以连字符 '-' 拼接），用 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT 精确覆盖全部随机 UUID 分片且零触碰正常 *.fbcdn.net 图床；netseer.com=被 Meta 收购的测量公司本体域（4 源收录）。默认启用以阻断跨网络 IP 定向归因。",
       "sources": [
         "https://github.com/AdguardTeam/AdguardFilters/issues/217505",
         "https://github.com/hagezi/dns-blocklists/issues/3010",

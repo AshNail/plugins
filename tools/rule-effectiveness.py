@@ -165,8 +165,8 @@ def strongest(*premises):
 
 RULE_LINE_RX = re.compile(r"^([A-Z][A-Z0-9-]*)\s*,\s*(.+)$")
 
-# Script / Rewrite 条件里形如 ${url} ~= /正则/
-URL_COND_RX = re.compile(r"\$\{url\}\s*~=\s*/(.+?)/([a-z]*)\)?")
+# Script / Rewrite 条件里形如 ${url} ~= /正则/（兼容正则内转义斜杠 \/ 与尾部标志如 /i）
+URL_COND_RX = re.compile(r"\$\{url\}\s*~=\s*/((?:\\.|[^/])+)/([a-z]*)\)?")
 
 REWRITE_KIND_RX = re.compile(r"^(request|response|cron|network-changed|generic)\b")
 
@@ -237,15 +237,6 @@ def parse_rewrites(plugin, text):
 def has_mitm(text):
     """插件是否声明了 [MITM] 且不是空段。"""
     return len(section(text, "MITM")) > 0
-
-
-def mitm_hosts(text):
-    out = []
-    for line in section(text, "MITM"):
-        if line.lower().startswith("hostname"):
-            _, _, val = line.partition("=")
-            out.extend(h.strip() for h in val.split(",") if h.strip())
-    return out
 
 
 # ---------------------------------------------------------------------------

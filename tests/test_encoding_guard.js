@@ -18,6 +18,7 @@ const SCRIPTS = {
   "soda/sanitize": loadScript("sanitize.js", "soda"),
   "soda/settings": loadScript("settings.js", "soda"),
   "soda/reward-observe": loadScript("reward-observe.js", "soda"),
+  "soda/homepage-tabs": loadScript("homepage-tabs.js", "soda"),
   "douyin/clean": loadScript("clean.js", "douyin"),
   "douyin/treasure": loadScript("treasure.js", "douyin"),
   "douyin/observe": loadScript("observe.js", "douyin")
@@ -80,6 +81,12 @@ const CASES = [
     argument: { logTaskTitles: false }
   },
   {
+    name: "soda/homepage-tabs",
+    key: "soda/homepage-tabs",
+    url: "https://api.qishui.com/aweme/homepage/combine/?device_id=x",
+    argument: { listenOnly: true }
+  },
+  {
     name: "douyin/clean",
     key: "douyin/clean",
     url: "https://beta-luna.douyin.com/luna/advert/incentive/config",
@@ -137,8 +144,8 @@ console.log("\n== 3. 头名大小写与逗号列表 ==");
   check("小写头名 + 大写值 -> ce=brotli", /ce=brotli/.test(signal(lower)), signal(lower));
 
   const list = runScript(SCRIPTS["douyin/clean"], {
-    url: CASES[3].url,
-    argument: CASES[3].argument,
+    url: "https://beta-luna.douyin.com/luna/advert/incentive/config",
+    argument: { killRewardAds: true },
     headers: { "Content-Encoding": "gzip, br" }
   });
   check("逗号列表 -> ce=gzip,br", /ce=gzip,br/.test(signal(list)), signal(list));
@@ -147,8 +154,8 @@ console.log("\n== 3. 头名大小写与逗号列表 ==");
 console.log("\n== 4. 正常 JSON 仍照常处理（诊断不干扰主流程）==");
 {
   const ok = runScript(SCRIPTS["douyin/clean"], {
-    url: CASES[3].url,
-    argument: CASES[3].argument,
+    url: "https://beta-luna.douyin.com/luna/advert/incentive/config",
+    argument: { killRewardAds: true },
     headers: { "Content-Encoding": "gzip" },
     body: JSON.stringify({ status_code: 0, advert_sources: [{ type: 3 }] })
   });
@@ -167,8 +174,8 @@ console.log("\n== 5. 回写 body 时必须清掉过期的压缩头 ==");
    */
   const gzBody = JSON.stringify({ status_code: 0, advert_sources: [{ type: 3 }] });
   const r = runScript(SCRIPTS["douyin/clean"], {
-    url: CASES[3].url,
-    argument: CASES[3].argument,
+    url: "https://beta-luna.douyin.com/luna/advert/incentive/config",
+    argument: { killRewardAds: true },
     headers: {
       "Content-Encoding": "gzip",
       "Content-Length": "191234",

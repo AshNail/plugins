@@ -36,6 +36,7 @@
 *.pangolin-sdk-toutiao5.com = 127.0.0.1
 *.pglstatp-toutiao.com = 127.0.0.1
 *.tiktokpangle-cdn-us.com = 127.0.0.1
+ad.toutiao.com = 127.0.0.1
 ads3-normal-gl2.zijieapi.com = 127.0.0.1
 ads3-normal-hj.zijieapi.com = 127.0.0.1
 ads3-normal-hl.zijieapi.com = 127.0.0.1
@@ -129,7 +130,6 @@ ad.partner.gifshow.com = 127.0.0.1
 adkwai.com = 127.0.0.1
 adukwai.com = 127.0.0.1
 ali-ad.a.yximgs.com = 127.0.0.1
-api.e.kuaishou.com = 127.0.0.1
 e.kuaishou.cn = 127.0.0.1
 e.kuaishou.com = 127.0.0.1
 gdfp.gifshow.com = 127.0.0.1

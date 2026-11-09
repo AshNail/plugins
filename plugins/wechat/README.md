@@ -2,7 +2,7 @@
 
 > 微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。
 
-版本 **1.1.6** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.1.7** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -17,7 +17,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/wechat/wechat.plu
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | 微信进程内广告素材主机（朋友圈/视频号/小程序） | A | 启用 | wxsnsad/wxsnsdy/wxsnsdythumb/wxsnsdy.tc/wxsnsdy.video=朋友圈与视频号广告图、视频素材域；wxa/wximg/wxsmw=小程序广告组件素材域。全为精确主机，黑洞后素材加载失败、广告位空白。 |
-| GDT/优量汇补充端点（微信进程内） | A | 启用 | pgdt.gtimg.cn=GDT 素材；pgdt.gtimg.com=GDT 素材 .com 形态（与通用 CDN 域 gtimg.com 共存，精确主机不伤共享域）；app-support.qq.com=优量汇「应用代理」下载域（断小程序广告下载链）；qzs.qq.com=GDT 创意组件域；xn--8rtx55n.cn=「我要赚.cn」优量汇电商 CPS 专属域；wapx.adinall.com=adinall 营销聚合。 |
+| GDT/优量汇补充端点与微信 HTTPDNS 防绕过（微信进程内） | A | 启用 | pgdt.gtimg.cn=GDT 素材；pgdt.gtimg.com=GDT 素材 .com 形态（与通用 CDN 域 gtimg.com 共存，精确主机不伤共享域）；app-support.qq.com=优量汇「应用代理」下载域（断小程序广告下载链）；qzs.qq.com=GDT 创意组件域；xn--8rtx55n.cn=「我要赚.cn」优量汇电商 CPS 专属域；wapx/app-tj.adinall.com=adinall 营销聚合；aedns.weixin.qq.com=微信进程内私有 HTTPDNS 解析入口（真机捕获 /cgi-bin/default/getdns，anti-AD + HaGeZi 多源收录，黑洞后强制广告素材域回落系统 DNS）。 |
 | 成熟清单收录、真机未证实（默认关） | B | 默认关闭 | wxsmsdy.video.qq.com / xmaterial.tu.qq.com / zhizi.qq.com / 17g57.com 收录于 anti-AD 与 217heidai，但微信 iOS 是否命中未经真机抓包证实——出现后再开，不默认生效。*.adinall.com 为 B 级（anti-AD+hagezi）增量：adinall 是营销聚合域，wapx/app-tj 两个具体主机已在 gdt_new 组默认生效，通配留待抓包证实轮换子域后再启用。 |
 | 微信质量/崩溃统计（默认关） | B | 默认关闭 | monitor.weixin.qq.com / wetelemetry.weixin.qq.com=自家质量统计与客户端遥测、badjs.weixinbridge.com=前端错误上报、game.eve/str.mdt.qq.com 与 galileotelemetry.tencent.com=腾讯 MDT/伽利略小游戏遥测，拦掉只丢崩溃/错误上报，广告无关——默认不开。 |
 | 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 27 域 / 0 规则。 |
@@ -38,4 +38,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/wechat/wechat.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/wechat.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 53 条，[Rule] 0 条。
+统计：精确/通配黑洞 54 条，[Rule] 0 条。

@@ -15,6 +15,10 @@
 
 **v3.1.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】、**激励任务自动化 v2.0（MITM 响应注入）**全部通过 Loon `[Argument]` 开关控制。默认 `rewardSafe=true`，只清开屏品牌广告。
 
+**v3.3.2 核心变更（2026-11-07）**：
+- **`homepage-tabs.js` 补齐编码与布尔守卫**：接入 `readBody()`（`$utils.ungzip`）+ `ceTag()` 编码诊断 + 改写响应体时剥离过期 `Content-Encoding` / `Content-Length` 头，并改用 `pargs`/`pflag` 严格解析布尔开关（避免 `"false"` 字符串被 `!!` 误判为开启）。
+- **真机端点路由补齐**：`/luna/listen-video/reminder` 扩为 `/luna/(?:v2/feed/)?listen-video/reminder`（覆盖真机 `/luna/v2/feed/listen-video/reminder`）；`advert/fallback/done/info` 兼容双斜杠 `//luna/advert/fallback/done/info`；`sign_in_detail` 补齐 `beta-luna.douyin.com` 主机绑定。
+
 **v3.2.0 核心变更（2026-11-05）**：
 - **汽水 API 分片纳入 `[MITM]` 取证通道**：`api3-hl/api3-lf/api3-lq/api5-hl/api5-lf/api5-lq/conf5-lf.qishui.com` 七台，配套 7 条 QUIC 回退与 gzip 降级同步补齐（静态层 18→25 条）。取证细节见「传输层」一节；**零新增绑定**。
 - **起点 v3.2.0 的教训同步到这里**：启用层只写在生成物上会被下一次构建覆盖——本插件是手写族插件，改动全部直接落在 `plugins/soda/soda.plugin` 与 `src/common/families.json`（`quicCount` 18→25），由 `npm run lint` 的 static layer / regex scopes 两道门禁逐条对账。

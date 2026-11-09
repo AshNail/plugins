@@ -2,7 +2,7 @@
 
 > **一句话结论**：本仓库把「能开关的」做到了极致，但 Loon 有近一半能力**天生不能开关**——它们只能用构建期/发行期手段启用。缺的不是功能，是**开关模型**。
 >
-> 依据：`docs/loon-feature-checklist.md`（官方文档逐页核对）、两份外部去广告指南、iRingo / Biliverse / DualSubs 三个线上插件工程的实际产物、本仓库 56 套件 / 1820 断言现状。
+> 依据：`docs/loon-feature-checklist.md`（官方文档逐页核对）、两份外部去广告指南、iRingo / Biliverse / DualSubs 三个线上插件工程的实际产物、本仓库 56 套件 / 1840 断言现状。
 > 适用门槛：soda/douyin 3.5.1(983)+（gzip 清理 988+）；ads 与全部 App 插件**不声明 `#!loon_version`**——它们的 `#!system` 覆盖 macOS，而 Loon for Mac 的版本号是独立一条线（见 §12.3），功能基线仍是正式版 3.5.2(996)，`DOMAIN-WILDCARD` 需 3.5.3(1008)+ 所以默认注释。
 > 证据标注：**【文档】**= Loon 官方手册明示；**【实证】**= 第三方线上 Loon 插件正在使用；**【未收录】**= 第三方在用但官方手册未收录——**可以保留，但不能当能力点宣称**；**【待证】**= 假设，需真机。
 
@@ -382,13 +382,13 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | `url.replace` | ❌ | 只对「换后端继续请求」有意义；本仓库没有镜像源，广告的正确处理是不出网 |
 | `redirect(302/307)` | ❌ | 重定向会把客户端**送去另一个地址**继续请求；`reject_dict` 零成本达成同一目的 |
 | `reject(status)` / `reject(status, body)` | ❌ | 空包与文本包的 `Content-Type` 是 `text/plain`，按 JSON 解的 SDK 会进错误分支 |
-| `reject_img(status)` | ❌ | 1×1 GIF 适合「图位需要一张图」；我们的广告图走 `[Host]` 黑洞，根本到不了 MITM |
+| `reject_img(status)` | ✅ | 共享图床（meituan `p0/p1/flowplus/img.meituan.net`、taobao `gw.alicdn.com`）下的广告目录路径在 request 阶段返回 200 + 1×1 GIF，避免图片加载器进入破损图重试分支 |
 | `reject_array(status)` | 🟡 | 端点响应必须是数组时才换（`[]`）；目前没有一个这样的上报接口 |
 | `reject_video(status)` | 🟡 | 开屏/激励素材若**直接在 MITM 可见的接口上返回视频字节**，用空视频比空包友好（播放器解码成功、不进重试）。现实里素材都走 CDN 域名拦截，用不上 |
 | `*.header.add/set/del/replace` | ⚠️ 一处 | 我们改 Body 不改头，唯一的例外是 `Accept-Encoding` 降级：soda/douyin 设 `gzip`、起点 v3.5.7 设 `identity`（E2，见 §4）。`del`/`replace` 仍全线禁止 |
 | `*.body.replace(Regex, …)` | ❌ | 正文级正则替换对 JSON 不安全：嵌套括号、转义序列、同名字段都会误伤。字段级裁剪必须走解析 |
-| `*.json.add/replace/delete(KeyPath)` | ❌ | 现有 sanitize 全是字段级 + 正则 prune + 开关分支，且与脚本二选一（§8）；同一 App 内没有「无脚本、只删固定 key」的端点 |
-| `*.json.jq(JQ)`（原生 jq） | 🟡 **xianyu 注释态落地** | 与脚本二选一，但在**没有响应脚本**的可选 MITM 层成立：xianyu 用 15 条 jq 只删信息流广告字段/节点、保留 mtop 包络，证据来自 ddgksf2013/fmz200 的 `http-response-jq`；默认注释、逐条启用 |
+| `*.json.add/replace/delete(KeyPath)` | ✅ | 在无响应脚本的端点上直接执行固定键删改（soda `/luna/me`、qqnews `adList`、xianyu 搜索发现/订单流删键），引擎底层自动完成 gzip/br 解压，与脚本严格二选一（§8） |
+| `*.json.jq(JQ)`（原生 jq） | ✅ | 在无响应脚本的端点上全面启用（soda `more-panel`、netease、qqnews、youtube、bilibili、meituan、xianyu、taobao、zhihu），统一使用官方双引号 + `\"` 转义与顶层类型防御守卫 |
 | `*.json.jq_file` | ❌ | 插件资源文件是包外依赖，违背自包含纪律；内联 jq 已够用 |
 | `request.body.mock(_file)` | ❌ | `mock_file` 依赖外部资源（纪律禁止）；内联 `mock` 需要完整包络样本，违背「保留包络、只删字段」 |
 | `response.body.mock(_file)` | ❌ | 同上；且 mock 响应在请求出网前生成，会把同 URL 的脚本全废掉（§8） |
@@ -469,8 +469,8 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 
 ### 9.7 文档里的数字也是数据源（第二十四轮补上门禁）
 
-一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`2067 条生效 Host`、`19 个 App 插件`、
-`官方文档 26 页`、`1820 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
+一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`2124 条生效 Host`、`19 个 App 插件`、
+`官方文档 26 页`、`1840 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
 **风险面的规模**来用：加一批域名忘了改文档，读者就照着虚高（或虚低）的数字判断该不该装。
 
 第二十四轮起，每个数字都有一个**唯一的机器出口**，文档只是它的一种显示方式：
@@ -480,7 +480,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 | `plugins/ads/README.md` 的分组条数、生效/注释 Host、exact/wildcard、通配与家族拆分、可选 Rule 的 27/16/1 | `tools/build-ads.py --stats-json` |
 | 规模页 `docs/repo-metrics.md` 的正文页数、能力表 175 条与五档分布、旁路路径数、广告类型数、上游黑名单家数、App 插件数 / 覆盖 App 数 / 增强层个数 | `tokens.json`、`loon-coverage --check`、`bypass-audit --check`、`ad-surface-audit --check`、`app-coverage-audit.SOURCE_NAMES`、`src/apps/*.json` |
 | 「N 套件 ×2 = M 套件 / K 断言」与 `tests/README.md` 的断言分布表 | `tests/run-all.py` 本次实跑的 per-suite 计数 |
-| 本节自己的 `2067 条生效 Host`、`19 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
+| 本节自己的 `2124 条生效 Host`、`19 个 App 插件`、「官方文档 26 页」、「能力表 175 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
 | 文档里复述的「门禁管了 N 条声明」与 `readme numbers: N …` 成功行 | 同一次 lint 真实核对成功的条数 |
 | 文档任意一行同时出现 `test_xxx` 与「N 断言」 | 该套件本次实跑数（查不到套件名直接报错） |
 | 真机清单的 J 段插件数、正文页数、`ads=<版本>` 式版本引用 | `src/apps/*.json`、`tokens.json`、各插件 `#!version` |
