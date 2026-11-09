@@ -2,8 +2,8 @@
   "slug": "qqnews",
   "name": "腾讯新闻 · 广告字段清理（原生复写）",
   "desc": "不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。",
-  "version": "1.1.1",
-  "date": "2026-11-07",
+  "version": "1.1.2",
+  "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,腾讯新闻",
   "comment": [
@@ -35,9 +35,10 @@
       ]
     },
     {
-      "label": "腾讯共享 SSP 根域（news.ssp 父域，仅做路径级复写）",
+      "label": "腾讯共享 SSP 根域与运营后台（news.ssp 父域，仅做路径级复写）",
       "globs": [
-        "ssp.qq.com"
+        "ssp.qq.com",
+        "op.ssp.qq.com"
       ]
     },
     {
@@ -85,9 +86,9 @@
         "stage": "response",
         "gate": "cleanAds",
         "endpoint": "r.inews.qq.com/",
-        "url": "^https://r\\.inews\\.qq\\.com/(getQQNewsUnreadList|getTagFeedList|news_feed/hot_module_list)(\\?|$)",
+        "url": "^https://r\\.inews\\.qq\\.com/(getQQNewsUnreadList|getTagFeedList|getSimpleNews|getSubNewsRelate|getNewsRelateModule|getVideoNewsList|news_feed/hot_module_list)(\\?|$)",
         "action": "response.json.replace(\"adList\", null)",
-        "note": "要闻/财经/地方专区等列表接口：adList 广告数组置 null（原生标量替换，全平台生效）",
+        "note": "要闻/财经/地方专区/详情关联/视频列表接口：adList 广告数组置 null（原生标量替换，全平台生效）",
         "source": "https://github.com/app2smile/rules/blob/master/js/qq-news.js"
       },
       {

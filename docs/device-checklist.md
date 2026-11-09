@@ -26,7 +26,7 @@
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.23`、`soda=3.3.2`、`douyin=0.9.1`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.24`、`soda=3.3.3`、`douyin=0.9.2`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
@@ -188,6 +188,39 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       `8.8.8.8` / `1.1.1.1` 做 DNS（Loon 日志里目标只有 IP、没有域名）时才需要开。
       开启**前**先确认主配置 `dns-server` / `doh-server` 里没有清单内任何 IP；
       开启**后**确认整网仍可用——误伤的表现是上不了网，不是广告回来。
+- [ ] **摇一摇阈值置 0 的方向性（第十四轮存疑项）**：本仓库把
+      `splash_shake_sensitivity` / `splash_acceleration_threshold` /
+      `splash_rotation_threshold` 置 0，理由是「阈值越小越难触发」。
+      但**这三个键的语义方向没有官方文档可查**：SDK 若按「阈值 ≤ 运动量即触发」比较，
+      置 0 反而变成「任何轻微晃动都触发」——比不改更糟。
+      判读方法：①开 `settingsClean` 后在汽水/抖音里**真的晃一下手机**，
+      看是否仍跳电商或应用商店；②若仍跳，说明键语义与假设相反，
+      改走「开关置 false」这一路（`enable_splash_shake` / `enable_twist_ad` /
+      `enable_motion_ad` 已在 settings.js 置 false，**开关关掉比改阈值可靠**）。
+      **验证前不要因为「置了 0 就以为不触发了」**——静态断言只能证明字段被改了，
+      证明不了改完不再触发。
+- [ ] **删广告条目后分页是否仍然连续（第十四轮存疑项）**：净化脚本已加静态门禁
+      （`tests/lint-plugins.py` 的 `check_pagination_integrity`），
+      保证 `cursor` / `has_more` / `offset` 这类字段**不会被净化脚本清空或归零**；
+      回归套件 `tests/test_pagination_integrity.js` 断言这些字段净化前后原样保留。
+      但「删掉条目后游标是否仍然连续」是 App 侧语义，静态证明不了。
+      判读方法：在有信息流的 App（汽水/抖音）里**一直往下滑到列表末尾**，
+      确认能正常加载下一批（不是转圈卡住、不是空列表）。
+      若卡住，说明该 App 的游标与广告条目数耦合，需要把该 App 的信息流从
+      `dropAdItems` 名单里排除，改走「保留条目只清广告字段」的路子。
+- [ ] **`#!source` 下载地址校验的实际行为（第十五轮存疑项）**：全部 23 个插件已带
+      `#!source`（= 真实下载 URL 的 SHA-256，哈希由 `tools/source_hash.py` 现算，
+      lint 的 `check_source_hash()` 反向复算核对）。但**官方没有写校验不匹配时
+      是什么行为**（拒绝安装？还是仅提示？），生态里也 0 个真实插件在用，没有先例。
+      两条要真机确认的事：
+      ① **正常路径不误伤**：从 README 徽章导入一个插件，确认安装**不被拦**，
+         插件面板正常显示；
+      ② **不匹配时的行为**：把某个插件的 `#!source` 临时改成一个错的哈希，
+         再从同一个地址导入，观察 Loon 是**拒绝安装**、**装上但提示**、还是
+         **静默放行**——三种行为对应的处置完全不同（拒绝安装＝镜像用户会中招，
+         静默放行＝这个字段只是「提示」不是「门禁」）。
+      **验证前不要因为「写了哈希就以为有校验」**——它校验的是 URL 字符串，
+      **不校验插件文件内容**；内容完整性仍只能靠 HTTPS + 渠道信任。
 
 ## I. 真机日志取证（2026-10-27，两份 Loon 引擎日志）
 

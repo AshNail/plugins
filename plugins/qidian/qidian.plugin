@@ -1,5 +1,5 @@
 #!name=起点读书 · 看书激励助手
-#!desc=起点读书·看书激励助手 v3.6.1(自动化层整体移植自/community 范式):去广告与响应净化保持 v3.5.7 自研链——[Rewrite] request 阶段把 Accept-Encoding 复写成 identity(上游本就该照客户端声明决定编码,本机 16:21 日志实证写什么回什么)并用 reject_dict(200) 整条终止 17 个纯广告端点(开屏/书架运营位/书城悬浮卡/广告位批量拉取/批量弹窗/推送弹窗/播放条/热词/章末/青少年/新手引导/猜你喜欢/经典书目/活动列表/推送消息;22:15 日志实证:命中这 17 条的 36 个流零建连、零 URL 落行,请求根本没出本机),混业务端点与 getconf 一律在 [Script] 字段级剥离(getconf 30 项覆写 + 11 项删除 + 关发现 tab、账户页 9 键删除 + 功能区 13→5 白名单 + 引导开关置 0、福利中心营销模块删除与激励任务条目剪枝、每日导读、书架悬浮位、红点、兑换页、发现信息流 AdvItem、发现页 NEW_*+DISCOVER_* 6 项白名单、Deeplink ActionUrl)。自动化(签到+激励+每周兑换+章节卡)从 v3.6.0 起整体换挂 config 范式的 Qidian.js 引擎——Token/Cookie 捕获走独立开关 QDREADER_COOKIE_ENABLE(解除 autoTask 默认关导致的凭据链死锁),定时签到与高阶任务由引擎按 QDREADER_ADV_JOB_ENABLE/EXTRA/LOTTERY/WEEKLY/CHAPTER_CARD/MESSAGE_BOX 六开关粒度驱动,finishWatch 重放与 6 端点领奖、广告 SDK 时长 patch 均由引擎内置逻辑承接;广告 SDK 秒播与每日阅读积分两条响应绑定保留自研(同 URL 端点归属唯一)。引擎本体 vendored 在插件目录 scripts/Qidian.js(与「起点 Pro」同源、相对路径分发、离线可用;引擎升级时手动同步本地副本)。限时激励任务(mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」)不再剪枝：当轮 TaskId/Total 落盘 Qidian_LimitedTasks，引擎 finishWatch 重放按 Total 自动完成(v3.6.1 本地补丁)。净化开(默认)、Token 捕获开(默认)、自动化六开关开(默认,true)——服务端风控后果自担,万一抖动,关 QDREADER_* 任何子开关即可切面停用,不必泄状态。
+#!desc=起点读书·看书激励助手 v3.6.1(自动化层整体移植自/community 范式):去广告与响应净化保持 v3.5.7 自研链——[Rewrite] request 阶段把 Accept-Encoding 复写成 identity(上游本就该照客户端声明决定编码,本机 16:21 日志实证写什么回什么)并用 reject_dict(200) 整条终止 17 个纯广告端点(开屏/书架运营位/书城悬浮卡/广告位批量拉取/批量弹窗/推送弹窗/播放条/热词与分片搜索词/章末/青少年/新手引导/猜你喜欢/经典书目/活动列表/推送消息;22:15 日志实证:命中这 17 条的 36 个流零建连、零 URL 落行,请求根本没出本机),混业务端点与 getconf 一律在 [Script] 字段级剥离(getconf 30 项覆写 + 11 项删除 + 关发现 tab、账户页 9 键删除 + 功能区 13→5 白名单 + 引导开关置 0、福利中心营销模块删除与激励任务条目剪枝、每日导读、书架悬浮位、红点、兑换页、发现信息流 AdvItem、发现页 NEW_*+DISCOVER_* 6 项白名单、Deeplink ActionUrl)。自动化(签到+激励+每周兑换+章节卡)从 v3.6.0 起整体换挂 config 范式的 Qidian.js 引擎——Token/Cookie 捕获走独立开关 QDREADER_COOKIE_ENABLE(解除 autoTask 默认关导致的凭据链死锁),定时签到与高阶任务由引擎按 QDREADER_ADV_JOB_ENABLE/EXTRA/LOTTERY/WEEKLY/CHAPTER_CARD/MESSAGE_BOX 六开关粒度驱动,finishWatch 重放与 6 端点领奖、广告 SDK 时长 patch 均由引擎内置逻辑承接;广告 SDK 秒播与每日阅读积分两条响应绑定保留自研(同 URL 端点归属唯一)。引擎本体 vendored 在插件目录 scripts/Qidian.js(与「起点 Pro」同源、相对路径分发、离线可用;引擎升级时手动同步本地副本)。限时激励任务(mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」)不再剪枝：当轮 TaskId/Total 落盘 Qidian_LimitedTasks，引擎 finishWatch 重放按 Total 自动完成(v3.6.1 本地补丁)。净化开(默认)、Token 捕获开(默认)、自动化六开关开(默认,true)——服务端风控后果自担,万一抖动,关 QDREADER_* 任何子开关即可切面停用,不必泄状态。
 #!author=edy
 #!version=3.6.1
 #!homepage=https://github.com/AshNail/plugins
@@ -9,6 +9,7 @@
 #!date=2026-11-09
 #!tag=看书,激励,起点读书,阅文,纯净阅读,自动签到,激励任务,自动领奖,响应净化
 #!type=normal
+#!source=60a9c1e72b00fe908b80bc3e402450b3b8caa330e7ebcfd4599b0d512e856bdf
 
 # ========================================================================
 # 起点读书 · 看书激励助手
@@ -106,6 +107,7 @@ qidianad.com = 127.0.0.1
 # 听书/TTS/有声书（非阅读·整族黑洞）（置信 A）
 # REA 5.9.482 二进制字面 URL 全量扫描:QDReader 听书/TTS 715 类(QDAudio*/QDTTS*/QDDub*/QDVoice*)走独立域名——tts.yuewen.com(阅文 TTS 平台)、tts-qidian.xf-yun.com(讯飞 TTS 起点专线)、tts.webnovel.com/devtts.webnovel.com(WebNovel TTS 生产/测试)、test-ttsplatform.yuewen.com(TTS 测试环境)、unite-tts-audio-1252317822.file.myqcloud.com(腾讯云 COS TTS 音频存储)、reviewaudio-1252317822.file.myqcloud.com(审核音频存储)、tingbook.com(有声书独立域名,Info.plist ATS 例外独立登记)、videoapi.yuewen.com(视频/音频 API 网关)。全部与正文 API(magev6/druid/h5)零共域⇒整族黑洞不伤看书。Argus 音频接口 /argus/api/v1/audio/* 30+ 端点落在正文主机上(红线),v3.4.0 起不再有路径级规则——合成与素材全在本组 9 个独立域,播放链在 DNS 阶段就断了,不必再去正文主机上开洞。听书是**默认打死**的:owner 口径 2026-11-06「不需要听书」。要恢复听书,注释本组 9 条 [Host] 即可,净化与自动化两层不受影响。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
+ad.1ting.com = 127.0.0.1
 devtts.webnovel.com = 127.0.0.1
 reviewaudio-1252317822.file.myqcloud.com = 127.0.0.1
 test-ttsplatform.yuewen.com = 127.0.0.1
@@ -240,8 +242,8 @@ request if ${QDREADER_CLEAN_ENABLE} == true && ${url} ~= /^https:\/\/(h5|mage|ma
 # kill-getdialog: 推送弹窗（App 内营销弹窗的唯一来源，getconf 的 PushDialogFrequency 只压频次）（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
 request if ${QDREADER_CLEAN_ENABLE} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/push\/getdialog(\?|$)/ then reject_dict(200)
 
-# kill-hotwords: 搜索框填充热词。⚠ 本机 HAR 当期只见 v2/booksearch/shardWord，hotWords 零命中——保留上游规则，但「搜索词还在」时先怀疑这条已过期（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
-request if ${QDREADER_CLEAN_ENABLE} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/booksearch\/hotWords(\?|$)/ then reject_dict(200)
+# kill-hotwords: 搜索框填充热词与分片推广搜索词（HAR 实证 v2/booksearch/shardWord，同时保留 hotWords 兼容）（来源 kelee QiDian_remove_ads.lpx + 起点 Pro · 本机 HAR 11-06）
+request if ${QDREADER_CLEAN_ENABLE} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/booksearch\/(?:hotWords|shardWord)(\?|$)/ then reject_dict(200)
 
 # kill-chapterend: 章节末尾订阅读者/运营模块（来源 kelee QiDian_remove_ads.lpx + 起点 Pro）
 request if ${QDREADER_CLEAN_ENABLE} == true && ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/followsubscribe\/showChapterEndModule(\?|$)/ then reject_dict(200)
@@ -300,7 +302,7 @@ cron {CRONEXP} script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点读�
 generic script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点手动签到/自检(与自动签到同任务), argument=[{QDREADER_DEBUG},{QDREADER_ADV_JOB_ENABLE},{QDREADER_EXTRA_ADV_JOB_ENABLE},{QDREADER_LOTTERY_ENABLE},{QDREADER_WEEKLY_EXCHANGE_ENABLE},{QDREADER_CHAPTER_CARD_ENABLE},{QDREADER_MESSAGE_BOX_ENABLE}]
 
 # getconf-clean: v3.5.0 起本绑定是 getconf/getconfSpecify 净化的主力：配合 [Rewrite] force-identity 压缩降级，由脚本做 30 项覆写 + 11 项删除 + 关发现 tab（handleClientConfig）。v3.5.3 补 binary_body_mode=true：16:21 日志实证不带该键时 $response.body 是按 UTF-8 硬解的乱码串（1f 8b 魔数检测失效、JSON.parse 直接抛），safeJsonParse 返回 null ⇒ 脚本跑完一个字段都没改。v3.5.4 起 with debug=true 常开（取证期）——但 21:35 日志判死了「debug 能把脚本 console 落主日志」：debug 常开后主日志仍 0 条锚点，官方口径 console.log 只写「当前脚本日志」，要看锚点得在 App 内脚本日志页。v3.5.5 把 build 号写进 tag：主日志的 match/Trigger/Finished 行带 tag，于是「设备到底加载的是哪一版接线」第一次变成可机读的——tag 还是旧名就说明插件没更新，不必再猜（开关更名 cleanAds→QDREADER_CLEAN_ENABLE 于 v3.6.0）
-response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf/ then script("scripts/auto-task.min.js", {${QDREADER_DEBUG}, ${QDREADER_CLEAN_ENABLE}}) with debug=true, enable=${QDREADER_CLEAN_ENABLE}, requires_body=true, binary_body_mode=true, timeout=10, tag="起点getconf净化v361"
+response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/client\/getconf/ then script("scripts/auto-task.min.js", {${QDREADER_DEBUG}, ${QDREADER_CLEAN_ENABLE}}) with debug=true, enable=${QDREADER_CLEAN_ENABLE}, requires_body=true, binary_body_mode=true, timeout=10, tag="起点getconf净化v361"
 
 # adsec-gdt-inner-view: 把广告时长字段 patch 成 1 秒 + 1 秒黑屏素材——伪造观看完成。v3.6.0 起归 QDREADER_EXTRA_ADV_JOB_ENABLE（每日任务，默认开）；与引擎的秒播职责不重叠：引擎吃 finishWatch 重放与领奖，SDK 响应内的时长字段只有本绑定处置。需与 [Host] 撤洞配合——Pangle/GDT 素材不再黑洞，秒播字段才有机会到达
 response if ${url} ~= /^https:\/\/(h5|mage|magev6)\.if\.qidian\.com\/argus\/api\/v[0-9]+\/video\/adv\/gdt_inner_view/ then script("scripts/auto-task.min.js", {${QDREADER_DEBUG}, ${QDREADER_EXTRA_ADV_JOB_ENABLE}}) with debug=${QDREADER_DEBUG}, enable=${QDREADER_EXTRA_ADV_JOB_ENABLE}, requires_body=true, timeout=10, tag="起点广告SDK秒播(gdt_inner_view)"

@@ -2,7 +2,7 @@
 
 > 哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏（含品牌/活动开屏）、导航栏、首页推荐流、视频详情页播放下相关推荐广告与搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -38,7 +38,9 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
 | `kill-splash` | request | `reject_dict` | `cleanAds` | 开屏广告列表、展示及品牌/活动开屏接口直接返回 200 + 空字典 |
-| `clean-feed-index` | response | `response.json.jq` | `cleanAds` | 推荐信息流：过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）、推广游戏与横幅广告 |
+| `kill-top-activity` | request | `reject_dict` | `slimNav` | 首页右上角活动推广挂件直接返回 200 + 空字典 |
+| `clean-feed-index` | response | `response.json.jq` | `cleanAds` | 推荐信息流：按前缀通杀商业广告卡片（cm_*/ad_*）、ad_info 节点、推广游戏与横幅广告 |
+| `clean-feed-story` | response | `response.json.jq` | `cleanAds` | 竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* 广告视频 |
 | `clean-view-relates` | response | `response.json.jq` | `cleanAds` | 视频详情页：剔除播放下方商业推广配置（cm_config/cms/cm_ipad）及关联推荐中的广告卡片 |
 | `clean-search-square` | response | `response.json.jq` | `cleanAds` | 搜索广场：过滤热搜词中的游戏与广告推广 |
 | `clean-nav-tab` | response | `response.json.jq` | `slimNav` | 导航栏精简：过滤底栏会员购/发布与顶栏游戏中心 |

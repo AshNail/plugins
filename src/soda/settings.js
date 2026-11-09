@@ -147,10 +147,8 @@ const SCALAR_KEYS = new Map([
   ["enablemotionad", "false"],
   ["shakeadswitch", "false"],
   ["twistadswitch", "false"],
-  ["splashshakesensitivity", "zero"],
-  ["shakesensitivity", "zero"],
-  ["splashaccelerationthreshold", "zero"],
-  ["splashrotationthreshold", "zero"],
+  /* 不改 splash*Sensitivity / splash*Threshold：比较方向没有官方或抓包证据，
+   * 写 0 可能变成「任何晃动都触发」；只保留上面语义明确的禁用开关。 */
   ["splashcacheenable", "false"],
   ["splashcacheenabled", "false"],
   ["enableadpreload", "false"],

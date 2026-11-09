@@ -2,7 +2,7 @@
 
 > 不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。
 
-版本 **1.1.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.1.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -36,7 +36,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qqnews/qqnews.plu
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
 | `kill-ssp-app` | request | `reject_dict` | `cleanAds` | 开屏配置接口直接返回 200 + 空字典 |
-| `clean-list-adlist` | response | `response.json.replace` | `cleanAds` | 要闻/财经/地方专区等列表接口：adList 广告数组置 null（原生标量替换，全平台生效） |
+| `clean-list-adlist` | response | `response.json.replace` | `cleanAds` | 要闻/财经/地方专区/详情关联/视频列表接口：adList 广告数组置 null（原生标量替换，全平台生效） |
 | `clean-feed-widget` | response | `response.json.jq` | `cleanAds` | 专题详情/频道信息流：data.widget_list 过滤 widget_type=ad_list 的广告组件 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。

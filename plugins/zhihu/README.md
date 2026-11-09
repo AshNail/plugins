@@ -2,7 +2,7 @@
 
 > 知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；同域商业化广告接口（commercial_api/ad-style-service）、推广/预置词及首页推荐流（topstory/recommend）/关注流（moments_v3）内联广告卡片默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) + response.json.jq 字段级剥离，零 JS 脚本）；核心问答/文章/个人页/图床/推送严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -16,7 +16,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
-| 知乎自建遥测 / 崩溃分析 / 商业化追踪 | A | 启用 | zhihu-web-analytics.zhihu.com（9源，知乎官方 Web/移动端分析）、udd1i5.zhihu.com（5源，商业化追踪与素材 CDN）、sugar.zhihu.com（4源，崩溃上报与监控平台）、crash2.zhihu.com（3源，崩溃分析日志端点）。均非业务数据流，DNS 映射 127.0.0.1 阻断。 |
+| 知乎自建遥测 / 崩溃分析 / 商业化追踪与广告素材 | A | 启用 | zhihu-web-analytics.zhihu.com（9源，知乎官方 Web/移动端分析）、udd1i5.zhihu.com（5源，商业化追踪与素材 CDN）、sugar.zhihu.com（4源，崩溃上报与监控平台）、crash2.zhihu.com（3源，崩溃分析日志端点）、adstatic.zhihu.com（知乎商业广告专用静态资产域）。均非业务数据流，DNS 映射 127.0.0.1 阻断。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 3 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
@@ -50,7 +50,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 | `kill-top-banner` | request | `reject_dict` | `cleanAds` | 移动端顶部应用推广引导横幅直接返回 200 + 空字典 |
 | `kill-entity-word` | request | `reject_dict` | `cleanAds` | 正文内联搜索高亮推广词（放大镜蓝字广告词）直接返回 200 + 空字典 |
 | `kill-related-search` | request | `reject_dict` | `cleanAds` | 问题页底部「大家都在搜」推广搜索词直接返回 200 + 空字典 |
-| `clean-topstory-recommend` | response | `response.json.jq` | `cleanAds` | 首页推荐信息流：剔除 feed_advert 及携带 adjson/promotion_extra 的商业推广卡片 |
+| `clean-topstory-recommend` | response | `response.json.jq` | `cleanAds` | 首页推荐信息流：剔除 feed_advert、target.type=advert 及携带 adjson/promotion_extra 的商业推广卡片 |
 | `clean-moments-feed` | response | `response.json.jq` | `cleanAds` | 关注动态信息流：剔除穿插的商业推广与内联广告卡片 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
@@ -81,4 +81,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/zhihu.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 4 条，[Rule] 3 条。
+统计：精确/通配黑洞 5 条，[Rule] 3 条。

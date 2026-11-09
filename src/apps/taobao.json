@@ -2,8 +2,8 @@
   "slug": "taobao",
   "name": "淘宝 · 去广告（原生复写层）",
   "desc": "淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——10 条广告 mtop 路径在 request 阶段 reject_dict(200) 终止，开屏大图路径用 reject_img(200) 返回 1px 透明图；不包含上游 JS，交易/登录/支付红线不动。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.2.3",
-  "date": "2026-11-07",
+  "version": "1.2.4",
+  "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,淘宝,阿里",
   "comment": [
@@ -77,7 +77,7 @@
       "id": "ali_ad_hosts",
       "title": "阿里广告/UT 独立端点",
       "tier": "B",
-      "note": "h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch.simba.taobao.com=Simba 直通车竞价与定向子域（其余 atanx、tns.simba、adashx.m、wcp、audid-api、poplayer、rtb.julang 已由上方 sdks:[\"alimama\"] 统一注入，此处不重复声明）。均为精确广告子域，媒体主域 alicdn.com 不整域。",
+      "note": "h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch/stat/srd.simba.taobao.com=Simba 直通车竞价、定向与曝光统计子域（其余 atanx、tns.simba、adashx.m、wcp、audid-api、poplayer、rtb.julang 已由上方 sdks:[\"alimama\"] 统一注入，此处不重复声明）。均为精确广告子域，媒体主域 alicdn.com 不整域。",
       "sources": [
         "https://kelee.one/",
         "https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list",
@@ -89,7 +89,9 @@
         "hudong.alicdn.com",
         "adashx4yt.m.taobao.com",
         "dsp.simba.taobao.com",
-        "tmatch.simba.taobao.com"
+        "tmatch.simba.taobao.com",
+        "stat.simba.taobao.com",
+        "srd.simba.taobao.com"
       ]
     },
     {
@@ -140,7 +142,7 @@
       "title": "阿里妈妈直通车点击跳转/外链（默认关）",
       "tier": "B",
       "disabled": true,
-      "note": "mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。",
+      "note": "mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com / click.mz.simba.taobao.com / click.tz.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。",
       "sources": [
         "https://github.com/privacy-protection-tools/anti-AD",
         "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcards/pro.txt"
@@ -148,7 +150,18 @@
       "hosts": [
         "mclick.simba.taobao.com",
         "redirect.simba.taobao.com",
-        "textlink.simba.taobao.com"
+        "textlink.simba.taobao.com",
+        "click.mz.simba.taobao.com",
+        "click.tz.simba.taobao.com"
+      ]
+    }
+  ],
+  "triage_exclude": [
+    {
+      "label": "业务·直通车收藏与卖家移动后台",
+      "globs": [
+        "fav.simba.taobao.com",
+        "m.simba.taobao.com"
       ]
     }
   ],
@@ -181,7 +194,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.fliggy.crm.screen.",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.fliggy\\.crm\\.screen\\.(?:allresource|predict)",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.fliggy\\.crm\\.screen\\.(?:allresource|predict)",
         "action": "reject_dict(200)",
         "note": "飞猪频道弹屏与营销资源拉取",
         "source": "https://kelee.one/"
@@ -192,7 +205,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.alibaba.advertisementservice.getadv",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alibaba\\.advertisementservice\\.getadv",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.alibaba\\.advertisementservice\\.getadv",
         "action": "reject_dict(200)",
         "note": "阿里通用广告服务拉取接口",
         "source": "https://kelee.one/"
@@ -203,7 +216,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.alimama.etao.config.query/",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alimama\\.etao\\.config\\.query/.+?etao_advertise",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.alimama\\.etao\\.config\\.query/.+?etao_advertise",
         "action": "reject_dict(200)",
         "note": "阿里妈妈一淘广告配置拉取",
         "source": "https://kelee.one/"
@@ -214,7 +227,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.alimusic.common.mobileservice.startinit",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.alimusic\\.common\\.mobileservice\\.startinit",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.alimusic\\.common\\.mobileservice\\.startinit",
         "action": "reject_dict(200)",
         "note": "启动初始化营销配置接口",
         "source": "https://kelee.one/"
@@ -225,7 +238,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.etao.noah.query/",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.etao\\.noah\\.query/.+tao_splash",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.etao\\.noah\\.query/.+tao_splash",
         "action": "reject_dict(200)",
         "note": "淘宝 noah 开屏广告查询接口",
         "source": "https://kelee.one/"
@@ -236,7 +249,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.film.mtopadvertiseapi.queryadvertise",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.film\\.mtopadvertiseapi\\.queryadvertise",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.film\\.mtopadvertiseapi\\.queryadvertise",
         "action": "reject_dict(200)",
         "note": "淘票票/影视模块广告查询接口",
         "source": "https://kelee.one/"
@@ -247,7 +260,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.o2o.ad.gateway.get",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.o2o\\.ad\\.gateway\\.get",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.o2o\\.ad\\.gateway\\.get",
         "action": "reject_dict(200)",
         "note": "本地生活 O2O 广告网关拉取接口",
         "source": "https://kelee.one/"
@@ -258,7 +271,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.home.welcome",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.idle\\.home\\.welcome",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.idle\\.home\\.welcome",
         "action": "reject_dict(200)",
         "note": "闲置频道欢迎弹窗营销接口",
         "source": "https://kelee.one/"
@@ -269,7 +282,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "mtop.trip.activity.querytmsresources",
-        "url": "^https://acs\\.m\\.taobao\\.com/gw/mtop\\.trip\\.activity\\.querytmsresources",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.trip\\.activity\\.querytmsresources",
         "action": "reject_dict(200)",
         "note": "出行活动 TMS 营销资源查询接口",
         "source": "https://kelee.one/"
@@ -279,8 +292,8 @@
         "group": "请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口",
         "stage": "request",
         "gate": "cleanAds",
-        "endpoint": "guide-acs.m.taobao.com/gw/mtop.taobao.",
-        "url": "^https://guide-acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.(?:volvo\\.secondfloor\\.getconfig|wireless\\.home\\.newface\\.awesome\\.get)",
+        "endpoint": "mtop.taobao.",
+        "url": "^https://(?:guide-)?acs\\.m\\.taobao\\.com/gw/mtop\\.taobao\\.(?:volvo\\.secondfloor\\.getconfig|wireless\\.home\\.newface\\.awesome\\.get)",
         "action": "reject_dict(200)",
         "note": "首页二楼活动配置与开屏引导拉取",
         "source": "https://kelee.one/"

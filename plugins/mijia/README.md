@@ -2,7 +2,7 @@
 
 > 如实定位:米家 App 首页运营卡片/商城推荐为第一方内嵌(api.io.mi.com 响应体),DNS 不可分。本插件黑洞小米统一广告平台(*.ad.xiaomi.com/o2o/有品推荐)——对 MIUI/澎湃系统投放有效,iOS 米家是否调用该平台未经抓包证实。设备控制/账号/推送域名零接触。零证书。
 
-版本 **1.1.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.1.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
@@ -33,4 +33,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mijia/mijia.plugi
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/mijia.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 49 条，[Rule] 0 条。
+统计：精确/通配黑洞 50 条，[Rule] 0 条。

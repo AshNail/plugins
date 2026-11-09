@@ -463,6 +463,71 @@ function log(msg) {
   console.log(`[SodaAuto] ${msg}`);
 }
 
+function utf8(bytes) {
+  let out = "", i = 0, n = bytes.length;
+  while (i < n) {
+    const b = bytes[i++] & 0xff;
+    if (b < 0x80) {
+      out += String.fromCharCode(b);
+    } else if (b >= 0xc0 && b < 0xe0) {
+      out += String.fromCharCode(((b & 0x1f) << 6) | (bytes[i++] & 0x3f));
+    } else if (b >= 0xe0 && b < 0xf0) {
+      out += String.fromCharCode(((b & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f));
+    } else {
+      const cp = ((b & 0x07) << 18) | ((bytes[i++] & 0x3f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+      out += String.fromCodePoint(cp);
+    }
+  }
+  return out;
+}
+
+function readBody(resp) {
+  const raw = (resp && (resp.rawBytes !== undefined ? resp.rawBytes : resp.body)) || "";
+  let bytes = null;
+  if (typeof Uint8Array !== "undefined" && raw instanceof Uint8Array) {
+    bytes = raw;
+  } else if (ArrayBuffer.isView && ArrayBuffer.isView(raw)) {
+    bytes = new Uint8Array(raw.buffer, raw.byteOffset, raw.byteLength);
+  } else if (typeof ArrayBuffer !== "undefined" && raw instanceof ArrayBuffer) {
+    bytes = new Uint8Array(raw);
+  } else if (Array.isArray(raw)) {
+    bytes = new Uint8Array(raw);
+  } else if (typeof raw === "string" && raw.length > 1 &&
+             raw.charCodeAt(0) === 0x1f && raw.charCodeAt(1) === 0x8b) {
+    bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i) & 0xff;
+  } else {
+    return typeof raw === "string" ? raw : "";
+  }
+  if (bytes.length > 1 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    try {
+      if (typeof $utils !== "undefined" && $utils && typeof $utils.ungzip === "function") {
+        const u = $utils.ungzip(bytes);
+        if (typeof u === "string") return u;
+        if (u && typeof u.length === "number") return utf8(u);
+      }
+    } catch (e) {
+      log(`ungzip failed: ${e}`);
+    }
+  }
+  return utf8(bytes);
+}
+
+function cleanResponseHeaders(headers) {
+  try {
+    const h = Object.assign({}, headers || {});
+    for (const k of Object.keys(h)) {
+      const lk = String(k).toLowerCase();
+      if (lk === "content-encoding" || lk === "content-length") {
+        delete h[k];
+      }
+    }
+    return h;
+  } catch (e) {
+    return undefined;
+  }
+}
+
 // ==========================================
 // 🚀 主入口（Loon script 接口）
 // ==========================================
@@ -489,10 +554,10 @@ if (isRequest) {
 
 // ---- 响应阶段 ----
 if (isResponse) {
-  const body = $response?.body || "";
+  const body = readBody($response);
 
   // ---- incentive/done 响应观测（只记录，不修改） ----
-  if (url.includes("/luna/advert/incentive/done")) {
+  if (/\/+luna\/advert\/incentive\/done/.test(url)) {
     try {
       const data = typeof body === "string" ? JSON.parse(body) : body;
       if (data?.reward_details) {
@@ -502,22 +567,30 @@ if (isResponse) {
     $done({});
   }
   // ---- 激励配置观测 ----
-  else if (url.includes("/luna/advert/incentive/config")) {
+  else if (/\/+luna\/advert\/incentive\/config/.test(url)) {
     cacheIncentiveConfig(body);
     $done({});
   }
   // ---- 💎 本地权益注入（commerce_info） ----
-  else if (url.includes("/luna/commerce/v2/commerce_info")) {
+  else if (/\/+luna\/commerce\/v2\/commerce_info/.test(url)) {
     const injected = injectCommerceInfo(body);
-    $done({ body: injected });
+    if (injected !== body) {
+      $done({ body: injected, headers: cleanResponseHeaders($response?.headers) });
+    } else {
+      $done({});
+    }
   }
   // ---- 🚫 Upsell 弹窗清空 ----
-  else if (url.includes("/luna/commerce/v2/upsell") && !url.includes("sort_decision")) {
+  else if (/\/+luna\/commerce\/v2\/upsell/.test(url) && !url.includes("sort_decision")) {
     const cleaned = cleanUpsell(body);
-    $done({ body: cleaned });
+    if (cleaned !== body) {
+      $done({ body: cleaned, headers: cleanResponseHeaders($response?.headers) });
+    } else {
+      $done({});
+    }
   }
   // ---- 任务页面观测 ----
-  else if (url.includes("/treasure/task/page/v2")) {
+  else if (/\/+luna\/treasure\/task\/page\/v[0-9]+/.test(url)) {
     observeTaskPage(body);
     $done({});
   }

@@ -451,7 +451,7 @@
     - **脚本边界**：新增 `src/soda/check-update.js`，绑定 `enable=${skipUpdateCheck}`（默认关，实验）。只把归一化后的 `has_update` / `hasUpdate` 置 false；包络、`media_result` 与同形键（`check_update_info` / `force_update_ts_ms` 等）零接触。无键、非 JSON、ungzip 失败一律原样放行（最坏情况 = 提示还在）；回写时删掉过期的 `content-encoding` / `content-length`，诊断头 `X-Soda-Plugin` 每个分支都带 `skip=` / `ce=`。
     - **绑定与测试**：`api.qishui.com` / `beta-luna.douyin.com` 双主机各一条响应绑定；`BINDING_SAMPLES["soda"]["response"]` 补两条回放样本，lint 的 `luna host parity` 仍全双主机。新增 `tests/test_check_update.js` 23 断言（src/dist 双跑）：深层置 false、包络与同形键保留、三条放行路径、gzip 路径、过期头清理、回滚常量存在。
     - **默认值调整**：`blockSplashAd` 在 soda/douyin 两个家族统一默认开，满足 schema 的「同名共享开关类型/默认值/label 一致」约束；只拦穿山甲开屏素材与登记家族，`inspire*` 与发奖回调不匹配，回滚只需关开关。汽水 2.8.7、抖音 0.9.0。
-    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；`test_args_schema` 39 断言、17 个开关 label。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 21 relative link(s)`）、`device checklist: J section covers all 19/19 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
+    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；`test_args_schema` 39 断言、17 个开关 label。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 22 relative link(s)`）、`device checklist: J section covers all 19/19 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
 
 67. [x] **第四十三轮：公开仓库交叉核对；微博 4 个多源广告主机 + 2 个 dig 解析端点落地，白名单/单源/支付域拒收**
     - **数据来源与可信度**：只读比对 fmz200 `weibo.plugin`/`Block_HTTPDNS.plugin`、RuCu6 微博插件、blackmatrix7 `AdvertisingScript.plugin` 三个公开仓库的规则文本；本地缓存清单（anti-AD/AWAvenue/AdRules/hagezi）逐域计数。A 级（≥3 源）才进默认生效组，B 级只进默认注释组或留档。
@@ -471,7 +471,7 @@
     - **ads 落地 7 个（均 ≥3 家公开清单可证 + 语义自证）**：`=appsflyersdk.com`（AppsFlyer SDK 请求/深链，归因组默认注释）、`=shuzilm.cn` / `=yandexmetrica.com`（统计组默认注释）、`adapi.izuiyou.com` / `ems.youku.com` / `=ubixioe.com`（cn_union）、`ws.tapjoyads.com`（mobile_sdks；已有 `tapjoyads.com` 精确主机覆盖不到该子域）。生效 Host 1466→1471（exact 891→895 / wildcard 575→576）、默认注释 131→137、核心广告组 1347→1352、组数仍 20。
     - **拒收并留档**：`v.smtcdns.com` 是腾讯视频 CDN（`moviets`/`vlive` 播放链路），拦了断视频；`wxs.qq.com` 是微信核心静态域；`janapi/dns.jd.com` 是京东明文红线；`asiad.byteactivity`、`lf-ad-ies.bytecdn.cn`、`mon.toutiacloud.com` 仅频道单源、公开清单零命中，留待真机抓包。
     - **App 可选层（全部默认注释，零证书红线不破）**：闲鱼 1.5.0 补 4 条 mtop 广告模块 `REJECT-DICT`（`home.whale.modulet`、`item.resell.recommendorhotcate`、`topic.banner`、`idlehome.idle.coin.nextfresh`）；美团 1.2.3 补 2 条开屏图 `REJECT-IMG` 与 2 个 MITM 主机（`flowplus.meituan.net`、`img.meituan.net`）；京东 1.0.2 / 微信 1.1.4 只把频道建议的拒收理由写进注释——京东 `m.360buyimg.com` 开屏图、微信 `wxs.qq.com` 整域与 `mp.weixin.qq.com` 路径改写都要求 MITM 证书固定类 App，按既定红线（`APP_NO_ENHANCE_SLUGS`）不做。
-    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 21 relative link(s)`）、`device checklist: J section covers all 19/19 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
+    - **口径**：能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）；测试 27 套件 ×2 = 54、1646 断言；四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 22 relative link(s)`）、`device checklist: J section covers all 19/19 app plugins`；`npm run check` 全绿 exit 0（54 套件 / 1646 断言）。
 
 
 69. [x] **第四十五轮：`#!loon_version` 只留给 iOS-only 插件，声明 macOS 的一律不带最低门槛**
@@ -486,7 +486,7 @@
     - **为什么删得起**：去广告能力全部在插件层自包含——`[Host]` 黑洞、`[Rule]`、`[Rewrite]`/`[Script]`、插件自己的 `[MITM] hostname` 与红线排除表都由插件携带，lint 的 `mitm reach` / `rule vectors` 逐条对着 111 条红线核。主配置多出来的只有节点、策略组与分流，而 `import?sub=` 的语义是**整份替换用户当前配置**：公开版不许含节点与 CA 私钥，于是它既替用户配不出代理，又把「替换掉他原来那份」的风险摆上台面；想只补几个键的人，本来就该在自己配置里改。
     - **根 README 回到逐个插件**：顶部一句话交代分发面（无主配置、无分流规则、无节点/订阅、无证书私钥），四条使用前提（零 MITM 插件不需要证书；MITM 插件自带 `[MITM]`，需在 Loon → 设置 → MITM 生成并信任证书后才解密；一个 App 只装一个；证书固定类 App 只有 DNS/规则层——这是能力边界不是遗漏），主体是 16 行 `openloon/import?plugin=` 按钮表，另加「已撤下的东西」一节记下本轮删了什么与为什么。
     - **其余引用**：`tools/loon-coverage.py` 页脚改为「主配置段落记为不适用，是本仓库有意不从仓库下发，不是插件没有这能力」，`docs/loon-coverage.md` 随之重新生成；`tests/README.md` 的检查链说明补一段撤下记录；§1 的「不下发主配置」与 §3 的 DoH 口径改指「用户自己的主配置」。第 35/39/40/41 轮那些配置层历史记录原样保留，不回删、不改写。
-    - **口径**：插件规则、脚本产物与默认行为零变化，不 bump 版本；测试仍为 27 套件 ×2 = 54、1646 断言；能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 21 relative link(s)`、`device checklist: J section covers all 19/19 app plugins`；`npm run check` 全绿 exit 0。
+    - **口径**：插件规则、脚本产物与默认行为零变化，不 bump 版本；测试仍为 27 套件 ×2 = 54、1646 断言；能力表仍为 175 条（69/40/50/12/4，利用率 63.3%）。四道受管声明由**本条**复述：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、`doc links: 22 relative link(s)`、`device checklist: J section covers all 19/19 app plugins`；`npm run check` 全绿 exit 0。
 
 
 ## 10. 明确不采纳清单（持续维护，带理由）
@@ -539,7 +539,7 @@
     - **按路径拆分**：`ads.plugin` 2.8.4 把 `ad.zijieapi.com` 移出 Host 黑洞；`block-domains.js` 新增 `REWARD_PATH_RX`，`inspire` / `inspire_preload` / `incentive/marketing/done` 在任何被拦主机上永远放行，其余路径照拦。`rewardSafe` 不再让整段拦截失效。
     - **默认改为去广告+保奖励**：抖音 0.9.0 默认 `treasureMinimal=false`（保留签到/翻卡/红包雨/宝箱/攒时长，`cleanUpsell` 摘掉看广告/逛街任务）、`cleanFeedAds/cleanUpsell/cleanActivity/blockAdDomains/splashClean` 开；汽水 2.9.0 默认 `cleanAds/blockAdDomains` 开、`rewardSafe` 保持开。汽水 `sanitize` 在 `rewardSafe=true` 时只清理安全规则（开屏/信息流/弹窗/福利页广告与逛街任务），放行 `ads-config` / `ads` / `incentive-*`。抖音新增 `splashClean`，清 `splash/brand/retrieve` 品牌开屏，与 `blockSplashAd` 组成请求+响应双层。
     - **边界**：`210021` 仍是服务端风控；不看满 30 秒直接领奖仍是广告欺诈，不做。HAR 未看到 `X-Soda-Plugin` 的实验结论记为「Loon 抓包可能记录脚本前响应，不能只凭该头判断」，真机以 App 行为与脚本日志为准。
-    - **口径**：测试 27 套件 ×2 = 54、1760 断言（src 880）；`test_args_schema` 40 断言、17 个 label；ads 生效 Host 1499→1498（exact 921→920 / wildcard 578 不变）。四道受管声明：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 21 relative link(s)`）、`device checklist: J section covers all 19/19 app plugins`；`npm run lint` 0 errors、`tests/run-all.py` 54/1760 全绿。
+    - **口径**：测试 27 套件 ×2 = 54、1760 断言（src 880）；`test_args_schema` 40 断言、17 个 label；ads 生效 Host 1499→1498（exact 921→920 / wildcard 578 不变）。四道受管声明：`readme numbers: 25 count claim(s) in plugins/ads/README.md`、`readme numbers: 31 claim(s) in repo-metrics, checklist, native-first, device-checklist`、历史链接计数 56（当前受管计数：`doc links: 22 relative link(s)`）、`device checklist: J section covers all 19/19 app plugins`；`npm run lint` 0 errors、`tests/run-all.py` 54/1760 全绿。
 
 70. [x] **第四十六轮：真机把「Finished 齐全」这张通行证收回 —— 起点 v3.5.7 走 identity，取证出口补失败侧**
     - **触发方式**：不再靠读日志猜，直接向 owner 要设备上唯一能看到的那一格答复。回答是「调试模式开着、锁屏零通知、广告没去掉」。按 v3.5.6 自己写的三分叉，这一支指向 `respondJson` 一次没走到 ⇒ 断点在响应体解析链；传输层、规则内容、插件装载三条此前已逐条排干。
@@ -548,6 +548,17 @@
     - **官方文档本轮读实两条**：§11.3/§11.5「提供 `headers` 时应先复制原 Header，避免无意删除其他字段」读实即**整包替换**语义（我们早已 `Object.assign({}, $response.headers)` 起步；`Content-Type` 一丢，App 按 content-type 分发的解析器会整包拒收，症状与「字段改了 UI 不动」同形）；§8.5 `$utils.ungzip` 确为同步、`Uint8Array → Uint8Array`，所以 gzip 链的写法本身没错——错的可能在它上游那三层前提，这正是绕过去而不是继续猜的理由。
     - **E2 的预留被自己兑现**：`docs/loon-native-first.md` E2 当年写「若将来出现『响应体很小、且 Loon gzip 交接有 bug』的端点，可以只针对该端点加一条，并把 lint 的反向断言改名放行」——这两个条件这次同时成立。`tests/lint-plugins.py` 的 `AE_SET_GZIP` 更名 `AE_DOWNGRADE`，白名单从「只许 gzip」放到「gzip 或 identity」，`del`/`replace` 仍然报错：**被体积核算否决的从来是「把协商随机交回上游」，不是「明文」本身**；soda/douyin 不受影响，upsell 的体积账仍然成立。「每个 `[MITM]` 域名必须被某条降级规则覆盖」继续锁死，`tools/build-apps.py` 的 gate 例外同步放开 identity。
     - **测试**：`tests/test_qidian_sanitize.js` 37→47 断言。新增 [12] 块钉 v3.5.7 主路（明文字节 + 不带压缩头 → 真改写、不发明 `content-encoding`、`content-length` 就地改成新体字节数、推 `ok`），加三条失败侧取证：明文却非 JSON 推 fail 带首段、不认的 object 形态判失败且不回 body、朴素对象来路仍生效（防过度收紧）。[11] 里「透传不推」翻成「透传推 fail」——旧断言把「只有成功才该说话」写成了期望，而那正是本轮要改掉的取证模型。
+
+71. [x] **第四十七轮：官方 Plugin 页新增 `#!source`（下载地址校验）——把「我来自哪个地址」从散文变成可校验的一行**
+    - **触发**：第十五轮按「最新标准文档」重新抓取官方 26 页正文，**词表快照多出 85 个 token**，全部指向一个新字段 `#!source`（旧快照里没有）。抓取后逐段比对，确认它不是措辞变动而是**新增能力**：官方 Plugin 页的「插件信息」字段表从 11 项变成 12 项。
+    - **语义（官方原文，已逐字复现）**：`#!source` 声明**插件作者指定下载地址 URL 字符串**的 SHA-256。Loon 首次联网安装时，对用户实际填写并保存的**完整 URL 字符串**算哈希并比对；多值逗号分隔、逐项忽略首尾空格、**任一匹配即通过**。官方算例 `printf '%s' 'https://example.com/plugin.lpx' | shasum -a 256` 的两个哈希已用本仓库实现逐字复现（`tools/source_hash.py` 的 `self_check()` 固化为自检，任何实现漂移当场报错）。
+    - **最容易误解的一点**：它校验的是 **URL 本身**，**不是插件文件的内容哈希**。哈希对了只说明「你填的地址是我声明过的那个地址」，不说明「文件内容没被改过」。官方自己也这么写：「不是数字签名，不能单独证明插件作者身份或插件内容未被修改」。
+    - **落地**：23 个插件（ads + 19 个 App + soda/douyin/netease）全部带上 `#!source`，**哈希一律现算现写**——`tools/source_hash.py` 是唯一出口，两个构建器（`build-ads.py` / `build-apps.py`）按真实导入 URL 计算后写入，**不接受手抄哈希**。
+    - **为什么必须门禁（防「假校验」）**：官方明写「Loon 不使用 HTTP 重定向后的地址进行比较」，校验对象就是**用户填的那条 URL 字符串**。而 GitHub raw 的内容每个 commit 都变——若有人改了地址（换分支、换文件名、改成镜像域名）而哈希没跟着变，那行哈希就成了一句**假话**：它声称「我来自这个地址」，实际校验的却是另一个。**不写只是「没校验」，写错是「假校验」，后者更危险。**
+    - **门禁 `check_source_hash()`**：逐个插件反向复算真实地址的 SHA-256 并比对；三种失败形态分别报出——哈希对不上、缺 `#!source` 行、例外插件擅自声明。**三条都做过证伪**（注入错哈希 → 报错；删行 → 报错；给例外插件加行 → 报错；全部还原后 0 problem）。
+    - **一处例外**：`qidian-pro` 是第三方插件的**逐字移植件**（上游作者 3kaiu），声明本仓库的地址等于替上游作者表态，故**故意不写**，登记在 `SOURCE_EXEMPT` 里并写明理由——门禁会拦住任何人给它加上。
+    - **口径**：能力表 175 → **176** 条，已用 73 → **74**（元数据层 10 → 11），利用率 65.2% → 65.3%。`src/loon-docs/tokens.json` 同步刷新（3709 token）。
+    - **仍存疑、只登记不假装**：官方**没有**写校验不匹配时的行为（是拒绝安装还是仅提示）。且生态里 **0 个真实插件在用**这个字段（官方 Gallery、QX-Loon 等主流仓库实测均无），没有先例可循。**「校验通过」不等于「内容没被篡改」**，这一层只能靠 HTTPS + 渠道信任，登记在 `docs/device-checklist.md` 的取证项里。
 
 ## 11. 与本仓库的接口速查
 

@@ -26,6 +26,7 @@
 | 文档 | 用途 |
 |---|---|
 | [按广告类型分类的去除策略](ad-type-strategy.md) | DNS、Host、路径 Rewrite、脚本裁剪的选型 |
+| [三份外部去广告方案研判](ad-eradication-review.md) | 外部「七维根除」架构的逐条判定：已做到 / 做不到 / 写错了 / 漏了什么 |
 | [规则有效率](rule-effectiveness.md) | “写了”不等于“生效”：前提、MITM、正则面审计 |
 | [旁路审计](bypass-audit.md) | “拦了”不等于“拦住”：DNS/HTTPDNS/DoH 旁路与红线 |
 | [Loon 能力覆盖](loon-coverage.md) | 已用/可用未用/不适用能力盘点 |

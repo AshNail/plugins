@@ -2,7 +2,7 @@
 
 > 闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.6.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.6.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 

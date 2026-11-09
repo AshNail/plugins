@@ -441,6 +441,11 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 
 ## 7. 版本更新记录
 
+### v0.9.2（2026-11-09）与汽水 `sanitize.js` 净化口径对齐
+
+- **路由与双斜杠兼容**：`cleanFeedAds` 覆盖 `/+luna/advert/fallback/done/info` 与双斜杠 `//luna/`；`cleanUpsell` 覆盖 `/+luna/commerce/(?:upsells|v2/upsell)`。
+- **信息流与卡片容器对齐**：`KILL_CONTAINERS["feed-content"]` 同步纳入 `previewGuide` / `priorityDisplay`（`luna/card` 推广引导与优先级插位），`dropAdItems` 同步过滤 `items` 中的 `type === "video_track_mix"` 混播卡。
+
 ### v0.9.0（2026-11-05）响应级覆盖补齐：真实 Feed/搜索条目 + 开屏品牌响应
 
 依据两份广告攻防指南做分层覆盖审计后补齐三处缺口（只扩已有开关，不新增参数）：

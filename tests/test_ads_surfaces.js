@@ -39,11 +39,11 @@ console.log('\n== 1. 开屏 ad_launch_list ==');
      'motion_ad_config','splash_ad_cache_config','splash_ad_preload_config','splash_ad_early_load_config']
       .every(k=>r.out[k]&&Object.keys(r.out[k]).length===0),
     JSON.stringify(r.out.splash_ad_cache_config));
-  ck('开屏开关置 false、阈值归零',
+  ck('开屏开关置 false、阈值原样保留',
     r.out.enable_splash_shake===false && r.out.shake_ad_switch===false &&
     r.out.twist_ad_switch===false && r.out.splash_cache_enable===false &&
-    r.out.enable_splash_ad_preload===false && r.out.splash_shake_sensitivity===0 &&
-    r.out.splash_acceleration_threshold===0 && r.out.splash_rotation_threshold===0,
+    r.out.enable_splash_ad_preload===false && r.out.splash_shake_sensitivity===0.8 &&
+    r.out.splash_acceleration_threshold===12 && r.out.splash_rotation_threshold===0.4,
     JSON.stringify([r.out.enable_splash_shake,r.out.splash_shake_sensitivity]));
   ck('status_code 保留', r.out.status_code===0);
   ck('request_id 保留', r.out.request_id==='r1');
@@ -128,7 +128,7 @@ console.log('\n== 6. is_ad 兼容 1 / "true" ==');
 
 console.log('\n== 7. upsell card ==');
 {
-  const r=run('https://api.qishui.com/luna/commerce/v2/upsell',{
+  const r=run('https://api.qishui.com/luna/commerce/upsells',{
     status_code:0,card:{title:'VIP'},countdown:5,upsell_unique_name:'u1'
   });
   ck('card -> {}', r.out.card && Object.keys(r.out.card).length===0);

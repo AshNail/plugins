@@ -15,6 +15,10 @@
 
 **v3.1.0 当前架构（一个 App 一个插件）**：Soda 只部署 `plugins/soda/soda.plugin` 一个文件。保奖励、去广告脚本、**广告域名拦截**、设置层、只读日志、隐藏【听抖音】、**激励任务自动化 v2.0（MITM 响应注入）**全部通过 Loon `[Argument]` 开关控制。默认 `rewardSafe=true`，只清开屏品牌广告。
 
+**v3.3.3 核心变更（2026-11-09）**：
+- **`sanitize.min.js` 补齐 `v2/upsell` 与 `advert/fallback/done/info` 绑定**：`cleanAds` 的商业化弹窗绑定扩为 `/+luna/commerce/(?:upsells|v2/upsell(?:\?|$))`，让 `cleanUpsellMap`（18 项广告/商城弹窗精确摘除与频控清理）在 `cleanAds=true` 时真正命中 `v2/upsell`；广告位配置绑定扩为 `/+luna/(?:ads/(?:config|retrieve|dsp/retrieve)|advert/fallback/done/info)`，兼容双斜杠 `//luna/`。
+- **`auto-task.js` 补齐 gzip 解码与过期头剥离**：接入 `readBody()`（`$utils.ungzip`）与 `cleanResponseHeaders()`（改写 body 时剥离过期 `Content-Encoding` / `Content-Length` 头），兼容 `//luna/` 双斜杠与 `task/page/v[0-9]+` 版本号。
+
 **v3.3.2 核心变更（2026-11-07）**：
 - **`homepage-tabs.js` 补齐编码与布尔守卫**：接入 `readBody()`（`$utils.ungzip`）+ `ceTag()` 编码诊断 + 改写响应体时剥离过期 `Content-Encoding` / `Content-Length` 头，并改用 `pargs`/`pflag` 严格解析布尔开关（避免 `"false"` 字符串被 `!!` 误判为开启）。
 - **真机端点路由补齐**：`/luna/listen-video/reminder` 扩为 `/luna/(?:v2/feed/)?listen-video/reminder`（覆盖真机 `/luna/v2/feed/listen-video/reminder`）；`advert/fallback/done/info` 兼容双斜杠 `//luna/advert/fallback/done/info`；`sign_in_detail` 补齐 `beta-luna.douyin.com` 主机绑定。

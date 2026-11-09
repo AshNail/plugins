@@ -49,7 +49,7 @@ const MALL_UPSELLS = [
   "browse_mall_popup_acc_amount"
 ];
 
-const FEED_CONTENT_PATH = /\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/;
+const FEED_CONTENT_PATH = /\/+luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/;
 
 const SPLASH_AD_CONTAINERS = [
   "splashshakeadconfig", "shakeadconfig", "splashtwistadconfig", "twistadconfig",
@@ -59,9 +59,9 @@ const SPLASH_AD_CONTAINERS = [
 const SPLASH_AD_SWITCHES = [
   "enablesplashshake", "enableshakead", "enableshake", "enablesplashtwist",
   "enabletwistad", "enabletwist", "enablemotionad", "shakeadswitch", "twistadswitch",
-  "splashshakesensitivity", "shakesensitivity", "splashaccelerationthreshold",
-  "splashrotationthreshold", "splashcacheenable", "splashcacheenabled",
-  "enableadpreload", "enablesplashadpreload", "splashadpreload", "splashadearlyload"
+  /* 阈值/灵敏度保持原值：置 0 是否禁用取决于 SDK 比较方向，不能猜。 */
+  "splashcacheenable", "splashcacheenabled", "enableadpreload",
+  "enablesplashadpreload", "splashadpreload", "splashadearlyload"
 ];
 
 /* kill/falsy 里的键名都是“归一化后”的形式：小写且去掉 _ 与 - */
@@ -88,6 +88,13 @@ const KILL_CONTAINERS = {
       .concat(SPLASH_AD_CONTAINERS),
     falsy: ["preload", "enableads", "enablead"].concat(SPLASH_AD_SWITCHES)
   },
+  "fallback-done": {
+    /* 发奖凭证接口：只清广告素材，不碰 rewardConfig/adExtra/data，
+     * 更不递归处理 post_done_extra 里的 req_id/time_token/nonce。 */
+    kill: ["adlaunchlist", "adlaunch", "adlaunches", "adinfo", "adinfos",
+           "adsblocks", "adsinfo"],
+    falsy: []
+  },
   "splash-brand": {
     kill: ["adlaunchlist", "adlaunch", "adlaunches", "adinfo", "adinfos", "ads",
            "splash", "brand", "splashactivedata", "jumpbtninfo", "shakeinfo",
@@ -99,7 +106,8 @@ const KILL_CONTAINERS = {
     kill: ["adsblocks", "adsinfo", "adinfo", "addata", "adextra", "videoendad",
            "feedads", "feedrewardadentrance", "audioad", "midrollad", "midrollads",
            "pausead", "recommendad", "searchbanner", "sponsorcard", "commercialnotice",
-           "promotedtrack", "promotedsong", "interstitialad", "popupad", "bannerad"],
+           "promotedtrack", "promotedsong", "interstitialad", "popupad", "bannerad",
+           "previewguide", "prioritydisplay"],
     falsy: ["enableads", "enablead", "enablefeedads"]
   }
 };
@@ -256,6 +264,14 @@ function dropAdItems(node, log, path, depth) {
       const kept = val.filter(function (item) { return !isAdBanner(item); });
       if (kept.length !== val.length) {
         log.push(path + "." + k + " : dropped " + (val.length - kept.length) + " ad banner(s)");
+        node[k] = kept;
+      }
+    } else if (nk === "items" && Array.isArray(val)) {
+      const kept = val.filter(function (item) {
+        return !(isPlainObject(item) && item.type === "video_track_mix");
+      });
+      if (kept.length !== val.length) {
+        log.push(path + "." + k + " : dropped " + (val.length - kept.length) + " video_track_mix item(s)");
         node[k] = kept;
       }
     }
@@ -546,17 +562,23 @@ function recordBlock(type, item) {
 
     /* 决定这次请求归哪个开关管：没开的开关一律放行 */
     let mode = null;
-    if (/\/luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
+    if (/\/+luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
       if (pflag(args, "killRewardAds", false)) mode = "incentive";
-    } else if (/\/luna\/advert\/splash\/brand\/retrieve/.test(url)) {
+    } else if (/\/+luna\/advert\/splash\/brand\/retrieve/.test(url)) {
       if (pflag(args, "blockSplashAd", false)) mode = "splash-brand";
-    } else if (/\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) {
+    } else if (/\/+luna\/advert\/fallback\/done\/info(?:\/|\?|$)/.test(url)) {
+      if (pflag(args, "cleanFeedAds", false)) mode = "fallback-done";
+    } else if (/\/+luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) {
       if (pflag(args, "cleanFeedAds", false)) mode = "feed-ads";
     } else if (FEED_CONTENT_PATH.test(url)) {
       if (pflag(args, "cleanFeedAds", false)) mode = "feed-content";
-    } else if (/\/luna\/commerce\/v2\/upsell/.test(url)) {
+    } else if (/\/+luna\/commerce\/v2\/upsell/.test(url)) {
+      /* 只绑 v2：真机样本只有 v2 的 upsell_map{}，handleUpsell() 也只认它。
+       * v1 (/luna/commerce/upsells) 没有抓包证据，挂上去只会「路由命中、
+       * 处理器空转」，属于假覆盖——不放进声明，也不绑脚本。
+       * 真机证伪：抓到 v1 响应且含广告弹窗实体时，再按样本字段补处理器。 */
       if (pflag(args, "cleanUpsell", false)) mode = "upsell";
-    } else if (/\/luna\/growth\/music_festival\/performance_details/.test(url)) {
+    } else if (/\/+luna\/growth\/music_festival\/performance_details/.test(url)) {
       if (pflag(args, "cleanUpsell", false)) mode = "music-festival";
     } else if (/\/luckycat\/activity\/settings\//.test(url)) {
       if (pflag(args, "cleanActivity", false)) mode = "activity";
@@ -573,8 +595,8 @@ function recordBlock(type, item) {
       return $done({ headers: markHeaders("douyin-clean;skip=no-body") });
     }
     /* 广告位/信息流端点也可能返回大体积响应；没有广告标记就不解析。 */
-    if ((mode === "feed-ads" || mode === "feed-content") &&
-        !/ad|splash|feed|reward|search|commercial|interstitial|popup|banner|shake|twist|motion|interaction|audio|midroll|pause|recommend|sponsor|promot|block[_-]?type|enable/i.test(raw)) {
+    if ((mode === "feed-ads" || mode === "fallback-done" || mode === "feed-content") &&
+        !/ad|splash|feed|reward|search|commercial|interstitial|popup|banner|shake|twist|motion|interaction|audio|midroll|pause|recommend|sponsor|promot|preview|priority|video_track_mix|block[_-]?type|enable/i.test(raw)) {
       return $done({ headers: markHeaders("douyin-clean;noop=no-marker") });
     }
     const head = raw.trimStart().slice(0, 1);
@@ -593,11 +615,13 @@ function recordBlock(type, item) {
     const log = [];
 
     if (mode === "incentive") {
-      if (/\/luna\/advert\/incentive\/config/.test(url)) {
+      if (/\/+luna\/advert\/incentive\/config/.test(url)) {
         killContainers(obj, KILL_CONTAINERS["incentive-config"], log, "$", 0);
       } else {
         killContainers(obj, KILL_CONTAINERS["incentive-retrieve"], log, "$", 0);
       }
+    } else if (mode === "fallback-done") {
+      killContainers(obj, KILL_CONTAINERS["fallback-done"], log, "$", 0);
     } else if (mode === "feed-ads") {
       killContainers(obj, KILL_CONTAINERS["ads-config"], log, "$", 0);
     } else if (mode === "feed-content") {

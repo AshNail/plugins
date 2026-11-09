@@ -160,6 +160,9 @@ SURFACES = [
         probes=[
             ("plugins/soda/soda.plugin", r"feed\\?/", False),
             ("plugins/douyin/douyin.plugin", r"\[Script\]", False),
+            ("plugins/bilibili/bilibili.plugin", r"x\\?/v2\\?/feed\\?/index", False),
+            ("plugins/zhihu/zhihu.plugin", r"topstory\\?/recommend", False),
+            ("plugins/qqnews/qqnews.plugin", r"getQQNewsUnreadList", False),
         ],
         limits="字段名每个 App 不同；删多了会破分页游标（`cursor`/`has_more` 与广告数耦合）；"
                "广告与推荐混在同一 `cards` 数组时，删除会导致索引错位。",
@@ -244,6 +247,7 @@ SURFACES = [
         ceiling="partial", achieved="weak", next_to="weak",
         probes=[
             ("plugins/ads/ads.plugin", r"fwmrm\.net\s*=\s*127\.0\.0\.1", False),
+            ("plugins/youtube/youtube.plugin", r"player\\?/ad_break", False),
         ],
         limits="**DAI/SSAI**（服务端拼接）把广告混进正片流，客户端拿到的是一条连续流，无法切分；"
                "国内长视频的广告接口与业务同域，必须 MITM + 逐 App 定制；"
@@ -266,6 +270,10 @@ SURFACES = [
         ceiling="strong", achieved="partial", next_to="partial",
         probes=[
             ("plugins/soda/soda.plugin", r"search/track|search-block", False),
+            ("plugins/bilibili/bilibili.plugin", r"x\\?/v2\\?/search\\?/square", False),
+            ("plugins/zhihu/zhihu.plugin", r"search\\?/preset_words", False),
+            ("plugins/xianyu/xianyu.plugin", r"search\\?\.shade", False),
+            ("plugins/meituan/meituan.plugin", r"searchpage\\?/defaultword", False),
         ],
         limits="与自然结果同构，字段随版本变；剥错会丢搜索结果；"
                "「品牌专区」是整块 UI，删数据会留空白。",
@@ -301,7 +309,8 @@ SURFACES = [
         ],
         ceiling="strong", achieved="partial", next_to="partial",
         probes=[
-            ("plugins/soda/soda.plugin", r"commerce\\?/upsell", False),
+            ("plugins/soda/soda.plugin", r"commerce\\?/(?:upsell|\(\?:upsell)", False),
+            ("plugins/douyin/douyin.plugin", r"commerce\\?/(?:upsell|\(\?:upsell)", False),
         ],
         limits="与会员状态、支付流程同域同接口，剥错会让会员页空白；部分 App 用 WebView 渲染，"
                "弹窗内容在页面里；「限时优惠」倒计时是端上逻辑，删网络改不了。",
@@ -345,19 +354,23 @@ SURFACES = [
         next="",
     ),
     dict(
-        id="audio", brief="DAI 混流，不可切分", family="触达面", name="音频广告",
-        apps="Spotify / 喜马拉雅 / 小宇宙 / 播客",
+        id="audio", brief="DAI 混流，仅独立音频广告域可拦", family="触达面", name="音频广告",
+        apps="Spotify / 网易云音乐 / 喜马拉雅 / 蜻蜓 FM / 播客",
         signal="音频贴片、口播；DAI（动态广告插入）在服务端把广告混进音频流，"
-               "客户端拿到的是连续音频；或独立广告域返回 mp3/aac。",
+               "客户端拿到的是连续音频；独立音频广告 CDN/联盟域返回贴片素材。",
         protocol="标准协议",
         attack=[
-            ("[Host]", "独立音频广告域（少）", "能拦到的只有独立域那一小部分"),
+            ("[Host]", "ads-fa.spotify.com / audio.ad / iadmusicmat.nosdn.127.net = 127.0.0.1", "阻断独立音频广告联盟与贴片素材 CDN（DAI 混流不可切分）"),
         ],
-        ceiling="weak", achieved="none", next_to="none",
-        probes=[],
-        limits="**DAI 不可切分**；口播是主播内容的一部分；音频 App 的广告素材常与内容同 CDN。",
-        next="不做。写进「结构不可达」清单，避免以后重复讨论。",
-        blocked="DAI 把广告混进音频流，客户端拿到的是连续音频；口播是主播内容的一部分。结构不可切分。",
+        ceiling="weak", achieved="weak", next_to="weak",
+        probes=[
+            ("plugins/ads/ads.plugin", r"ads-fa\.spotify\.com\s*=\s*127\.0\.0\.1", False),
+            ("plugins/ads/ads.plugin", r"audio\.ad\s*=\s*127\.0\.0\.1", False),
+            ("plugins/ads/ads.plugin", r"ad-cdn\.qingting\.fm\s*=\s*127\.0\.0\.1", False),
+            ("plugins/netease/netease.plugin", r"iadmusicmat\.nosdn\.127\.net\s*=\s*127\.0\.0\.1", False),
+        ],
+        limits="**DAI 不可切分**；口播是主播内容的一部分；音频 App 的内联流广告与正片同 CDN。",
+        next="",
     ),
     dict(
         id="ott", brief="大屏 SDK，证书固定多", family="触达面", name="OTT / CTV 大屏广告",

@@ -55,6 +55,7 @@ from redlines import (
     redline_roots,
     rule_redline_hits,
 )
+from source_hash import source_value
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 APPS = ROOT / "src/apps"
@@ -432,6 +433,11 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     for key in KEY_ORDER:
         if meta.get(key):
             lines.append(f"#!{key}={meta[key]}")
+    # 官方 Plugin 页的 `#!source`：声明插件作者指定下载地址 URL 字符串的 SHA-256，
+    # Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对（多值逗号分隔，任一匹配即通过）。
+    # 哈希一律现算——手抄的 64 位十六进制会与地址脱钩，而「地址变了哈希没变」是个**假的**校验，
+    # 比不写更危险。口径见 tools/source_hash.py（唯一出口），lint 的 check_source_hash() 反向复算。
+    lines.append(f"#!source={source_value(slug)}")
     lines.append("")
     lines.append("# " + "=" * 72)
     lines.append(f"# {meta['name']}")

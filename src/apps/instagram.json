@@ -2,8 +2,8 @@
   "slug": "instagram",
   "name": "Instagram · 像素与遥测瘦身",
   "desc": "如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内原生赞助帖 DNS 层≈0。默认黑洞 Meta 广告/转化像素 SDK、已停用徽章域与真机高频 netseer 公网 IP 关联遥测(DOMAIN-KEYWORD 精准命中随机 UUID 分片);不碰 graph/gateway/fbcdn 主域。零证书。",
-  "version": "1.2.0",
-  "date": "2026-11-07",
+  "version": "1.2.1",
+  "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,遥测,Instagram",
   "comment": [
@@ -54,6 +54,15 @@
       "hosts": [
         "netseer.com",
         "*.netseer.com"
+      ]
+    }
+  ],
+  "triage_exclude": [
+    {
+      "label": "业务·IG Graph 主网关与备用网关",
+      "globs": [
+        "graph.instagram.com",
+        "graph-fallback.instagram.com"
       ]
     }
   ],

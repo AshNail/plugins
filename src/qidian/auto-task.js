@@ -1,5 +1,5 @@
 /**
- * 起点读书 · 看书激励助手 v3.5.0
+ * 起点读书 · 看书激励助手 v3.6.1
  *
  * 核心功能（看书+激励）：
  *
@@ -114,7 +114,7 @@ const CONFIG = {
   // 直接 404 拒绝的纯广告端点（保留核心阅读相关）
   RejectPaths: [
     "push/getdialog",
-    "booksearch/hotWords", "maintain/playstrip", "young/getconf",
+    "booksearch/hotWords", "booksearch/shardWord", "maintain/playstrip", "young/getconf",
     "followsubscribe/showChapterEndModule", "freshman/bookshelfbtn",
     "freshman/freshmanGuidePopup",
     "message/getpushedmessagelist", "dailyrecommend/recommendBook",
@@ -349,7 +349,7 @@ function anchorBody(response) {
 
   // ── B. Token 窃取（request 阶段，补充源） ──
   if ((url.includes("/client/getconf") || url.includes("/checkin/")) &&
-      url.includes("magev6") && typeof $response === "undefined") {
+      /\b(?:h5|mage|magev6)\.if\.qidian\.com\b/.test(url) && typeof $response === "undefined") {
     captureToken(E, "request");
     E.done();
     return;

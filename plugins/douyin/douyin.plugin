@@ -1,14 +1,21 @@
 #!name=抖音 · douyin
-#!desc=抖音唯一插件：福利页精简（只留【攒时长 听歌不中断】）、信息流/搜索广告条目清理、商业化弹窗/商城/演出清理、激励广告开关、广告域名拦截、开屏请求与品牌响应清理、只读日志。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
+#!desc=抖音唯一插件 v0.9.2：福利页精简（只留【攒时长 听歌不中断】）、信息流/搜索广告条目清理（含 previewGuide/priorityDisplay 与 video_track_mix 混播卡）、商业化弹窗/商城/演出清理（兼容 upsells v1 与 v2/upsell）、激励广告开关、广告域名拦截、开屏请求与品牌响应清理、只读日志。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
 #!author=edy
-#!version=0.9.1
+#!version=0.9.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/douyin/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a4/4d/bc/a44dbc69-cbdf-b68c-ea88-d449683563e9/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=iOS
 #!loon_version=3.5.1(983)
-#!date=2026-11-07
+#!date=2026-11-09
 #!tag=抖音,去广告,福利页,Loon
+
+# 官方 Plugin 页的 `#!source`：声明插件作者指定下载地址 URL 字符串的 SHA-256，
+# Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对（多值逗号分隔，任一匹配即通过）。
+# 注意它校验的是 **URL 本身**而非插件文件内容；且官方明写「不使用 HTTP 重定向后的地址比较」，
+# 所以只能是这条直链。哈希由 tools/source_hash.py 现算，不要手抄——
+# lint 的 check_source_hash() 会反向复算核对，手抄的哈希迟早与地址脱钩。
+#!source=fe8fe76e0869af91c416bad9702b21921dc3049c24c3f3d8c46e71181522a82f
 
 # ============================================================================
 # douyin.plugin 说明（一个 App 一个插件）
@@ -165,13 +172,14 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/splash\/brand\/retrieve/ then script("scripts/clean.min.js", {${blockSplashAd}, ${debugLog}}) with debug=${debugLog}, enable=${blockSplashAd}, requires_body=true, timeout=10, tag="开屏品牌响应清理：不影响激励奖励"
 
 # ---- 信息流 / 搜索 / 广告位清理：不影响激励奖励与正常媒体 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/ then script("scripts/clean.min.js", {${cleanFeedAds}, ${debugLog}}) with debug=${debugLog}, enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 搜索 / 广告位清理：不影响激励奖励"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/+luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info|(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/ then script("scripts/clean.min.js", {${cleanFeedAds}, ${debugLog}}) with debug=${debugLog}, enable=${cleanFeedAds}, requires_body=true, timeout=10, tag="信息流 / 搜索 / 广告位清理：不影响激励奖励"
 
 # ---- 断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/advert\/incentive\/(?:config|retrieve)/ then script("scripts/clean.min.js", {${killRewardAds}, ${debugLog}}) with debug=${debugLog}, enable=${killRewardAds}, requires_body=true, timeout=10, tag="断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了"
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/+luna\/advert\/incentive\/(?:config|retrieve)/ then script("scripts/clean.min.js", {${killRewardAds}, ${debugLog}}) with debug=${debugLog}, enable=${killRewardAds}, requires_body=true, timeout=10, tag="断掉激励广告素材与预拉取：等于广告完全不发，奖励也没了"
 
-# ---- 商业化弹窗 / 商城清理 ----
-response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/commerce\/v2\/upsell/ then script("scripts/clean.min.js", {${cleanUpsell}, ${debugLog}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="商业化弹窗 / 商城清理"
+# ---- 商业化弹窗 / 商城清理（只绑 v2：v1 /luna/commerce/upsells 无抓包证据，
+#      挂上去只会「路由命中、处理器空转」= 假覆盖；真机抓到 v1 广告实体再补）----
+response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/+luna\/commerce\/v2\/upsell/ then script("scripts/clean.min.js", {${cleanUpsell}, ${debugLog}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="商业化弹窗 / 商城清理"
 
 # ---- 演出（汽水音乐节）清理 ----
 response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/growth\/music_festival\/performance_details/ then script("scripts/clean.min.js", {${cleanUpsell}, ${debugLog}}) with debug=${debugLog}, enable=${cleanUpsell}, requires_body=true, timeout=10, tag="演出（汽水音乐节）清理"

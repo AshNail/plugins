@@ -11,6 +11,10 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
+# `tools/` 里的共享模块（红线、下载地址哈希）按仓库既有惯例以脚本同目录导入。
+sys.path.insert(0, str(ROOT / "tools"))
+import source_hash  # noqa: E402
+
 
 def escape_regex_slashes(pattern):
     return re.sub(r"(?<!\\)/", r"\\/", pattern)
@@ -160,6 +164,91 @@ PROTOCOL_VALUES = {"HTTP", "HTTPS", "TCP", "QUIC", "STUN", "UDP"}
 # 因为它们要么被静默忽略（写了白写），要么让整条规则解析失败（写了更糟）。
 ADS_RULE_PARAMS = {"no-resolve"}
 SURGE_ONLY_RULE_PARAMS = {"pre-matching", "extended-matching", "no-resolve-sni"}
+
+# ---------------------------------------------------------------------------
+# `#!source` 下载地址校验（第十五轮新增）
+# ---------------------------------------------------------------------------
+# 官方 Plugin 页新增的字段（2026-11 抓取官方正文时出现，旧快照里没有）：
+# 声明**插件作者指定下载地址 URL 字符串**的 SHA-256。Loon 首次联网安装时，
+# 对用户实际填写并保存的**完整 URL 字符串**算哈希并与之比对；多个值逗号分隔，
+# 逐项忽略首尾空格，任意一项匹配即通过。
+#
+# 这道门禁守的是一件很具体的事：**`#!source` 的哈希必须等于我们真实公布的
+# 下载地址的哈希**。
+#
+# 为什么必须守：官方明写「Loon 不使用 HTTP 重定向后的地址进行比较」，
+# 所以校验对象是**用户填的那条 URL 字符串**。而 GitHub raw 的内容每个 commit
+# 都在变——若有人把地址换了、哈希没换（换分支、换文件名、改成镜像域名），
+# 那行哈希就是一个**假的通行证**：它声称「我来自这个地址」，实际校验的却是
+# 另一个地址。这比不写更危险——不写是「没校验」，写错是「假校验」。
+#
+# 口径唯一：哈希一律由 tools/source_hash.py 现算，构建器现写，lint 反向复算。
+# 本门禁**不接受手抄哈希**：值与地址对不上即报错。
+#
+# 例外：`qidian-pro` 是第三方插件的**逐字移植件**（上游作者 3kaiu），
+# 它不在本仓库的作者声明范围内，声明我们的地址等于替上游作者表态——
+# 故意不写，登记在 SOURCE_EXEMPT 里。
+SOURCE_EXEMPT = {
+    "qidian-pro": "第三方插件逐字移植件（上游作者 3kaiu），声明本仓库的地址等于替上游表态",
+}
+
+# ---------------------------------------------------------------------------
+# 分页游标完整性（第十四轮新增）
+# ---------------------------------------------------------------------------
+# 三份外部去广告方案（root-ad-eradication / multi-type-adblocking /
+# deep-adblocking）都把「剔除广告条目时不得动分页游标」列为硬约束：
+# 信息流里删掉广告卡片若同时改写了 cursor / has_more，App 滑到底会拿不到
+# 下一批数据的令牌，表现为「无限加载」「一直转圈」或直接白屏。
+#
+# 本仓库的净化脚本用 `kill` / `falsy` / `prune` 三张键表改写响应体。
+# 这三张表里只要出现任何一个分页字段名，就会把游标清空或归零——
+# 而本仓库此前**没有任何一道门禁**拦这件事：既没有 lint 规则，
+# 也没有一条测试断言「净化前后游标字段原样保留」。
+#
+# 门禁只管「键名进表」这一件事（静态可判）；「删条目后游标是否仍然连续」
+# 属于 App 侧语义，必须真机取证，写在 docs/device-checklist.md 的取证项里，
+# 不在这里假装能证明。
+#
+# 归一化方式与净化脚本的 normalizeKey() 一致：转小写并去掉 `_` / `-`，
+# 因此 `min_cursor` / `minCursor` / `MIN-CURSOR` 命中同一条。
+PAGINATION_KEYS = frozenset({
+    "cursor",
+    "mincursor",
+    "maxcursor",
+    "hasmore",
+    "hasnextpage",
+    "hasnext",
+    "pagetoken",
+    "nextpagetoken",
+    "nextcursor",
+    "lastcursor",
+    "offset",
+    "pageoffset",
+    "nextpage",
+    "pageindex",
+    "pageno",
+    "total",
+    "totalcount",
+    "totalnum",
+    "count",
+    "nextid",
+    "lastid",
+    "continuation",
+    "continuationtoken",
+    "scrollid",
+    "offsetid",
+})
+
+# 只查净化脚本源码（src/），不查生成物：生成物由 src 构建而来，
+# 在 src 上拦一次就够，查两遍只会让同一条规则报两次。
+PAGINATION_SCRIPTS = ("src/soda/sanitize.js", "src/douyin/clean.js")
+
+# 键表在源码里的三种写法：`kill: [...]` / `falsy: [...]` / `prune: [{key: "..."}]`
+_PAGINATION_TABLE_RX = re.compile(
+    r"\b(?:kill|falsy|prune)\s*:\s*\[(?P<body>.*?)\]",
+    re.S,
+)
+_PAGINATION_KEY_RX = re.compile(r"\"([A-Za-z0-9_.\-]+)\"")
 
 # DOMAIN-WILDCARD（Loon 3.5.3(1008)+）广告子域通配层。
 # 永久锁死模式集合：只允许由广告专用左标签锚定的 glob，避免误写 `*`、
@@ -444,6 +533,7 @@ BINDING_SAMPLES = {
             "https://beta-luna.douyin.com/luna/advert/incentive/done",
             "https://beta-luna.douyin.com/luna/advert/fallback/done/info",
             "https://beta-luna.douyin.com//luna/advert/fallback/done/info",
+            "https://beta-luna.douyin.com/luna/commerce/upsells",
             "https://beta-luna.douyin.com/luna/commerce/v2/upsell",
             "https://beta-luna.douyin.com/luna/growth/music_festival/performance_details",
             "https://polaris.zijieapi.com/luckycat/activity/settings/v1/x",
@@ -4029,6 +4119,105 @@ def check_scheme_links():
               f"Scheme page grammar ({len(own_links)} plugin(s) self-linked)")
 
 
+def check_pagination_integrity():
+    """净化脚本的键表里不许出现分页游标字段——出现即会把游标清空/归零。
+
+    背景：外部去广告方案把「剔除广告条目不得动分页游标」列为硬约束。
+    本仓库的 `kill` / `falsy` / `prune` 三张键表一旦收进 cursor / has_more /
+    offset 这类字段名，净化后 App 滑到底就拿不到下一批数据的令牌
+    （无限加载 / 白屏）。此前既无 lint 也无测试拦这件事。
+    """
+    checked = 0
+    problems = 0
+    for rel in PAGINATION_SCRIPTS:
+        path = ROOT / rel
+        if not path.exists():
+            errors.append(f"pagination integrity: missing script {rel}")
+            problems += 1
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        # 去掉注释再扫：注释里提到 cursor 是说明，不是键表。
+        code = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+        code = re.sub(r"//[^\n]*", " ", code)
+        for m in _PAGINATION_TABLE_RX.finditer(code):
+            for key in _PAGINATION_KEY_RX.findall(m.group("body")):
+                checked += 1
+                norm = key.lower().replace("_", "").replace("-", "")
+                if norm in PAGINATION_KEYS:
+                    errors.append(
+                        f"{rel}: 分页字段 {key!r} 出现在净化键表里——"
+                        "清空/归零它会让 App 滑到底时拿不到下一批数据的令牌"
+                        "（无限加载或白屏）。要摘广告条目请改用条目级判别，"
+                        "不要动分页字段。"
+                    )
+                    problems += 1
+    print(
+        f"pagination integrity: {checked} key(s) in {len(PAGINATION_SCRIPTS)} "
+        f"sanitize script(s), {problems} problem(s)"
+    )
+
+
+def check_source_hash():
+    """`#!source` 的哈希必须等于我们真实公布的下载地址的哈希（反向复算）。
+
+    官方 Plugin 页的新字段：声明**插件作者指定下载地址 URL 字符串**的 SHA-256，
+    Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对。
+
+    这道门禁的存在理由是「防假校验」：官方明写「Loon 不使用 HTTP 重定向后的
+    地址进行比较」，校验对象就是**用户填的那条 URL 字符串**。而 GitHub raw 的
+    内容每个 commit 都变——地址换了（换分支/换文件名/改成镜像域名）而哈希没换，
+    那行哈希就成了一句**假话**：它声称「我来自这个地址」，实际校验的却是另一个。
+    不写只是「没校验」，写错是「假校验」，后者更危险。
+
+    因此本门禁不接受手抄哈希：值必须与 tools/source_hash.py 现算的结果一致。
+    """
+    # 官方算例自检：实现本身错了（误加换行、误用默认编码），这里立刻对不上，
+    # 而不是等到某个用户的插件装不上才发现。
+    problems = 0
+    for problem in source_hash.self_check():
+        errors.append(f"source hash: {problem}")
+        problems += 1
+
+    checked = 0
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        slug = path.parent.name
+        rel = path.relative_to(ROOT)
+        meta = parse_meta(path)
+        raw = meta.get("source")
+        if slug in SOURCE_EXEMPT:
+            if raw:
+                errors.append(
+                    f"{rel}: 例外插件 {slug!r} 不该声明 #!source——{SOURCE_EXEMPT[slug]}"
+                )
+                problems += 1
+            continue
+        if not raw:
+            errors.append(
+                f"{rel}: 缺少 #!source——官方 Plugin 页的下载地址校验字段，"
+                "由 tools/source_hash.py 现算现写（不接受手抄哈希）"
+            )
+            problems += 1
+            continue
+        checked += 1
+        # 真实文件名可能与目录 slug 不同（qidian-pro 目录里的文件名是 qidian.plugin），
+        # URL 必须按真实文件名拼，否则算出来的哈希对不上任何真实地址。
+        filename = path.name
+        expected = source_hash.source_value(slug, filename)
+        declared = source_hash.parse_source_value(raw)
+        if expected not in declared:
+            errors.append(
+                f"{rel}: #!source 与真实下载地址对不上——期望 {expected} "
+                f"（= SHA-256 of {source_hash.canonical_url(slug, filename)}），"
+                f"实得 {raw!r}。哈希必须现算，不要手抄；"
+                "若确实要增加镜像地址，把该地址写进 tools/source_hash.py 的取值列表"
+            )
+            problems += 1
+    print(
+        f"source hash: {checked} plugin(s) checked against the recomputed "
+        f"download-URL SHA-256, {problems} problem(s)"
+    )
+
+
 check_shared_scripts()
 check_switch_labels()
 check_argument_schema()
@@ -4036,6 +4225,8 @@ check_args_generated()
 check_quic_count()
 check_encoding_guard()
 check_script_safety()
+check_pagination_integrity()
+check_source_hash()
 check_bypass_dns_guard()
 check_no_legacy_syntax()
 check_loon_version_gate()

@@ -61,11 +61,11 @@ const RULES = [
            "splashDspConfig", "splashShakeAdConfig", "shakeAdConfig",
            "splashTwistAdConfig", "twistAdConfig", "motionAdConfig",
            "splashAdCacheConfig", "splashAdPreloadConfig", "splashAdEarlyLoadConfig"],
+    /* 只改语义无歧义的开关。阈值/灵敏度不写 0：若 SDK 按「运动量 >= 阈值」
+     * 判定，0 反而会让任何晃动都触发；原始阈值保持不动。 */
     falsy: ["enableSplashShake", "enableShakeAd", "enableShake", "enableSplashTwist",
             "enableTwistAd", "enableTwist", "enableMotionAd", "shakeAdSwitch",
-            "twistAdSwitch", "splashShakeSensitivity", "shakeSensitivity",
-            "splashAccelerationThreshold", "splashRotationThreshold",
-            "splashCacheEnable", "splashCacheEnabled", "enableAdPreload",
+            "twistAdSwitch", "splashCacheEnable", "splashCacheEnabled", "enableAdPreload",
             "enableSplashAdPreload", "splashAdPreload", "splashAdEarlyLoad"],
     killArrayData: true,
     forceOk: FORCE_OK
@@ -92,7 +92,7 @@ const RULES = [
   },
   {
     id: "ads",
-    match: /\/+luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info)/,
+    match: /\/+luna\/ads\/(?:config|retrieve|dsp\/retrieve)(?:\/|\?|$)/,
     /*
      * 取证：luna/ads/retrieve 的广告对象用 ad_launch / ad_launch_list；
      * 信息流广告块用 ads_blocks / ads_info（0x1147cde48、0x1147ce218）。
@@ -113,19 +113,34 @@ const RULES = [
     forceOk: FORCE_OK
   },
   {
-    id: "upsell",
-    match: /\/luna\/commerce\/(?:upsells|v2\/upsell(?:_sort_decision)?)/,
-    /*
-     * 取证：v1 响应字段 card / countdown / upsell_unique_name
-     *（字段描述符 0x1147cb278）；v2 真响应改用 upsell_map{} 承载弹窗，
-     * 由 cleanUpsellMap() 精确处理（见下方函数注释）。
-     * extraReject 让只带 upsell_map 的响应也能进入 JSON 处理，
-     * 否则大响应预检可能直接放行。
-     */
+    id: "fallback-done",
+    match: /\/+luna\/advert\/fallback\/done\/info(?:\/|\?|$)/,
+    /* 这是发奖凭证接口，不是普通广告配置：只清已取证的广告素材容器。
+     * 绝不能 forceOk（会把服务端拒绝伪装成成功），也不清 data 数组、
+     * rewardConfig/adExtra 或 post_done_extra 里的 req_id/time_token/nonce。 */
+    kill: ["adLaunchList", "adLaunch", "adLaunches", "adInfo", "adInfos",
+           "adsBlocks", "adsInfo"],
+    killArrayData: false,
+    forceOk: false
+  },
+  {
+    id: "upsell-v1",
+    match: /\/+luna\/commerce\/upsells(?:\/|\?|$)/,
+    /* v1 响应字段 card / countdown / upsell_unique_name（0x1147cb278）。
+     * 必须有路径边界，不能把 upsells_config 当成 upsells。 */
     kill: ["upsells", "upsellList", "upsellUniqueName", "card",
            "items", "popups", "list"],
     falsy: ["show", "isShow", "visible", "enable", "enabled"],
-    killArrayData: true,
+    killArrayData: true
+  },
+  {
+    id: "upsell-v2",
+    match: /\/+luna\/commerce\/v2\/upsell(?:_sort_decision)?(?:\/|\?|$)/,
+    /* v2 只由 cleanUpsellMap() 按 unique_name 精确删除广告实体并同步引用。
+     * 不走 v1 的泛化 items/list/show 清理，更不清空业务 data 数组。 */
+    kill: [],
+    falsy: [],
+    killArrayData: false,
     extraReject: /"upsell_map"\s*:/
   },
   {
@@ -670,16 +685,14 @@ function dropAdItems(node, log, path, depth) {
 }
 
 /*
- * 把 expire_time 延长到 now + N 天。
- * 自适应两种语义：
- *   - 绝对时间戳（秒 ~1e9 / 毫秒 ~1e12）
- *   - TTL（秒 ~1e3 / 毫秒 ~1e6）
- * 两种情况下都用同一公式落到"至少 N 天后"，不会缩短原值。
+ * 把已确认是「绝对时间戳」的 expire_time 延长到 now + N 天。
+ * 秒级 epoch 目前约 1e9，毫秒级约 1e12；更小的数可能是 TTL，也可能是
+ * 别的业务值，不能靠数值大小替它猜语义。未知/TTL 一律原样保留。
  */
 function extendExpiryValue(v, nowMs) {
-  if (typeof v !== "number" || !isFinite(v) || v <= 0) return null;
+  if (typeof v !== "number" || !isFinite(v) || v < 1e9) return null;
 
-  const looksMs = v > 1e11;
+  const looksMs = v >= 1e11;
   const now = looksMs ? nowMs : Math.floor(nowMs / 1000);
   const delta = looksMs ? EXTEND_DAYS * 86400 * 1000 : EXTEND_DAYS * 86400;
   const target = now + delta;
@@ -696,7 +709,10 @@ function rewrite(node, rule, path, log, depth) {
 
   if (Array.isArray(node)) {
     if (rule.killArrayData && depth === 0) {
-      log.push("$ (root array) -> []");
+      if (node.length > 0) {
+        log.push("$ (root array) : " + node.length + " -> 0");
+        node.length = 0;
+      }
       return;
     }
     for (let i = 0; i < node.length; i++) {
@@ -1056,7 +1072,7 @@ function recordBlock(type, item) {
     const log = [];
     const before = JSON.stringify(obj);
     rewrite(obj, rule, "$", log, 0);
-    if (rule.id === "upsell") cleanUpsellMap(obj, log);
+    if (rule.id === "upsell-v2") cleanUpsellMap(obj, log);
     if (rule.id === "task-page") pruneTaskAdPreload(obj, log);
     if (rule.dropAdItems) dropAdItems(obj, log, "$", 0);
     if (hideDouyin && isTreasure) dropDouyinItems(obj, log, "$", 0);

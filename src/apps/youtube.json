@@ -2,8 +2,8 @@
   "slug": "youtube",
   "name": "YouTube · 广告字段清理（原生复写）",
   "desc": "不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei.googleapis.com 的 youtubei/v1/log_event 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。",
-  "version": "1.2.1",
-  "date": "2026-11-07",
+  "version": "1.2.2",
+  "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,YouTube",
   "comment": [
@@ -39,7 +39,31 @@
     }
   ],
   "sdks": [],
-  "groups": [],
+  "groups": [
+    {
+      "id": "first_party",
+      "title": "YouTube 精确广告子域（DNS 黑洞）",
+      "tier": "A",
+      "note": "ad.youtube.com / ads.youtube.com=YouTube 广告投放与营销专用子域（anti-AD / AdGuard / HaGeZi 多源收录），精确黑洞不触碰播放与主站红线。",
+      "sources": [
+        "https://github.com/privacy-protection-tools/anti-AD",
+        "https://github.com/hagezi/dns-blocklists"
+      ],
+      "hosts": [
+        "ad.youtube.com",
+        "ads.youtube.com"
+      ]
+    }
+  ],
+  "triage_exclude": [
+    {
+      "label": "业务·创作者数据后台与播放器静态子域",
+      "globs": [
+        "analytics.youtube.com",
+        "s2.youtube.com"
+      ]
+    }
+  ],
   "enhance": {
     "active": true,
     "intro": "YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.com，不可整域黑洞。本层默认启用 Loon 原生 [Rewrite] v2 复写（由 cleanAds 开关控制，零 JS 脚本）：① www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei/v1/log_event 在 request 阶段 reject_dict(200) 直接终止；② youtubei.googleapis.com 响应递归删除 adPlacements / playerAds / adSlots / adBreakHeartbeatParams / adBreakParams，不改播放地址。",
@@ -65,10 +89,10 @@
         "group": "请求阶段直接终止（reject_dict(200)）：网页广告与广告统计路径",
         "stage": "request",
         "gate": "cleanAds",
-        "endpoint": "www.youtube.com/",
-        "url": "^https://www\\.youtube\\.com/(?:pagead/|api/stats/(?:ads|atr|qoe)|ptracking|error_204)",
+        "endpoint": "pagead/",
+        "url": "^https://(?:www\\.youtube\\.com|youtubei\\.googleapis\\.com)/(?:pagead/|api/stats/(?:ads|atr|qoe)|ptracking|error_204)",
         "action": "reject_dict(200)",
-        "note": "网页广告加载与广告统计/追踪上报路径直接返回 200 + 空字典",
+        "note": "网页与客户端 pagead/ 加载及广告统计/追踪上报路径直接返回 200 + 空字典",
         "source": "https://www.youtube.com/"
       },
       {

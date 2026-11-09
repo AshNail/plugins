@@ -2,8 +2,8 @@
   "slug": "x",
   "name": "X · 广告像素与遥测瘦身",
   "desc": "如实定位:X 时间线推广推文与正常内容同 API 同 CDN(pbs/video.twimg.com),DNS 层 App 内广告减少≈0。本插件黑洞广告像素/嵌入 syndication/广告后台域——隐私收益真实,广告数量不变。零证书。",
-  "version": "1.0.2",
-  "date": "2026-10-28",
+  "version": "1.0.3",
+  "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,遥测,X,Twitter",
   "comment": [
@@ -56,6 +56,15 @@
         "ads.x.com",
         "analytics.twitter.com",
         "scribe.twitter.com"
+      ]
+    }
+  ],
+  "triage_exclude": [
+    {
+      "label": "业务·广告宣传官网与旧版嵌入源（非客户端投放域）",
+      "globs": [
+        "advertising.twitter.com",
+        "syndication-o.twitter.com"
       ]
     }
   ],

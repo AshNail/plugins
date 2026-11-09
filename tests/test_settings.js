@@ -349,7 +349,7 @@ console.log("\n[17] shake / motion / cache ad configs suppression");
   check("enable_shake_ad false", j.enable_shake_ad === false);
   check("enable_twist_ad false", j.enable_twist_ad === false);
   check("shake_ad_switch false", j.shake_ad_switch === false);
-  check("splash_shake_sensitivity cleared", j.splash_shake_sensitivity === 0 || j.splash_shake_sensitivity === "");
+  check("splash_shake_sensitivity preserved", j.splash_shake_sensitivity === 5);
   check("splash_cache_enable false", j.splash_cache_enable === false);
   check("enable_ad_preload false", j.enable_ad_preload === false);
   check("normal feature preserved", j.normal_feature === "active");

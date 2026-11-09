@@ -82,14 +82,14 @@ console.log('\n== 5. incentive/done 不动 ==');
   check('无 body（放行）', !(r.done && r.done.body));
 }
 
-console.log('\n== 6. TTL 语义（expire_time=300） ==');
+console.log('\n== 6. TTL 语义（expire_time=300 原样保留） ==');
 {
   const r = run('https://api.qishui.com/luna/advert/incentive/config', {
     status_code: 0, status_info: '', advert_sources: [], feed_advert_config: {},
-    expire_time: 300, preload: false
+    expire_time: 300, preload: true
   });
   const o = JSON.parse(r.done.body);
-  check('TTL 被拉到 now+7d', o.expire_time >= nowS + 6.9*86400, o.expire_time);
+  check('TTL 小数值原样保留不误改', o.expire_time === 300, o.expire_time);
 }
 
 console.log('\n== 7. upsell 仍正常 ==');

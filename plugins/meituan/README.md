@@ -2,7 +2,7 @@
 
 > 美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。
 
-版本 **1.3.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -16,7 +16,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
-| 美团自建广告端点（曝光/竞价/聚合入口） | A | 启用 | impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口。与 ads 插件同域规则重叠属有意（按 App 开关语义）。 |
+| 美团自建广告端点与 HTTPDNS 防绕过（曝光/竞价/聚合入口） | A | 启用 | impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口;httpdns.meituan.com / httpdnsvip.meituan.com=美团自建 HTTPDNS 解析入口（阻断后强制广告域走 Loon DNS 黑洞）。与 ads 插件同域规则重叠属有意（按 App 开关语义）。 |
 | 开屏素材 CDN（专用子域） | A | 启用 | pd0-cdn-mcdn.m.meituan.net=开屏素材专用 mcdn(反黑名单收录);s3plus-pre=预发遥测端,生产不调用,黑洞零风险。开屏主路径(wmapi startpicture/s3plus brandcpt)同域不可分,预期只削掉 mcdn 分发的部分。 |
 | 美团/点评纯遥测家族（默认关） | A | 默认关闭 | CAT 开源 APM(catfront)、灵犀埋点(lx.meituan.net)、dreport/wreport/hreport/report(BI 集群自证)、analytics.meituan.net、data-sdk-uuid-log/metrics-picture/maplocatesdksnapshot 分片、wx-md/cloudidv/orecct/athena——全部多源收录且与下单支付不同集群,拦掉只丢报表。athena=运营配置中心,拦后营销弹窗从「白屏」变「正常消失」。 |
 | d.meituan.net 数据集群已知子域（默认关，验证后可升通配） | B | 默认关闭 | bd0.d 落 data-leopard 集群（CNAME 取证自证上报），S7 用 DOMAIN-SUFFIX,d.meituan.net,REJECT——但整后缀升通配前需实测商品图/地图完整性，这里只列已知子域。 |
@@ -48,7 +48,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 | `kill-openscreen` | request | `reject_dict` | `cleanAds` | 美团外卖/主站 openscreen 开屏广告请求（不依赖参数顺序）返回 200 + 空字典 |
 | `kill-startpicture` | request | `reject_dict` | `cleanAds` | wmapi 启动图广告请求返回 200 + 空字典 |
 | `kill-loadinfo` | request | `reject_dict` | `cleanAds` | wmapi 启动加载广告信息请求返回 200 + 空字典 |
-| `kill-img-p-cdn` | request | `reject_img` | `cleanAds` | p0/p1.meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图（含 webp/png/gif）返回 200 + 1px GIF |
+| `kill-img-p-cdn` | request | `reject_img` | `cleanAds` | p0/p1.meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图（含双后缀 .jpg.webp 与查询串）返回 200 + 1px GIF |
 | `kill-img-flowplus` | request | `reject_img` | `cleanAds` | flowplus.meituan.net 玲珑推广素材图返回 200 + 1px GIF |
 | `kill-img-brandcpt` | request | `reject_img` | `cleanAds` | img.meituan.net 品牌 CPT 广告图返回 200 + 1px GIF |
 | `kill-img-adunion` | request | `reject_img` | `cleanAds` | img.meituan.net 广告联盟/展示广告目录图片返回 200 + 1px GIF |
@@ -95,4 +95,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/meituan.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 43 条，[Rule] 10 条。
+统计：精确/通配黑洞 45 条，[Rule] 10 条。

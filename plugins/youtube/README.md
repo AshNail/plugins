@@ -2,7 +2,7 @@
 
 > 不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei.googleapis.com 的 youtubei/v1/log_event 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。
 
-版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.2.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
@@ -16,6 +16,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/youtube/youtube.p
 
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
+| YouTube 精确广告子域（DNS 黑洞） | A | 启用 | ad.youtube.com / ads.youtube.com=YouTube 广告投放与营销专用子域（anti-AD / AdGuard / HaGeZi 多源收录），精确黑洞不触碰播放与主站红线。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 2 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
@@ -35,7 +36,7 @@ YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.
 
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
-| `kill-pagead` | request | `reject_dict` | `cleanAds` | 网页广告加载与广告统计/追踪上报路径直接返回 200 + 空字典 |
+| `kill-pagead` | request | `reject_dict` | `cleanAds` | 网页与客户端 pagead/ 加载及广告统计/追踪上报路径直接返回 200 + 空字典 |
 | `kill-youtubei-log-event` | request | `reject_dict` | `cleanAds` | YouTube 客户端中插广告点拉取（player/ad_break）及高频遥测/广告归因上报（log_event、att/log）在请求阶段直接返回 200 + 空字典 |
 | `clean-youtubei-ads` | response | `response.json.jq` | `cleanAds` | YouTubei 响应（含 Shorts reel_item_watch 与播放中 updated_metadata）递归删除广告字段；不改播放地址 |
 
@@ -64,4 +65,4 @@ YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/youtube.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 0 条，[Rule] 2 条。
+统计：精确/通配黑洞 2 条，[Rule] 2 条。

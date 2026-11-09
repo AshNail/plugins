@@ -241,9 +241,9 @@ console.log("\n== 4e. blockSplashAd：开屏品牌响应清理素材/缓存/传�
      "splash_ad_early_load_config"].every(function (k) {
       return o && Object.keys(o[k]).length === 0;
     }), JSON.stringify(o));
-  check("开关与阈值按类型归零",
-    o && o.enable_splash_shake === false && o.splash_shake_sensitivity === 0 &&
-      o.splash_acceleration_threshold === 0 && o.splash_cache_enable === 0, JSON.stringify(o));
+  check("开关按类型置 false/0、阈值原样保留",
+    o && o.enable_splash_shake === false && o.splash_shake_sensitivity === 0.8 &&
+      o.splash_acceleration_threshold === 12 && o.splash_cache_enable === 0, JSON.stringify(o));
   check("包络与奖励字段不动", o && o.status_code === 0 && o.request_id === "r1" &&
     o.reward_details.coin === 100);
 }

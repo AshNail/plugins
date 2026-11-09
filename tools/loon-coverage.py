@@ -777,6 +777,15 @@ CAPABILITIES = [
          probe=r"(?m)^#!type\s*=\s*parser\b", href=DOC + "/Plugin/",
          why="parser 型插件只补规则/复写、不能带脚本与参数面板；本项目每个插件都要带 "
              "JS 与可关开关，必须是 normal 型"),
+    dict(layer="元数据", key="m-source", name="`#!source`（下载地址校验）", expect="used",
+         probe=r"(?m)^#!source\s*=", href=DOC + "/Plugin/",
+         why="官方 Plugin 页新增的字段（2026-11 抓取时出现，原快照没有）：声明**插件作者指定下载地址 URL 字符串**"
+             "的 SHA-256，Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对，"
+             "多个值逗号分隔、任一匹配即通过。注意它校验的是 **URL 本身**而不是插件文件内容——"
+             "官方示例 `printf '%s' 'https://example.com/plugin.lpx' | shasum -a 256` 的两个哈希"
+             "已逐字复现确认。价值：把「装到的是不是我声明的那个地址」变成可校验的一行，"
+             "防的是镜像站/劫持站替换插件文件。落地方式：构建器按本仓库真实导入 URL 现算现写，"
+             "不手抄哈希；lint 的 `check_source_hash()` 反向复算核对"),
 ]
 
 LAYER_ORDER = ["传输层", "规则层", "Host 层", "复写层", "脚本层", "脚本属性", "参数层",

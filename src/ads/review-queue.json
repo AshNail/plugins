@@ -4,15 +4,51 @@
     {
       "vendor": "AdTonos",
       "category": "audio-advertising",
-      "hosts": ["play.adtonos.com", "vast.adtonos.com"],
+      "hosts": [
+        "play.adtonos.com",
+        "vast.adtonos.com"
+      ],
       "decision": "defer-no-runtime-change",
       "reviewed": "2026-11-04",
       "source": "https://www.adtonos.com/",
       "confirmed": "Vendor describes audio advertising and real-time replacement of broadcast commercial breaks. Local blocklist caches mention these hosts.",
       "not_confirmed": "Official hostname-specific integration documentation and separation of advertising from programme audio were not obtained.",
       "risk": "Blocking a combined playback or dynamically stitched stream could interrupt normal radio or podcast audio.",
-      "lookup_results": ["docs.adtonos.com TLS connection failed; reader returned 422", "Direct homepage returned Cloudflare 403; reader obtained public homepage", "Guessed Prebid.js adtonosBidAdapter.js path returned 404; this does not establish absence of an SDK"],
-      "admission_requirements": ["official endpoint-specific documentation or publisher integration source", "verify normal audio is not served by the blocked endpoint", "positive and negative playback tests", "rollback"]
+      "lookup_results": [
+        "docs.adtonos.com TLS connection failed; reader returned 422",
+        "Direct homepage returned Cloudflare 403; reader obtained public homepage",
+        "Guessed Prebid.js adtonosBidAdapter.js path returned 404; this does not establish absence of an SDK"
+      ],
+      "admission_requirements": [
+        "official endpoint-specific documentation or publisher integration source",
+        "verify normal audio is not served by the blocked endpoint",
+        "positive and negative playback tests",
+        "rollback"
+      ]
+    },
+    {
+      "vendor": "Branch.io",
+      "category": "attribution-and-deeplink",
+      "hosts": [
+        "branch.io",
+        "*.branch.io"
+      ],
+      "decision": "defer-no-runtime-change",
+      "reviewed": "2026-11-09",
+      "source": "https://branch.io/",
+      "confirmed": "Branch 官方自述为归因与深度链接基础设施（deeplinking + attribution）；6 份上游清单收录其主域（adaway / adrules / anti-ad / easyprivacy / hagezi-pro / stevenblack）。",
+      "not_confirmed": "未取得「其请求域可与深链功能域分离」的证据：branch.io 同时承载 iOS/Android 深链跳转与归因回调，主域整封会同时断掉深链功能。",
+      "risk": "上游清单按「tracker」语义收录它，但本仓库 2026-10 前的归因组纪律明确写着「branch.io 是深度链接基础设施，明确不拦」——深链是 App 功能（分享落地、唤起），不是广告；误伤表现为分享链接点不开，属功能损坏而非少看广告。",
+      "lookup_results": [
+        "6 份上游清单收录 branch.io，但清单收录理由是 tracker 语义，不是「广告请求域」语义",
+        "上游证据强度（6 源）高于本仓库对 Yeahmobi（2 源）的判定——但两者的差别不在证据条数，而在该域是否承载 App 自身功能"
+      ],
+      "admission_requirements": [
+        "抓包证明存在与深链功能分离的广告请求域（而非仅主域）",
+        "深链功能回归测试：分享落地与唤起不受影响",
+        "正反向埋点测试",
+        "rollback"
+      ]
     }
   ]
 }

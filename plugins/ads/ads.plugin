@@ -1,14 +1,15 @@
 #!name=广告平台拦截器 · All-in-One
 #!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
 #!author=edy
-#!version=2.8.23
+#!version=2.8.24
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-07 22:30
+#!date=2026-11-09 18:30
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
+#!source=9201d3d3f45c80d27754fcb9a4ea489fb4d364f8d278e30141e661f1dc34f201
 
 # ============================================================================
 # 广告平台拦截器 · All-in-One
@@ -938,6 +939,12 @@ adstore-1252524079.file.myqcloud.com = 127.0.0.1
 adstore-index-1252524079.file.myqcloud.com = 127.0.0.1
 ggx.cmvideo.cn = 127.0.0.1
 adslot.uc.cn = 127.0.0.1
+ad.51wnl.com = 127.0.0.1
+ad.51wnl-cq.com = 127.0.0.1
+ad.winrar.com.cn = 127.0.0.1
+adimg.mobile.sina.cn = 127.0.0.1
+adxserver.ad.cmvideo.cn = 127.0.0.1
+s3.pfp.sina.net = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -1146,7 +1153,7 @@ adsfs-sdkconfig.heytapimage.com = 127.0.0.1
 # ============================================================================
 # 全球移动广告 SDK / 聚合平台
 # ----------------------------------------------------------------------------
-# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。2026-11-07 升级 applvn.com / tapjoyads.com / iads.unity3d.com / mediation.unity3d.com / mobfox.com / mobclix.com 为整域通配（覆盖 d/ms/rt.applvn.com、ws.tapjoyads.com、o-sdk.mediation.unity3d.com 等活跃子域分片），并补充 socdm / amobee / apptornado / leadboltads / adsbynimbus / intowow / mobilecore / playhaven / inner-active / admate 等多源移动广告 SDK 域。
+# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。2026-11-07 升级 applvn.com / tapjoyads.com / iads.unity3d.com / mediation.unity3d.com / mobfox.com / mobclix.com 为整域通配（覆盖 d/ms/rt.applvn.com、ws.tapjoyads.com、o-sdk.mediation.unity3d.com 等活跃子域分片），并补充 socdm / amobee / apptornado / leadboltads / adsbynimbus / intowow / mobilecore / playhaven / inner-active / admate 等多源移动广告 SDK 域。 2026-11-09 补 Yeahmobi（=yeahmobi.com）：移动广告变现 SDK / 程序化投放平台（eClick 旗下，官方自述 Data Driven Mobile Advertising，Kochava Media Index 收录为 Mobile Display Platform，Requires SDK Integration=Yes），AdGuard-DNS 与 HaGeZi PRO 两份上游清单均收录其主域；未整族通配（只精确主域 + 一层子域），不在 protected-roots 名单内。
 # ============================================================================
 applovin.com = 127.0.0.1
 *.applovin.com = 127.0.0.1
@@ -1391,11 +1398,13 @@ applifier.com = 127.0.0.1
 *.applifier.com = 127.0.0.1
 heyzap.com = 127.0.0.1
 *.heyzap.com = 127.0.0.1
+yeahmobi.com = 127.0.0.1
+*.yeahmobi.com = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据
 # ----------------------------------------------------------------------------
-# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。2026-10 再补 27 个 6 源交易/网络与共享根精确主机：vidcpm、knorex、m32.media、hueadsxml、media6degrees、tribalfusion、simpli.fi、fastclick、ncaudienceexchange、lucidmedia、jumptap、tradeadexchange、industrybrains、pointroll、vdopia、venturead、creativecdn（RTB House）、blogherads、webads.co.nz、pushnami、retagro、h-bid，以及 bat.bing.net（Bing Ads UET）、pix.revjet.com、beap-bc/ganon/3p-udc.yahoo.com（Yahoo 广告交换/数据）；跳过 ns1p.net（无语义）、adlog.com.com（无上下文）与 gmads.net（带 sat1.de 白名单例外）。2026-10 再补 13 个 4–7 源广告专域：TenMax 台湾 RTB/原生广告（tenmax.io）、Bid Run 程序化平台（bid.run）、Geniee SSP 五域（genieessp/genieesspv/gsspat/gsspcln/gssprt）、Speee 广告投放（speee-ad.jp）、EuroAds 丹麦联盟（euroads.dk）、WebAds 欧洲媒体网络（webads.eu）、SelectMedia 视频 SSP（selectmedia.asia）、Seznam SSP（ssp.seznam.cz）、TargetADS 广告验证（targetads.io）；跳过 hottraffic.nl / mediatraffic.com.ua / pabidding.io（公开身份未能核实）与 pebfvv.icu（随机域，生命周期不确定）。2026-11 第十二轮审计根据多源交叉核对（6 源）补 7 个程序化与展示广告专域：360yield（Improve Digital / Azerion 旗下 SSP/RTB 交易平台）、aaxads（AAX 广告交换平台）、acuityplatform（AcuityAds/illumin 程序化平台）、adexchangeprediction（程序化广告预测）、adoptum（Adoptum 移动广告网络）、altitude-arena（游戏内广告投放网络）与 3p-geo.yahoo.com（Yahoo 广告定向/地理数据精确主机）。2026-11 第十三轮全网覆盖探索补入 11 个全球移动程序化/DSP/SSP/转化追踪专域（均 ≥6 源）：vm5apis.com（威朋 Vpon Mobile Ads，亚洲移动广告SDK核心API，7 源）、aralego.com（Aralego 移动程序化广告SSP/DSP，6 源）、umbel.com（Umbel 移动受众定向与广告数据平台，7 源）、clickyab.com（Clickyab 数字广告与移动变现网络，6 源）、clicktracks.com（ClickTracks 广告点击与归因系统，6 源）、bizible.com（Bizible/Adobe 广告转化与多触点归因追踪，6 源）、eulerian.net（Eulerian Technologies 欧洲跨渠道广告归因DMP，6 源）、hsadspixel.net（HubSpot Ads Pixel 广告定向追踪像素，6 源）、kissmetrics.com（Kissmetrics 移动与广告转化追踪，6 源）、leadinfo.net（Leadinfo 访客识别与广告重定向，6 源）、shareasale.com（ShareASale/Awin 联盟广告与营销网关，6 源）。
+# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。2026-10 再补 27 个 6 源交易/网络与共享根精确主机：vidcpm、knorex、m32.media、hueadsxml、media6degrees、tribalfusion、simpli.fi、fastclick、ncaudienceexchange、lucidmedia、jumptap、tradeadexchange、industrybrains、pointroll、vdopia、venturead、creativecdn（RTB House）、blogherads、webads.co.nz、pushnami、retagro、h-bid，以及 bat.bing.net（Bing Ads UET）、pix.revjet.com、beap-bc/ganon/3p-udc.yahoo.com（Yahoo 广告交换/数据）；跳过 ns1p.net（无语义）、adlog.com.com（无上下文）与 gmads.net（带 sat1.de 白名单例外）。2026-10 再补 13 个 4–7 源广告专域：TenMax 台湾 RTB/原生广告（tenmax.io）、Bid Run 程序化平台（bid.run）、Geniee SSP 五域（genieessp/genieesspv/gsspat/gsspcln/gssprt）、Speee 广告投放（speee-ad.jp）、EuroAds 丹麦联盟（euroads.dk）、WebAds 欧洲媒体网络（webads.eu）、SelectMedia 视频 SSP（selectmedia.asia）、Seznam SSP（ssp.seznam.cz）、TargetADS 广告验证（targetads.io）；跳过 hottraffic.nl / mediatraffic.com.ua / pabidding.io（公开身份未能核实）与 pebfvv.icu（随机域，生命周期不确定）。2026-11 第十二轮审计根据多源交叉核对（6 源）补 7 个程序化与展示广告专域：360yield（Improve Digital / Azerion 旗下 SSP/RTB 交易平台）、aaxads（AAX 广告交换平台）、acuityplatform（AcuityAds/illumin 程序化平台）、adexchangeprediction（程序化广告预测）、adoptum（Adoptum 移动广告网络）、altitude-arena（游戏内广告投放网络）与 3p-geo.yahoo.com（Yahoo 广告定向/地理数据精确主机）。2026-11 第十三轮全网覆盖探索补入 11 个全球移动程序化/DSP/SSP/转化追踪专域（均 ≥6 源）：vm5apis.com（威朋 Vpon Mobile Ads，亚洲移动广告SDK核心API，7 源）、aralego.com（Aralego 移动程序化广告SSP/DSP，6 源）、umbel.com（Umbel 移动受众定向与广告数据平台，7 源）、clickyab.com（Clickyab 数字广告与移动变现网络，6 源）、clicktracks.com（ClickTracks 广告点击与归因系统，6 源）、bizible.com（Bizible/Adobe 广告转化与多触点归因追踪，6 源）、eulerian.net（Eulerian Technologies 欧洲跨渠道广告归因DMP，6 源）、hsadspixel.net（HubSpot Ads Pixel 广告定向追踪像素，6 源）、kissmetrics.com（Kissmetrics 移动与广告转化追踪，6 源）、leadinfo.net（Leadinfo 访客识别与广告重定向，6 源）、shareasale.com（ShareASale/Awin 联盟广告与营销网关，6 源）。 2026-11-09 补 LiveRamp 广告投放端点（=atsod.launch.liveramp.com）：LiveRamp 是程序化广告的数据与投放侧基础设施，atsod.launch 子域是其广告服务（ATS）投放主机，AdGuard-DNS 与 HaGeZi PRO 两源收录；只封该投放主机，不碰 liveramp.com 主域（数据/受众业务共用）。 同批补 Confiant 广告验证域（=confiant-integrations.net）：官方自述为 Ad Security & Quality Platform，其 integrations 主机承载广告创意扫描/验证 JS 与预检 API，7 份上游清单收录；**只封 confiant-integrations.net 自有域，不封 confiant-integrations.global.ssl.fastly.net**（Fastly 共享基础设施，封它等于封共享 CDN）。
 # ============================================================================
 adnxs.com = 127.0.0.1
 *.adnxs.com = 127.0.0.1
@@ -2257,6 +2266,23 @@ eyeviewads.com = 127.0.0.1
 *.eyeviewads.com = 127.0.0.1
 extremereach.io = 127.0.0.1
 *.extremereach.io = 127.0.0.1
+atsod.launch.liveramp.com = 127.0.0.1
+*.atsod.launch.liveramp.com = 127.0.0.1
+confiant-integrations.net = 127.0.0.1
+*.confiant-integrations.net = 127.0.0.1
+adnxs.net = 127.0.0.1
+*.adnxs.net = 127.0.0.1
+widgets.teads-xo.com = 127.0.0.1
+powerad.ai = 127.0.0.1
+*.powerad.ai = 127.0.0.1
+yoads.net = 127.0.0.1
+*.yoads.net = 127.0.0.1
+movad.net = 127.0.0.1
+*.movad.net = 127.0.0.1
+xapads.com = 127.0.0.1
+*.xapads.com = 127.0.0.1
+revrtb.com = 127.0.0.1
+*.revrtb.com = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告
@@ -2370,6 +2396,8 @@ adsassets.waze.com = 127.0.0.1
 bingads.microsoft.com = 127.0.0.1
 outlookads.live.com = 127.0.0.1
 offerwall.yandex.net = 127.0.0.1
+audio.ad = 127.0.0.1
+*.audio.ad = 127.0.0.1
 
 # ============================================================================
 # 弹窗 / Popunder / 成人广告网络

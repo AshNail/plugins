@@ -2,8 +2,8 @@
   "slug": "meituan",
   "name": "美团 · 去广告",
   "desc": "美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.3.3",
-  "date": "2026-11-07",
+  "version": "1.3.4",
+  "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,美团,点评",
   "comment": [
@@ -79,9 +79,9 @@
   "groups": [
     {
       "id": "mt_ad_endpoints",
-      "title": "美团自建广告端点（曝光/竞价/聚合入口）",
+      "title": "美团自建广告端点与 HTTPDNS 防绕过（曝光/竞价/聚合入口）",
       "tier": "A",
-      "note": "impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口。与 ads 插件同域规则重叠属有意（按 App 开关语义）。",
+      "note": "impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口;httpdns.meituan.com / httpdnsvip.meituan.com=美团自建 HTTPDNS 解析入口（阻断后强制广告域走 Loon DNS 黑洞）。与 ads 插件同域规则重叠属有意（按 App 开关语义）。",
       "sources": [
         "https://github.com/privacy-protection-tools/anti-AD",
         "https://github.com/hagezi/dns-blocklists/issues/9926",
@@ -89,7 +89,9 @@
       ],
       "hosts": [
         "impdsp.meituan.com",
-        "mads.meituan.com"
+        "mads.meituan.com",
+        "httpdns.meituan.com",
+        "httpdnsvip.meituan.com"
       ]
     },
     {
@@ -262,9 +264,9 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": ".meituan.net/(bizad|wmbanner|brandCpt)/",
-        "url": "^https://(?:p0|p1)\\.meituan\\.net/(bizad|wmbanner|brandCpt)/[a-zA-Z0-9]+\\.(?:jpg|jpeg|png|webp|gif)",
+        "url": "^https://(?:p0|p1)\\.meituan\\.net/(bizad|wmbanner|brandCpt)/[A-Za-z0-9_-]+\\.(?:jpg|jpeg|png|webp|gif)(?:\\.webp)?(\\?|$)",
         "action": "reject_img(200)",
-        "note": "p0/p1.meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图（含 webp/png/gif）返回 200 + 1px GIF",
+        "note": "p0/p1.meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图（含双后缀 .jpg.webp 与查询串）返回 200 + 1px GIF",
         "source": "https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin"
       },
       {
@@ -295,7 +297,7 @@
         "stage": "request",
         "gate": "cleanAds",
         "endpoint": "img.meituan.net/(adunion|display|dpmobile|midas)/",
-        "url": "^https://img\\.meituan\\.net/(adunion|display|dpmobile|midas)/[A-Za-z0-9_-]+\\.(?:gif|jpg|jpg\\.webp)$",
+        "url": "^https://img\\.meituan\\.net/(adunion|display|dpmobile|midas)/[A-Za-z0-9_-]+\\.(?:jpg|jpeg|png|webp|gif)(?:\\.webp)?(\\?|$)",
         "action": "reject_img(200)",
         "note": "img.meituan.net 广告联盟/展示广告目录图片返回 200 + 1px GIF",
         "source": "https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin"

@@ -42,6 +42,7 @@ from redlines import describe as describe_redline
 from redlines import expand_rule as shared_expand_rule
 from redlines import load_app_redlines, redline_hit, redline_roots
 from redlines import rule_match_items, rule_redline_hits
+from source_hash import source_value
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "src/ads/domains.json"
@@ -585,6 +586,11 @@ def render_plugin(
     lines.append(f"#!date={meta['updated']}")
     lines.append(f"#!tag={plugin['tag']}")
     lines.append("#!type=normal")
+    # 官方 Plugin 页的 `#!source`：声明插件作者指定下载地址 URL 字符串的 SHA-256，
+    # Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对（多值逗号分隔，任一匹配即通过）。
+    # 哈希一律现算（口径见 tools/source_hash.py，唯一出口）——手抄的哈希会与地址脱钩，
+    # 而「地址变了哈希没变」是个**假的**校验，比不写更危险。
+    lines.append(f"#!source={source_value('ads')}")
     lines.append("")
     lines.append("# " + "=" * 76)
     lines.append(f"# {plugin['name']}")

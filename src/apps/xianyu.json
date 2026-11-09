@@ -2,8 +2,8 @@
   "slug": "xianyu",
   "name": "闲鱼 · 去广告（原生复写层）",
   "desc": "闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。",
-  "version": "1.6.3",
-  "date": "2026-11-07",
+  "version": "1.6.4",
+  "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,闲鱼,阿里",
   "comment": [
@@ -247,7 +247,7 @@
         "stage": "response",
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.circle.myself.banner",
-        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.circle\\.myself\\.banner/1\\.0(?:/|\\?|$)",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.circle\\.myself\\.banner(?:/|\\?|$)",
         "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.bannerList = [] else . end\")",
         "note": "圈子页 banner 位清空",
         "source": "fmz200"
@@ -258,7 +258,7 @@
         "stage": "response",
         "gate": "cleanAds",
         "endpoint": "mtop.taobao.idle.playboy.recommend",
-        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.playboy\\.recommend/2\\.0(?:/|\\?|$)",
+        "url": "^https://(g-)?acs\\.m\\.goofish\\.com/gw/mtop\\.taobao\\.idle\\.playboy\\.recommend(?:/|\\?|$)",
         "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data.recommends = [] | .data.items = [] | .data.next = false else . end\")",
         "note": "消息页推荐位清空",
         "source": "fmz200"

@@ -68,7 +68,7 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 
 `tests/fixtures/` 里放的是**真实抓包样本**（2026-10-20 HAR）：`douyin_treasure_page.json`（抖音福利页原始响应）、`soda_incentive_done.json`（汽水发奖请求/响应），用于防止“按想象改字段”。
 
-**测试数字门禁**：下面这张「断言分布」表与本页的「29 套件 ×2 = 58 套件 / 1870 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
+**测试数字门禁**：下面这张「断言分布」表与本页的「30 套件 ×2 = 60 套件 / 1942 断言」都是**现在时声明**，由 `tests/run-all.py` 在跑完后自己核对——它拿本次实跑的 per-suite 计数逐行比对表格（src 与 dist 各比一遍），再比合计与套件那一句；对不上就 `exit 1`。只跑 `--src` 或 `--dist` 时跳过合计核对（口径不同）。放这里而不是放 lint：唯一的机器出口就是那次真实运行，让 lint 再跑一遍 54 个 Node 套件等于把 `npm run check` 的时间翻倍。**加断言、删套件、改文案，都必须在同一趟里把文档改对**，否则测试这一步自己红。
 
 ## 断言分布
 
@@ -103,8 +103,9 @@ npm run coverage:write  # 重新生成 docs/loon-coverage.md
 | `test_qidian_sanitize.js` | 47 | 起点净化全链路回归：gzip 字节体 + `$utils.ungzip` 解码、明文字节与字符串、ungzip 缺失静默透传、deeplink ActionUrl、CLEAN_RULES TDZ 崩溃回归（reddot/getdot · checkinexchangepage）、发现页 NEW_*+DISCOVER_* 双族 6 项白名单、账户页 9 键删除+功能区 13→5+FreshManGuideSwitch=0、福利中心模块删除+保留限时福利+激励任务全量保留、失败侧取证通知与节流 |
 | `test_qidian_limited.js` | 15 | mainPage 限时激励任务：ReadingPageTaskModule 6 条与 VideoRewardTab 3 条全量保留、TaskId/Total 落盘 `Qidian_LimitedTasks`、引擎 finishWatch 名单命中按 Total-1 重放、未知 taskId 不放行、静态 9 次映射不回退 |
 | `test_args_schema.js` | 37 | 参数 schema 单源：两族开关类型/默认值锁定、共享开关跨家族一致、`[Argument]` / `SWITCH_LABELS` / README 表与 `src/args` 逐字节一致、每个声明参数都被绑定引用、坏 schema 被验证器拒绝 |
+| `test_pagination_integrity.js` | 36 | 分页游标完整性：14 个分页字段 × 3 种书写（snake/camel/kebab）净化前后原样保留、同时广告条目仍被摘掉（防「为保游标连广告也不摘」的假修法）、负向对照证明断言有鉴别力；配 `lint` 的 `check_pagination_integrity` 静态门禁（266 键 × 25 个分页字段名） |
 
-合计 **935** 条断言；源码与压缩版各一遍，共 **1870** 条。
+合计 **971** 条断言；源码与压缩版各一遍，共 **1942** 条。
 
 ## 抖音插件（douyin.plugin）
 

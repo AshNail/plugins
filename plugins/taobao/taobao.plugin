@@ -1,14 +1,15 @@
 #!name=淘宝 · 去广告（原生复写层）
 #!desc=淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——10 条广告 mtop 路径在 request 阶段 reject_dict(200) 终止，开屏大图路径用 reject_img(200) 返回 1px 透明图；不包含上游 JS，交易/登录/支付红线不动。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.2.3
+#!version=1.2.4
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/taobao/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/59/ef/48/59ef4826-1909-6c34-542d-9a55aae79c6c/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-07
+#!date=2026-11-09
 #!tag=去广告,淘宝,阿里
 #!type=normal
+#!source=26ab20116fd2b962e163db806fa62bd9d0ede8c622b1e0282f3388258610e63e
 
 # ========================================================================
 # 淘宝 · 去广告（原生复写层）
@@ -66,7 +67,7 @@ wcp.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 阿里广告/UT 独立端点（置信 B）
-# h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch.simba.taobao.com=Simba 直通车竞价与定向子域（其余 atanx、tns.simba、adashx.m、wcp、audid-api、poplayer、rtb.julang 已由上方 sdks:["alimama"] 统一注入，此处不重复声明）。均为精确广告子域，媒体主域 alicdn.com 不整域。
+# h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch/stat/srd.simba.taobao.com=Simba 直通车竞价、定向与曝光统计子域（其余 atanx、tns.simba、adashx.m、wcp、audid-api、poplayer、rtb.julang 已由上方 sdks:["alimama"] 统一注入，此处不重复声明）。均为精确广告子域，媒体主域 alicdn.com 不整域。
 # 证据: https://kelee.one/
 # 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list
 # 证据: https://github.com/privacy-protection-tools/anti-AD
@@ -75,6 +76,8 @@ dsp.simba.taobao.com = 127.0.0.1
 h-adashx.ut.taobao.com = 127.0.0.1
 hudong.alicdn.com = 127.0.0.1
 ossgw.alicdn.com = 127.0.0.1
+srd.simba.taobao.com = 127.0.0.1
+stat.simba.taobao.com = 127.0.0.1
 tmatch.simba.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
@@ -104,10 +107,12 @@ tmatch.simba.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 阿里妈妈直通车点击跳转/外链（默认关）（置信 B）
-# mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。
+# mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com / click.mz.simba.taobao.com / click.tz.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcards/pro.txt
 # （默认关闭的组：整组注释，取消注释即启用）
+# click.mz.simba.taobao.com = 127.0.0.1
+# click.tz.simba.taobao.com = 127.0.0.1
 # mclick.simba.taobao.com = 127.0.0.1
 # redirect.simba.taobao.com = 127.0.0.1
 # textlink.simba.taobao.com = 127.0.0.1
@@ -143,34 +148,34 @@ hostname = %APPEND% acs.m.taobao.com, guide-acs.m.taobao.com, gw.alicdn.com, hei
 # 请求阶段直接终止（reject_dict(200)）：mtop 同域广告接口
 # ------------------------------------------------------------
 # kill-fliggy-screen: 飞猪频道弹屏与营销资源拉取（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.fliggy\.crm\.screen\.(?:allresource|predict)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.fliggy\.crm\.screen\.(?:allresource|predict)/ then reject_dict(200)
 
 # kill-alibaba-getadv: 阿里通用广告服务拉取接口（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.advertisementservice\.getadv/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.advertisementservice\.getadv/ then reject_dict(200)
 
 # kill-etao-advertise: 阿里妈妈一淘广告配置拉取（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alimama\.etao\.config\.query\/.+?etao_advertise/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.alimama\.etao\.config\.query\/.+?etao_advertise/ then reject_dict(200)
 
 # kill-alimusic-startinit: 启动初始化营销配置接口（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.alimusic\.common\.mobileservice\.startinit/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.alimusic\.common\.mobileservice\.startinit/ then reject_dict(200)
 
 # kill-tao-splash: 淘宝 noah 开屏广告查询接口（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.etao\.noah\.query\/.+tao_splash/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.etao\.noah\.query\/.+tao_splash/ then reject_dict(200)
 
 # kill-film-advertise: 淘票票/影视模块广告查询接口（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.film\.mtopadvertiseapi\.queryadvertise/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.film\.mtopadvertiseapi\.queryadvertise/ then reject_dict(200)
 
 # kill-o2o-ad: 本地生活 O2O 广告网关拉取接口（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.o2o\.ad\.gateway\.get/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.o2o\.ad\.gateway\.get/ then reject_dict(200)
 
 # kill-idle-welcome: 闲置频道欢迎弹窗营销接口（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.taobao\.idle\.home\.welcome/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.taobao\.idle\.home\.welcome/ then reject_dict(200)
 
 # kill-trip-tms: 出行活动 TMS 营销资源查询接口（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/acs\.m\.taobao\.com\/gw\/mtop\.trip\.activity\.querytmsresources/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.trip\.activity\.querytmsresources/ then reject_dict(200)
 
 # kill-guide-secondfloor: 首页二楼活动配置与开屏引导拉取（来源 https://kelee.one/）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.taobao\.(?:volvo\.secondfloor\.getconfig|wireless\.home\.newface\.awesome\.get)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.taobao\.(?:volvo\.secondfloor\.getconfig|wireless\.home\.newface\.awesome\.get)/ then reject_dict(200)
 
 # ------------------------------------------------------------
 # 请求阶段透明图替换（reject_img(200)）：共享图床开屏大图路径

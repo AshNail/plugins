@@ -1,14 +1,15 @@
 #!name=知乎 · 去广告与精简
 #!desc=知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；同域商业化广告接口（commercial_api/ad-style-service）、推广/预置词及首页推荐流（topstory/recommend）/关注流（moments_v3）内联广告卡片默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) + response.json.jq 字段级剥离，零 JS 脚本）；核心问答/文章/个人页/图床/推送严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.2.1
+#!version=1.2.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihu/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/a4/33/69/a43369ac-cef8-3356-4fae-fb504841e37d/AppIcon-0-0-1x_U007emarketing-0-7-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-07
+#!date=2026-11-09
 #!tag=去广告,知乎
 #!type=normal
+#!source=b809e81c352cc0847f0ee36a976c51624d78bb6007c13d6bff889773219aaa66
 
 # ========================================================================
 # 知乎 · 去广告与精简
@@ -44,11 +45,12 @@ AND,((DOMAIN-SUFFIX,zhida.zhihu.com),(PROTOCOL,QUIC)),REJECT
 [Host]
 
 # ------------------------------------------------------------
-# 知乎自建遥测 / 崩溃分析 / 商业化追踪（置信 A）
-# zhihu-web-analytics.zhihu.com（9源，知乎官方 Web/移动端分析）、udd1i5.zhihu.com（5源，商业化追踪与素材 CDN）、sugar.zhihu.com（4源，崩溃上报与监控平台）、crash2.zhihu.com（3源，崩溃分析日志端点）。均非业务数据流，DNS 映射 127.0.0.1 阻断。
+# 知乎自建遥测 / 崩溃分析 / 商业化追踪与广告素材（置信 A）
+# zhihu-web-analytics.zhihu.com（9源，知乎官方 Web/移动端分析）、udd1i5.zhihu.com（5源，商业化追踪与素材 CDN）、sugar.zhihu.com（4源，崩溃上报与监控平台）、crash2.zhihu.com（3源，崩溃分析日志端点）、adstatic.zhihu.com（知乎商业广告专用静态资产域）。均非业务数据流，DNS 映射 127.0.0.1 阻断。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # 证据: https://github.com/Cats-Team/AdRules
 # 证据: https://github.com/hagezi/dns-blocklists
+adstatic.zhihu.com = 127.0.0.1
 crash2.zhihu.com = 127.0.0.1
 sugar.zhihu.com = 127.0.0.1
 udd1i5.zhihu.com = 127.0.0.1
@@ -129,8 +131,8 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/www\.zhihu\.com\/api\/v\
 # ------------------------------------------------------------
 # 响应字段级净化（response.json.jq）：保留正常问答流，剔除穿插内联广告
 # ------------------------------------------------------------
-# clean-topstory-recommend: 首页推荐信息流：剔除 feed_advert 及携带 adjson/promotion_extra 的商业推广卡片（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/topstory\/recommend(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"array\" then .data |= map(select(type != \"object\" or (.type != \"feed_advert\" and .adjson == null and .promotion_extra == null))) else . end")
+# clean-topstory-recommend: 首页推荐信息流：剔除 feed_advert、target.type=advert 及携带 adjson/promotion_extra 的商业推广卡片（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/topstory\/recommend(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"array\" then .data |= map(select(type != \"object\" or (.type != \"feed_advert\" and ((.target.type // \"\") != \"advert\") and .adjson == null and .promotion_extra == null))) else . end")
 
 # clean-moments-feed: 关注动态信息流：剔除穿插的商业推广与内联广告卡片（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/moments_v3(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"array\" then .data |= map(select(type != \"object\" or (.type != \"feed_advert\" and .adjson == null and .promotion_extra == null))) else . end")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/moments_v3(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"array\" then .data |= map(select(type != \"object\" or (.type != \"feed_advert\" and ((.target.type // \"\") != \"advert\") and .adjson == null and .promotion_extra == null))) else . end")

@@ -1,14 +1,21 @@
 #!name=汽水音乐 · soda
-#!desc=汽水音乐全能助手 v3.3.2(补齐 homepage-tabs gzip 解码/陈旧头剥离与布尔开关解析 + 真机 v2/feed/listen-video/reminder、//luna/advert/fallback/done/info、beta-luna sign_in_detail 路由):整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),v3.3.1 已撤出 7 台固定证书的 API 分片 MITM。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡。致谢:起点读书 finishWatch 重放机制启发。
+#!desc=汽水音乐全能助手 v3.3.3(补齐 sanitize 对 v2/upsell 与 //luna/advert/fallback/done/info 绑定 + auto-task.js gzip 解码与过期头剥离 + homepage-tabs 编码与布尔开关守卫):整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),v3.3.1 已撤出 7 台固定证书的 API 分片 MITM。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡。致谢:起点读书 finishWatch 重放机制启发。
 #!author=edy
-#!version=3.3.2
+#!version=3.3.3
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/a1/6d/b4/a16db478-33e0-fc41-bc84-d5dd33f10762/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS
 #!loon_version=3.5.1(983)
-#!date=2026-11-07
+#!date=2026-11-09
 #!tag=汽水音乐,统一,开关,Loon,自动化,激励任务
+
+# 官方 Plugin 页的 `#!source`：声明插件作者指定下载地址 URL 字符串的 SHA-256，
+# Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对（多值逗号分隔，任一匹配即通过）。
+# 注意它校验的是 **URL 本身**而非插件文件内容；且官方明写「不使用 HTTP 重定向后的地址比较」，
+# 所以只能是这条直链。哈希由 tools/source_hash.py 现算，不要手抄——
+# lint 的 check_source_hash() 会反向复算核对，手抄的哈希迟早与地址脱钩。
+#!source=840b1a5d8a90009e6126be4385427219ff728bcc7b663d2e05d33071b4968dd9
 
 # ============================================================================
 # soda.plugin · 聚合开关版（一个 App 一个插件）
@@ -254,13 +261,13 @@ response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/advert\/incentive\/retrieve/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${killRewardAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${killRewardAds}, requires_body=true, timeout=10, tag="去广告脚本：激励素材预拉取"
 
 # ---- 去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告 ----
-response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/ads\/(?:config|retrieve|dsp\/retrieve)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告"
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/+luna\/(?:ads\/(?:config|retrieve|dsp\/retrieve)|advert\/fallback\/done\/info)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：广告源 / DSP / 广告位配置 / 兜底广告"
 
 # ---- 去广告脚本：信息流广告 ----
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：信息流广告"
 
 # ---- 去广告脚本：商业化弹窗 ----
-response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/upsells/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：商业化弹窗"
+response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/+luna\/commerce\/(?:upsells|v2\/upsell(?:\?|$))/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：商业化弹窗"
 response if ${url} ~= /^https?:\/\/(?:api\.qishui\.com|beta-luna\.douyin\.com)\/luna\/commerce\/v2\/upsell_sort_decision/ then script("scripts/sanitize.min.js", {${rewardSafe}, ${cleanAds}, ${hideDouyinTab}, ${debugLog}}) with debug=${debugLog}, enable=${cleanAds}, requires_body=true, timeout=10, tag="去广告脚本：upsell_sort_decision"
 
 # ---- 去广告脚本：福利页只摘 reward_ads ----
@@ -384,10 +391,11 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${
 #                全部 luna 绑定同时写两个主机，由 lint 的 luna host parity 锁死。
 # conf.qishui.com：settingsClean 打开时才会处理；证书固定导致设置加载失败，
 #                关闭 settingsClean 或停用本插件。
-# api<n>-<shard>.qishui.com + conf5-lf.qishui.com：**固定证书，不可解密**（v3.3.1 撤出）。
+# 固定证书止损：api<n>-<shard>.qishui.com + conf5-lf.qishui.com **固定证书，不可解密**（v3.3.1 撤出）。
 #                2026-11-06 16:21:50 日志：这 7 台共约 227 次握手 100% certificate unknown，
 #                v3.3.0 的「零次 certificate unknown 所以没固定」是在它们**没进 hostname**
 #                时得出的——没解密就不可能出现这个错误，该推断本身是个幸存者偏差。
+#                aweme.snssdk.com / zlink.ugsdk.cn / ads5-normal-gl2.zijieapi.com 同属固定证书主机，详见 README 8.1「固定证书主机清单」。
 # ============================================================================
 
 [MITM]

@@ -60,7 +60,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 
 | 模块 | 当前内容 | 是否默认生效 |
 |---|---|---:|
-| `[Host]` 核心广告组 | 15 组、2003 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
+| `[Host]` 核心广告组 | 15 组、2030 条展开规则：穿山甲、优量汇、快手联盟、百度、阿里妈妈、中国联盟/监测、Google、Meta FAN、TikTok、手机厂商、全球 SDK、交易/SSP/DSP、广告效果监测、零售/CTV/音频、弹窗、可莉迁移精确域 | 是 |
 | `[Host]` HTTPDNS 组 | 75 条：阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、YY、讯飞、微博、微信、爱奇艺、网易等 | 是 |
 | `[Host]` 公共 DoH 组 | 46 条：Google、Cloudflare/Quad9 各变体、NextDNS、OpenDNS、AdGuard 新旧域、CleanBrowsing、Mullvad、ControlD、Brave、dns.sb、Applied Privacy、LibreDNS、FFMUC、Digitale Gesellschaft、Hostux、SecuredNS、Crypto.sx、DNSForge、Kommespaeter 等海外厂商 | 是（见风险表） |
 | `[Rule]` | 13 条：`httpdns`/`httpsdns` 关键词 (REJECT-DROP)、UA、IP 字面量 URL-REGEX、埋点上报特征 (REJECT-DICT)、853 端口 | 是 |
@@ -71,7 +71,7 @@ loon://import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins
 | `[IP Rewrite]` 可选组 | 16 条单 IPv4 HTTPDNS 网关接入点（Loon Build 1007+ 插件专属，TUN 阶段最快拦截），默认注释 | **否** |
 | `[Rewrite]` / `[MITM]` / `[Script]` | 可选层（默认注释）：52 条 URL-REGEX + 1 条 jq + `[MITM]` 名单（原 adfilter 并入） | **否**（默认整段注释；启用需 Loon 证书） |
 
-合计：**24 组、2124 条生效 Host（exact 1346 / wildcard 778）、210 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
+合计：**24 组、2151 条生效 Host（exact 1363 / wildcard 788）、210 条默认注释 Host、13 条生效 Rule（HTTPDNS/端口/UA）、41 条默认注释 DOMAIN-WILDCARD glob（30 通配 + 11 家族，需 3.5.3+）、44 条默认注释可选 Rule（HTTPDNS 网关 IP + 公共 DNS 直连 IP + STUN）、16 条默认注释 IP Rewrite**。
 
 ### 默认注释组（可选开启）
 
@@ -181,7 +181,7 @@ DOMAIN-WILDCARD,p[0-9]-ad-sign.byteimg.com,REJECT
 
 ## 覆盖范围
 
-### 核心广告组（15 组 / 2003 条展开）
+### 核心广告组（15 组 / 2030 条展开）
 
 | 组 | 代表 |
 |---|---|

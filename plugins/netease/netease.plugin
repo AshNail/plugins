@@ -1,17 +1,24 @@
 #!name=网易云音乐 · 净化（规则层）
-#!desc=网易云音乐纯引擎侧去广告与精简插件 v1.1.0：自包含网易云专属 HTTPDNS 与广告素材 CDN 黑洞、QUIC 回退、可开关广告拦截与侧边栏精简（剔除误伤「我的收藏歌手」与版本检查规则）、9 条原生 jq 剥离首页/发现/评论区/收银台广告字段；零第三方 JS。
+#!desc=网易云音乐纯引擎侧去广告与精简插件 v1.1.1：自包含 10 个网易云专属 HTTPDNS 与广告素材 CDN 黑洞、QUIC 回退、可开关广告拦截与侧边栏精简（剔除误伤「我的收藏歌手」与版本检查规则）、10 条原生 jq 剥离首页/发现/评论区/收银台/横幅广告字段；零第三方 JS。
 #!author=AshNail（规则整理；来源 ios151/NeteasemusicAd）
-#!version=1.1.0
+#!version=1.1.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/netease/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/28/7b/a9/287ba9e3-751c-3994-cf3a-04a9ae2cbcac/appIconNew-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,macOS
-#!date=2026-11-07
+#!date=2026-11-09
 #!tag=网易云音乐,去广告,规则层
 #!type=normal
 
+# 官方 Plugin 页的 `#!source`：声明插件作者指定下载地址 URL 字符串的 SHA-256，
+# Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对（多值逗号分隔，任一匹配即通过）。
+# 注意它校验的是 **URL 本身**而非插件文件内容；且官方明写「不使用 HTTP 重定向后的地址比较」，
+# 所以只能是这条直链。哈希由 tools/source_hash.py 现算，不要手抄——
+# lint 的 check_source_hash() 会反向复算核对，手抄的哈希迟早与地址脱钩。
+#!source=79b308540c28d474c9e911af5fed66e455b3d611c2c7d093d914879d34cdba7e
+
 [Argument]
-cleanAds = switch, true, tag=去广告与推广净化, desc=默认开启：拦截开屏/信息流/搜索推广词/直播入口等广告接口，并用原生 jq 剥离首页/发现/评论区/收银台响应中的广告字段。
+cleanAds = switch, true, tag=去广告与推广净化, desc=默认开启：拦截开屏/信息流/搜索推广词/直播入口等广告接口，并用原生 jq 剥离首页/发现/评论区/收银台/横幅响应中的广告字段。
 slimUI = switch, false, tag=界面与侧边栏精简, desc=默认关闭：额外隐藏侧边栏小程序、云贝入口、商城入口与红点（已剔除上游误伤「我的收藏歌手」与版本检查的规则）。
 
 [Host]
@@ -22,8 +29,10 @@ httpdns.n.netease.com = 127.0.0.1
 httpdns-sdk.n.netease.com = 127.0.0.1
 iadmat.nosdn.127.net = 127.0.0.1
 iadmatapk.nosdn.127.net = 127.0.0.1
+iadmusicmat.nosdn.127.net = 127.0.0.1
 iadmusicmat.music.126.net = 127.0.0.1
 iadmusicmatvideo.music.126.net = 127.0.0.1
+iad.g.163.com = 127.0.0.1
 
 [Rule]
 # MITM 配套的 QUIC 回退（覆盖 music.163.com 及 interface*/ipv4/ipv6 子域，拒 HTTP/3 回落 TCP）。
@@ -55,6 +64,7 @@ response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interf
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/v1\/user\/info/i then response.json.jq("walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/link\/page\/rcmd\/(?:resource\/show|block\/resource\/multi\/refresh)/i then response.json.jq("walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/user\/follow\/users\/mixed\/get/i then response.json.jq("walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
+response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/v2\/banner\/get/i then response.json.jq("(if (type == \"object\" and (.banners | type) == \"array\") then .banners |= map(select(type != \"object\" or (.adid == null and .adurl == null and .adSource == null))) else . end) | walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 
 [MITM]
 hostname = %APPEND% music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com

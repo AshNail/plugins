@@ -1,14 +1,15 @@
 #!name=美团 · 去广告
 #!desc=美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.3.3
+#!version=1.3.4
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/meituan/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/cc/1f/5d/cc1f5dcb-92b6-0e0b-6f08-7a40e16e49d0/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-07
+#!date=2026-11-09
 #!tag=去广告,美团,点评
 #!type=normal
+#!source=531dc7bf27640abdc0f98d8629bc5c2a3325f5341d049c865fd5ff7f243ae957
 
 # ========================================================================
 # 美团 · 去广告
@@ -80,11 +81,13 @@ admatex.cn = 127.0.0.1
 admatex.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 美团自建广告端点（曝光/竞价/聚合入口）（置信 A）
-# impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口。与 ads 插件同域规则重叠属有意（按 App 开关语义）。
+# 美团自建广告端点与 HTTPDNS 防绕过（曝光/竞价/聚合入口）（置信 A）
+# impdsp.meituan.com=自营展示广告 DSP 曝光/点击链路（wpt-giant 自建集群，anti-AD/AdGuard/hagezi 三源+issue #9926 归类 Ads）;mads.meituan.com=移动广告聚合入口;httpdns.meituan.com / httpdnsvip.meituan.com=美团自建 HTTPDNS 解析入口（阻断后强制广告域走 Loon DNS 黑洞）。与 ads 插件同域规则重叠属有意（按 App 开关语义）。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # 证据: https://github.com/hagezi/dns-blocklists/issues/9926
 # 证据: https://fe-config.meituan.com/bm/config/eg2i916cj1ag1gj16j.html
+httpdns.meituan.com = 127.0.0.1
+httpdnsvip.meituan.com = 127.0.0.1
 impdsp.meituan.com = 127.0.0.1
 mads.meituan.com = 127.0.0.1
 
@@ -190,8 +193,8 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/wmapi\.meituan\.com\/api
 # ------------------------------------------------------------
 # 请求阶段透明图替换（reject_img(200)）：共享图床广告目录段
 # ------------------------------------------------------------
-# kill-img-p-cdn: p0/p1.meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图（含 webp/png/gif）返回 200 + 1px GIF（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:p0|p1)\.meituan\.net\/(bizad|wmbanner|brandCpt)\/[a-zA-Z0-9]+\.(?:jpg|jpeg|png|webp|gif)/ then reject_img(200)
+# kill-img-p-cdn: p0/p1.meituan.net 共享图床下的 bizad/wmbanner/brandCpt 广告图（含双后缀 .jpg.webp 与查询串）返回 200 + 1px GIF（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:p0|p1)\.meituan\.net\/(bizad|wmbanner|brandCpt)\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp|gif)(?:\.webp)?(\?|$)/ then reject_img(200)
 
 # kill-img-flowplus: flowplus.meituan.net 玲珑推广素材图返回 200 + 1px GIF（来源 https://t.me/GitCube）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/flowplus\.meituan\.net\/v1\/mss_[^\/]+\/linglong\/[^\/]+\.(?:jpg|jpeg|png|webp|gif)/ then reject_img(200)
@@ -200,7 +203,7 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/flowplus\.meituan\.net\/
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/img\.meituan\.net\/bizad\/bizad_brandCpt_[^\/]+\.(?:jpg|jpeg|png|webp|gif)/ then reject_img(200)
 
 # kill-img-adunion: img.meituan.net 广告联盟/展示广告目录图片返回 200 + 1px GIF（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AdvertisingScript/AdvertisingScript.plugin）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/img\.meituan\.net\/(adunion|display|dpmobile|midas)\/[A-Za-z0-9_-]+\.(?:gif|jpg|jpg\.webp)$/ then reject_img(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/img\.meituan\.net\/(adunion|display|dpmobile|midas)\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp|gif)(?:\.webp)?(\?|$)/ then reject_img(200)
 
 # ------------------------------------------------------------
 # 响应字段级净化（response.json.jq）：热词、启动图与界面精简

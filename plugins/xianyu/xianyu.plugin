@@ -1,14 +1,15 @@
 #!name=闲鱼 · 去广告（原生复写层）
 #!desc=闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。
 #!author=edy
-#!version=1.6.3
+#!version=1.6.4
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/xianyu/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/d0/d6/bb/d0d6bb22-8497-3abb-aa74-a303ce7e599c/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-07
+#!date=2026-11-09
 #!tag=去广告,闲鱼,阿里
 #!type=normal
+#!source=13a961ce4a851b292b5505369e9414aee9ccb7c0ec298b778698b1a92dd8845e
 
 # ========================================================================
 # 闲鱼 · 去广告（原生复写层）
@@ -162,10 +163,10 @@ response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.c
 response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.group\.myself\.banner(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.bannerList = [] else . end")
 
 # clean-circle-banner: 圈子页 banner 位清空（来源 fmz200）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.circle\.myself\.banner\/1\.0(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.bannerList = [] else . end")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.circle\.myself\.banner(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.bannerList = [] else . end")
 
 # clean-playboy-recommend: 消息页推荐位清空（来源 fmz200）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.playboy\.recommend\/2\.0(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.recommends = [] | .data.items = [] | .data.next = false else . end")
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/(g-)?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idle\.playboy\.recommend(?:\/|\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data.recommends = [] | .data.items = [] | .data.next = false else . end")
 
 # ------------------------------------------------------------
 # 激进信息流与我的页精简（cleanFeed 默认关）：按需开启

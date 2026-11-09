@@ -2,7 +2,7 @@
 
 > 如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内原生赞助帖 DNS 层≈0。默认黑洞 Meta 广告/转化像素 SDK、已停用徽章域与真机高频 netseer 公网 IP 关联遥测(DOMAIN-KEYWORD 精准命中随机 UUID 分片);不碰 graph/gateway/fbcdn 主域。零证书。
 
-版本 **1.2.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
