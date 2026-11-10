@@ -385,21 +385,14 @@ function handleClientConfig(response) {
 
 /**
  * 福利中心主页 — 按用户选择保留/删除各模块
- * v4.0.3（用户裁决 2026-11-10，真机 HAR 465_1794288736147 键位↔文案映射）：
- * 保留: DailyBenefitModule(激励任务), ReadingPageTaskModule(限时激励收集),
- *       ScoreDrawModule(幸运抽抽乐)
+ * 保留: DailyBenefitModule(激励任务), VideoRewardTab(视频奖励),
+ *       RedeemGifts(积分兑换), ScoreDrawModule(幸运抽抽乐)
  * 删除: MemberExclusiveTaskModule(会员尊享), PrivilegedTaskModule(邀好友),
  *       MoreRewardTab(更多奖励), SurpriseBenefit(限时福利),
- *       LastRewardItems(必中夺宝), IndexBannerTabs(顶部Banner),
- *       BaizeModule, TaskShowData, UserRewardModule, PopFrequency,  (v4.0.2)
- *       ActivityCenterModule(参与活动领福利), CharityModule(读书做公益),
- *       VideoRewardTab(完成1个/3个广告任务得奖励+白泽宇航员装扮),
- *       RedeemGifts(积分兑好礼货架)                                 (v4.0.3)
+ *       LastRewardItems(必中夺宝), IndexBannerTabs(顶部Banner)
  */
 function handleMainPage(response) {
   try {
-    const bodyIsUint8 = response.body instanceof Uint8Array;
-    const bodyIsArrayBuffer = response.body instanceof ArrayBuffer;
     const obj = safeJsonParse(response.body);
     if (!obj || !obj.Data) { $.done(); return; }
     const data = obj.Data;
@@ -411,50 +404,25 @@ function handleMainPage(response) {
 
     // ── 视频奖励 tab：同样保留原始状态 ─────────────────────
 
-    // ── 保留：ScoreDrawModule(幸运抽抽乐)＋DailyBenefitModule/ReadingPageTaskModule 激励 ──
+    // ── 保留：RedeemGifts(积分兑换), ScoreDrawModule(幸运抽抽乐) ──
 
-    // ── 删除：营销/活动/邀请/会员/限时/兑换货架模块 ──────
-    // v4.1.1：归还 IndexBannerTabs（页面结构键，删除会导致布局异常/白屏）
-    //         归还 PopFrequency（弹窗频控配置，非营销内容）
+    // ── 删除：营销/活动/邀请/会员/限时模块 ───────────────
     const REMOVE_KEYS = [
       "MemberExclusiveTaskModule", // 会员尊享（90天畅读等）
       "PrivilegedTaskModule",      // 邀好友活动（邀友一起读/3300点等）
       "MoreRewardTab",             // 更多奖励（关注微信服务号等）
       "SurpriseBenefit",           // 限时福利
       "LastRewardItems",           // 必中夺宝
+      "IndexBannerTabs",           // 顶部 banner
       "BaizeModule",               // 白泽装扮气泡
       "TaskShowData",              // 任务展示配置
       "UserRewardModule",          // 用户奖励统计
-      // v4.0.3（用户裁决 2026-11-10，HAR 465_1794288736147 键位映射）：
-      "ActivityCenterModule",      // 参与活动领福利
-      "CharityModule",             // 读书做公益（送出公益金）
-      "VideoRewardTab",            // 完成1个/3个广告任务得奖励＋做任务得白泽宇航员装扮
-      "RedeemGifts",               // 积分兑好礼货架（3天体验会员/30天漫画券/卡牌召唤机会等）
+      "PopFrequency",              // 弹窗频率控制
     ];
     REMOVE_KEYS.forEach(k => { delete data[k]; });
 
-    // ── LOCAL PATCH (AshNail/plugins v4.0.0)：限时激励任务收集 ──
-    // config 引擎之外的唯一补丁：收集 mainPage 的 ReadingPageTaskModule 中的
-    // 限时任务（TaskType 300），落盘到 Qidian_LimitedTasks，供 finishWatch
-    // 重放按 Total 自动完成。
-    const limited = collectLimitedTasks(data);
-    try {
-      // 只有本轮确实存在限时任务时才落盘：空列表覆盖会把上一轮已收集的
-      // TaskId 清掉，导致正在进行的 finishWatch 重放找不到动态映射。
-      if (limited.length) $.set(JSON.stringify(limited), "Qidian_LimitedTasks");
-    } catch (e) { /* 存储不可用时只记录日志，不影响净化 */ }
-    $.log(`✨ 福利中心已净化，限时任务=${limited.length}` +
-      (limited.length ? " [" + limited.map(t => t.id + "*" + t.total).join(" / ") + "]" : ""));
-
-    // 按来路形态回写：字节进→字节出、字符串进→字符串出
-    const newBody = JSON.stringify(obj);
-    if (bodyIsUint8) {
-      $.done({ body: new TextEncoder().encode(newBody) });
-    } else if (bodyIsArrayBuffer) {
-      $.done({ body: new TextEncoder().encode(newBody).buffer });
-    } else {
-      $.done({ body: newBody });
-    }
+    $.log("✨ 福利中心已净化");
+    $.done({ body: JSON.stringify(obj) });
   } catch (e) { $.done(); }
 }
 

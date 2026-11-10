@@ -124,8 +124,12 @@ function check(name, cond, extra) {
     vm.runInNewContext(ENGINE, context);
     assert(output && typeof output.body === "string", "发布引擎在无 URL 全局环境中必须回写 mainPage");
     const data = JSON.parse(output.body).Data;
-    assert.strictEqual(data.MoreRewardTab, undefined);
-    assert.strictEqual(data.SurpriseBenefit, undefined);
+    const expected = JSON.parse(JSON.stringify(FIXTURE));
+    if (expected.Data.DailyBenefitModule) expected.Data.DailyBenefitModule.RotateText = [];
+    for (const key of ["MemberExclusiveTaskModule", "PrivilegedTaskModule", "MoreRewardTab",
+      "SurpriseBenefit", "LastRewardItems", "IndexBannerTabs", "BaizeModule",
+      "TaskShowData", "UserRewardModule", "PopFrequency"]) delete expected.Data[key];
+    assert.deepStrictEqual(JSON.parse(output.body), expected);
     assert.strictEqual(data.ReadingPageTaskModule.TaskList.length, 6);
     check("发布绑定与无 URL 全局环境下 mainPage 回写回归", true);
   }
