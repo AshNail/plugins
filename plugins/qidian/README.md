@@ -1,12 +1,12 @@
-# 起点读书 · 看书激励助手 v4.0.1
+# 起点读书 · 看书激励助手 v4.1.0
 
-> 起点全能助手 Pro（严格移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：CAPTURE_ENABLE 决定净化走 [Rewrite] 还是 [Script]——开启时由 31 条 response 复写接管（getconf 30 项覆写/11 项删除/关发现 tab、纯广告端点 reject_dict、混业务端点字段级删除、deeplink/adv tab/悬浮卡清空）；关闭时同一批端点由 [Script] 的客户端配置净化与深度净化绑定接管。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getconf、深度净化、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检；引擎 vendored 在 scripts/Qidian.js。限时激励任务（mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」）当轮 TaskId/Total 落盘 Qidian_LimitedTasks，finishWatch 按 Total-1 重放，与 config TaskMapping 的 count-1 同口径。自动化六开关与 Cookie 捕获默认开，服务端风控后果自担。
+> 起点全能助手 Pro（严格移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：CAPTURE_ENABLE 决定净化走 [Rewrite] 还是 [Script]——开启时由 15 条 response 复写接管（v4.1.0 按真机 HAR 466 重写：删掉 8 条零命中端点、6 条服务端本来返回空的空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框整块删 getTopOperation.Data，我的页红框＋营销入口一次清干净并保留账户与身份字段；每日导读按用户裁决保留）。每条规则都带 evidence（har / kind / url_hits / proof / device_check），由 tools/qidian-har-evidence.py --check 反向钉住。关闭复写时同一批端点由 [Script] 的客户端配置净化与深度净化绑定接管；[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getconf、深度净化、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检。限时激励任务（mainPage 的 ReadingPageTaskModule）当轮 TaskId/Total 落盘 Qidian_LimitedTasks，finishWatch 按 Total-1 重放。自动化六开关与 Cookie 捕获默认开，服务端风控后果自担。
 
-版本 **4.0.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
+版本 **4.1.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
 
 ## 安装
 
-[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B%20v4.0.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
+[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B%20v4.1.0-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plugin
@@ -20,7 +20,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
-严格移植 config：CAPTURE_ENABLE 是两模式总闸——true 走 [Rewrite] 的 31 条 response 规则（引擎原生解压并改 JSON，不依赖脚本 gzip 链），false 走 [Script] 的 config 七条绑定。[Rewrite] 与 [Script] 同 URL 互斥不叠加是官方语义，不是叠加层。getconf/深度净化两条响应绑定标 probe=true 仅用于本仓互斥校验（复写命中会静默压掉同阶段脚本），不改变生成行。不设 QUIC 回退：与 config 原文一致（其主配置只把这两个主机列入 [MitM]，未下发 PROTOCOL,QUIC 规则）。
+CAPTURE_ENABLE 是两模式总闸——true 走 [Rewrite] 的 15 条 response 规则（v4.1.0 HAR 466 实证重写，引擎原生解压并改 JSON，不依赖脚本 gzip 链），false 走 [Script] 的 config 七条绑定。[Rewrite] 与 [Script] 同 URL 互斥不叠加是官方语义，不是叠加层。getconf/深度净化两条响应绑定标 probe=true 仅用于本仓互斥校验（复写命中会静默压掉同阶段脚本），不改变生成行。不设 QUIC 回退：与 config 原文一致。
 
 - 解密主机（`[MITM] hostname`，2 个，本层已默认生效）：`h5.if.qidian.com`, `magev6.if.qidian.com`
 
@@ -58,37 +58,21 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
-| `getconf-overrides` | response | `response.json.replace` | `CAPTURE_ENABLE` | config ClientConfigOverrides 全 30 项一次改齐 |
+| `getconf-overrides` | response | `response.json.replace` | `CAPTURE_ENABLE` | config ClientConfigOverrides 全 29 项一次改齐（DailyRecommendGray 于 v4.0.3 移出以恢复每日导读） |
 | `getconf-delete` | response | `response.json.delete` | `CAPTURE_ENABLE` | config DeleteKeys 全 10 项 + GDT 追踪模块 |
 | `getconf-discover-teen` | response | `response.json.replace` | `CAPTURE_ENABLE` | 关闭发现 tab + 青少年弹窗频次 |
-| `kill-splash` | response | `reject_dict` | `CAPTURE_ENABLE` | 开屏广告 |
-| `kill-simpleinfo` | response | `reject_dict` | `CAPTURE_ENABLE` | 签到页广告/运营信息 |
-| `kill-pushdialog` | response | `reject_dict` | `CAPTURE_ENABLE` | 推送弹窗 |
-| `empty-dailyrecommend` | response | `response.json.jq` | `CAPTURE_ENABLE` | 每日导读 Items 置空数组 |
-| `kill-playstrip` | response | `reject_dict` | `CAPTURE_ENABLE` | 维护播放条 |
-| `kill-recommendbook` | response | `reject_dict` | `CAPTURE_ENABLE` | 书架猜你喜欢推荐位 |
-| `kill-bookshelfbtn` | response | `reject_dict` | `CAPTURE_ENABLE` | 新手引导书架按钮 |
-| `kill-topoperation` | response | `reject_dict` | `CAPTURE_ENABLE` | 书架置顶运营位 |
-| `kill-chapterend` | response | `reject_dict` | `CAPTURE_ENABLE` | 章末订阅/运营模块 |
-| `kill-youngconf` | response | `reject_dict` | `CAPTURE_ENABLE` | 青少年模式配置 |
-| `kill-lottery` | response | `reject_dict` | `CAPTURE_ENABLE` | 签到抽奖/兑换页广告 |
-| `kill-hotwords` | response | `reject_dict` | `CAPTURE_ENABLE` | 搜索热词 |
-| `kill-freshmanguide` | response | `reject_dict` | `CAPTURE_ENABLE` | 新手引导弹窗 |
-| `kill-pushedmessage` | response | `reject_dict` | `CAPTURE_ENABLE` | 推送消息列表 |
-| `kill-popup` | response | `reject_dict` | `CAPTURE_ENABLE` | 批量弹窗 |
-| `kill-activitylist` | response | `reject_dict` | `CAPTURE_ENABLE` | 运营活动列表 |
-| `kill-messagepush` | response | `reject_dict` | `CAPTURE_ENABLE` | 运营/社交 push 拉取 |
-| `kill-reportdialog` | response | `reject_dict` | `CAPTURE_ENABLE` | 广告上报弹窗 |
-| `kill-classicbook` | response | `reject_dict` | `CAPTURE_ENABLE` | 经典书目运营模块 |
-| `kill-getad` | response | `reject_dict` | `CAPTURE_ENABLE` | 书架广告位（DirectKillPaths） |
-| `kill-iosad` | response | `reject_dict` | `CAPTURE_ENABLE` | iOS 广告位列表（DirectKillPaths） |
-| `clean-mainpagedialog` | response | `response.json.delete` | `CAPTURE_ENABLE` | 福利中心弹窗 Data 清空（CLEAN_RULES） |
+| `kill-splash` | response | `response.json.delete` | `CAPTURE_ENABLE` | 开屏广告轮播清空（v4.0.3 改 delete 型：reject_dict(response) 本机无效；server 当前 List=[] 本行为兜底） |
+| `kill-bookshelfbtn` | response | `response.json.delete` | `CAPTURE_ENABLE` | 新手引导书架按钮配置整条删除（v4.0.3 改 delete 型：reject_dict(response) 本机无效） |
+| `kill-topoperation` | response | `response.json.delete` | `CAPTURE_ENABLE` | 书架红框整块删除：MainInfo=「必看神作/最低折扣」大横幅（AdvId AD20261013-07-iOS，BgImg/TitleImg 是图片所以 HAR 正文搜不到文案）+ Items×3 右侧小图标（含游戏手柄，AdvId AD20261013-09-iOS）。v4.0.3 只删 Data.Items → 横幅原样留在真机上，本轮改删整个 Data |
+| `kill-popup` | response | `response.json.delete` | `CAPTURE_ENABLE` | 弹窗队列整条杀（v4.0.3 改 delete 型：原 `\?` 锚死于真机无 query 从未命中） |
+| `kill-classicbook` | response | `response.json.delete` | `CAPTURE_ENABLE` | 章末经典书目运营位 Items 清空（v4.0.3 改 delete 型：原 `\?` 锚死于真机无 query 从未命中） |
+| `kill-getad` | response | `response.json.delete` | `CAPTURE_ENABLE` | 书架游戏入口 GameUrl(gameCenterMainPage)+Show 广告位整条杀——用户红框手柄图标（v4.0.3 改 delete 型：原 `\?` 锚死于真机无 query 从未命中） |
 | `clean-reddot` | response | `response.json.delete` | `CAPTURE_ENABLE` | 红点 Data 清空（CLEAN_RULES） |
-| `clean-checkinexchange` | response | `response.json.delete` | `CAPTURE_ENABLE` | 兑换页商品列表清空（CLEAN_RULES） |
-| `clean-accountpage` | response | `response.json.delete` | `CAPTURE_ENABLE` | 我的页营销模块删除（AccountPageDelKeys） |
+| `clean-accountpage` | response | `response.json.delete` | `CAPTURE_ENABLE` | 我的页红框＋红框外营销入口一次清干净：起点会员卡 / 13 项功能宫格 / 「帮助与客服·加入我们」/ 惊喜活动按钮位 / 校园福利专区 / 点娘世界 / 追书卡 / 活动中心 / 新手引导开关；Data.UserBasicInfo（头像昵称等级）与 Data.AccountBalance（余额·月票·优惠卡券·章节卡·充值）原样保留 |
 | `deeplink-url` | response | `response.json.replace` | `CAPTURE_ENABLE` | 冷启动强制跳转精选页：ActionUrl 置空 |
-| `adv-tab` | response | `response.json.jq` | `CAPTURE_ENABLE` | 发现页活动 tab：iOS_tab 置空数组 |
-| `hover-adv` | response | `response.json.jq` | `CAPTURE_ENABLE` | 书架右下角悬浮广告：ItemList 置空数组 |
+| `kill-advlistbatch` | response | `response.json.delete` | `CAPTURE_ENABLE` | 我的页「今日偶遇/惊喜活动推荐」广告位删除（用户红框 2026-11-10；真机请求 positions=iosusercenter,iosusercenter2）；h5 域 ioscheckin 签到页广告位与 Data.iOS_tab 不动 |
+| `clean-simplediscover` | response | `response.json.jq` | `CAPTURE_ENABLE` | 发现页白名单：仅保留 7 张 DISCOVER_* 内容卡，剔除 14 张 NEW_* 营销卡（游戏中心/红包广场/周边商城等）；v4.1.0 补三层类型守卫（顶层 object / Items 数组 / 条目 object / KeyName 字符串），异常条目不再让整次净化失败、响应原样放行 |
+| `clean-mainpage` | response | `response.json.delete` | `CAPTURE_ENABLE` | 福利中心营销模块删除（13 键）：v4.0.2 十键 + v4.0.3 三键；v4.1.0 移除 MemberExclusiveTaskModule（HAR 原始 Data 里根本不存在，属于无效声明）。DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 等激励与奖励出口原样保留 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
 > 探针纪律：`probe=true` 的绑定与复写命中同一条 URL，按官方口径脚本会被静默抑制，所以锚定日志里它**有没有出现**就是**复写有没有命中**的判据。
@@ -106,6 +90,9 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 
 ## 红线与天花板（如实）
 
+- v4.1.0 HAR 466 整体分析与重写（2026-11-10）：抓包 319 条、起点 URL 163 条（去重 88）、17 次真实改包、旧插件实际只命中 9 条复写规则。`_loon.rewrite` 与 `_loonOriginal` 证明 response.content 是复写后的内容——只看它会把「被删掉的字段」误判成「服务端没下发」。据此删 18 条：8 条真机零命中（push/getdialog、maintain/playstrip 等抄自 config 的旧端点）、6 条空转（freshmanGuidePopup/iosad/ploy 等原始响应本就无目标字段、iOS_tab/ItemList 本就空数组）、4 条误伤功能面（simpleinfo 签到、recommendBook 每日导读族、young/getconf 青少年保护、checkinexchangepage 的章节卡兑换货架）。补两处红框漏网：getTopOperation 的 MainInfo 大横幅（v4.0.3 只删 Items，横幅原样在）；我的页 SchoolText/DianNiang*/PursueBookCard/ActiveActionUrl 等红框外营销入口。另修 clean-simplediscover 的 jq 类型守卫（lint 基线 2 错）、移除 clean-mainpage 里不存在的 MemberExclusiveTaskModule。新增 tools/qidian-har-evidence.py + tests/fixtures/qidian-har-20261110.json 作可回归门禁。注意：HAR 466 抓的是 v4.0.2 在跑，本轮规则尚未真机回抓，命中数为 URL 正则模拟，已登记待真机项。
+- v4.0.3 用户红框清除＋复写通道实证校准（取证 2026-11-10 HAR 466_1794290256836＋日志 14.log＋两张红框截图，用户裁决）：①书架页顶部「必看神作/最低折扣」banner 与 ⋯ 旁游戏手柄——真身 bookshelf/getTopOperation 三项 AdvId=AD20261013-09-iOS 运营位（全部 ItemActionUrl 指向 noah 活动页 137973621），kill-topoperation 由 reject_dict(200) 改 response.json.delete(["Data.Items"])；书架游戏入口 getad.Data.GameUrl（gameCenterMainPage）同步 kill-getad 改 delete(["Data"])。②我的页红框：起点会员卡 Data.Member、底部「帮助与客服/加入我们」Data.BottomButtonList、按钮宫格 Data.FunctionButtonList(13 项)三键由 clean-accountpage 扩为 4 键 delete（原 BenefitButtonList 已被服务端更名——v4.0.2 复写「命中仍无效果」的直接原因）；「今日偶遇/惊喜活动推荐」来自 adv/getadvlistbatch?positions=iosusercenter,iosusercenter2，新增 kill-advlistbatch 行删两广告位键（h5 ioscheckin 签到页广告位与 Data.iOS_tab 不动）；发现页 NEW_* 营销卡 14 项由新增 clean-simplediscover 行 jq 白名单剔除、只留 7 个 DISCOVER_* 内容卡。③每日导读恢复收尾：删除 empty-dailyrecommend 复写行（其 v4.0.2 真机效果见 HAR 466 Items=[]，即置空证据），与引擎 dispatch H 透传、getconf 覆写删除 DailyRecommendGray 两路合成三通道恢复。④复写通道真机语义表（Loon 3.5.3 实证）：response.json.replace/delete/jq 三类均生效（getconf 29 键覆写值、reddot Data 消失、getdailyrecommend Items=[] 各有真机样本），reject_dict(200) 在 response 阶段无操作（getTopOperation 3455B 原样含 3 广告项），脚本字符串回写在 binary_body_mode=true 绑定下被静默丢弃（深度净化 Trigger=33 全部端点响应原样，唯 handleMainPage 字节进→字节出镜像回写独活）——修法双管：动作上 kill-splash/getTopOperation/bookshelfbtn/freshmanGuidePopup/popup/pushedmessage/getad/iosad/activitylist/classicbook 这批纯营销端点改 delete 型（未捕获的 push/getdialog、playstrip、showChapterEndModule、hotWords、pull*Push、reportDialog 保持 reject_dict 原样，功能面 killer 三行 kill-simpleinfo（书架「领福利」签到卡）/kill-youngconf（青少年限制配置）/kill-lottery（签到抽奖）与 kill-recommendbook（与每日导读同族）保持现状留裁决，v3.5.2 的 request 阶段 reject 结论不受影响）；锚定上真机普查两类死法——`$` 死于带 query（getsplashscreen/recommendBook/freshmanGuidePopup/getactivitylist/getaccountpage?appappend+gender/simpleinfo/getadvlistbatch/getfloatcard/getdot/getdailyrecommend?sex）、`\?` 死于无 query（getconf/getTopOperation/getad/iosad/batchget/getpushedmessagelist/getclassicbookinfo/getsimplediscover/getHoverAdv/bookshelfbtn/young/getconf 与 h5 类），全部行尾统一放宽为 `(\?.*)?$`（只加宽容零回归，getad 保持 getadvlistbatch 防误配的前缀边界）；clean-checkinexchange 同时修正三重失配（真机是 h5 域 v3 无 query，原行锚 magev6+`\?` 从未命中）。⑤引擎 Pillar B：vendored Qidian.js 全处置函数统一走 mirrorDone 形态镜像回写（字节进→字节出，同 handleMainPage），修复 12 处 $.done({body:JSON.stringify(obj)}) 在 binary_body_mode 绑定下的静默丢弃；DiscoverKeepKeys 4 键 NEW_* 改 7 键 DISCOVER_*、AccountPageDelKeys 扩 4 键（镜像复写层）。⑥上线判据（下一份 HAR）：getTopOperation 响应缺 Data.Items、getadvlistbatch(magev6) 缺 iosusercenter[2]、getsimplediscover 只剩 DISCOVER_* 7 卡、getaccountpage 缺 Member/BottomButtonList/FunctionButtonList、真机书架无 banner/手柄、我的页无会员卡/宫格/底部双按钮、发现页无 NEW_* 卡、getdailyrecommend 若出现则 Items 原样。回滚单位=逐行（新增 2 行/删 1 行/动作改造 10 行/锚定放宽+host 修正一行型，不整批）。
+- v4.0.2 mainPage 零净化双根因修复（取证 2026-11-10 13:32 日志 + HAR 465_1794288736147）：① 生成管线根因——v4.0.1 的修复从未送达设备：src/apps/qidian.json 的 engine-deep-clean 绑定虽然声明了 binary_body_mode=true，但 tools/build-apps.py 的 render_binding_legacy() 只渲染 script-path/requires-body/timeout/tag/enable/argument，声明被静默丢弃——生成物深度净化绑定不带它 ⇒ Loon 把 gzip 体按 UTF-8 硬解成字符串交脚本（v3.5.3 判读：高位字节已成 U+FFFD）⇒ safeJsonParse 必败 ⇒ null 透传；本轮修好生成器（声明了 binary_body_mode 的 legacy request/response 绑定输出 binary_body_mode=true，位于 requires-body 之后），脚本本体此前已是 v4.0.1 形态（Uint8Array/ArrayBuffer 分支 + $utils.ungzip 兜底 + handleMainPage 字节进→字节出），真机 Node 仿真三例实证引擎行为正确（明文串→删 Data；gzip 字节→删 10 键+收集 6 条限时任务+回字节；乱码串→$done({}) 透传——与真机完全一致）。② 回写通道根因——楼兰旧式 [Script] 响应绑定在这个 Loon 上不回写：同一份 HAR 三个脚本端点（mainPage gzip、mainPageDialog 明文、getsimplediscover 明文）回包全部原样，而 5 个复写端点（getconf 三件套/getaccountpage/hoverAdv/dailyrecommend/reddot）全部已 aplicar；同日 v4.0.1 前一天（v3.6.2 2026-11-09）的 HAR 也复证过字节回写被 Loon JSON.stringify 成坏包。处置：新增 [Rewrite] clean-mainpage（h5 域 mainPage$ 锚定，response.json.delete 同 REMOVE_KEYS 十项），CAPTURE_ENABLE=true（默认）下彻底不在脚本上赌；限时激励收集改只剩 cron 预热一路（cron 2:11 落点，$httpClient 解码体可靠），App 当天先看福利中心早于 cron 的场景由次日 cron 补齐。深净化绑定带 probe=true、复写命中即静默抑制——Trigger 消失=复写接管。真机判据：下一份 HAR 里 mainPage 响应体应不再含 SurpriseBenefit/MoreRewardTab/PrivilegedTaskModule 等 10 个被删键（Data 23 键→13 键），且深净化 Trigger 行数比 v4.0.1 少 mainPage 字次；若 CAPTURE_ENABLE=false 场景想让脚本接管，binary_body_mode=true 已绑定、但回写若再证 {"0":123,...} 则 Loon 旧式回写在 ≤3.5.3 上路不通，回滚单位=删 clean-mainpage 复写 + 撤 binary_body_mode 声明。除 mainPage 十键与生成器外不改其余行为（getsimplediscover 末被脚本漏过、无复写——HAR 实证 21 项原样，本轮不动，留待裁决）。
 - v4.0.1 修复 mainPage 净化不生效（用户裁决 2026-11-10）：HAR 实证 mainPage 响应是 gzip 压缩的，而脚本的 safeJsonParse 直接 JSON.parse 失败返回 null ⇒ 净化静默零生效。修法：① 给"深度净化"绑定加 binary_body_mode=true，让 Loon 把 gzip 字节以 Uint8Array 形式交给脚本；② safeJsonParse 增加 Uint8Array/ArrayBuffer 分支与 $utils.ungzip 兜底；③ handleMainPage 按来路形态回写（字节进→字节出）。config 的脚本没有这些处理，但 config 在真机上有效——推测 config 用户要么 CAPTURE_ENABLE=false（走脚本但 mainPage 也清理不了），要么 Loon 版本/设置不同。本仓按 v3.5.x 的判死经验补上这条链。限时激励任务收集逻辑不变。
 - v4.0.0 严格移植 config（用户裁决 2026-11-10）：以 /Users/seeu/dev/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js 为唯一基线，撤掉本仓自研净化链与额外的 [Host]/[Rule] 黑洞组。① 参数层换回 config 的 11 项（CAPTURE_ENABLE / QDREADER_COOKIE_ENABLE / CRONEXP / QDREADER_DEBUG / TIMEOUT + 六个任务开关），QDREADER_CLEAN_ENABLE 退役；② [Rewrite] 逐条对齐 config 的 31 条 response 规则（正则与动作逐字照搬，不加 ^ 锚点、不改 jq 表达式），全部由 ${CAPTURE_ENABLE} == true 门控——开着走复写、关掉走 [Script]，两模式互斥不叠加；③ [Script] 逐条对齐 config 的七条绑定（含 getconf 与深度净化两条大族），与复写同 URL 的两条按本仓互斥校验标 probe=true，输出行不变；④ 引擎回到 config 原版，只保留限时激励补丁：handleMainPage 与 cron 的 mainPage 预热响应都收集 ReadingPageTaskModule（TaskType 300）并落盘（空列表不覆盖），handleReplay 动态映射按 total-1 重放；config 删除 SurpriseBenefit 的行为恢复，本仓曾加的 ActivityCenterModule/CharityModule 删除撤回；⑤ [Rule] 采用 config 的 13 条追踪/广告 SDK 拦截 + 1 条 pangolin 白名单，生成器为此补上 DOMAIN / DOMAIN-SUFFIX DIRECT / AND 复合规则支持；⑥ [MITM] 收窄到 h5.if.qidian.com 与 magev6.if.qidian.com（config 复写与脚本只覆盖这两个主机）；不设 QUIC 回退，与 config 原文一致。
 - v3.6.2 修复 binary_body_mode 导致净化不生效的问题（用户裁决 2026-11-09）：HAR 实证脚本跑了（Trigger/Finished 齐全）但返回的修改被 Loon 丢弃——响应头没有 X-Qidian-Plugin，响应体大小与原始相同，ActivityCenterModule 等营销模块还在。根因是 binary_body_mode=true 下，脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 {"0":123,"1":34,...}，不是有效的 JSON，App 解析失败后回落缓存。修复：① 删除 getconf-clean 和 deep-clean 绑定的 binary_body_mode=true；② respondJson 统一返回字符串，不再根据来路形态返回不同形态；③ 更新测试用例。

@@ -1,12 +1,14 @@
 {
   "slug": "qidian",
-  "name": "起点读书 · 看书激励助手 v4.0.2",
-  "desc": "起点全能助手 Pro（严格移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：CAPTURE_ENABLE 决定净化走 [Rewrite] 还是 [Script]——开启时由 32 条 response 复写接管（config 的 31 条 + v4.0.2 新增 mainPage 十键镜像）（getconf 30 项覆写/11 项删除/关发现 tab、纯广告端点 reject_dict、混业务端点字段级删除、deeplink/adv tab/悬浮卡清空）；关闭时同一批端点由 [Script] 的客户端配置净化与深度净化绑定接管。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getconf、深度净化、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检；引擎 vendored 在 scripts/Qidian.js。限时激励任务（mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」）当轮 TaskId/Total 落盘 Qidian_LimitedTasks，finishWatch 按 Total-1 重放，与 config TaskMapping 的 count-1 同口径。自动化六开关与 Cookie 捕获默认开，服务端风控后果自担。",
-  "version": "4.0.2",
+  "name": "起点读书 · 看书激励助手 v4.1.0",
+  "desc": "起点全能助手 Pro（严格移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：CAPTURE_ENABLE 决定净化走 [Rewrite] 还是 [Script]——开启时由 15 条 response 复写接管（v4.1.0 按真机 HAR 466 重写：删掉 8 条零命中端点、6 条服务端本来返回空的空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框整块删 getTopOperation.Data，我的页红框＋营销入口一次清干净并保留账户与身份字段；每日导读按用户裁决保留）。每条规则都带 evidence（har / kind / url_hits / proof / device_check），由 tools/qidian-har-evidence.py --check 反向钉住。关闭复写时同一批端点由 [Script] 的客户端配置净化与深度净化绑定接管；[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getconf、深度净化、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检。限时激励任务（mainPage 的 ReadingPageTaskModule）当轮 TaskId/Total 落盘 Qidian_LimitedTasks，finishWatch 按 Total-1 重放。自动化六开关与 Cookie 捕获默认开，服务端风控后果自担。",
+  "version": "4.1.0",
   "date": "2026-11-10",
   "loonVersion": "3.5.1(983)",
   "tag": "起点读书,config,响应净化,自动签到,激励任务,限时激励,纯净阅读",
   "comment": [
+    "v4.1.0 HAR 466 整体分析与重写（2026-11-10）：抓包 319 条、起点 URL 163 条（去重 88）、17 次真实改包、旧插件实际只命中 9 条复写规则。`_loon.rewrite` 与 `_loonOriginal` 证明 response.content 是复写后的内容——只看它会把「被删掉的字段」误判成「服务端没下发」。据此删 18 条：8 条真机零命中（push/getdialog、maintain/playstrip 等抄自 config 的旧端点）、6 条空转（freshmanGuidePopup/iosad/ploy 等原始响应本就无目标字段、iOS_tab/ItemList 本就空数组）、4 条误伤功能面（simpleinfo 签到、recommendBook 每日导读族、young/getconf 青少年保护、checkinexchangepage 的章节卡兑换货架）。补两处红框漏网：getTopOperation 的 MainInfo 大横幅（v4.0.3 只删 Items，横幅原样在）；我的页 SchoolText/DianNiang*/PursueBookCard/ActiveActionUrl 等红框外营销入口。另修 clean-simplediscover 的 jq 类型守卫（lint 基线 2 错）、移除 clean-mainpage 里不存在的 MemberExclusiveTaskModule。新增 tools/qidian-har-evidence.py + tests/fixtures/qidian-har-20261110.json 作可回归门禁。注意：HAR 466 抓的是 v4.0.2 在跑，本轮规则尚未真机回抓，命中数为 URL 正则模拟，已登记待真机项。",
+    "v4.0.3 用户红框清除＋复写通道实证校准（取证 2026-11-10 HAR 466_1794290256836＋日志 14.log＋两张红框截图，用户裁决）：①书架页顶部「必看神作/最低折扣」banner 与 ⋯ 旁游戏手柄——真身 bookshelf/getTopOperation 三项 AdvId=AD20261013-09-iOS 运营位（全部 ItemActionUrl 指向 noah 活动页 137973621），kill-topoperation 由 reject_dict(200) 改 response.json.delete([\"Data.Items\"])；书架游戏入口 getad.Data.GameUrl（gameCenterMainPage）同步 kill-getad 改 delete([\"Data\"])。②我的页红框：起点会员卡 Data.Member、底部「帮助与客服/加入我们」Data.BottomButtonList、按钮宫格 Data.FunctionButtonList(13 项)三键由 clean-accountpage 扩为 4 键 delete（原 BenefitButtonList 已被服务端更名——v4.0.2 复写「命中仍无效果」的直接原因）；「今日偶遇/惊喜活动推荐」来自 adv/getadvlistbatch?positions=iosusercenter,iosusercenter2，新增 kill-advlistbatch 行删两广告位键（h5 ioscheckin 签到页广告位与 Data.iOS_tab 不动）；发现页 NEW_* 营销卡 14 项由新增 clean-simplediscover 行 jq 白名单剔除、只留 7 个 DISCOVER_* 内容卡。③每日导读恢复收尾：删除 empty-dailyrecommend 复写行（其 v4.0.2 真机效果见 HAR 466 Items=[]，即置空证据），与引擎 dispatch H 透传、getconf 覆写删除 DailyRecommendGray 两路合成三通道恢复。④复写通道真机语义表（Loon 3.5.3 实证）：response.json.replace/delete/jq 三类均生效（getconf 29 键覆写值、reddot Data 消失、getdailyrecommend Items=[] 各有真机样本），reject_dict(200) 在 response 阶段无操作（getTopOperation 3455B 原样含 3 广告项），脚本字符串回写在 binary_body_mode=true 绑定下被静默丢弃（深度净化 Trigger=33 全部端点响应原样，唯 handleMainPage 字节进→字节出镜像回写独活）——修法双管：动作上 kill-splash/getTopOperation/bookshelfbtn/freshmanGuidePopup/popup/pushedmessage/getad/iosad/activitylist/classicbook 这批纯营销端点改 delete 型（未捕获的 push/getdialog、playstrip、showChapterEndModule、hotWords、pull*Push、reportDialog 保持 reject_dict 原样，功能面 killer 三行 kill-simpleinfo（书架「领福利」签到卡）/kill-youngconf（青少年限制配置）/kill-lottery（签到抽奖）与 kill-recommendbook（与每日导读同族）保持现状留裁决，v3.5.2 的 request 阶段 reject 结论不受影响）；锚定上真机普查两类死法——`$` 死于带 query（getsplashscreen/recommendBook/freshmanGuidePopup/getactivitylist/getaccountpage?appappend+gender/simpleinfo/getadvlistbatch/getfloatcard/getdot/getdailyrecommend?sex）、`\\?` 死于无 query（getconf/getTopOperation/getad/iosad/batchget/getpushedmessagelist/getclassicbookinfo/getsimplediscover/getHoverAdv/bookshelfbtn/young/getconf 与 h5 类），全部行尾统一放宽为 `(\\?.*)?$`（只加宽容零回归，getad 保持 getadvlistbatch 防误配的前缀边界）；clean-checkinexchange 同时修正三重失配（真机是 h5 域 v3 无 query，原行锚 magev6+`\\?` 从未命中）。⑤引擎 Pillar B：vendored Qidian.js 全处置函数统一走 mirrorDone 形态镜像回写（字节进→字节出，同 handleMainPage），修复 12 处 $.done({body:JSON.stringify(obj)}) 在 binary_body_mode 绑定下的静默丢弃；DiscoverKeepKeys 4 键 NEW_* 改 7 键 DISCOVER_*、AccountPageDelKeys 扩 4 键（镜像复写层）。⑥上线判据（下一份 HAR）：getTopOperation 响应缺 Data.Items、getadvlistbatch(magev6) 缺 iosusercenter[2]、getsimplediscover 只剩 DISCOVER_* 7 卡、getaccountpage 缺 Member/BottomButtonList/FunctionButtonList、真机书架无 banner/手柄、我的页无会员卡/宫格/底部双按钮、发现页无 NEW_* 卡、getdailyrecommend 若出现则 Items 原样。回滚单位=逐行（新增 2 行/删 1 行/动作改造 10 行/锚定放宽+host 修正一行型，不整批）。",
     "v4.0.2 mainPage 零净化双根因修复（取证 2026-11-10 13:32 日志 + HAR 465_1794288736147）：① 生成管线根因——v4.0.1 的修复从未送达设备：src/apps/qidian.json 的 engine-deep-clean 绑定虽然声明了 binary_body_mode=true，但 tools/build-apps.py 的 render_binding_legacy() 只渲染 script-path/requires-body/timeout/tag/enable/argument，声明被静默丢弃——生成物深度净化绑定不带它 ⇒ Loon 把 gzip 体按 UTF-8 硬解成字符串交脚本（v3.5.3 判读：高位字节已成 U+FFFD）⇒ safeJsonParse 必败 ⇒ null 透传；本轮修好生成器（声明了 binary_body_mode 的 legacy request/response 绑定输出 binary_body_mode=true，位于 requires-body 之后），脚本本体此前已是 v4.0.1 形态（Uint8Array/ArrayBuffer 分支 + $utils.ungzip 兜底 + handleMainPage 字节进→字节出），真机 Node 仿真三例实证引擎行为正确（明文串→删 Data；gzip 字节→删 10 键+收集 6 条限时任务+回字节；乱码串→$done({}) 透传——与真机完全一致）。② 回写通道根因——楼兰旧式 [Script] 响应绑定在这个 Loon 上不回写：同一份 HAR 三个脚本端点（mainPage gzip、mainPageDialog 明文、getsimplediscover 明文）回包全部原样，而 5 个复写端点（getconf 三件套/getaccountpage/hoverAdv/dailyrecommend/reddot）全部已 aplicar；同日 v4.0.1 前一天（v3.6.2 2026-11-09）的 HAR 也复证过字节回写被 Loon JSON.stringify 成坏包。处置：新增 [Rewrite] clean-mainpage（h5 域 mainPage$ 锚定，response.json.delete 同 REMOVE_KEYS 十项），CAPTURE_ENABLE=true（默认）下彻底不在脚本上赌；限时激励收集改只剩 cron 预热一路（cron 2:11 落点，$httpClient 解码体可靠），App 当天先看福利中心早于 cron 的场景由次日 cron 补齐。深净化绑定带 probe=true、复写命中即静默抑制——Trigger 消失=复写接管。真机判据：下一份 HAR 里 mainPage 响应体应不再含 SurpriseBenefit/MoreRewardTab/PrivilegedTaskModule 等 10 个被删键（Data 23 键→13 键），且深净化 Trigger 行数比 v4.0.1 少 mainPage 字次；若 CAPTURE_ENABLE=false 场景想让脚本接管，binary_body_mode=true 已绑定、但回写若再证 {\"0\":123,...} 则 Loon 旧式回写在 ≤3.5.3 上路不通，回滚单位=删 clean-mainpage 复写 + 撤 binary_body_mode 声明。除 mainPage 十键与生成器外不改其余行为（getsimplediscover 末被脚本漏过、无复写——HAR 实证 21 项原样，本轮不动，留待裁决）。",
     "v4.0.1 修复 mainPage 净化不生效（用户裁决 2026-11-10）：HAR 实证 mainPage 响应是 gzip 压缩的，而脚本的 safeJsonParse 直接 JSON.parse 失败返回 null ⇒ 净化静默零生效。修法：① 给\"深度净化\"绑定加 binary_body_mode=true，让 Loon 把 gzip 字节以 Uint8Array 形式交给脚本；② safeJsonParse 增加 Uint8Array/ArrayBuffer 分支与 $utils.ungzip 兜底；③ handleMainPage 按来路形态回写（字节进→字节出）。config 的脚本没有这些处理，但 config 在真机上有效——推测 config 用户要么 CAPTURE_ENABLE=false（走脚本但 mainPage 也清理不了），要么 Loon 版本/设置不同。本仓按 v3.5.x 的判死经验补上这条链。限时激励任务收集逻辑不变。",
     "v4.0.0 严格移植 config（用户裁决 2026-11-10）：以 /Users/seeu/dev/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js 为唯一基线，撤掉本仓自研净化链与额外的 [Host]/[Rule] 黑洞组。① 参数层换回 config 的 11 项（CAPTURE_ENABLE / QDREADER_COOKIE_ENABLE / CRONEXP / QDREADER_DEBUG / TIMEOUT + 六个任务开关），QDREADER_CLEAN_ENABLE 退役；② [Rewrite] 逐条对齐 config 的 31 条 response 规则（正则与动作逐字照搬，不加 ^ 锚点、不改 jq 表达式），全部由 ${CAPTURE_ENABLE} == true 门控——开着走复写、关掉走 [Script]，两模式互斥不叠加；③ [Script] 逐条对齐 config 的七条绑定（含 getconf 与深度净化两条大族），与复写同 URL 的两条按本仓互斥校验标 probe=true，输出行不变；④ 引擎回到 config 原版，只保留限时激励补丁：handleMainPage 与 cron 的 mainPage 预热响应都收集 ReadingPageTaskModule（TaskType 300）并落盘（空列表不覆盖），handleReplay 动态映射按 total-1 重放；config 删除 SurpriseBenefit 的行为恢复，本仓曾加的 ActivityCenterModule/CharityModule 删除撤回；⑤ [Rule] 采用 config 的 13 条追踪/广告 SDK 拦截 + 1 条 pangolin 白名单，生成器为此补上 DOMAIN / DOMAIN-SUFFIX DIRECT / AND 复合规则支持；⑥ [MITM] 收窄到 h5.if.qidian.com 与 magev6.if.qidian.com（config 复写与脚本只覆盖这两个主机）；不设 QUIC 回退，与 config 原文一致。",
@@ -123,7 +125,7 @@
   "enhance": {
     "active": true,
     "debug_arg": "QDREADER_DEBUG",
-    "intro": "严格移植 config：CAPTURE_ENABLE 是两模式总闸——true 走 [Rewrite] 的 31 条 response 规则（引擎原生解压并改 JSON，不依赖脚本 gzip 链），false 走 [Script] 的 config 七条绑定。[Rewrite] 与 [Script] 同 URL 互斥不叠加是官方语义，不是叠加层。getconf/深度净化两条响应绑定标 probe=true 仅用于本仓互斥校验（复写命中会静默压掉同阶段脚本），不改变生成行。不设 QUIC 回退：与 config 原文一致（其主配置只把这两个主机列入 [MitM]，未下发 PROTOCOL,QUIC 规则）。",
+    "intro": "CAPTURE_ENABLE 是两模式总闸——true 走 [Rewrite] 的 15 条 response 规则（v4.1.0 HAR 466 实证重写，引擎原生解压并改 JSON，不依赖脚本 gzip 链），false 走 [Script] 的 config 七条绑定。[Rewrite] 与 [Script] 同 URL 互斥不叠加是官方语义，不是叠加层。getconf/深度净化两条响应绑定标 probe=true 仅用于本仓互斥校验（复写命中会静默压掉同阶段脚本），不改变生成行。不设 QUIC 回退：与 config 原文一致。",
     "sources": [
       "https://github.com/3kaiu/config/blob/main/Plugin/qidian.plugin",
       "https://github.com/3kaiu/config/blob/main/Scripts/Qidian.js"
@@ -210,10 +212,17 @@
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "client/getconf",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/client/getconf$",
-        "action": "response.json.replace([\"Data.PangleEnable\", \"Data.DisableQidianBurryReport\", \"Data.DisableNewabInBI\", \"Data.SplashScreenInterval\", \"Data.SplashScreenRoundCount\", \"Data.BusinessSplashCoolDownTime\", \"Data.PushDialogFrequency\", \"Data.EnableMonitorLog\", \"Data.EnableBeaconFullBurry\", \"Data.ReloadExposureEnabled\", \"Data.QDABRegularReportTimeSpan\", \"Data.QDABReportMinThreshold\", \"Data.RankBuryPoint\", \"Data.CheckInPushSwitchReport\", \"Data.WolfEye\", \"Data.MainTabActivityRunning\", \"Data.DailyReadRecReasonSwitch\", \"Data.DailyRecommendGray\", \"Data.EnableShareChapterPloy\", \"Data.EnableChapterAdvanceGuide\", \"Data.AddBookShelfNoticeFrequency\", \"Data.BookShelfPushNoticeFrequency\", \"Data.UGCPushNoticeFrequency\", \"Data.NotificationPageBackPushNoticeFrequency\", \"Data.ActivityPageBackPushNoticeFrequency\", \"Data.InAppPushLimitMinutes\", \"Data.PushNoticeFrequency\", \"Data.AegisSignOn\", \"Data.EnableFockRetryStrategy\", \"Data.EnableSearchUser\"], [\"0\", \"1\", \"1\", \"0\", \"0\", \"99999\", \"0\", \"0\", \"0\", \"false\", \"999999\", \"999999\", \"0\", \"0\", 0, 0, 0, 0, 0, 0, \"999999\", \"999999\", \"999999\", \"999999\", \"999999\", \"999999\", \"-1\", 0, 0, \"1\"])",
-        "note": "config ClientConfigOverrides 全 30 项一次改齐",
-        "source": "config Plugin/qidian.plugin"
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/client/getconf(\\?.*)?$",
+        "action": "response.json.replace([\"Data.PangleEnable\", \"Data.DisableQidianBurryReport\", \"Data.DisableNewabInBI\", \"Data.SplashScreenInterval\", \"Data.SplashScreenRoundCount\", \"Data.BusinessSplashCoolDownTime\", \"Data.PushDialogFrequency\", \"Data.EnableMonitorLog\", \"Data.EnableBeaconFullBurry\", \"Data.ReloadExposureEnabled\", \"Data.QDABRegularReportTimeSpan\", \"Data.QDABReportMinThreshold\", \"Data.RankBuryPoint\", \"Data.CheckInPushSwitchReport\", \"Data.WolfEye\", \"Data.MainTabActivityRunning\", \"Data.DailyReadRecReasonSwitch\", \"Data.EnableShareChapterPloy\", \"Data.EnableChapterAdvanceGuide\", \"Data.AddBookShelfNoticeFrequency\", \"Data.BookShelfPushNoticeFrequency\", \"Data.UGCPushNoticeFrequency\", \"Data.NotificationPageBackPushNoticeFrequency\", \"Data.ActivityPageBackPushNoticeFrequency\", \"Data.InAppPushLimitMinutes\", \"Data.PushNoticeFrequency\", \"Data.AegisSignOn\", \"Data.EnableFockRetryStrategy\", \"Data.EnableSearchUser\"], [\"0\", \"1\", \"1\", \"0\", \"0\", \"99999\", \"0\", \"0\", \"0\", \"false\", \"999999\", \"999999\", \"0\", \"0\", 0, 0, 0, 0, 0, \"999999\", \"999999\", \"999999\", \"999999\", \"999999\", \"999999\", \"-1\", 0, 0, \"1\"])",
+        "note": "config ClientConfigOverrides 全 29 项一次改齐（DailyRecommendGray 于 v4.0.3 移出以恢复每日导读）",
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "effective",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 9/23/54/189/306 复写前后 diff：29 项覆写键全部存在，26 项值被改（DailyRecommendGray 已移出以保留每日导读）"
+        }
       },
       {
         "id": "getconf-delete",
@@ -221,10 +230,17 @@
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "client/getconf",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/client/getconf$",
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/client/getconf(\\?.*)?$",
         "action": "response.json.delete([\"Data.ActivityIcon\", \"Data.ActivityPopup\", \"Data.LuckBag\", \"Data.BookShelfBottomIcons\", \"Data.ClassicBookInfo\", \"Data.ClientLocalNotify2\", \"Data.PushDialogScenes\", \"Data.RewardSatisfyDialog\", \"Data.FansClubPropInfo\", \"Data.AdVideoPositionConfig\", \"Data.GDT\"])",
         "note": "config DeleteKeys 全 10 项 + GDT 追踪模块",
-        "source": "config Plugin/qidian.plugin"
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "effective",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 9/23/54/189/306 复写前后 diff：removed=11，删除清单与原始 Data 键逐一对应"
+        }
       },
       {
         "id": "getconf-discover-teen",
@@ -232,252 +248,125 @@
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "client/getconf",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/client/getconf$",
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/client/getconf(\\?.*)?$",
         "action": "response.json.replace([\"Data.NewFeedsDiscover\", \"Data.CloudSetting.TeenShowFreq\"], [0, \"0\"])",
         "note": "关闭发现 tab + 青少年弹窗频次",
-        "source": "config Plugin/qidian.plugin"
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "effective",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 9/23/54/189/306：NewFeedsDiscover / CloudSetting.TeenShowFreq 均在 changed 名单里"
+        }
       },
       {
         "id": "kill-splash",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
+        "group": "字段级净化（response 阶段 delete 型，v4.1.0）：纯广告/营销端点",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "client/getsplashscreen",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v4/client/getsplashscreen\\?",
-        "action": "reject_dict(200)",
-        "note": "开屏广告",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-simpleinfo",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "checkin/simpleinfo",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/checkin/simpleinfo\\?",
-        "action": "reject_dict(200)",
-        "note": "签到页广告/运营信息",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-pushdialog",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "push/getdialog",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/push/getdialog\\?",
-        "action": "reject_dict(200)",
-        "note": "推送弹窗",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "empty-dailyrecommend",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "dailyrecommend/getdailyrecommend",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v2/dailyrecommend/getdailyrecommend\\?",
-        "action": "response.json.jq(\".Data.Items = []\")",
-        "note": "每日导读 Items 置空数组",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-playstrip",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "maintain/playstrip",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/maintain/playstrip$",
-        "action": "reject_dict(200)",
-        "note": "维护播放条",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-recommendbook",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "dailyrecommend/recommendBook",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/dailyrecommend/recommendBook\\?",
-        "action": "reject_dict(200)",
-        "note": "书架猜你喜欢推荐位",
-        "source": "config Plugin/qidian.plugin"
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v4/client/getsplashscreen(\\?.*)?$",
+        "action": "response.json.delete([\"Data.List\"])",
+        "note": "开屏广告轮播清空（v4.0.3 改 delete 型：reject_dict(response) 本机无效；server 当前 List=[] 本行为兜底）",
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "fallback-empty",
+          "url_hits": 1,
+          "device_check": "当前 server 回 Data.List=[]（HAR entry 277，无改包记录），本条是兜底；真机开屏前抓 getsplashscreen 原文，若 List 非空须确认被删",
+          "proof": "服务端当前返回空值，规则为兜底；不宣称本次抓包已生效"
+        }
       },
       {
         "id": "kill-bookshelfbtn",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
+        "group": "字段级净化（response 阶段 delete 型，v4.1.0）：纯广告/营销端点",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "freshman/bookshelfbtn",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/freshman/bookshelfbtn$",
-        "action": "reject_dict(200)",
-        "note": "新手引导书架按钮",
-        "source": "config Plugin/qidian.plugin"
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/freshman/bookshelfbtn(\\?.*)?$",
+        "action": "response.json.delete([\"Data\"])",
+        "note": "新手引导书架按钮配置整条删除（v4.0.3 改 delete 型：reject_dict(response) 本机无效）",
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "fallback-empty",
+          "url_hits": 1,
+          "device_check": "当前 server 回 ShowBtn=0（HAR entry 71，无改包记录），本条是兜底；真机遇 ShowBtn=1 时确认「更多福利点击领取」按钮不出现",
+          "proof": "服务端当前返回空值，规则为兜底；不宣称本次抓包已生效"
+        }
       },
       {
         "id": "kill-topoperation",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
+        "group": "字段级净化（response 阶段 delete 型，v4.1.0）：纯广告/营销端点",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "bookshelf/getTopOperation",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/bookshelf/getTopOperation$",
-        "action": "reject_dict(200)",
-        "note": "书架置顶运营位",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-chapterend",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "followsubscribe/showChapterEndModule",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/followsubscribe/showChapterEndModule\\?",
-        "action": "reject_dict(200)",
-        "note": "章末订阅/运营模块",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-youngconf",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "young/getconf",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/young/getconf$",
-        "action": "reject_dict(200)",
-        "note": "青少年模式配置",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-lottery",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "checkin/lottery",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/checkin/lottery\\?",
-        "action": "reject_dict(200)",
-        "note": "签到抽奖/兑换页广告",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-hotwords",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "booksearch/hotWords",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/booksearch/hotWords\\?",
-        "action": "reject_dict(200)",
-        "note": "搜索热词",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-freshmanguide",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "freshman/freshmanGuidePopup",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/freshman/freshmanGuidePopup\\?",
-        "action": "reject_dict(200)",
-        "note": "新手引导弹窗",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-pushedmessage",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "message/getpushedmessagelist",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/message/getpushedmessagelist\\?",
-        "action": "reject_dict(200)",
-        "note": "推送消息列表",
-        "source": "config Plugin/qidian.plugin"
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/bookshelf/getTopOperation(\\?.*)?$",
+        "action": "response.json.delete([\"Data\"])",
+        "note": "书架红框整块删除：MainInfo=「必看神作/最低折扣」大横幅（AdvId AD20261013-07-iOS，BgImg/TitleImg 是图片所以 HAR 正文搜不到文案）+ Items×3 右侧小图标（含游戏手柄，AdvId AD20261013-09-iOS）。v4.0.3 只删 Data.Items → 横幅原样留在真机上，本轮改删整个 Data",
+        "source": "config Plugin/qidian.plugin · v4.1.0 按 466_1794290256836.har 实证重写",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "ui-redbox",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 37/61/151/254：MainInfo.AdvId=AD20261013-07-iOS 是「必看神作/最低折扣」大横幅（BgImg/TitleImg 图片），Items×3 是右侧三枚小图标（含游戏手柄）；v4.0.3 只删 Items 所以横幅仍在"
+        }
       },
       {
         "id": "kill-popup",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
+        "group": "字段级净化（response 阶段 delete 型，v4.1.0）：纯广告/营销端点",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "popup/batchget",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/popup/batchget\\?",
-        "action": "reject_dict(200)",
-        "note": "批量弹窗",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-activitylist",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "ploy/getactivitylist",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/ploy/getactivitylist\\?",
-        "action": "reject_dict(200)",
-        "note": "运营活动列表",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-messagepush",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "message/pull(Operation|Social)Push",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/message/pull(Operation|Social)Push\\?",
-        "action": "reject_dict(200)",
-        "note": "运营/社交 push 拉取",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-reportdialog",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "video/adv/reportDialog",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/reportDialog\\?",
-        "action": "reject_dict(200)",
-        "note": "广告上报弹窗",
-        "source": "config Plugin/qidian.plugin"
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/popup/batchget(\\?.*)?$",
+        "action": "response.json.delete([\"Data\"])",
+        "note": "弹窗队列整条杀（v4.0.3 改 delete 型：原 `\\?` 锚死于真机无 query 从未命中）",
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "field-present",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 266：Data.PopupList 有 1 条 Source=BOSSAD 弹窗（无改包记录）；真机回抓确认弹窗队列被清空"
+        }
       },
       {
         "id": "kill-classicbook",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
+        "group": "字段级净化（response 阶段 delete 型，v4.1.0）：纯广告/营销端点",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "interaction/getclassicbookinfo",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/interaction/getclassicbookinfo\\?",
-        "action": "reject_dict(200)",
-        "note": "经典书目运营模块",
-        "source": "config Plugin/qidian.plugin"
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/interaction/getclassicbookinfo(\\?.*)?$",
+        "action": "response.json.delete([\"Data.Items\"])",
+        "note": "章末经典书目运营位 Items 清空（v4.0.3 改 delete 型：原 `\\?` 锚死于真机无 query 从未命中）",
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "field-present",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 215：Data.Items 有 2 条章末经典书目运营位（无改包记录）；真机回抓确认 Items 被删且章节正文不受影响"
+        }
       },
       {
         "id": "kill-getad",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
+        "group": "字段级净化（response 阶段 delete 型，v4.1.0）：纯广告/营销端点",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "bookshelf/getad",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/bookshelf/getad\\?",
-        "action": "reject_dict(200)",
-        "note": "书架广告位（DirectKillPaths）",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "kill-iosad",
-        "group": "整条 reject（response 阶段，reject_dict(200)）：纯广告/营销端点",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "client/iosad",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/client/iosad\\?",
-        "action": "reject_dict(200)",
-        "note": "iOS 广告位列表（DirectKillPaths）",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "clean-mainpagedialog",
-        "group": "字段级净化（response 阶段）：混业务端点只删字段，保留接口结构",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "video/adv/mainPageDialog",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/mainPageDialog\\?",
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/bookshelf/getad(\\?.*)?$",
         "action": "response.json.delete([\"Data\"])",
-        "note": "福利中心弹窗 Data 清空（CLEAN_RULES）",
-        "source": "config Plugin/qidian.plugin"
+        "note": "书架游戏入口 GameUrl(gameCenterMainPage)+Show 广告位整条杀——用户红框手柄图标（v4.0.3 改 delete 型：原 `\\?` 锚死于真机无 query 从未命中）",
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "fallback-empty",
+          "url_hits": 1,
+          "device_check": "当前 server 回 Show=0（HAR entry 176）；截图红框手柄真身是 getTopOperation.Items，本条只兜底 GameUrl 游戏中心入口，真机确认书架不再出现手柄",
+          "proof": "服务端当前返回空值，规则为兜底；不宣称本次抓包已生效"
+        }
       },
       {
         "id": "clean-reddot",
@@ -485,21 +374,17 @@
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "reddot/getdot",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/reddot/getdot\\?",
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/reddot/getdot(\\?.*)?$",
         "action": "response.json.delete([\"Data\"])",
         "note": "红点 Data 清空（CLEAN_RULES）",
-        "source": "config Plugin/qidian.plugin"
-      },
-      {
-        "id": "clean-checkinexchange",
-        "group": "字段级净化（response 阶段）：混业务端点只删字段，保留接口结构",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "checkin/checkinexchangepage",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/checkin/checkinexchangepage\\?",
-        "action": "response.json.delete([\"Data.Goods\"])",
-        "note": "兑换页商品列表清空（CLEAN_RULES）",
-        "source": "config Plugin/qidian.plugin"
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "effective",
+          "url_hits": 3,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 10/156：原始 Data={ConfigId,DotList,ExpireDateTime}，复写后 Data 消失"
+        }
       },
       {
         "id": "clean-accountpage",
@@ -507,10 +392,17 @@
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "user/getaccountpage",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/user/getaccountpage\\?",
-        "action": "response.json.delete([\"Data.BenefitButtonList\"])",
-        "note": "我的页营销模块删除（AccountPageDelKeys）",
-        "source": "config Plugin/qidian.plugin"
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/user/getaccountpage(\\?.*)?$",
+        "action": "response.json.delete([\"Data.BenefitButtonList\", \"Data.Member\", \"Data.FunctionButtonList\", \"Data.BottomButtonList\", \"Data.SchoolText\", \"Data.SchoolUrl\", \"Data.SchoolImage\", \"Data.DianNiangWorldSwitch\", \"Data.DianNiangUrl\", \"Data.DianNiangWorldImage\", \"Data.PursueBookCard\", \"Data.ActiveActionUrl\", \"Data.FreshManGuideSwitch\"])",
+        "note": "我的页红框＋红框外营销入口一次清干净：起点会员卡 / 13 项功能宫格 / 「帮助与客服·加入我们」/ 惊喜活动按钮位 / 校园福利专区 / 点娘世界 / 追书卡 / 活动中心 / 新手引导开关；Data.UserBasicInfo（头像昵称等级）与 Data.AccountBalance（余额·月票·优惠卡券·章节卡·充值）原样保留",
+        "source": "config Plugin/qidian.plugin · v4.1.0 按 466_1794290256836.har 实证重写",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "ui-redbox",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 13/159 原始 Data 共 15 键：红框内 Member/FunctionButtonList(13)/BottomButtonList(2)/BenefitButtonList，红框外 SchoolText·SchoolUrl·SchoolImage（校园福利专区）、DianNiang*（点娘世界）、PursueBookCard、ActiveActionUrl、FreshManGuideSwitch；只留 UserBasicInfo 与 AccountBalance"
+        }
       },
       {
         "id": "deeplink-url",
@@ -518,32 +410,53 @@
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "deeplink/geturl",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v2/deeplink/geturl",
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/deeplink/geturl(\\?.*)?$",
         "action": "response.json.replace([\"Data.ActionUrl\", \"\"])",
         "note": "冷启动强制跳转精选页：ActionUrl 置空",
-        "source": "config Plugin/qidian.plugin"
+        "source": "config Plugin/qidian.plugin",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "field-present",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 226：deeplink/geturl 真实出现；真机冷启动确认不再强制跳精选页"
+        }
       },
       {
-        "id": "adv-tab",
-        "group": "字段改值与数组置空（response 阶段）：保留接口结构",
+        "id": "kill-advlistbatch",
+        "group": "整条 kill（response 阶段 v4.0.3 实证 delete 型）：纯广告/营销端点",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
-        "endpoint": "v1/adv/",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/adv/",
-        "action": "response.json.jq(\".Data.iOS_tab = []\")",
-        "note": "发现页活动 tab：iOS_tab 置空数组",
-        "source": "config Plugin/qidian.plugin"
+        "endpoint": "adv/getadvlistbatch",
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/adv/getadvlistbatch(\\?.*)?$",
+        "action": "response.json.delete([\"Data.iosusercenter\", \"Data.iosusercenter2\"])",
+        "note": "我的页「今日偶遇/惊喜活动推荐」广告位删除（用户红框 2026-11-10；真机请求 positions=iosusercenter,iosusercenter2）；h5 域 ioscheckin 签到页广告位与 Data.iOS_tab 不动",
+        "source": "AshNail v4.0.3（config 无此条——真机取证 HAR 466 之上新增）",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "ui-redbox",
+          "url_hits": 3,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 12/158：Data.iosusercenter2[0].ADText=「今日偶遇|《重启人生》王梓钧著 都市」、Data.iosusercenter[0].ADText=「惊喜活动推荐」，与我的页红框逐字对应"
+        }
       },
       {
-        "id": "hover-adv",
-        "group": "字段改值与数组置空（response 阶段）：保留接口结构",
+        "id": "clean-simplediscover",
+        "group": "字段级净化（v4.0.3 新增）：发现页白名单",
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
-        "endpoint": "bookshelf/getHoverAdv",
-        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v1/bookshelf/getHoverAdv",
-        "action": "response.json.jq(\".Data.ItemList = []\")",
-        "note": "书架右下角悬浮广告：ItemList 置空数组",
-        "source": "config Plugin/qidian.plugin"
+        "endpoint": "user/getsimplediscover",
+        "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/user/getsimplediscover(\\?.*)?$",
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.Data | type) == \\\"object\\\" and (.Data.Items | type) == \\\"array\\\" then .Data.Items |= map(select(if type == \\\"object\\\" then (.KeyName | if type == \\\"string\\\" then startswith(\\\"DISCOVER_\\\") else false end) else false end)) else . end\")",
+        "note": "发现页白名单：仅保留 7 张 DISCOVER_* 内容卡，剔除 14 张 NEW_* 营销卡（游戏中心/红包广场/周边商城等）；v4.1.0 补三层类型守卫（顶层 object / Items 数组 / 条目 object / KeyName 字符串），异常条目不再让整次净化失败、响应原样放行",
+        "source": "AshNail v4.0.3（config 无此条——真机取证 HAR 466 之上新增） · v4.1.0 按 466_1794290256836.har 实证重写",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "field-present",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 6/14/45/202：Data.Items 21 张卡，其中 NEW_* 营销卡 14 张、DISCOVER_* 内容卡 7 张；真机回抓确认发现页只剩内容卡"
+        }
       },
       {
         "id": "clean-mainpage",
@@ -551,10 +464,17 @@
         "stage": "response",
         "gate": "CAPTURE_ENABLE",
         "endpoint": "video/adv/mainPage",
-        "url": "https://h5\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/mainPage$",
-        "action": "response.json.delete([\"Data.MemberExclusiveTaskModule\",\"Data.PrivilegedTaskModule\",\"Data.MoreRewardTab\",\"Data.SurpriseBenefit\",\"Data.LastRewardItems\",\"Data.IndexBannerTabs\",\"Data.BaizeModule\",\"Data.TaskShowData\",\"Data.UserRewardModule\",\"Data.PopFrequency\"])",
-        "note": "福利中心营销模块删除（镜像 vendored 引擎 handleMainPage 的 REMOVE_KEYS 十项——DailyBenefitModule/VideoRewardTab/ReadingPageTaskModule/RedeemGifts/ScoreDrawModule 等激励与奖励出口原样保留；命中后深净化脚本被抑制，限时激励收集只剩 cron 预热一路，与脚本收集不叠账）",
-        "source": "AshNail v4.0.2（config 无此条——真机取证 HAR 之上新增）"
+        "url": "https://h5\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/mainPage(\\?.*)?$",
+        "action": "response.json.delete([\"Data.PrivilegedTaskModule\", \"Data.MoreRewardTab\", \"Data.SurpriseBenefit\", \"Data.LastRewardItems\", \"Data.IndexBannerTabs\", \"Data.BaizeModule\", \"Data.TaskShowData\", \"Data.UserRewardModule\", \"Data.PopFrequency\", \"Data.ActivityCenterModule\", \"Data.CharityModule\", \"Data.VideoRewardTab\", \"Data.RedeemGifts\"])",
+        "note": "福利中心营销模块删除（13 键）：v4.0.2 十键 + v4.0.3 三键；v4.1.0 移除 MemberExclusiveTaskModule（HAR 原始 Data 里根本不存在，属于无效声明）。DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 等激励与奖励出口原样保留",
+        "source": "AshNail v4.0.2（config 无此条——真机取证 HAR 之上新增） · v4.1.0 按 466_1794290256836.har 实证重写",
+        "evidence": {
+          "har": "466_1794290256836.har",
+          "kind": "effective",
+          "url_hits": 1,
+          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
+          "proof": "HAR entry 129 复写前后 diff：removed=9 个营销模块；DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 原样保留"
+        }
       }
     ],
     "bindings": [

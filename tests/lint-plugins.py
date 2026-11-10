@@ -4383,6 +4383,95 @@ def check_round3_guards():
     )
 
 
+def check_qidian_har_guards():
+    """v4.1.0（HAR 466）重写后的防回潮守卫。
+
+    `tools/qidian-har-evidence.py --check` 负责「规则 ↔ 抓包证据」的完整对账与
+    真实响应改包模拟；这里只钉源码层最容易悄悄回潮的几条形状，保证即使有人
+    绕过证据工具，`npm run lint` 也会红：
+
+      ① 真机零命中的旧端点不许加回来；
+      ② 整条 reject_dict 不许再出现（v4.0.3 已实证在本机无效，且会打断签到/兑换）；
+      ③ 激励出口与身份/账户字段不许进删除名单；
+      ④ 书架红框必须删到 MainInfo（只删 Items 会留下大横幅）；
+      ⑤ 我的页必须删满 13 个营销键，且每条规则自带 evidence；
+      ⑥ 证据快照本身不许被换成空壳。
+    """
+    problems = 0
+    config = ROOT / "src" / "apps" / "qidian.json"
+    snapshot = ROOT / "tests" / "fixtures" / "qidian-har-20261110.json"
+    if not config.exists() or not snapshot.exists():
+        errors.append("qidian HAR guards: 缺 src/apps/qidian.json 或证据快照")
+        print("qidian HAR guards: missing input(s)")
+        return
+    data = json.loads(config.read_text(encoding="utf-8"))
+    rules = (data.get("enhance") or {}).get("rewrite") or []
+    snap = json.loads(snapshot.read_text(encoding="utf-8"))
+    dead = {
+        "push/getdialog", "maintain/playstrip", "followsubscribe/showChapterEndModule",
+        "checkin/lottery", "booksearch/hotWords", "message/pull(Operation|Social)Push",
+        "video/adv/reportDialog", "video/adv/mainPageDialog",
+    }
+    protected = ("Data.Goods", "Data.UserBasicInfo", "Data.AccountBalance")
+    marketing = (
+        "Data.BenefitButtonList", "Data.Member", "Data.FunctionButtonList",
+        "Data.BottomButtonList", "Data.SchoolText", "Data.SchoolUrl", "Data.SchoolImage",
+        "Data.DianNiangWorldSwitch", "Data.DianNiangUrl", "Data.DianNiangWorldImage",
+        "Data.PursueBookCard", "Data.ActiveActionUrl", "Data.FreshManGuideSwitch",
+    )
+    by_id = {rule.get("id"): rule for rule in rules}
+    for rule in rules:
+        rid = rule.get("id", "?")
+        endpoint = rule.get("endpoint", "")
+        action = rule.get("action", "")
+        if endpoint in dead:
+            errors.append(f"qidian HAR guards: {rid} 把真机零命中端点 {endpoint} 加回来了")
+            problems += 1
+        if "reject_dict" in action:
+            errors.append(
+                f"qidian HAR guards: {rid} 又用 reject_dict——HAR 466 实证该动作在本机无效，"
+                "整条替换还会打断签到/兑换/青少年模式，改用 response.json.delete 或放行"
+            )
+            problems += 1
+        for key in protected:
+            if key in action:
+                errors.append(f"qidian HAR guards: {rid} 碰了受保护字段 {key}")
+                problems += 1
+        evidence = rule.get("evidence") or {}
+        if not evidence.get("kind") or not evidence.get("har"):
+            errors.append(f"qidian HAR guards: {rid} 缺 evidence.kind / evidence.har")
+            problems += 1
+        if not isinstance(evidence.get("url_hits"), int) or evidence.get("url_hits", 0) < 1:
+            errors.append(f"qidian HAR guards: {rid} 的 evidence.url_hits 不是正整数")
+            problems += 1
+
+    top = (by_id.get("kill-topoperation") or {}).get("action", "")
+    if 'delete(["Data"])' not in top and not ("Data.MainInfo" in top and "Data.Items" in top):
+        errors.append(
+            "qidian HAR guards: kill-topoperation 只删 Items 会留下 MainInfo 大横幅"
+            "（AdvId AD20261013-07-iOS），必须删整个 Data 或同时删 MainInfo+Items"
+        )
+        problems += 1
+    account = (by_id.get("clean-accountpage") or {}).get("action", "")
+    missing = [key for key in marketing if key not in account]
+    if missing:
+        errors.append("qidian HAR guards: clean-accountpage 少删 " + ", ".join(missing))
+        problems += 1
+    adlist = (by_id.get("kill-advlistbatch") or {}).get("action", "")
+    if "Data.iosusercenter2" not in adlist or "Data.iosusercenter" not in adlist:
+        errors.append("qidian HAR guards: kill-advlistbatch 没删全 iosusercenter / iosusercenter2")
+        problems += 1
+
+    if snap.get("schema") != 1 or len(snap.get("samples") or {}) < 8 or \
+            len(snap.get("observed_rewrite") or []) < 5:
+        errors.append("qidian HAR guards: 证据快照被换成空壳（schema/samples/observed_rewrite）")
+        problems += 1
+    print(
+        f"qidian HAR guards: {len(rules)} rewrite rule(s), "
+        f"{len(snap.get('samples') or {})} sample(s), {problems} problem(s)"
+    )
+
+
 check_shared_scripts()
 check_switch_labels()
 check_argument_schema()
@@ -4393,6 +4482,7 @@ check_script_safety()
 check_pagination_integrity()
 check_source_hash()
 check_round3_guards()
+check_qidian_har_guards()
 check_bypass_dns_guard()
 check_no_legacy_syntax()
 check_loon_version_gate()

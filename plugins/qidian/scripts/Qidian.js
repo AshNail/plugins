@@ -135,7 +135,6 @@ const CONFIG = {
     "WolfEye": 0,
     "MainTabActivityRunning": 0,
     "DailyReadRecReasonSwitch": 0,
-    "DailyRecommendGray": 0,
     "EnableShareChapterPloy": 0,
     "EnableChapterAdvanceGuide": 0,
     "AddBookShelfNoticeFrequency": "999999",
@@ -285,8 +284,13 @@ const CLEAN_RULES = {
     handleDeeplink($response);
     return;
   }
-  // H. 每日推荐
+  // H. 每日推荐 — v4.0.3: getdailyrecommend 放行（恢复每日导读），其余一族维持原路径
   if (path.includes("dailyrecommend")) {
+    if (path.includes("getdailyrecommend")) {
+      // 每日导读恢复（用户裁决 2026-11-10）：不清空 Items，直接透传
+      $.done();
+      return;
+    }
     handleDailyRec($response);
     return;
   }
@@ -382,11 +386,16 @@ function handleClientConfig(response) {
 
 /**
  * 福利中心主页 — 按用户选择保留/删除各模块
- * 保留: DailyBenefitModule(激励任务), VideoRewardTab(视频奖励),
- *       RedeemGifts(积分兑换), ScoreDrawModule(幸运抽抽乐)
+ * v4.0.3（用户裁决 2026-11-10，真机 HAR 465_1794288736147 键位↔文案映射）：
+ * 保留: DailyBenefitModule(激励任务), ReadingPageTaskModule(限时激励收集),
+ *       ScoreDrawModule(幸运抽抽乐)
  * 删除: MemberExclusiveTaskModule(会员尊享), PrivilegedTaskModule(邀好友),
  *       MoreRewardTab(更多奖励), SurpriseBenefit(限时福利),
- *       LastRewardItems(必中夺宝), IndexBannerTabs(顶部Banner)
+ *       LastRewardItems(必中夺宝), IndexBannerTabs(顶部Banner),
+ *       BaizeModule, TaskShowData, UserRewardModule, PopFrequency,  (v4.0.2)
+ *       ActivityCenterModule(参与活动领福利), CharityModule(读书做公益),
+ *       VideoRewardTab(完成1个/3个广告任务得奖励+白泽宇航员装扮),
+ *       RedeemGifts(积分兑好礼货架)                                 (v4.0.3)
  */
 function handleMainPage(response) {
   try {
@@ -403,9 +412,9 @@ function handleMainPage(response) {
 
     // ── 视频奖励 tab：同样保留原始状态 ─────────────────────
 
-    // ── 保留：RedeemGifts(积分兑换), ScoreDrawModule(幸运抽抽乐) ──
+    // ── 保留：ScoreDrawModule(幸运抽抽乐)＋DailyBenefitModule/ReadingPageTaskModule 激励 ──
 
-    // ── 删除：营销/活动/邀请/会员/限时模块 ───────────────
+    // ── 删除：营销/活动/邀请/会员/限时/兑换货架模块 ──────
     const REMOVE_KEYS = [
       "MemberExclusiveTaskModule", // 会员尊享（90天畅读等）
       "PrivilegedTaskModule",      // 邀好友活动（邀友一起读/3300点等）
@@ -417,6 +426,11 @@ function handleMainPage(response) {
       "TaskShowData",              // 任务展示配置
       "UserRewardModule",          // 用户奖励统计
       "PopFrequency",              // 弹窗频率控制
+      // v4.0.3（用户裁决 2026-11-10，HAR 465_1794288736147 键位映射）：
+      "ActivityCenterModule",      // 参与活动领福利
+      "CharityModule",             // 读书做公益（送出公益金）
+      "VideoRewardTab",            // 完成1个/3个广告任务得奖励＋做任务得白泽宇航员装扮
+      "RedeemGifts",               // 积分兑好礼货架（3天体验会员/30天漫画券/卡牌召唤机会等）
     ];
     REMOVE_KEYS.forEach(k => { delete data[k]; });
 

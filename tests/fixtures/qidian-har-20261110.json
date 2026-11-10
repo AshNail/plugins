@@ -1,0 +1,1132 @@
+{
+  "schema": 1,
+  "source": {
+    "har": "466_1794290256836.har",
+    "log": "2026-11-10 14.log",
+    "entries": 319,
+    "qidian_url_entries": 163,
+    "unique_urls": 88,
+    "modified_responses": 17,
+    "script_evaluate_failed": 49,
+    "semantics": "response.content 为复写后；_loonOriginal 为复写前；_loon.rewrite 为实际命中规则"
+  },
+  "urls": [
+    "https://cococdn.qidian.com/coco/s09262023/8a3403ab.f6bws5.png",
+    "https://cococdn.qidian.com/coco/s11072024/053fc838.c84ctg.png",
+    "https://cococdn.qidian.com/coco/s11112024/6a9d241e.hk674o.png",
+    "https://cococdn.qidian.com/coco/s11112024/6d724265.8hgwlo.png",
+    "https://cococdn.qidian.com/coco/s11112024/87cabba8.r6a6qi.png",
+    "https://cococdn.qidian.com/coco/s11122024/37f66ed7.qd5da5.jpg",
+    "https://cococdn.qidian.com/coco/s11152024/1d197ad5.u0l7ri.png",
+    "https://cococdn.qidian.com/coco/s11152024/7720505d.puc664.png",
+    "https://cococdn.qidian.com/coco/s11192024/e294048b.0x9wmt.png",
+    "https://cococdn.qidian.com/coco/s11212024/391aede2.j3c72r.png",
+    "https://cococdn.qidian.com/coco/s12132024/4567ad6c.6odekz.png",
+    "https://cococdn.qidian.com/image/20190916/6de63044b998.png",
+    "https://fockrt.yuewen.com/files?t=1&cs%5B%5D=2",
+    "https://fockrt.yuewen.com/files?t=3",
+    "https://fockrt.yuewen.com/knobs/settings",
+    "https://h5.if.qidian.com/argus/api/v1/adv/getadvlistbatch?positions=ioscheckin",
+    "https://h5.if.qidian.com/argus/api/v1/user/getlogininfo",
+    "https://h5.if.qidian.com/argus/api/v2/readtime/readpage",
+    "https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage",
+    "https://h5.if.qidian.com/argus/api/v3/checkin/checkinexchangepage",
+    "https://h5.if.qidian.com/argus/api/v3/checkin/getcurrentweekcheckininfo",
+    "https://h5.if.qidian.com/new/welfareCenter/?_viewmode=0&_smode=1",
+    "https://h5.if.qidian.com/new/welfareCenter?_viewmode=0&_smode=1",
+    "https://magev6.if.qidian.com/",
+    "https://magev6.if.qidian.com/argus/api/v1/adv/getadvlistbatch?appappend=1TYA9g&positions=iosusercenter%2Ciosusercenter2",
+    "https://magev6.if.qidian.com/argus/api/v1/audio/gettonegroup?bookId=0",
+    "https://magev6.if.qidian.com/argus/api/v1/bookshelf/getHighLevelBookReadInfo?audioIds=&bookIds=1050912063%2C1044750637%2C1050028788%2C1049052525%2C1048838213%2C1047634306%2C1051304088%2C1039931006%2C1049745989%2C1050934943%2C1045548865%2C1049311236%2C1039689097%2C1048305155%2C1041248416%2C1049962373%2C1043050413%2C1048817253%2C1039365138%2C1048724084%2C1048906021%2C1033148818%2C1048193111%2C1047996831%2C1049484442%2C1046497842%2C1043462065%2C1046012796%2C1046725020%2C1043053725%2C1046627041%2C1049121196%2C1045539342%2C1048306124%2C1047869298%2C1033780528%2C1036379832%2C1048915778%2C1046003939%2C1047321902%2C1049733978%2C1031866444%2C1044332906%2C1047563786%2C1045961766%2C1043578498%2C1047383319%2C1048864298%2C1044150722%2C1048014681%2C1043146703%2C1046931359%2C1049790413%2C1047881102%2C1049137208%2C1050725440%2C1045808916%2C1047058102%2C1046377700%2C1048234929%2C1050495953%2C1013013985%2C1044990363%2C1014144727%2C1036120718%2C1049063228%2C1050845080%2C1049056244%2C1047345757%2C1031994922%2C1050184003%2C1031199549%2C1025480759%2C1047620203%2C1048166689%2C1041792764%2C1046147489%2C1043262073%2C1045267415%2C1038896563%2C1038077798%2C1040055443%2C1047224531%2C1043723484%2C1044569848%2C1044108943%2C1045994148%2C1037466843%2C1043764637%2C1044290847%2C1045172422%2C1045633748%2C1010579888%2C2230220%2C1048568401&vdIds=",
+    "https://magev6.if.qidian.com/argus/api/v1/bookshelf/getHoverAdv",
+    "https://magev6.if.qidian.com/argus/api/v1/bookshelf/getTopOperation",
+    "https://magev6.if.qidian.com/argus/api/v1/bookshelf/getad",
+    "https://magev6.if.qidian.com/argus/api/v1/bookshelf/refreshInfo",
+    "https://magev6.if.qidian.com/argus/api/v1/booksquare/getfloatcard?dayShowedCount=0",
+    "https://magev6.if.qidian.com/argus/api/v1/circle/memerefresh?memeRequest=1%7C1043",
+    "https://magev6.if.qidian.com/argus/api/v1/client/getconf",
+    "https://magev6.if.qidian.com/argus/api/v1/client/getconfSpecify",
+    "https://magev6.if.qidian.com/argus/api/v1/client/iOSUpdateNew",
+    "https://magev6.if.qidian.com/argus/api/v1/client/iosad",
+    "https://magev6.if.qidian.com/argus/api/v1/client/ostar",
+    "https://magev6.if.qidian.com/argus/api/v1/dailyrecommend/recommendBook?sex=0",
+    "https://magev6.if.qidian.com/argus/api/v1/decorator/allmemepackagesimplelist",
+    "https://magev6.if.qidian.com/argus/api/v1/decorator/font/list",
+    "https://magev6.if.qidian.com/argus/api/v1/freshman/bookshelfbtn",
+    "https://magev6.if.qidian.com/argus/api/v1/freshman/freshmanGuidePopup?bookId=0&exitPage=3&isPricePreviewPage=0&processId=1794290268211_ios",
+    "https://magev6.if.qidian.com/argus/api/v1/interaction/getclassicbookinfo",
+    "https://magev6.if.qidian.com/argus/api/v1/message/getpushedmessagelist",
+    "https://magev6.if.qidian.com/argus/api/v1/message/setswitch",
+    "https://magev6.if.qidian.com/argus/api/v1/popup/batchget",
+    "https://magev6.if.qidian.com/argus/api/v1/push/report",
+    "https://magev6.if.qidian.com/argus/api/v1/reddot/getdot?positionMark=BOTTOM_TAB",
+    "https://magev6.if.qidian.com/argus/api/v1/reddot/getdot?positionMark=MY_PAGE_NEW",
+    "https://magev6.if.qidian.com/argus/api/v1/reddot/getdot?positionMark=SELECTED_PAGE",
+    "https://magev6.if.qidian.com/argus/api/v1/testActivityDetail",
+    "https://magev6.if.qidian.com/argus/api/v1/theme/getreadconfig",
+    "https://magev6.if.qidian.com/argus/api/v1/user/checkBindPhone?scene=1",
+    "https://magev6.if.qidian.com/argus/api/v1/user/getreadsetting",
+    "https://magev6.if.qidian.com/argus/api/v1/user/getsimplediscover",
+    "https://magev6.if.qidian.com/argus/api/v1/user/queryUserGetBadge",
+    "https://magev6.if.qidian.com/argus/api/v1/widget/daily/rec?sex=0",
+    "https://magev6.if.qidian.com/argus/api/v1/widget/getContent?bizType=1&widgetType=221",
+    "https://magev6.if.qidian.com/argus/api/v1/young/getconf",
+    "https://magev6.if.qidian.com/argus/api/v2/adv/getadvlistbatch?positions=bottom_tab_discover",
+    "https://magev6.if.qidian.com/argus/api/v2/adv/getadvlistbatch?positions=ios_chaptercomment%2Cios_circle_list%2Cios_circle_info%2Cios_booklist_info%2Cios_minetab%2Cios_selecttab%2Cios_booksearch_bottom",
+    "https://magev6.if.qidian.com/argus/api/v2/booksearch/shardWord?siteCodes=1008%2C1000%2C1001%2C1015%2C1014%2C1003",
+    "https://magev6.if.qidian.com/argus/api/v2/booksearch/shardWordReport",
+    "https://magev6.if.qidian.com/argus/api/v2/bookshelf/refresh",
+    "https://magev6.if.qidian.com/argus/api/v2/checkin/simpleinfo?position=bookshelf&showReadTimeCnt=0",
+    "https://magev6.if.qidian.com/argus/api/v2/checkin/simpleinfo?showReadTimeCnt=0",
+    "https://magev6.if.qidian.com/argus/api/v2/dailyrecommend/getdailyrecommend?sex=0",
+    "https://magev6.if.qidian.com/argus/api/v2/interaction/getdonateconfig",
+    "https://magev6.if.qidian.com/argus/api/v2/message/getswitch",
+    "https://magev6.if.qidian.com/argus/api/v2/message/totalcount",
+    "https://magev6.if.qidian.com/argus/api/v2/ploy/getactivitylist?idMap=%7B%221050912063%22%3A%201%2C%221044750637%22%3A%201%2C%221050028788%22%3A%201%2C%221049052525%22%3A%201%2C%221048838213%22%3A%201%2C%221047634306%22%3A%201%2C%221051304088%22%3A%201%2C%221039931006%22%3A%201%2C%221049745989%22%3A%201%2C%221050934943%22%3A%201%2C%7D",
+    "https://magev6.if.qidian.com/argus/api/v3/client/r1",
+    "https://magev6.if.qidian.com/argus/api/v3/deeplink/geturl",
+    "https://magev6.if.qidian.com/argus/api/v3/user/getaccountpage?appappend=1TYA9g&gender=0",
+    "https://magev6.if.qidian.com/argus/api/v4/bookcontent/getkey?bookId=0&ui=0",
+    "https://magev6.if.qidian.com/argus/api/v4/client/getsplashscreen?localLabels=100",
+    "https://pay6.yuewen.com/api/v2/conf/sdkConf",
+    "https://ptlogin6.qidian.com/sdk/getTeenagerStatus",
+    "https://qdfepccdn.qidian.com/gtimg/qd_h5/js/lotterytiger.min.js",
+    "https://qdfepccdn.qidian.com/gtimg/qd_h5/js/risk.js",
+    "https://qdfepccdn.qidian.com/h5.if.qidian.com/new/js/decimal_DzYMnzy__chunk.js",
+    "https://qdfepccdn.qidian.com/h5.if.qidian.com/new/js/libpag-lite_CyYaeb8t_chunk.js",
+    "https://qdfepccdn.qidian.com/h5.if.qidian.com/new/js/polyfills_99DsLemP_entry.js",
+    "https://upush.qidian.com/submit/deviceTokenV5",
+    "https://upush.qidian.com/submit/reportAlias4LAToken",
+    "https://upush.qidian.com/submit/setTag",
+    "https://ys.yuewen.com/s/tts-report/log"
+  ],
+  "observed_rewrite": [
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v1\\/client\\/getconf$/ then response.json.replace([\"Data.PangleEnable\", \"Data.DisableQidianBurryReport\", \"Data.DisableNewabInBI\", \"Data.SplashScreenInterval\", \"Data.SplashScreenRoundCount\", \"Data.BusinessSplashCoolDownTime\", \"Data.PushDialogFrequency\", \"Data.EnableMonitorLog\", \"Data.EnableBeaconFullBurry\", \"Data.ReloadExposureEnabled\", \"Data.QDABRegularReportTimeSpan\", \"Data.QDABReportMinThreshold\", \"Data.RankBuryPoint\", \"Data.CheckInPushSwitchReport\", \"Data.WolfEye\", \"Data.MainTabActivityRunning\", \"Data.DailyReadRecReasonSwitch\", \"Data.DailyRecommendGray\", \"Data.EnableShareChapterPloy\", \"Data.EnableChapterAdvanceGuide\", \"Data.AddBookShelfNoticeFrequency\", \"Data.BookShelfPushNoticeFrequency\", \"Data.UGCPushNoticeFrequency\", \"Data.NotificationPageBackPushNoticeFrequency\", \"Data.ActivityPageBackPushNoticeFrequency\", \"Data.InAppPushLimitMinutes\", \"Data.PushNoticeFrequency\", \"Data.AegisSignOn\", \"Data.EnableFockRetryStrategy\", \"Data.EnableSearchUser\"], [\"0\", \"1\", \"1\", \"0\", \"0\", \"99999\", \"0\", \"0\", \"0\", \"false\", \"999999\", \"999999\", \"0\", \"0\", 0, 0, 0, 0, 0, 0, \"999999\", \"999999\", \"999999\", \"999999\", \"999999\", \"999999\", \"-1\", 0, 0, \"1\"])",
+      "count": 5
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v1\\/client\\/getconf$/ then response.json.delete([\"Data.ActivityIcon\", \"Data.ActivityPopup\", \"Data.LuckBag\", \"Data.BookShelfBottomIcons\", \"Data.ClassicBookInfo\", \"Data.ClientLocalNotify2\", \"Data.PushDialogScenes\", \"Data.RewardSatisfyDialog\", \"Data.FansClubPropInfo\", \"Data.AdVideoPositionConfig\", \"Data.GDT\"])",
+      "count": 5
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v1\\/client\\/getconf$/ then response.json.replace([\"Data.NewFeedsDiscover\", \"Data.CloudSetting.TeenShowFreq\"], [0, \"0\"])",
+      "count": 5
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v\\d+\\/reddot\\/getdot\\?/ then response.json.delete([\"Data\"])",
+      "count": 5
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v1\\/adv\\// then response.json.jq(\".Data.iOS_tab = []\")",
+      "count": 2
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v\\d+\\/user\\/getaccountpage\\?/ then response.json.delete([\"Data.BenefitButtonList\"])",
+      "count": 2
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/h5\\.if\\.qidian\\.com\\/argus\\/api\\/v\\d+\\/video\\/adv\\/mainPage$/ then response.json.delete([\"Data.MemberExclusiveTaskModule\", \"Data.PrivilegedTaskModule\", \"Data.MoreRewardTab\", \"Data.SurpriseBenefit\", \"Data.LastRewardItems\", \"Data.IndexBannerTabs\", \"Data.BaizeModule\", \"Data.TaskShowData\", \"Data.UserRewardModule\", \"Data.PopFrequency\"])",
+      "count": 1
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v2\\/dailyrecommend\\/getdailyrecommend\\?/ then response.json.jq(\".Data.Items = []\")",
+      "count": 1
+    },
+    {
+      "rule": "response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\\/\\/magev6\\.if\\.qidian\\.com\\/argus\\/api\\/v1\\/bookshelf\\/getHoverAdv/ then response.json.jq(\".Data.ItemList = []\")",
+      "count": 1
+    }
+  ],
+  "observed_scripts": {
+    "深度净化": 43,
+    "获取Token": 14,
+    "客户端配置净化": 8,
+    "起点读书获取Cookie": 2,
+    "YouTube config request handling": 1,
+    "YouTube Onesie config cache": 1
+  },
+  "effects": [
+    {
+      "entry": 9,
+      "path": "/argus/api/v1/client/getconf",
+      "removed": [
+        "ActivityIcon",
+        "ActivityPopup",
+        "AdVideoPositionConfig",
+        "BookShelfBottomIcons",
+        "ClassicBookInfo",
+        "ClientLocalNotify2",
+        "FansClubPropInfo",
+        "GDT",
+        "LuckBag",
+        "PushDialogScenes",
+        "RewardSatisfyDialog"
+      ],
+      "changed": [
+        "ActivityPageBackPushNoticeFrequency",
+        "AddBookShelfNoticeFrequency",
+        "BookShelfPushNoticeFrequency",
+        "BusinessSplashCoolDownTime",
+        "CheckInPushSwitchReport",
+        "CloudSetting",
+        "DailyReadRecReasonSwitch",
+        "DailyRecommendGray",
+        "DisableQidianBurryReport",
+        "EnableBeaconFullBurry",
+        "EnableFockRetryStrategy",
+        "EnableMonitorLog",
+        "EnableSearchUser",
+        "InAppPushLimitMinutes",
+        "NotificationPageBackPushNoticeFrequency",
+        "PangleEnable",
+        "PushDialogFrequency",
+        "PushNoticeFrequency",
+        "QDABRegularReportTimeSpan",
+        "QDABReportMinThreshold",
+        "RankBuryPoint",
+        "ReloadExposureEnabled",
+        "SplashScreenInterval",
+        "SplashScreenRoundCount",
+        "UGCPushNoticeFrequency",
+        "WolfEye"
+      ]
+    },
+    {
+      "entry": 10,
+      "path": "/argus/api/v1/reddot/getdot",
+      "removed": [],
+      "changed": [
+        "Data"
+      ]
+    },
+    {
+      "entry": 12,
+      "path": "/argus/api/v1/adv/getadvlistbatch",
+      "removed": [],
+      "changed": []
+    },
+    {
+      "entry": 13,
+      "path": "/argus/api/v3/user/getaccountpage",
+      "removed": [
+        "BenefitButtonList"
+      ],
+      "changed": []
+    },
+    {
+      "entry": 23,
+      "path": "/argus/api/v1/client/getconf",
+      "removed": [
+        "ActivityIcon",
+        "ActivityPopup",
+        "AdVideoPositionConfig",
+        "BookShelfBottomIcons",
+        "ClassicBookInfo",
+        "ClientLocalNotify2",
+        "FansClubPropInfo",
+        "GDT",
+        "LuckBag",
+        "PushDialogScenes",
+        "RewardSatisfyDialog"
+      ],
+      "changed": [
+        "ActivityPageBackPushNoticeFrequency",
+        "AddBookShelfNoticeFrequency",
+        "BookShelfPushNoticeFrequency",
+        "BusinessSplashCoolDownTime",
+        "CheckInPushSwitchReport",
+        "CloudSetting",
+        "DailyReadRecReasonSwitch",
+        "DailyRecommendGray",
+        "DisableQidianBurryReport",
+        "EnableBeaconFullBurry",
+        "EnableFockRetryStrategy",
+        "EnableMonitorLog",
+        "EnableSearchUser",
+        "InAppPushLimitMinutes",
+        "NotificationPageBackPushNoticeFrequency",
+        "PangleEnable",
+        "PushDialogFrequency",
+        "PushNoticeFrequency",
+        "QDABRegularReportTimeSpan",
+        "QDABReportMinThreshold",
+        "RankBuryPoint",
+        "ReloadExposureEnabled",
+        "SplashScreenInterval",
+        "SplashScreenRoundCount",
+        "UGCPushNoticeFrequency",
+        "WolfEye"
+      ]
+    },
+    {
+      "entry": 54,
+      "path": "/argus/api/v1/client/getconf",
+      "removed": [
+        "ActivityIcon",
+        "ActivityPopup",
+        "AdVideoPositionConfig",
+        "BookShelfBottomIcons",
+        "ClassicBookInfo",
+        "ClientLocalNotify2",
+        "FansClubPropInfo",
+        "GDT",
+        "LuckBag",
+        "PushDialogScenes",
+        "RewardSatisfyDialog"
+      ],
+      "changed": [
+        "ActivityPageBackPushNoticeFrequency",
+        "AddBookShelfNoticeFrequency",
+        "BookShelfPushNoticeFrequency",
+        "BusinessSplashCoolDownTime",
+        "CheckInPushSwitchReport",
+        "CloudSetting",
+        "DailyReadRecReasonSwitch",
+        "DailyRecommendGray",
+        "DisableQidianBurryReport",
+        "EnableBeaconFullBurry",
+        "EnableFockRetryStrategy",
+        "EnableMonitorLog",
+        "EnableSearchUser",
+        "InAppPushLimitMinutes",
+        "NotificationPageBackPushNoticeFrequency",
+        "PangleEnable",
+        "PushDialogFrequency",
+        "PushNoticeFrequency",
+        "QDABRegularReportTimeSpan",
+        "QDABReportMinThreshold",
+        "RankBuryPoint",
+        "ReloadExposureEnabled",
+        "SplashScreenInterval",
+        "SplashScreenRoundCount",
+        "UGCPushNoticeFrequency",
+        "WolfEye"
+      ]
+    },
+    {
+      "entry": 129,
+      "path": "/argus/api/v2/video/adv/mainPage",
+      "removed": [
+        "BaizeModule",
+        "IndexBannerTabs",
+        "LastRewardItems",
+        "MoreRewardTab",
+        "PopFrequency",
+        "PrivilegedTaskModule",
+        "SurpriseBenefit",
+        "TaskShowData",
+        "UserRewardModule"
+      ],
+      "changed": []
+    },
+    {
+      "entry": 156,
+      "path": "/argus/api/v1/reddot/getdot",
+      "removed": [],
+      "changed": [
+        "Data"
+      ]
+    },
+    {
+      "entry": 158,
+      "path": "/argus/api/v1/adv/getadvlistbatch",
+      "removed": [],
+      "changed": []
+    },
+    {
+      "entry": 159,
+      "path": "/argus/api/v3/user/getaccountpage",
+      "removed": [
+        "BenefitButtonList"
+      ],
+      "changed": []
+    },
+    {
+      "entry": 174,
+      "path": "/argus/api/v1/reddot/getdot",
+      "removed": [],
+      "changed": []
+    },
+    {
+      "entry": 189,
+      "path": "/argus/api/v1/client/getconf",
+      "removed": [
+        "ActivityIcon",
+        "ActivityPopup",
+        "AdVideoPositionConfig",
+        "BookShelfBottomIcons",
+        "ClassicBookInfo",
+        "ClientLocalNotify2",
+        "FansClubPropInfo",
+        "GDT",
+        "LuckBag",
+        "PushDialogScenes",
+        "RewardSatisfyDialog"
+      ],
+      "changed": [
+        "ActivityPageBackPushNoticeFrequency",
+        "AddBookShelfNoticeFrequency",
+        "BookShelfPushNoticeFrequency",
+        "BusinessSplashCoolDownTime",
+        "CheckInPushSwitchReport",
+        "CloudSetting",
+        "DailyReadRecReasonSwitch",
+        "DailyRecommendGray",
+        "DisableQidianBurryReport",
+        "EnableBeaconFullBurry",
+        "EnableFockRetryStrategy",
+        "EnableMonitorLog",
+        "EnableSearchUser",
+        "InAppPushLimitMinutes",
+        "NotificationPageBackPushNoticeFrequency",
+        "PangleEnable",
+        "PushDialogFrequency",
+        "PushNoticeFrequency",
+        "QDABRegularReportTimeSpan",
+        "QDABReportMinThreshold",
+        "RankBuryPoint",
+        "ReloadExposureEnabled",
+        "SplashScreenInterval",
+        "SplashScreenRoundCount",
+        "UGCPushNoticeFrequency",
+        "WolfEye"
+      ]
+    },
+    {
+      "entry": 197,
+      "path": "/argus/api/v1/reddot/getdot",
+      "removed": [],
+      "changed": []
+    },
+    {
+      "entry": 209,
+      "path": "/argus/api/v1/reddot/getdot",
+      "removed": [],
+      "changed": []
+    },
+    {
+      "entry": 257,
+      "path": "/argus/api/v2/dailyrecommend/getdailyrecommend",
+      "removed": [],
+      "changed": [
+        "Items"
+      ]
+    },
+    {
+      "entry": 259,
+      "path": "/argus/api/v1/bookshelf/getHoverAdv",
+      "removed": [],
+      "changed": []
+    },
+    {
+      "entry": 306,
+      "path": "/argus/api/v1/client/getconf",
+      "removed": [
+        "ActivityIcon",
+        "ActivityPopup",
+        "AdVideoPositionConfig",
+        "BookShelfBottomIcons",
+        "ClassicBookInfo",
+        "ClientLocalNotify2",
+        "FansClubPropInfo",
+        "GDT",
+        "LuckBag",
+        "PushDialogScenes",
+        "RewardSatisfyDialog"
+      ],
+      "changed": [
+        "ActivityPageBackPushNoticeFrequency",
+        "AddBookShelfNoticeFrequency",
+        "BookShelfPushNoticeFrequency",
+        "BusinessSplashCoolDownTime",
+        "CheckInPushSwitchReport",
+        "CloudSetting",
+        "DailyReadRecReasonSwitch",
+        "DailyRecommendGray",
+        "DisableQidianBurryReport",
+        "EnableBeaconFullBurry",
+        "EnableFockRetryStrategy",
+        "EnableMonitorLog",
+        "EnableSearchUser",
+        "InAppPushLimitMinutes",
+        "NotificationPageBackPushNoticeFrequency",
+        "PangleEnable",
+        "PushDialogFrequency",
+        "PushNoticeFrequency",
+        "QDABRegularReportTimeSpan",
+        "QDABReportMinThreshold",
+        "RankBuryPoint",
+        "ReloadExposureEnabled",
+        "SplashScreenInterval",
+        "SplashScreenRoundCount",
+        "UGCPushNoticeFrequency",
+        "WolfEye"
+      ]
+    }
+  ],
+  "samples": {
+    "user/getsimplediscover": {
+      "Data": {
+        "Items": [
+          {
+            "CardId": "shennongbaicaoyuan_2940",
+            "KeyName": "NEW_SHENNONGBAICAOYUAN",
+            "PointVersion": 0,
+            "ShowName": "神农百草园"
+          },
+          {
+            "CardId": "zhuanqu_1681",
+            "KeyName": "NEW_ZHUANQU",
+            "PointVersion": 0,
+            "ShowName": "ip专区"
+          },
+          {
+            "CardId": "zhuanlan_1649",
+            "KeyName": "NEW_ZHUANLAN",
+            "PointVersion": 0,
+            "ShowName": "专栏"
+          },
+          {
+            "CardId": "xinhuodongzhongxin_1759",
+            "KeyName": "NEW_XINHUODONGZHONGXIN",
+            "PointVersion": 0,
+            "ShowName": "新活动中心"
+          },
+          {
+            "CardId": "shudan_1616",
+            "KeyName": "NEW_SHUDAN",
+            "PointVersion": 0,
+            "ShowName": "书单"
+          },
+          {
+            "CardId": "youxizhongxin_2820",
+            "KeyName": "NEW_YOUXIZHONGXIN",
+            "PointVersion": 0,
+            "ShowName": "游戏中心f"
+          },
+          {
+            "CardId": "diandianquan_1617",
+            "KeyName": "NEW_DIANDIANQUAN",
+            "PointVersion": 0,
+            "ShowName": "点点圈"
+          },
+          {
+            "CardId": "xinshutouzi_1618",
+            "KeyName": "NEW_XINSHUTOUZI",
+            "PointVersion": 0,
+            "ShowName": "新书投资"
+          },
+          {
+            "CardId": "hongbaoguangchang_1619",
+            "KeyName": "NEW_HONGBAOGUANGCHANG",
+            "PointVersion": 0,
+            "ShowName": "红包广场"
+          },
+          {
+            "CardId": "zhoubianshangcheng_1981",
+            "KeyName": "NEW_ZHOUBIANSHANGCHENG",
+            "PointVersion": 0,
+            "ShowName": "周边商城"
+          },
+          {
+            "CardId": "kapaiguangchang_1982",
+            "KeyName": "NEW_KAPAIGUANGCHANG",
+            "PointVersion": 0,
+            "ShowName": "卡牌广场"
+          },
+          {
+            "CardId": "remenjiaose_1983",
+            "KeyName": "NEW_REMENJIAOSE",
+            "PointVersion": 0,
+            "ShowName": "热门角色"
+          },
+          {
+            "CardId": "huatiguangchang_2162",
+            "KeyName": "NEW_HUATIGUANGCHANG",
+            "PointVersion": 0,
+            "ShowName": "话题广场"
+          },
+          {
+            "CardId": "yueping_2932",
+            "KeyName": "NEW_YUEPING",
+            "PointVersion": 0,
+            "ShowName": "阅评"
+          },
+          {
+            "CardId": "",
+            "KeyName": "DISCOVER_TUIJIAN",
+            "PointVersion": 0,
+            "ShowName": "推荐"
+          },
+          {
+            "CardId": "",
+            "KeyName": "DISCOVER_JIANSHU",
+            "PointVersion": 1782316800000,
+            "ShowName": "荐书"
+          },
+          {
+            "CardId": "",
+            "KeyName": "DISCOVER_ZHUANLAN",
+            "PointVersion": 0,
+            "ShowName": "专栏"
+          },
+          {
+            "CardId": "",
+            "KeyName": "DISCOVER_SHUDAN",
+            "PointVersion": 0,
+            "ShowName": "书单"
+          },
+          {
+            "CardId": "",
+            "KeyName": "DISCOVER_SHUTIE",
+            "PointVersion": 0,
+            "ShowName": "书帖"
+          },
+          {
+            "CardId": "",
+            "KeyName": "DISCOVER_XINGQUTIE",
+            "PointVersion": 0,
+            "ShowName": "兴趣贴"
+          },
+          {
+            "CardId": "",
+            "KeyName": "DISCOVER_CAIDANZHANG",
+            "PointVersion": 0,
+            "ShowName": "彩蛋章"
+          }
+        ]
+      },
+      "Message": "",
+      "Result": 0
+    },
+    "reddot/getdot": {
+      "Data": {
+        "ConfigId": 30001031,
+        "DotList": [],
+        "ExpireDateTime": 3489580800000
+      },
+      "Message": "",
+      "Result": 0
+    },
+    "adv/getadvlistbatch": {
+      "Data": {
+        "iosusercenter2": [
+          {
+            "ADImage": "https://imgservices-1252317822.image.myqcloud.com/image/010520220160722/668ba96c.png",
+            "ADText": "今日偶遇|《重启人生》王梓钧著 都市",
+            "BannerImage": "https://imgservices-1252317822.image.myqcloud.com/coco/s10292026/3fcebedb.5b7yza.png",
+            "BookName": "《重启人生》",
+            "BusinessType": 0,
+            "Extra": {
+              "bannerImage": "https://imgservices-1252317822.image.myqcloud.com/coco/s10292026/3fcebedb.5b7yza.png",
+              "actionUrl": "QDReader://app/BookDetail?query={\"bookId\":1043695973}",
+              "description": "今日偶遇|《重启人生》王梓钧著 都市",
+              "style": "0",
+              "source": "ZNTJAD",
+              "bookName": "《重启人生》"
+            },
+            "ExtraText": "{\"bannerImage\":\"https://imgservices-1252317822.image.myqcloud.com/coco/s10292026/3fcebedb.5b7yza.png\",\"actionUrl\":\"QDReader://app/BookDetail?query={\\\"bookId\\\":1043695973}\",\"description\":\"今日偶遇|《重启人生》王梓钧著 都市\",\"style\":\"0\",\"source\":\"ZNTJAD\",\"bookName\":\"《重启人生》\"}",
+            "Id": 0,
+            "Image": "https://imgservices-1252317822.image.myqcloud.com/image/010520220160722/668ba96c.png",
+            "PositionMark": "iosusercenter2",
+            "Text": "今日偶遇|《重启人生》王梓钧著 都市"
+          }
+        ],
+        "iosusercenter": [
+          {
+            "ADImage": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/a17b6e1942110144fb4530cd0d0f397a.png",
+            "ADText": "惊喜活动推荐",
+            "BannerImage": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/9893b4f319f0c04d8999fd538181e8c2.jpg",
+            "BookName": "",
+            "BusinessType": 0,
+            "Extra": {
+              "bannerImage": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/9893b4f319f0c04d8999fd538181e8c2.jpg",
+              "actionUrl": "QDReader://app/openRoleCardMainPage?query={\"poolId\":\"1330574845184638976\",\"poolType\":\"3\"}",
+              "advId": "AD20261028-19-iOS",
+              "description": "菊月上新小卡池，十连必出SSR",
+              "style": "0",
+              "source": "BOSSAD"
+            },
+            "ExtraText": "{\"bannerImage\":\"https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/9893b4f319f0c04d8999fd538181e8c2.jpg\",\"actionUrl\":\"QDReader://app/openRoleCardMainPage?query={\\\"poolId\\\":\\\"1330574845184638976\\\",\\\"poolType\\\":\\\"3\\\"}\",\"advId\":\"AD20261028-19-iOS\",\"description\":\"菊月上新小卡池，十连必出SSR\",\"style\":\"0\",\"source\":\"BOSSAD\"}",
+            "Id": 50067,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/a17b6e1942110144fb4530cd0d0f397a.png",
+            "PositionMark": "iosusercenter",
+            "Text": "惊喜活动推荐"
+          }
+        ]
+      },
+      "Message": "成功",
+      "Result": 0
+    },
+    "user/getaccountpage": {
+      "Data": {
+        "AccountBalance": {
+          "BalanceUrl": "QDReader://h5.if.qidian.com/h5/account/profile?_viewmode=0&_smode=1",
+          "ChapterCard": 0,
+          "ChapterCardUrl": "QDReader://h5.if.qidian.com/new/account/coupon?_viewmode=0&index=0&_smode=1",
+          "Coupon": 8,
+          "CouponUrl": "QDReader://h5.if.qidian.com/new/account/coupon?_viewmode=0&_smode=1",
+          "Hints": [
+            {
+              "Desc": "更多",
+              "Type": 0
+            }
+          ],
+          "MonthTicket": 0,
+          "MonthTicketUrl": "QDReader://h5.if.qidian.com/h5/mine/monthTicket?_smode=1",
+          "NewCoupon": 8,
+          "QdBalance": 0,
+          "QdFreeBalance": 0,
+          "QdWorthBalance": 0,
+          "RecTicketUrl": "QDReader://h5.if.qidian.com/h5/recticket/rcm/?_smode=1",
+          "RechargeAd": {
+            "Id": 0,
+            "PositionMark": "mypagenew_CHONGZHI"
+          },
+          "YdBalance": 475,
+          "YdFreeBalance": 0,
+          "YdWorthBalance": 475
+        },
+        "ActiveActionUrl": "https://h5.if.qidian.com/new/activityCenter/?_viewmode=0&_smode=1",
+        "BenefitButtonList": [
+          {
+            "Desc": "做任务领章节卡",
+            "DescType": 1,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/cffc31d19b32c76004dd6eb8ebfafbe5.webp",
+            "Name": "福利中心",
+            "PositionMark": "mypagenew_FULIZHONGXIN",
+            "Url": "https://h5.if.qidian.com/new/welfareCenter?_viewmode=0&_smode=1"
+          },
+          {
+            "Desc": "精彩活动等你来",
+            "DescType": 1,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/dd8ae7d636c9b26dfd4529486b6ac4cd.png",
+            "Name": "活动中心",
+            "PositionMark": "mypagenew_HUODONGZHONGXIN",
+            "RotateTitleList": [
+              "折扣书热销中！"
+            ],
+            "RotateType": 1,
+            "Url": "https://h5.if.qidian.com/new/activityCenter/?_viewmode=0&_smode=1"
+          },
+          {
+            "Desc": "阅读消费历程",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/737b026003800e943eb8a0fbad1af94c.png",
+            "Name": "我的阅历",
+            "PositionMark": "mypagenew_WODEYUELINEW",
+            "Url": "https://h5.if.qidian.com/new/yueli?_viewmode=0&from=account&_smode=1"
+          },
+          {
+            "Desc": "首抽必出SSR",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/2f4870437273f8eb6728708a83af2d97.png",
+            "Name": "卡牌广场",
+            "PositionMark": "mypagenew_WODEKAPAI",
+            "Url": "QDReader://app/openRoleCardMainPage"
+          },
+          {
+            "Desc": "商城焕新上线",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/a383924ccdad3e45cea5beec67fda55a.png",
+            "Name": "周边商城",
+            "PositionMark": "mypagenew_ZHOUBIANGOU",
+            "Url": "https://h5.if.qidian.com/new/cash-store/home/?_viewmode=0"
+          },
+          {
+            "Desc": "尽享精彩游戏",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/330d3f8e34dbfd3a2db8306f36089f72.png",
+            "Name": "游戏中心",
+            "PositionMark": "mypagenew_YOUXIZHONGXIN",
+            "Url": "QDReader://app/gameCenterMainPage?query={\"source\":\"account\",\"tabIndex\":0,\"showType\":\"all\"} "
+          }
+        ],
+        "BottomButtonList": [
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/b8493cdf2ab56c6d06a7aab8ff033ad3.png",
+            "Name": "帮助与客服",
+            "PositionMark": "mypagenew_BANGZHUYUKEFU",
+            "Url": "https://mecho.yuewen.com/echo/11676/aichat?authorAppTranslucentMode=1&_viewmode=0"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/610a2f6ac3d583e377b73816b53bbfb7.png",
+            "Name": "加入我们",
+            "PositionMark": "mypagenew_JIARUWOMEN",
+            "Url": "https://ataru.qidian.com/noah_pages/822897914?nocenter=2&_viewmode=0"
+          }
+        ],
+        "DianNiangUrl": "QDReader://h5.if.qidian.com/h5/dian/home?_viewmode=0",
+        "DianNiangWorldImage": "https://imgservices-1252317822.image.myqcloud.com/coco/s01052023/396f4fc8.9a2mnh.png",
+        "DianNiangWorldSwitch": 1,
+        "FreshManGuideSwitch": 1,
+        "FunctionButtonList": [
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/9fa888d325065dabb7631f5f62458c3a.png",
+            "Name": "我发布的",
+            "PositionMark": "mypagenew_WOFABUDE",
+            "Url": "QDReader://app/openMyPublish?query={\"index\":0}"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/f440e28049c28683b5e67a95420b4dfb.png",
+            "Name": "关注收藏",
+            "PositionMark": "mypagenew_GUANZHUSHOUCANG",
+            "Url": "QDReader://app/openMyFollow?query={\"index\":0}"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/77411173897d5d9b13d92f372c23258d.png",
+            "Name": "我的全订",
+            "PositionMark": "mypagenew_WODEQUANDING",
+            "Url": "https://h5.if.qidian.com/new/yueli/fullSubs/?_viewmode=0&_smode=1"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/f0c5cebf0f97f54f0c46d4a39180ca34.png",
+            "Name": "成就徽章",
+            "PositionMark": "mypagenew_MYBADGE",
+            "Url": "https://h5.if.qidian.com/new/badge/?_viewmode=0&_qdbg=2&_isappbg=1&_smode=1"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/5be82db760b8bccd0d31683377235a96.png",
+            "Name": "荣誉称号",
+            "PositionMark": "mypagenew_MYTITLE",
+            "Url": "QDReader://h5.if.qidian.com/new/account/label?_viewmode=0&_smode=1"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/56cd6d942a15cbd5cf91056416ad2098.png",
+            "Name": "大神之光",
+            "PositionMark": "mypagenew_DASHENZHIGUANG",
+            "Url": "https://h5.if.qidian.com/new/holyLight/?_viewmode=0&_qdbg=2&_isappbg=1&_smode=1"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/c0428172394758b5673acf6caa885dc4.png",
+            "Name": "浏览记录",
+            "PositionMark": "mypagenew_LIULANJILU",
+            "Url": "QDReader://app/openBrowseHistory"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/f13556e467cda23325cdd08df4161fd.png",
+            "Name": "成为作家",
+            "PositionMark": "mypagenew_CHENGWEIZUOJIA",
+            "Url": "QDReader://m.write.qq.com/portal/appGuide/1"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/f616808ae07e40cfb9ac45ad42c1db84.png",
+            "Name": "装扮中心",
+            "PositionMark": "mypagenew_ZHUANGBANZHONGXIN",
+            "Url": "https://h5.if.qidian.com/new/dress-up-center/?_viewmode=0&_smode=1"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/4893ce817ffc47656cccdb1a32a3bc33.png",
+            "Name": "新书投资",
+            "PositionMark": "mypagenew_XINSHUTOUZI",
+            "Url": "QDReader://app/openMyNewBookInvest"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/2599876e2dee7a935217cb96498ccd51.png",
+            "Name": "达人中心",
+            "PositionMark": "mypagenew_DARENZHONGXIN",
+            "Url": "QDReader://h5.if.qidian.com/new/talentPerson/center?_viewmode=0"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/4b35b045915b2d05d2e061ac5d10fcec.png",
+            "Name": "奇妙世界",
+            "PositionMark": "mypagenew_DIANNIANGQIMIAOSHIJIE",
+            "Url": "QDReader://h5.if.qidian.com/h5/dian/home?_viewmode=0"
+          },
+          {
+            "Desc": "",
+            "DescType": 0,
+            "Image": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/902edeec146d7e7c6dfcacebd83e2fde.png",
+            "Name": "我的定制",
+            "PositionMark": "mypagenew_WODEDINGZHI",
+            "Url": "https://h5.if.qidian.com/new/cashPay/myCustom/?_viewmode=0"
+          }
+        ],
+        "Member": {
+          "ActionUrl": "https://h5.if.qidian.com/new/vip?_viewmode=0&_smode=1",
+          "ButtonTitle": "立即开通",
+          "CardId": "member",
+          "ExpireTime": 0,
+          "IconUrl": "https://qidian.qpic.cn/qidian_common/349573/b607187c713dc16bb9b2f09d1119843c/0",
+          "IsAuto": 0,
+          "IsMember": 0,
+          "MemberType": 0,
+          "NextFeeTime": 0,
+          "SubTitle": "开通享18万出版书畅读，4万有声书畅听|开通享有声书8折订阅优惠|开通享自动签到，票券福利，专属装扮等特权",
+          "Title": "起点会员"
+        },
+        "PursueBookCard": {
+          "ShowTab": 0,
+          "Url": "https://h5.if.qidian.com/h5/chaseBookCard?_viewmode=0"
+        },
+        "SchoolImage": "https://imgservices-1252317822.image.myqcloud.com/coco/s04032023/61cfb167.v4twxh.png",
+        "SchoolText": "校园福利专区",
+        "SchoolUrl": "https://h5v6.if.qidian.com/h5/campusArea?_viewmode=0",
+        "UserBasicInfo": {
+          "AuthorLight": 0,
+          "FrameId": 0,
+          "FrameUrl": "",
+          "Level": "Lv.0",
+          "LevelActionUrl": "QDReader://h5.if.qidian.com/new/userHierarchy?_viewmode=0&_smode=1;QDReader://h5.if.qidian.com/h5/recticket/vip/?_viewmode=1&_smode=1",
+          "LevelName": "普通会员",
+          "LevelNumber": 0,
+          "UserGrowth": {
+            "ActionUrl": "QDReader://h5.if.qidian.com/new/userHierarchy?_viewmode=0&_smode=1;QDReader://h5.if.qidian.com/h5/recticket/vip/?_viewmode=1&_smode=1",
+            "Growth": 6831,
+            "Level": 3,
+            "LevelImageUrl": "https://imgservices-1252317822.image.myqcloud.com/coco/s11042024/f062997d.de4905.png",
+            "LevelName": "玉衡"
+          }
+        }
+      },
+      "Message": "",
+      "Result": 0
+    },
+    "bookshelf/getTopOperation": {
+      "Data": {
+        "Items": [
+          {
+            "AdvId": "AD20261013-09-iOS",
+            "ItemActionUrl": "QDReader://ataru.qidian.com/noah/137973621?_viewmode=0&_smode=1&tab=1",
+            "ItemIconImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/540f628a88a373e0651071a320029b29.png",
+            "ItemIconImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/50cf306b9690ff639c6197d958ab2ce5.png",
+            "ItemOrder": 1,
+            "ItemThumIconImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/d1f2ef68f2d571c88b53aa78cb60559f.png",
+            "ItemThumIconImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/b543e82ba6fae388ae9bb66988c05a64.png",
+            "PositionMark": "bookshelfTagOperationItem"
+          },
+          {
+            "AdvId": "AD20261013-09-iOS",
+            "ItemActionUrl": "QDReader://ataru.qidian.com/noah/137973621?_viewmode=0&_smode=1&tab=1",
+            "ItemIconImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/c12e810d70651ad56a7d33b01ab16660.png",
+            "ItemIconImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/8a2ef9e4fea34904a5bac7f7d083ef18.png",
+            "ItemOrder": 2,
+            "ItemThumIconImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/d1f2ef68f2d571c88b53aa78cb60559f.png",
+            "ItemThumIconImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/b543e82ba6fae388ae9bb66988c05a64.png",
+            "PositionMark": "bookshelfTagOperationItem"
+          },
+          {
+            "AdvId": "AD20261013-09-iOS",
+            "ItemActionUrl": "QDReader://ataru.qidian.com/noah/137973621?_viewmode=0&_smode=1&tab=1",
+            "ItemIconImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/5e7921576cf8559f6bbf8656c4f062e.png",
+            "ItemIconImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/359f149fab0100817b624cbdf7a69a31.png",
+            "ItemOrder": 3,
+            "ItemThumIconImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/d1f2ef68f2d571c88b53aa78cb60559f.png",
+            "ItemThumIconImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/b543e82ba6fae388ae9bb66988c05a64.png",
+            "PositionMark": "bookshelfTagOperationItem"
+          }
+        ],
+        "MainInfo": {
+          "ActionUrl": "QDReader://ataru.qidian.com/noah/137973621?_viewmode=0&_smode=1&tab=1",
+          "AdvId": "AD20261013-07-iOS",
+          "BgImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/3fc0d81912ce4770ee3bf41e9679dfc1.png",
+          "BgImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/1236e3307164ed1d4f04303b45da569.png",
+          "Expand": 1,
+          "IconImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/d1f2ef68f2d571c88b53aa78cb60559f.png",
+          "IconImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/b543e82ba6fae388ae9bb66988c05a64.png",
+          "IconImgDayUrl": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/35db5a97dd7547bc21dae5a793d72f17.png",
+          "IconImgNightUrl": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/5ff31ed8ad432c7ea587bb373ffc4a0f.png",
+          "PositionMark": "bookshelfTagOperation",
+          "RightIconLayerSwitch": 1,
+          "RightImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/a1663fe71cf8502f6f472d66d02ab10f.png",
+          "RightImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/277b50665e171bbda9af57a473ee1a95.png",
+          "TitleImg": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/abfe54d2ba113721a75044c03229dca0.png",
+          "TitleImgBlack": "https://readx-her-1252317822.file.myqcloud.com/yuewen-amis/backend/53e76fda704262fc1a8fec714b3e6a8e.png"
+        }
+      },
+      "Message": "",
+      "Result": 0
+    },
+    "checkin/checkinexchangepage": {
+      "Data": {
+        "Balance": 5,
+        "Goods": [
+          {
+            "ChapterCardCount": "10",
+            "GoodsDesc": "价值10点章节卡可用于订阅付费章节，自兑换起有效期7天",
+            "GoodsId": 819,
+            "GoodsName": "章节卡",
+            "GoodsScore": 15,
+            "Status": 3
+          },
+          {
+            "ChapterCardCount": "15",
+            "GoodsDesc": "价值15点章节卡可用于订阅付费章节，自兑换起有效期7天",
+            "GoodsId": 820,
+            "GoodsName": "章节卡",
+            "GoodsScore": 20,
+            "Status": 3
+          },
+          {
+            "ChapterCardCount": "20",
+            "GoodsDesc": "价值20点章节卡可用于订阅付费章节，自兑换起有效期7天",
+            "GoodsId": 821,
+            "GoodsName": "章节卡",
+            "GoodsScore": 30,
+            "Status": 3
+          }
+        ],
+        "Notice": "签到面板展示的碎片数量为当天签到保底可得的碎片数量，连续签到可获得额外碎片，以实际签到获得的碎片数量为准。请在周日00:00至24:00将累计碎片兑换成章节卡，如不兑换，周日24:00清零。"
+      },
+      "Message": "",
+      "Result": 0
+    },
+    "bookshelf/getad": {
+      "Data": {
+        "GameUrl": "QDReader://app/gameCenterMainPage?query={\"source\":\"bookshelf\"}",
+        "Show": 0
+      },
+      "Message": "",
+      "Result": 0
+    },
+    "bookshelf/getHoverAdv": {
+      "Data": {
+        "ItemList": []
+      },
+      "Message": "",
+      "Result": 0
+    },
+    "popup/batchget": {
+      "Data": {
+        "PopupList": [
+          {
+            "EndTime": 0,
+            "Id": 0,
+            "RemainingTime": 0,
+            "ShowNum": 0,
+            "Source": "BOSSAD",
+            "StartTime": 0,
+            "Version": 0
+          }
+        ],
+        "Version": 0
+      },
+      "Message": "",
+      "Result": 0
+    }
+  },
+  "ui_evidence": {
+    "bookshelf_banner": {
+      "endpoint": "bookshelf/getTopOperation",
+      "fields": [
+        "Data.MainInfo",
+        "Data.Items"
+      ],
+      "main_adv_id": "AD20261013-07-iOS",
+      "item_adv_ids": [
+        "AD20261013-09-iOS",
+        "AD20261013-09-iOS",
+        "AD20261013-09-iOS"
+      ],
+      "item_count": 3,
+      "note": "MainInfo=顶部大横幅（BgImg/TitleImg 图片），Items=横幅右侧三枚小图标（含游戏手柄）"
+    },
+    "account_page": {
+      "endpoint": "user/getaccountpage",
+      "data_keys": [
+        "AccountBalance",
+        "ActiveActionUrl",
+        "BottomButtonList",
+        "DianNiangUrl",
+        "DianNiangWorldImage",
+        "DianNiangWorldSwitch",
+        "FreshManGuideSwitch",
+        "FunctionButtonList",
+        "Member",
+        "PursueBookCard",
+        "SchoolImage",
+        "SchoolText",
+        "SchoolUrl",
+        "UserBasicInfo"
+      ],
+      "member_title": "起点会员",
+      "function_buttons": [
+        "我发布的",
+        "关注收藏",
+        "我的全订",
+        "成就徽章",
+        "荣誉称号",
+        "大神之光",
+        "浏览记录",
+        "成为作家",
+        "装扮中心",
+        "新书投资",
+        "达人中心",
+        "奇妙世界",
+        "我的定制"
+      ],
+      "bottom_buttons": [
+        "帮助与客服",
+        "加入我们"
+      ],
+      "school_text": "校园福利专区"
+    },
+    "account_page_ads": {
+      "endpoint": "adv/getadvlistbatch",
+      "keys": [
+        "iOS_tab",
+        "iosusercenter",
+        "iosusercenter2"
+      ],
+      "texts": [
+        "惊喜活动推荐",
+        "今日偶遇|《重启人生》王梓钧著 都市"
+      ]
+    },
+    "shelf_game": {
+      "endpoint": "bookshelf/getad",
+      "keys": [
+        "GameUrl",
+        "Show"
+      ],
+      "show": 0
+    },
+    "exchange_goods": {
+      "endpoint": "checkin/checkinexchangepage",
+      "goods_count": 3,
+      "note": "章节卡兑换货架，用户激励出口，禁止清空"
+    }
+  },
+  "preserved": [
+    "dailyrecommend/getdailyrecommend（用户裁决保留每日导读，v4.0.3 已恢复 Items）",
+    "widget/daily/rec（每日导读正文，放行）",
+    "checkin/checkinexchangepage 的 Data.Goods（章节卡兑换货架，激励出口）",
+    "user/getaccountpage 的 Data.UserBasicInfo / Data.AccountBalance（身份与账户）"
+  ],
+  "unresolved": [
+    "HAR 466 抓的是 v4.0.2 插件在跑；v4.0.3/本轮规则尚未真机回抓，命中数由 URL 正则模拟得出。",
+    "顶部 banner 的文案「必看神作/最低折扣」是图片（MainInfo.BgImg/TitleImg），HAR 正文搜不到，靠 AdvId 与图片字段定位。",
+    "红色箭头指向的「每日导读」条按用户上一轮裁决保留；若真机仍想删，需先抓到它的驱动字段再动手。",
+    "深度净化 [Script] 在 HAR 中触发 43 次、其中 49 条 entry 记录 Script evaluate failed；CAPTURE_ENABLE=true 时主通道是 [Rewrite]，失败原因待真机复现。",
+    "Loon 内置 jq 与本机 /usr/bin/jq 的语义差异仍待真机验证（沿用第三轮取证项）。"
+  ]
+}
