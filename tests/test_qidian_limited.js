@@ -112,10 +112,7 @@ function check(name, cond, extra) {
     && j.Data.ReadingPageTaskModule.TaskList.length === 6);
   check("限时任务标题未被改写", !!j && j.Data.ReadingPageTaskModule.TaskList.every(
     (t) => t.Title === "【限时】广告·加点！"));
-  check("VideoRewardTab 保留 3 条正常激励", !!j && j.Data.VideoRewardTab
-    && j.Data.VideoRewardTab.TaskList.length === 3);
-  check("正常激励标题未被剪除", !!j && j.Data.VideoRewardTab.TaskList.some(
-    (t) => t.Title === "完成1个广告任务得奖励"));
+  check("VideoRewardTab 已删（对齐 config REMOVE_KEYS）", !!j && j.Data.VideoRewardTab === undefined);
 
   const write = r.writes.find((w) => w.k === "Qidian_LimitedTasks");
   const stored = write ? JSON.parse(write.v) : null;

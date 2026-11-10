@@ -772,35 +772,57 @@ function handleDirectAdKill(E, url, response) {
 }
 
 function handleMainPage(E, response) {
-  const obj = safeJsonParse(response.body);
-  if (!obj || !obj.Data) { E.done(); return; }
-  const data = obj.Data;
-  if (data.DailyBenefitModule) data.DailyBenefitModule.RotateText = [];
-  const REMOVE_KEYS = [
-    "MemberExclusiveTaskModule", "PrivilegedTaskModule", "MoreRewardTab",
-    "LastRewardItems", "IndexBannerTabs",
-    "BaizeModule", "TaskShowData", "UserRewardModule", "PopFrequency",
-    "ActivityCenterModule", "CharityModule",
-  ];
-  // SurpriseBenefit 不再删：起点 Pro 源码自己标注它是「限时福利」，属真实奖励。
-  const removed = [];
-  REMOVE_KEYS.forEach(k => {
-    if (data[k] !== undefined) { removed.push(k); delete data[k]; }
-  });
-  const kept = data.SurpriseBenefit !== undefined ? ["SurpriseBenefit"] : [];
-  // v3.6.1（用户裁决 2026-11-09）：mainPage 的激励任务整段保留，不再按文案剪条目——
-  // 正常激励（VideoRewardTab）与限时激励（ReadingPageTaskModule，TaskType 300 /
-  // 「【限时】广告·加点！」）都要能显示；限时任务的当轮 TaskId/Total 落盘，
-  // 供引擎 finishWatch 重放按 Total 自动完成（重放次数 = Total - 1）。
-  const limited = collectLimitedTasks(data);
   try {
-    $persistentStore.write(JSON.stringify(limited), "Qidian_LimitedTasks");
-  } catch (e) { /* 存储不可用时只记录锚点，不影响净化 */ }
-  anchor("福利中心 removed=[" + removed.join(",") + "] kept=[" + kept.join(",") +
-    "] 限时任务=" + limited.length +
-    (limited.length ? " [" + limited.map(t => t.id + "*" + t.total).join(" / ") + "]" : ""));
-  E.log("福利中心净化完成");
-  respondJson(E, obj, "qidian-sanitize", removed.length);
+    const bodyIsUint8 = response.body instanceof Uint8Array;
+    const bodyIsArrayBuffer = response.body instanceof ArrayBuffer;
+    const obj = safeJsonParse(response.body);
+    if (!obj || !obj.Data) { E.done(); return; }
+    const data = obj.Data;
+
+    // ── 激励任务：不修改 IsFinished，保留原始状态让用户手动触发视频 ──
+    if (data.DailyBenefitModule) {
+      data.DailyBenefitModule.RotateText = [];
+    }
+
+    // ── 保留：ScoreDrawModule(幸运抽抽乐)＋DailyBenefitModule/ReadingPageTaskModule 激励 ──
+
+    // ── 删除：营销/活动/邀请/会员/限时/兑换货架模块（对齐 config REMOVE_KEYS） ──
+    const REMOVE_KEYS = [
+      "MemberExclusiveTaskModule", // 会员尊享（90天畅读等）
+      "PrivilegedTaskModule",      // 邀好友活动（邀友一起读/3300点等）
+      "MoreRewardTab",             // 更多奖励（关注微信服务号等）
+      "SurpriseBenefit",           // 限时福利
+      "LastRewardItems",           // 必中夺宝
+      "BaizeModule",               // 白泽装扮气泡
+      "TaskShowData",              // 任务展示配置
+      "UserRewardModule",          // 用户奖励统计
+      "ActivityCenterModule",      // 参与活动领福利
+      "CharityModule",             // 读书做公益（送出公益金）
+      "VideoRewardTab",            // 完成1个/3个广告任务得奖励＋做任务得白泽宇航员装扮
+      "RedeemGifts",               // 积分兑好礼货架
+    ];
+    REMOVE_KEYS.forEach(k => { delete data[k]; });
+
+    // ── LOCAL PATCH：限时激励任务收集 ──
+    // 收集 mainPage 的 ReadingPageTaskModule 中的限时任务（TaskType 300），
+    // 落盘到 Qidian_LimitedTasks，供 finishWatch 重放按 Total 自动完成。
+    const limited = collectLimitedTasks(data);
+    try {
+      if (limited.length) $persistentStore.write(JSON.stringify(limited), "Qidian_LimitedTasks");
+    } catch (e) { /* 存储不可用时只记录日志，不影响净化 */ }
+    E.log("福利中心已净化，限时任务=" + limited.length +
+      (limited.length ? " [" + limited.map(t => t.id + "*" + t.total).join(" / ") + "]" : ""));
+
+    // 按来路形态回写：字节进→字节出、字符串进→字符串出
+    const newBody = JSON.stringify(obj);
+    if (bodyIsUint8) {
+      E.done({ body: new TextEncoder().encode(newBody) });
+    } else if (bodyIsArrayBuffer) {
+      E.done({ body: new TextEncoder().encode(newBody).buffer });
+    } else {
+      E.done({ body: newBody });
+    }
+  } catch (e) { E.done(); }
 }
 
 // v3.6.1：限时激励任务来自 mainPage 的 ReadingPageTaskModule（TaskType 300，标题
@@ -812,7 +834,8 @@ function collectLimitedTasks(data) {
   const add = (it) => {
     if (!it || typeof it !== "object") return;
     const title = typeof it.Title === "string" ? it.Title : "";
-    const isLimited = it.TaskType === 300 || title.indexOf("限时") >= 0 || /广告[·.]?加点/.test(title);
+    const isLimited = it.TaskType === 300 || String(it.TaskType) === "300" ||
+      title.indexOf("限时") >= 0 || /广告[·.]?加点/.test(title);
     if (!isLimited) return;
     const id = it.TaskId || it.SubTaskId;
     if (!id || seen[String(id)]) return;

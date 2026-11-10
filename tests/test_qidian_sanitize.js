@@ -255,7 +255,7 @@ function shapeMatches(bodyIn, out) {
     check("UserBasicInfo 保留", j && j.Data.UserBasicInfo && j.Data.UserBasicInfo.NickName === "reader");
   }
 
-  console.log("\n[10] 福利中心 mainPage 删 ActivityCenterModule/CharityModule、保 SurpriseBenefit、激励任务全量保留");
+  console.log("\n[10] 福利中心 mainPage 对齐 config REMOVE_KEYS（13 项含 SurpriseBenefit/VideoRewardTab/RedeemGifts）");
   {
     const mainBody = JSON.stringify({
       Result: 0,
@@ -278,7 +278,7 @@ function shapeMatches(bodyIn, out) {
     const { out } = await run("https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage", mainBody, { utils: realUtils });
     const j = parse(out);
     check("ActivityCenterModule 与 CharityModule 已删", j && j.Data.ActivityCenterModule === undefined && j.Data.CharityModule === undefined);
-    check("SurpriseBenefit 限时福利保留", j && j.Data.SurpriseBenefit && j.Data.SurpriseBenefit.Title === "限时福利");
+    check("SurpriseBenefit 已删（对齐 config REMOVE_KEYS）", j && j.Data.SurpriseBenefit === undefined);
     check("激励任务条目全量保留（v3.6.1 起不再剪枝）", j && j.Data.DailyBenefitModule.TaskList.length === 3
       && j.Data.DailyBenefitModule.TaskList.map(t => t.Title).join("|") === "完成1个广告任务得奖励|做任务得白泽宇航员装扮|看视频得章节卡");
     check("书籍条目不误伤", j && j.Data.BookList[0].Name === "广告任务专区");
