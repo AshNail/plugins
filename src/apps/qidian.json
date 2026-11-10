@@ -467,24 +467,6 @@
           "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
           "proof": "HAR entry 6/14/45/202：Data.Items 21 张卡，其中 NEW_* 营销卡 14 张、DISCOVER_* 内容卡 7 张；真机回抓确认发现页只剩内容卡"
         }
-      },
-      {
-        "id": "clean-mainpage",
-        "group": "字段级净化（v4.0.2 新增）：同日真机 HAR 判定旧式响应脚本回写不被 Loon relay，本仓唯一已实证生效通道是 [Rewrite]",
-        "stage": "response",
-        "gate": "CAPTURE_ENABLE",
-        "endpoint": "video/adv/mainPage",
-        "url": "https://h5\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/mainPage(\\?.*)?$",
-        "action": "response.json.delete([\"Data.PrivilegedTaskModule\", \"Data.MoreRewardTab\", \"Data.SurpriseBenefit\", \"Data.LastRewardItems\", \"Data.BaizeModule\", \"Data.TaskShowData\", \"Data.UserRewardModule\", \"Data.ActivityCenterModule\", \"Data.CharityModule\", \"Data.VideoRewardTab\", \"Data.RedeemGifts\"])",
-        "note": "福利中心营销模块删除（11 键）：v4.0.2 十键 + v4.0.3 三键 − v4.1.1 归还 IndexBannerTabs（页面顶部 tab 结构，删掉会导致福利页布局异常/白屏）与 PopFrequency（弹窗频控配置，非营销内容）。DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 等激励与奖励出口原样保留",
-        "source": "AshNail v4.0.2（config 无此条——真机取证 HAR 之上新增） · v4.1.0 按 466_1794290256836.har 实证重写",
-        "evidence": {
-          "har": "466_1794290256836.har",
-          "kind": "effective",
-          "url_hits": 1,
-          "device_check": "真机回抓 HAR 后确认：原始响应里目标字段非空、且改写后该字段确实消失",
-          "proof": "HAR entry 129 复写前后 diff：removed=9 个营销模块；DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 原样保留"
-        }
       }
     ],
     "bindings": [

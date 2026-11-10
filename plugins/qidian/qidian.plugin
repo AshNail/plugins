@@ -189,8 +189,8 @@ response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian
 # ------------------------------------------------------------
 # 字段级净化（v4.0.2 新增）：同日真机 HAR 判定旧式响应脚本回写不被 Loon relay，本仓唯一已实证生效通道是 [Rewrite]
 # ------------------------------------------------------------
-# clean-mainpage: 福利中心营销模块删除（11 键）：v4.0.2 十键 + v4.0.3 三键 − v4.1.1 归还 IndexBannerTabs（页面顶部 tab 结构，删掉会导致福利页布局异常/白屏）与 PopFrequency（弹窗频控配置，非营销内容）。DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 等激励与奖励出口原样保留（来源 AshNail v4.0.2（config 无此条——真机取证 HAR 之上新增） · v4.1.1 修复）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/h5\.if\.qidian\.com\/argus\/api\/v\d+\/video\/adv\/mainPage(\?.*)?$/ then response.json.delete(["Data.PrivilegedTaskModule", "Data.MoreRewardTab", "Data.SurpriseBenefit", "Data.LastRewardItems", "Data.BaizeModule", "Data.TaskShowData", "Data.UserRewardModule", "Data.ActivityCenterModule", "Data.CharityModule", "Data.VideoRewardTab", "Data.RedeemGifts"])
+# clean-mainpage: v4.1.1 删除此条 rewrite——response.json.delete 在 H2-to-H1 桥接连接上会导致流挂起 75 秒被强制关闭（v3.5.0 实证问题）。改由脚本接管，配合 force-identity 让上游返回明文，脚本可以正常处理并回写
+# response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/h5\.if\.qidian\.com\/argus\/api\/v\d+\/video\/adv\/mainPage(\?.*)?$/ then response.json.delete(["Data.PrivilegedTaskModule", "Data.MoreRewardTab", "Data.SurpriseBenefit", "Data.LastRewardItems", "Data.BaizeModule", "Data.TaskShowData", "Data.UserRewardModule", "Data.ActivityCenterModule", "Data.CharityModule", "Data.VideoRewardTab", "Data.RedeemGifts"])
 
 # ========================================================================
 # 脚本层（绑定行由 enhance.bindings 生成，lint 逐行对账）
