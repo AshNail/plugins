@@ -13,6 +13,8 @@
  */
 const fs = require("fs");
 const path = require("path");
+const vm = require("vm");
+const assert = require("assert");
 const src = require("./load-script")("auto-task.js", "qidian");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -104,6 +106,29 @@ function check(name, cond, extra) {
 }
 
 (async () => {
+  {
+    let output;
+    const url = "https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage?source=welfare";
+    const plugin = fs.readFileSync(path.join(ROOT, "plugins/qidian/qidian.plugin"), "utf8");
+    const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=深度净化"));
+    assert(binding && new RegExp(binding.split(" ")[1]).test(url));
+    assert(binding.includes("script-path=scripts/Qidian.js"));
+    const context = {
+      $request: { url, method: "GET" },
+      $response: { body: JSON.stringify(FIXTURE) },
+      $done: value => { output = value; },
+      $persistentStore: { read: () => null, write: () => true },
+      $notification: { post: () => {} },
+      console: { log: () => {} },
+    };
+    vm.runInNewContext(ENGINE, context);
+    assert(output && typeof output.body === "string", "发布引擎在无 URL 全局环境中必须回写 mainPage");
+    const data = JSON.parse(output.body).Data;
+    assert.strictEqual(data.MoreRewardTab, undefined);
+    assert.strictEqual(data.SurpriseBenefit, undefined);
+    assert.strictEqual(data.ReadingPageTaskModule.TaskList.length, 6);
+    check("发布绑定与无 URL 全局环境下 mainPage 回写回归", true);
+  }
   console.log("\n[1] mainPage 净化：限时任务与正常激励全量保留，TaskId/Total 落盘");
   let r = await runSanitizer(FIXTURE);
   const j = r.out && r.out.body ? JSON.parse(r.out.body) : null;

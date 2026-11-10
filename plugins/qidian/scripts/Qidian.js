@@ -252,10 +252,9 @@ const CLEAN_RULES = {
     return;
   }
 
-  // ⚠️ 修复(v5.9): new URL 保护, 防止畸形 URL 导致整个脚本崩溃
-  let urlObj;
-  try { urlObj = new URL(url); } catch (e) { $.done(); return; }
-  const path = urlObj.pathname;
+  const pathMatch = /^https?:\/\/[^/?#]+(\/[^?#]*)?(?:[?#]|$)/i.exec(url);
+  if (!pathMatch) { $.done(); return; }
+  const path = pathMatch[1] || "/";
 
   // ⚠️ 修复(v6.0): 统一 $response 守卫 — 防止 request 阶段误入 response-only 处理
   // AllInOne.plugin 等全局 MitM 规则可能让同一 URL 在 request 阶段也被匹配，
