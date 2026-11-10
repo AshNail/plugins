@@ -60,7 +60,6 @@
 
 [Argument]
 
-CAPTURE_ENABLE = switch,true,tag=是否开启抓取重写,desc=是否开启抓取重写（[Rewrite] 接管广告净化）。关掉它广告改由 [Script] 接管，但不影响 Cookie 捕获——见 QDREADER_COOKIE_ENABLE
 QDREADER_COOKIE_ENABLE = switch,true,tag=是否捕获Cookie,desc=是否捕获起点读书 Cookie（签到/自动兑换章节卡/福利签到的唯一数据源）。2026-09-30 从 CAPTURE_ENABLE 解耦：原先 Cookie 捕获挂在 CAPTURE_ENABLE 上，而该开关同时决定 [Rewrite]/[Script] 互斥，于是关掉抓包重写让脚本接管广告必然连带签到全废——现已拆开
 CRONEXP = input,"11 2 * * *",tag=CRONEXP,desc=默认每天2点11分执行，建议自行配置。
 QDREADER_DEBUG = switch,false,tag=是否开启调试模式,desc=是否开启调试模式
@@ -125,61 +124,61 @@ request if ${url} ~= /https:\/\/(h5|magev6)\.if\.qidian\.com\// then request.hea
 # 客户端配置净化（response 阶段）：与 config 逐项对齐
 # ------------------------------------------------------------
 # getconf-overrides: config ClientConfigOverrides 全 29 项一次改齐（DailyRecommendGray 于 v4.0.3 移出以恢复每日导读）（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf(\?.*)?$/ then response.json.replace(["Data.PangleEnable", "Data.DisableQidianBurryReport", "Data.DisableNewabInBI", "Data.SplashScreenInterval", "Data.SplashScreenRoundCount", "Data.BusinessSplashCoolDownTime", "Data.PushDialogFrequency", "Data.EnableMonitorLog", "Data.EnableBeaconFullBurry", "Data.ReloadExposureEnabled", "Data.QDABRegularReportTimeSpan", "Data.QDABReportMinThreshold", "Data.RankBuryPoint", "Data.CheckInPushSwitchReport", "Data.WolfEye", "Data.MainTabActivityRunning", "Data.DailyReadRecReasonSwitch", "Data.EnableShareChapterPloy", "Data.EnableChapterAdvanceGuide", "Data.AddBookShelfNoticeFrequency", "Data.BookShelfPushNoticeFrequency", "Data.UGCPushNoticeFrequency", "Data.NotificationPageBackPushNoticeFrequency", "Data.ActivityPageBackPushNoticeFrequency", "Data.InAppPushLimitMinutes", "Data.PushNoticeFrequency", "Data.AegisSignOn", "Data.EnableFockRetryStrategy", "Data.EnableSearchUser"], ["0", "1", "1", "0", "0", "99999", "0", "0", "0", "false", "999999", "999999", "0", "0", 0, 0, 0, 0, 0, "999999", "999999", "999999", "999999", "999999", "999999", "-1", 0, 0, "1"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf(\?.*)?$/ then response.json.replace(["Data.PangleEnable", "Data.DisableQidianBurryReport", "Data.DisableNewabInBI", "Data.SplashScreenInterval", "Data.SplashScreenRoundCount", "Data.BusinessSplashCoolDownTime", "Data.PushDialogFrequency", "Data.EnableMonitorLog", "Data.EnableBeaconFullBurry", "Data.ReloadExposureEnabled", "Data.QDABRegularReportTimeSpan", "Data.QDABReportMinThreshold", "Data.RankBuryPoint", "Data.CheckInPushSwitchReport", "Data.WolfEye", "Data.MainTabActivityRunning", "Data.DailyReadRecReasonSwitch", "Data.EnableShareChapterPloy", "Data.EnableChapterAdvanceGuide", "Data.AddBookShelfNoticeFrequency", "Data.BookShelfPushNoticeFrequency", "Data.UGCPushNoticeFrequency", "Data.NotificationPageBackPushNoticeFrequency", "Data.ActivityPageBackPushNoticeFrequency", "Data.InAppPushLimitMinutes", "Data.PushNoticeFrequency", "Data.AegisSignOn", "Data.EnableFockRetryStrategy", "Data.EnableSearchUser"], ["0", "1", "1", "0", "0", "99999", "0", "0", "0", "false", "999999", "999999", "0", "0", 0, 0, 0, 0, 0, "999999", "999999", "999999", "999999", "999999", "999999", "-1", 0, 0, "1"])
 
 # getconf-delete: config DeleteKeys 全 10 项 + GDT 追踪模块（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf(\?.*)?$/ then response.json.delete(["Data.ActivityIcon", "Data.ActivityPopup", "Data.LuckBag", "Data.BookShelfBottomIcons", "Data.ClassicBookInfo", "Data.ClientLocalNotify2", "Data.PushDialogScenes", "Data.RewardSatisfyDialog", "Data.FansClubPropInfo", "Data.AdVideoPositionConfig", "Data.GDT"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf(\?.*)?$/ then response.json.delete(["Data.ActivityIcon", "Data.ActivityPopup", "Data.LuckBag", "Data.BookShelfBottomIcons", "Data.ClassicBookInfo", "Data.ClientLocalNotify2", "Data.PushDialogScenes", "Data.RewardSatisfyDialog", "Data.FansClubPropInfo", "Data.AdVideoPositionConfig", "Data.GDT"])
 
 # getconf-discover-teen: 关闭发现 tab + 青少年弹窗频次（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf(\?.*)?$/ then response.json.replace(["Data.NewFeedsDiscover", "Data.CloudSetting.TeenShowFreq"], [0, "0"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf(\?.*)?$/ then response.json.replace(["Data.NewFeedsDiscover", "Data.CloudSetting.TeenShowFreq"], [0, "0"])
 
 # ------------------------------------------------------------
 # 字段级净化（response 阶段 delete 型，v4.1.0）：纯广告/营销端点
 # ------------------------------------------------------------
 # kill-splash: 开屏广告轮播清空（v4.0.3 改 delete 型：reject_dict(response) 本机无效；server 当前 List=[] 本行为兜底）（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v4\/client\/getsplashscreen(\?.*)?$/ then response.json.delete(["Data.List"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v4\/client\/getsplashscreen(\?.*)?$/ then response.json.delete(["Data.List"])
 
 # kill-bookshelfbtn: 新手引导书架按钮配置整条删除（v4.0.3 改 delete 型：reject_dict(response) 本机无效）（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/freshman\/bookshelfbtn(\?.*)?$/ then response.json.delete(["Data"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/freshman\/bookshelfbtn(\?.*)?$/ then response.json.delete(["Data"])
 
 # kill-topoperation: 书架红框整块删除：MainInfo=「必看神作/最低折扣」大横幅（AdvId AD20261013-07-iOS）+ Items×3 右侧小图标（含游戏手柄，AdvId AD20261013-09-iOS）。v4.1.1 回退为删 Data.Items+Data.MainInfo（不删整个 Data）——v4.1.0 删整个 Data 导致响应只剩 {Message,Result}，App 拿不到 Data 对象直接渲染崩溃→书架 Tab 白屏（来源 config Plugin/qidian.plugin · v4.1.0 按 466_1794290256836.har 实证重写）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/bookshelf\/getTopOperation(\?.*)?$/ then response.json.delete(["Data.Items", "Data.MainInfo"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/bookshelf\/getTopOperation(\?.*)?$/ then response.json.delete(["Data.Items", "Data.MainInfo"])
 
 # kill-popup: 弹窗队列整条杀（v4.0.3 改 delete 型：原 `\?` 锚死于真机无 query 从未命中）（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/popup\/batchget(\?.*)?$/ then response.json.delete(["Data"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/popup\/batchget(\?.*)?$/ then response.json.delete(["Data"])
 
 # kill-classicbook: 章末经典书目运营位 Items 清空（v4.0.3 改 delete 型：原 `\?` 锚死于真机无 query 从未命中）（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/interaction\/getclassicbookinfo(\?.*)?$/ then response.json.delete(["Data.Items"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/interaction\/getclassicbookinfo(\?.*)?$/ then response.json.delete(["Data.Items"])
 
 # kill-getad: 书架游戏入口 GameUrl(gameCenterMainPage)+Show 广告位整条杀——用户红框手柄图标（v4.0.3 改 delete 型：原 `\?` 锚死于真机无 query 从未命中）（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/bookshelf\/getad(\?.*)?$/ then response.json.delete(["Data"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/bookshelf\/getad(\?.*)?$/ then response.json.delete(["Data"])
 
 # ------------------------------------------------------------
 # 字段级净化（response 阶段）：混业务端点只删字段，保留接口结构
 # ------------------------------------------------------------
 # clean-reddot: 红点 Data 清空（CLEAN_RULES）（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/reddot\/getdot(\?.*)?$/ then response.json.delete(["Data"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/reddot\/getdot(\?.*)?$/ then response.json.delete(["Data"])
 
 # clean-accountpage: 我的页红框清除：起点会员卡 / 13 项功能宫格 / 「帮助与客服·加入我们」/ 福利按钮列表。v4.1.1 回退 v4.1.0 新增的 9 个字段（SchoolText/DianNiang*/PursueBookCard/ActiveActionUrl/FreshManGuideSwitch）——删除这些字段导致 App 渲染崩溃→我的页白屏（来源 config Plugin/qidian.plugin · v4.1.0 按 466_1794290256836.har 实证重写）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/user\/getaccountpage(\?.*)?$/ then response.json.delete(["Data.BenefitButtonList", "Data.Member", "Data.FunctionButtonList", "Data.BottomButtonList"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/user\/getaccountpage(\?.*)?$/ then response.json.delete(["Data.BenefitButtonList", "Data.Member", "Data.FunctionButtonList", "Data.BottomButtonList"])
 
 # ------------------------------------------------------------
 # 字段改值与数组置空（response 阶段）：保留接口结构
 # ------------------------------------------------------------
 # deeplink-url: 冷启动强制跳转精选页：ActionUrl 置空（来源 config Plugin/qidian.plugin）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/deeplink\/geturl(\?.*)?$/ then response.json.replace(["Data.ActionUrl", ""])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/deeplink\/geturl(\?.*)?$/ then response.json.replace(["Data.ActionUrl", ""])
 
 # ------------------------------------------------------------
 # 整条 kill（response 阶段 v4.0.3 实证 delete 型）：纯广告/营销端点
 # ------------------------------------------------------------
 # kill-advlistbatch: 我的页「今日偶遇/惊喜活动推荐」广告位删除（用户红框 2026-11-10；真机请求 positions=iosusercenter,iosusercenter2）；h5 域 ioscheckin 签到页广告位与 Data.iOS_tab 不动（来源 AshNail v4.0.3（config 无此条——真机取证 HAR 466 之上新增））
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/adv\/getadvlistbatch(\?.*)?$/ then response.json.delete(["Data.iosusercenter", "Data.iosusercenter2"])
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/adv\/getadvlistbatch(\?.*)?$/ then response.json.delete(["Data.iosusercenter", "Data.iosusercenter2"])
 
 # ------------------------------------------------------------
 # 字段级净化（v4.0.3 新增）：发现页白名单
 # ------------------------------------------------------------
 # clean-simplediscover: 发现页白名单：仅保留 7 张 DISCOVER_* 内容卡，剔除 14 张 NEW_* 营销卡（游戏中心/红包广场/周边商城等）；v4.1.0 补三层类型守卫（顶层 object / Items 数组 / 条目 object / KeyName 字符串），异常条目不再让整次净化失败、响应原样放行（来源 AshNail v4.0.3（config 无此条——真机取证 HAR 466 之上新增） · v4.1.0 按 466_1794290256836.har 实证重写）
-response if ${CAPTURE_ENABLE} == true && ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/user\/getsimplediscover(\?.*)?$/ then response.json.jq("if type == \"object\" and (.Data | type) == \"object\" and (.Data.Items | type) == \"array\" then .Data.Items |= map(select(if type == \"object\" then (.KeyName | if type == \"string\" then startswith(\"DISCOVER_\") else false end) else false end)) else . end")
+response if ${url} ~= /https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/user\/getsimplediscover(\?.*)?$/ then response.json.jq("if type == \"object\" and (.Data | type) == \"object\" and (.Data.Items | type) == \"array\" then .Data.Items |= map(select(if type == \"object\" then (.KeyName | if type == \"string\" then startswith(\"DISCOVER_\") else false end) else false end)) else . end")
 
 # ========================================================================
 # 脚本层（绑定行由 enhance.bindings 生成，lint 逐行对账）
@@ -197,12 +196,6 @@ http-request ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v\d+\/video\/a
 
 # engine-token: config 同形：getconf/checkin/simpleinfo 请求自带 auth headers，引擎在请求阶段缓存凭据
 http-request ^https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/(client\/getconf|checkin\/checkin|checkin\/simpleinfo) script-path=scripts/Qidian.js, requires-body=false, timeout=10, tag=获取Token
-
-# engine-getconf: config 同形：CAPTURE_ENABLE=false 时由脚本做 getconf 30 项覆写 + 11 项删除；开启复写时本绑定被抑制（probe=true 仅为本仓互斥校验，不改变输出行）
-http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=客户端配置净化
-
-# engine-deep-clean: config 同形：CAPTURE_ENABLE=false 时由脚本接管 22 个端点族（含 mainPage 限时任务收集）；开启复写时本绑定被抑制（probe=true 仅为本仓互斥校验，不改变输出行）。v4.1.1 移除 binary_body_mode——配合 force-identity 让上游返回明文，脚本收到字符串即可正常处理并回写
-http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/(v\d+\/video\/adv\/mainPage(?!Dialog)|v\d+\/video\/adv\/mainPageDialog|v\d+\/video\/adv\/reportDialog|v\d+\/adv\/getadvlistbatch|v\d+\/deeplink\/geturl|v\d+\/dailyrecommend|v\d+\/checkin\/(lottery|checkinexchangepage)|v\d+\/user\/getsimplediscover|v\d+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v\d+\/client\/iosad|v\d+\/push\/getdialog|v\d+\/maintain\/playstrip|v\d+\/young\/getconf|v\d+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v\d+\/message\/(pullOperationPush|pullSocialPush)|v\d+\/followsubscribe\/showChapterEndModule|v\d+\/client\/getsplashscreen|v\d+\/reddot\/getdot|v\d+\/popup\/batchget|v\d+\/ploy\/getactivitylist|v\d+\/interaction\/getclassicbookinfo|v\d+\/readtime\/readpage) script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=深度净化
 
 # engine-cookie: config 同形：getlogininfo 响应带完整用户凭据，独立开关 QDREADER_COOKIE_ENABLE 门控
 http-response ^https?:\/\/h5\.if\.qidian\.com\/argus\/api\/v1\/user\/getlogininfo script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=起点读书获取Cookie, enable={QDREADER_COOKIE_ENABLE}, argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE},{QDREADER_AUTO_ENABLE},{QDREADER_AUTO_ENABLE},{QDREADER_AUTO_ENABLE},{QDREADER_AUTO_ENABLE},{QDREADER_AUTO_ENABLE}]

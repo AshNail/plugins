@@ -1060,7 +1060,7 @@ def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dic
         gate = item.get("gate")
         action = item.get("action", "")
         is_req_header = REWRITE_REQ_HEADER_RE.match(action) is not None
-        if gate is not None or not is_req_header:
+        if gate is not None:
             if gate not in names:
                 raise BuildError(f"{where_i}: gate {gate!r} 不在 enhance.arguments 里")
         if REWRITE_JSON_RE.match(action):
