@@ -221,5 +221,8 @@ http-response ^https?:\/\/h5\.if\.qidian\.com\/argus\/api\/v1\/user\/getlogininf
 # engine-cron: config 同形：CRONEXP/TIMEOUT 参数化定时与超时；7 个 argument 开关控制任务取舍；cron 不得被 enable 门控
 cron {CRONEXP} script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点读书自动签到(包含高阶任务), argument=[{QDREADER_DEBUG},{QDREADER_ADV_JOB_ENABLE},{QDREADER_EXTRA_ADV_JOB_ENABLE},{QDREADER_LOTTERY_ENABLE},{QDREADER_WEEKLY_EXCHANGE_ENABLE},{QDREADER_CHAPTER_CARD_ENABLE},{QDREADER_MESSAGE_BOX_ENABLE}]
 
+# engine-manual-job: v4.1.1 新增：独立的手动触发入口，只执行激励任务（不执行签到/抽奖）。与 cron 和 engine-manual 分开，方便用户随时手动触发一次
+generic script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点手动执行激励任务(不签到), argument=[{QDREADER_DEBUG},{QDREADER_ADV_JOB_ENABLE},{QDREADER_EXTRA_ADV_JOB_ENABLE},{QDREADER_LOTTERY_ENABLE},{QDREADER_WEEKLY_EXCHANGE_ENABLE},{QDREADER_CHAPTER_CARD_ENABLE},{QDREADER_MESSAGE_BOX_ENABLE}]
+
 # engine-manual: config 同形：官方 generic 为 cron 的手动自检位，同脚本同参数点一下即跑一次
 generic script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点手动签到/自检(与自动签到同任务), argument=[{QDREADER_DEBUG},{QDREADER_ADV_JOB_ENABLE},{QDREADER_EXTRA_ADV_JOB_ENABLE},{QDREADER_LOTTERY_ENABLE},{QDREADER_WEEKLY_EXCHANGE_ENABLE},{QDREADER_CHAPTER_CARD_ENABLE},{QDREADER_MESSAGE_BOX_ENABLE}]

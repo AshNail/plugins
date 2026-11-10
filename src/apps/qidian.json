@@ -587,6 +587,24 @@
         "note": "config 同形：CRONEXP/TIMEOUT 参数化定时与超时；7 个 argument 开关控制任务取舍；cron 不得被 enable 门控"
       },
       {
+        "id": "engine-manual-job",
+        "kind": "generic",
+        "legacy": true,
+        "path": "scripts/Qidian.js",
+        "timeout": "{TIMEOUT}",
+        "argument": [
+          "QDREADER_DEBUG",
+          "QDREADER_ADV_JOB_ENABLE",
+          "QDREADER_EXTRA_ADV_JOB_ENABLE",
+          "QDREADER_LOTTERY_ENABLE",
+          "QDREADER_WEEKLY_EXCHANGE_ENABLE",
+          "QDREADER_CHAPTER_CARD_ENABLE",
+          "QDREADER_MESSAGE_BOX_ENABLE"
+        ],
+        "tag": "起点手动执行激励任务(不签到)",
+        "note": "v4.1.1 新增：独立的手动触发入口，只执行激励任务（不执行签到/抽奖）。与 cron 和 engine-manual 分开，方便用户随时手动触发一次"
+      },
+      {
         "id": "engine-manual",
         "kind": "generic",
         "legacy": true,
