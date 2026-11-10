@@ -1,8 +1,8 @@
 {
   "slug": "qidian",
-  "name": "起点读书 · 看书激励助手 v4.1.0",
+  "name": "起点读书 · 看书激励助手 v4.1.1",
   "desc": "起点全能助手 Pro（严格移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：CAPTURE_ENABLE 决定净化走 [Rewrite] 还是 [Script]——开启时由 15 条 response 复写接管（v4.1.0 按真机 HAR 466 重写：删掉 8 条零命中端点、6 条服务端本来返回空的空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框整块删 getTopOperation.Data，我的页红框＋营销入口一次清干净并保留账户与身份字段；每日导读按用户裁决保留）。每条规则都带 evidence（har / kind / url_hits / proof / device_check），由 tools/qidian-har-evidence.py --check 反向钉住。关闭复写时同一批端点由 [Script] 的客户端配置净化与深度净化绑定接管；[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getconf、深度净化、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检。限时激励任务（mainPage 的 ReadingPageTaskModule）当轮 TaskId/Total 落盘 Qidian_LimitedTasks，finishWatch 按 Total-1 重放。自动化六开关与 Cookie 捕获默认开，服务端风控后果自担。",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "date": "2026-11-10",
   "loonVersion": "3.5.1(983)",
   "tag": "起点读书,config,响应净化,自动签到,激励任务,限时激励,纯净阅读",
@@ -303,8 +303,8 @@
         "gate": "CAPTURE_ENABLE",
         "endpoint": "bookshelf/getTopOperation",
         "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/bookshelf/getTopOperation(\\?.*)?$",
-        "action": "response.json.delete([\"Data\"])",
-        "note": "书架红框整块删除：MainInfo=「必看神作/最低折扣」大横幅（AdvId AD20261013-07-iOS，BgImg/TitleImg 是图片所以 HAR 正文搜不到文案）+ Items×3 右侧小图标（含游戏手柄，AdvId AD20261013-09-iOS）。v4.0.3 只删 Data.Items → 横幅原样留在真机上，本轮改删整个 Data",
+        "action": "response.json.delete([\"Data.Items\", \"Data.MainInfo\"])",
+        "note": "书架红框整块删除：MainInfo=「必看神作/最低折扣」大横幅（AdvId AD20261013-07-iOS）+ Items×3 右侧小图标（含游戏手柄，AdvId AD20261013-09-iOS）。v4.1.1 回退为删 Data.Items+Data.MainInfo（不删整个 Data）——v4.1.0 删整个 Data 导致响应只剩 {Message,Result}，App 拿不到 Data 对象直接渲染崩溃→书架 Tab 白屏",
         "source": "config Plugin/qidian.plugin · v4.1.0 按 466_1794290256836.har 实证重写",
         "evidence": {
           "har": "466_1794290256836.har",
@@ -465,8 +465,8 @@
         "gate": "CAPTURE_ENABLE",
         "endpoint": "video/adv/mainPage",
         "url": "https://h5\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/mainPage(\\?.*)?$",
-        "action": "response.json.delete([\"Data.PrivilegedTaskModule\", \"Data.MoreRewardTab\", \"Data.SurpriseBenefit\", \"Data.LastRewardItems\", \"Data.IndexBannerTabs\", \"Data.BaizeModule\", \"Data.TaskShowData\", \"Data.UserRewardModule\", \"Data.PopFrequency\", \"Data.ActivityCenterModule\", \"Data.CharityModule\", \"Data.VideoRewardTab\", \"Data.RedeemGifts\"])",
-        "note": "福利中心营销模块删除（13 键）：v4.0.2 十键 + v4.0.3 三键；v4.1.0 移除 MemberExclusiveTaskModule（HAR 原始 Data 里根本不存在，属于无效声明）。DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 等激励与奖励出口原样保留",
+        "action": "response.json.delete([\"Data.PrivilegedTaskModule\", \"Data.MoreRewardTab\", \"Data.SurpriseBenefit\", \"Data.LastRewardItems\", \"Data.BaizeModule\", \"Data.TaskShowData\", \"Data.UserRewardModule\", \"Data.ActivityCenterModule\", \"Data.CharityModule\", \"Data.VideoRewardTab\", \"Data.RedeemGifts\"])",
+        "note": "福利中心营销模块删除（11 键）：v4.0.2 十键 + v4.0.3 三键 − v4.1.1 归还 IndexBannerTabs（页面顶部 tab 结构，删掉会导致福利页布局异常/白屏）与 PopFrequency（弹窗频控配置，非营销内容）。DailyBenefitModule / ReadingPageTaskModule / ScoreDrawModule 等激励与奖励出口原样保留",
         "source": "AshNail v4.0.2（config 无此条——真机取证 HAR 之上新增） · v4.1.0 按 466_1794290256836.har 实证重写",
         "evidence": {
           "har": "466_1794290256836.har",

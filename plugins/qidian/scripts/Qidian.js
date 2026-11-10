@@ -415,17 +415,17 @@ function handleMainPage(response) {
     // ── 保留：ScoreDrawModule(幸运抽抽乐)＋DailyBenefitModule/ReadingPageTaskModule 激励 ──
 
     // ── 删除：营销/活动/邀请/会员/限时/兑换货架模块 ──────
+    // v4.1.1：归还 IndexBannerTabs（页面结构键，删除会导致布局异常/白屏）
+    //         归还 PopFrequency（弹窗频控配置，非营销内容）
     const REMOVE_KEYS = [
       "MemberExclusiveTaskModule", // 会员尊享（90天畅读等）
       "PrivilegedTaskModule",      // 邀好友活动（邀友一起读/3300点等）
       "MoreRewardTab",             // 更多奖励（关注微信服务号等）
       "SurpriseBenefit",           // 限时福利
       "LastRewardItems",           // 必中夺宝
-      "IndexBannerTabs",           // 顶部 banner
       "BaizeModule",               // 白泽装扮气泡
       "TaskShowData",              // 任务展示配置
       "UserRewardModule",          // 用户奖励统计
-      "PopFrequency",              // 弹窗频率控制
       // v4.0.3（用户裁决 2026-11-10，HAR 465_1794288736147 键位映射）：
       "ActivityCenterModule",      // 参与活动领福利
       "CharityModule",             // 读书做公益（送出公益金）
