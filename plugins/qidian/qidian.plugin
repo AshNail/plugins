@@ -121,6 +121,12 @@ hostname = %APPEND% h5.if.qidian.com, magev6.if.qidian.com
 [Rewrite]
 
 # ------------------------------------------------------------
+# 传输层：强制明文（v3.5.7 恢复，v4.0.0 移植时丢失）
+# ------------------------------------------------------------
+# force-identity: 强制上游返回明文，脚本收到字符串即可正常处理。没有这条规则时，上游返回 gzip 压缩响应，Loon 把 gzip 字节按 UTF-8 硬解成字符串交脚本，高位字节变成 U+FFFD，JSON.parse 失败→净化静默零生效（来源 v3.5.7 · v4.1.1 恢复）
+request if ${url} ~= /https:\/\/(h5|magev6)\.if\.qidian\.com\// then request.header.set("Accept-Encoding", "identity")
+
+# ------------------------------------------------------------
 # 客户端配置净化（response 阶段）：与 config 逐项对齐
 # ------------------------------------------------------------
 # getconf-overrides: config ClientConfigOverrides 全 29 项一次改齐（DailyRecommendGray 于 v4.0.3 移出以恢复每日导读）（来源 config Plugin/qidian.plugin）
@@ -206,8 +212,8 @@ http-request ^https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/(client\/getc
 # engine-getconf: config 同形：CAPTURE_ENABLE=false 时由脚本做 getconf 30 项覆写 + 11 项删除；开启复写时本绑定被抑制（probe=true 仅为本仓互斥校验，不改变输出行）
 http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v1\/client\/getconf script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=客户端配置净化
 
-# engine-deep-clean: config 同形：CAPTURE_ENABLE=false 时由脚本接管 22 个端点族（含 mainPage 限时任务收集）；开启复写时本绑定被抑制（probe=true 仅为本仓互斥校验，不改变输出行）
-http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/(v\d+\/video\/adv\/mainPage(?!Dialog)|v\d+\/video\/adv\/mainPageDialog|v\d+\/video\/adv\/reportDialog|v\d+\/adv\/getadvlistbatch|v\d+\/deeplink\/geturl|v\d+\/dailyrecommend|v\d+\/checkin\/(lottery|checkinexchangepage)|v\d+\/user\/getsimplediscover|v\d+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v\d+\/client\/iosad|v\d+\/push\/getdialog|v\d+\/maintain\/playstrip|v\d+\/young\/getconf|v\d+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v\d+\/message\/(pullOperationPush|pullSocialPush)|v\d+\/followsubscribe\/showChapterEndModule|v\d+\/client\/getsplashscreen|v\d+\/reddot\/getdot|v\d+\/popup\/batchget|v\d+\/ploy\/getactivitylist|v\d+\/interaction\/getclassicbookinfo|v\d+\/readtime\/readpage) script-path=scripts/Qidian.js, requires-body=true, binary_body_mode=true, timeout=10, tag=深度净化
+# engine-deep-clean: config 同形：CAPTURE_ENABLE=false 时由脚本接管 22 个端点族（含 mainPage 限时任务收集）；开启复写时本绑定被抑制（probe=true 仅为本仓互斥校验，不改变输出行）。v4.1.1 移除 binary_body_mode=true——配合 force-identity 让上游返回明文，脚本收到字符串即可正常处理并回写
+http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/(v\d+\/video\/adv\/mainPage(?!Dialog)|v\d+\/video\/adv\/mainPageDialog|v\d+\/video\/adv\/reportDialog|v\d+\/adv\/getadvlistbatch|v\d+\/deeplink\/geturl|v\d+\/dailyrecommend|v\d+\/checkin\/(lottery|checkinexchangepage)|v\d+\/user\/getsimplediscover|v\d+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v\d+\/client\/iosad|v\d+\/push\/getdialog|v\d+\/maintain\/playstrip|v\d+\/young\/getconf|v\d+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v\d+\/message\/(pullOperationPush|pullSocialPush)|v\d+\/followsubscribe\/showChapterEndModule|v\d+\/client\/getsplashscreen|v\d+\/reddot\/getdot|v\d+\/popup\/batchget|v\d+\/ploy\/getactivitylist|v\d+\/interaction\/getclassicbookinfo|v\d+\/readtime\/readpage) script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=深度净化
 
 # engine-cookie: config 同形：getlogininfo 响应带完整用户凭据，独立开关 QDREADER_COOKIE_ENABLE 门控
 http-response ^https?:\/\/h5\.if\.qidian\.com\/argus\/api\/v1\/user\/getlogininfo script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=起点读书获取Cookie, enable={QDREADER_COOKIE_ENABLE}, argument=[{QDREADER_DEBUG}]

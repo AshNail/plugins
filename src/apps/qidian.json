@@ -207,6 +207,16 @@
     ],
     "rewrite": [
       {
+        "id": "force-identity",
+        "group": "传输层：强制明文（v3.5.7 恢复，v4.0.0 移植时丢失）",
+        "stage": "request",
+        "endpoint": "all",
+        "url": "https://(h5|magev6)\\.if\\.qidian\\.com/",
+        "action": "request.header.set(\"Accept-Encoding\", \"identity\")",
+        "note": "强制上游返回明文，脚本收到字符串即可正常处理。没有这条规则时，上游返回 gzip 压缩响应，Loon 把 gzip 字节按 UTF-8 硬解成字符串交脚本，高位字节变成 U+FFFD，JSON.parse 失败→净化静默零生效",
+        "source": "v3.5.7 · v4.1.1 恢复"
+      },
+      {
         "id": "getconf-overrides",
         "group": "客户端配置净化（response 阶段）：与 config 逐项对齐",
         "stage": "response",
@@ -537,8 +547,7 @@
         "timeout": 10,
         "tag": "深度净化",
         "probe": true,
-        "note": "config 同形：CAPTURE_ENABLE=false 时由脚本接管 22 个端点族（含 mainPage 限时任务收集）；开启复写时本绑定被抑制（probe=true 仅为本仓互斥校验，不改变输出行）",
-        "binary_body_mode": true
+        "note": "config 同形：CAPTURE_ENABLE=false 时由脚本接管 22 个端点族（含 mainPage 限时任务收集）；开启复写时本绑定被抑制（probe=true 仅为本仓互斥校验，不改变输出行）。v4.1.1 移除 binary_body_mode——配合 force-identity 让上游返回明文，脚本收到字符串即可正常处理并回写"
       },
       {
         "id": "engine-cookie",
