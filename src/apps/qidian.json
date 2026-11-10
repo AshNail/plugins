@@ -393,8 +393,8 @@
         "gate": "CAPTURE_ENABLE",
         "endpoint": "user/getaccountpage",
         "url": "https://magev6\\.if\\.qidian\\.com/argus/api/v\\d+/user/getaccountpage(\\?.*)?$",
-        "action": "response.json.delete([\"Data.BenefitButtonList\", \"Data.Member\", \"Data.FunctionButtonList\", \"Data.BottomButtonList\", \"Data.SchoolText\", \"Data.SchoolUrl\", \"Data.SchoolImage\", \"Data.DianNiangWorldSwitch\", \"Data.DianNiangUrl\", \"Data.DianNiangWorldImage\", \"Data.PursueBookCard\", \"Data.ActiveActionUrl\", \"Data.FreshManGuideSwitch\"])",
-        "note": "我的页红框＋红框外营销入口一次清干净：起点会员卡 / 13 项功能宫格 / 「帮助与客服·加入我们」/ 惊喜活动按钮位 / 校园福利专区 / 点娘世界 / 追书卡 / 活动中心 / 新手引导开关；Data.UserBasicInfo（头像昵称等级）与 Data.AccountBalance（余额·月票·优惠卡券·章节卡·充值）原样保留",
+        "action": "response.json.delete([\"Data.BenefitButtonList\", \"Data.Member\", \"Data.FunctionButtonList\", \"Data.BottomButtonList\"])",
+        "note": "我的页红框清除：起点会员卡 / 13 项功能宫格 / 「帮助与客服·加入我们」/ 福利按钮列表。v4.1.1 回退 v4.1.0 新增的 9 个字段（SchoolText/DianNiang*/PursueBookCard/ActiveActionUrl/FreshManGuideSwitch）——删除这些字段导致 App 渲染崩溃→我的页白屏",
         "source": "config Plugin/qidian.plugin · v4.1.0 按 466_1794290256836.har 实证重写",
         "evidence": {
           "har": "466_1794290256836.har",
