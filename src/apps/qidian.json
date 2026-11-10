@@ -529,10 +529,25 @@
         "note": "config 同形：官方 generic 为 cron 的手动自检位，同脚本同参数点一下即跑一次"
       },
       {
+        "id": "engine-mainpage-diagnostic",
+        "kind": "response",
+        "legacy": true,
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/v\\d+/video/adv/mainPage(\\?.*)?$",
+        "hosts": [
+          "h5.if.qidian.com",
+          "magev6.if.qidian.com"
+        ],
+        "path": "scripts/Qidian.js",
+        "requires_body": true,
+        "timeout": 10,
+        "tag": "起点mainPage诊断D2",
+        "note": "mainPage 独占诊断绑定；仍执行 config 的 handleMainPage，无额外净化规则"
+      },
+      {
         "id": "engine-deep-clean",
         "kind": "response",
         "legacy": true,
-        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/(v\\d+/video/adv/mainPage(?!Dialog)|v\\d+/video/adv/mainPageDialog|v\\d+/video/adv/reportDialog|v\\d+/adv/getadvlistbatch|v\\d+/deeplink/geturl|v\\d+/dailyrecommend|v\\d+/checkin/(lottery|checkinexchangepage)|v\\d+/user/getsimplediscover|v\\d+/bookshelf/(getHoverAdv|getTopOperation|getad)|v\\d+/client/iosad|v\\d+/push/getdialog|v\\d+/maintain/playstrip|v\\d+/young/getconf|v\\d+/freshman/(bookshelfbtn|freshmanGuidePopup)|v\\d+/message/(pullOperationPush|pullSocialPush)|v\\d+/followsubscribe/showChapterEndModule|v\\d+/client/getsplashscreen|v\\d+/reddot/getdot|v\\d+/popup/batchget|v\\d+/ploy/getactivitylist|v\\d+/interaction/getclassicbookinfo|v\\d+/readtime/readpage)",
+        "pattern": "^https://(h5|magev6)\\.if\\.qidian\\.com/argus/api/(v\\d+/video/adv/mainPageDialog|v\\d+/video/adv/reportDialog|v\\d+/adv/getadvlistbatch|v\\d+/deeplink/geturl|v\\d+/dailyrecommend|v\\d+/checkin/(lottery|checkinexchangepage)|v\\d+/user/getsimplediscover|v\\d+/bookshelf/(getHoverAdv|getTopOperation|getad)|v\\d+/client/iosad|v\\d+/push/getdialog|v\\d+/maintain/playstrip|v\\d+/young/getconf|v\\d+/freshman/(bookshelfbtn|freshmanGuidePopup)|v\\d+/message/(pullOperationPush|pullSocialPush)|v\\d+/followsubscribe/showChapterEndModule|v\\d+/client/getsplashscreen|v\\d+/reddot/getdot|v\\d+/popup/batchget|v\\d+/ploy/getactivitylist|v\\d+/interaction/getclassicbookinfo|v\\d+/readtime/readpage)",
         "hosts": [
           "h5.if.qidian.com",
           "magev6.if.qidian.com"

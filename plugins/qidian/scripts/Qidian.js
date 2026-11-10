@@ -214,7 +214,7 @@ function mainPageTrace(stage, detail) {
   if (!MAINPAGE_TRACE.active) return;
   const message = stage + (detail ? " " + detail : "");
   MAINPAGE_TRACE.events.push(message);
-  try { console.log("[QD-MP-D1 " + MAINPAGE_TRACE.id + "] " + message); } catch (e) {}
+  try { console.log("[QD-MP-D2 " + MAINPAGE_TRACE.id + "] " + message); } catch (e) {}
 }
 
 function installMainPageTrace() {
@@ -228,13 +228,14 @@ function installMainPageTrace() {
     : body instanceof ArrayBuffer ? "ArrayBuffer:" + body.byteLength
     : typeof body;
   mainPageTrace("entry", "phase=" + (response ? "response" : "request") + " body=" + shape + " URL=" + typeof URL);
+  try { $notification.post("起点 mainPage 已进入 QD-MP-D2", MAINPAGE_TRACE.id, MAINPAGE_TRACE.events.join("\n")); } catch (e) {}
   const originalDone = $.done;
   $.done = function (result) {
     const modified = result && Object.prototype.hasOwnProperty.call(result, "body");
     mainPageTrace("done", modified ? "body=string:" + String(result.body).length : "passthrough");
     const summary = MAINPAGE_TRACE.events.join("\n");
     try { $persistentStore.write(summary, "Qidian_MainPage_Diagnostic"); } catch (e) {}
-    try { $notification.post("起点 mainPage 诊断 QD-MP-D1", MAINPAGE_TRACE.id, summary); } catch (e) {}
+    try { $notification.post("起点 mainPage 诊断 QD-MP-D2", MAINPAGE_TRACE.id, summary); } catch (e) {}
     return originalDone(result);
   };
 }
@@ -370,6 +371,7 @@ installMainPageTrace();
   $.done();
 
 })().catch(e => {
+  mainPageTrace("dispatch-error", e instanceof Error ? e.name : "unknown");
   $.log(`异常: ${e}`);
   $.done();
 });
