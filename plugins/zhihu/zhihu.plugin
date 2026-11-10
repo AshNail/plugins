@@ -68,7 +68,7 @@ zhihu-web-analytics.zhihu.com = 127.0.0.1
 
 [MITM]
 
-hostname = %APPEND% api.zhihu.com, www.zhihu.com, zhida.zhihu.com
+hostname = api.zhihu.com, www.zhihu.com, zhida.zhihu.com
 
 
 # ========================================================================

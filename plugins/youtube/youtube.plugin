@@ -62,7 +62,7 @@ ads.youtube.com = 127.0.0.1
 
 [MITM]
 
-hostname = %APPEND% youtubei.googleapis.com, www.youtube.com
+hostname = youtubei.googleapis.com, www.youtube.com
 
 
 # ========================================================================

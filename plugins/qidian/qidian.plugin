@@ -99,7 +99,7 @@ DOMAIN, ali-stats.jpush.cn, REJECT
 
 [MITM]
 
-hostname = %APPEND% h5.if.qidian.com, magev6.if.qidian.com
+hostname = h5.if.qidian.com, magev6.if.qidian.com
 
 
 # ========================================================================

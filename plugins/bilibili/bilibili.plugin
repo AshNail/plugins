@@ -71,7 +71,7 @@ tracker.chat.bilibili.com = 127.0.0.1
 
 [MITM]
 
-hostname = %APPEND% app.bilibili.com
+hostname = app.bilibili.com
 
 
 # ========================================================================

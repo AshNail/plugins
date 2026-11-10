@@ -129,7 +129,7 @@ tmatch.simba.taobao.com = 127.0.0.1
 
 [MITM]
 
-hostname = %APPEND% acs.m.taobao.com, guide-acs.m.taobao.com, gw.alicdn.com, heic.alicdn.com
+hostname = acs.m.taobao.com, guide-acs.m.taobao.com, gw.alicdn.com, heic.alicdn.com
 
 
 # ========================================================================

@@ -51,7 +51,7 @@ AND,((DOMAIN-SUFFIX,r.inews.qq.com),(PROTOCOL,QUIC)),REJECT
 
 [MITM]
 
-hostname = %APPEND% news.ssp.qq.com, r.inews.qq.com
+hostname = news.ssp.qq.com, r.inews.qq.com
 
 
 # ========================================================================

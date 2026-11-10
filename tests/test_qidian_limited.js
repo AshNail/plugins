@@ -111,6 +111,10 @@ function check(name, cond, extra) {
     const diagnostic = [];
     const url = "https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage?source=welfare";
     const plugin = fs.readFileSync(path.join(ROOT, "plugins/qidian/qidian.plugin"), "utf8");
+    const mitm = plugin.split("\n").find(line => line.startsWith("hostname = "));
+    assert(mitm, "发布插件必须声明 MITM 域名");
+    const hosts = mitm.split("=")[1].split(",").map(host => host.trim());
+    assert.deepStrictEqual(hosts, ["h5.if.qidian.com", "magev6.if.qidian.com"]);
     const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=深度净化"));
     assert(binding && new RegExp(binding.split(" ")[1]).test(url));
     assert(binding.includes("script-path=scripts/Qidian.js"));

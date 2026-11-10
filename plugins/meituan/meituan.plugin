@@ -163,7 +163,7 @@ s3plus-pre.51ping.com = 127.0.0.1
 
 [MITM]
 
-hostname = %APPEND% wmapi.meituan.com, apimobile.meituan.com, p0.meituan.net, p1.meituan.net, flowplus.meituan.net, img.meituan.net, feedguess.meituan.com, mt-personalcenter.meituan.com, assistify.meituan.com, mop.meituan.com
+hostname = wmapi.meituan.com, apimobile.meituan.com, p0.meituan.net, p1.meituan.net, flowplus.meituan.net, img.meituan.net, feedguess.meituan.com, mt-personalcenter.meituan.com, assistify.meituan.com, mop.meituan.com
 
 
 # ========================================================================

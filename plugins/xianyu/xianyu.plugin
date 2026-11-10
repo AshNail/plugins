@@ -102,7 +102,7 @@ tunion-api.m.taobao.com = 127.0.0.1
 
 [MITM]
 
-hostname = %APPEND% acs.m.goofish.com, g-acs.m.goofish.com
+hostname = acs.m.goofish.com, g-acs.m.goofish.com
 
 
 # ========================================================================

@@ -1201,7 +1201,7 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
         "",
         "[MITM]",
         "",
-        f"hostname = %APPEND% {', '.join(hosts)}",
+        f"hostname = {', '.join(hosts)}",
         "",
     ]
     out += render_rewrite_section(enh, where)
