@@ -691,12 +691,6 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
                 raise BuildError(
                     f"{where}: bindings[{bid}].path 需为相对 vendored 指针/scripts/<name>.js: {b.get('path')!r}"
                 )
-            if b.get("script_url"):
-                if bid != "engine-mainpage-diagnostic" or not re.fullmatch(
-                    r"https://raw\.githubusercontent\.com/AshNail/plugins/[0-9a-f]{40}/plugins/qidian/scripts/Qidian\.js",
-                    b["script_url"],
-                ):
-                    raise BuildError(f"{where}: bindings[{bid}].script_url 必须为本仓 mainPage 诊断脚本的固定提交地址")
             if b.get("args"):
                 raise BuildError(
                     f"{where}: bindings[{bid}] legacy 绑定不吃 args（引擎参数走 argument=[{{NAME}}]）"
@@ -841,7 +835,7 @@ def render_binding_legacy(b: dict) -> str:
     逗号（validate 已拦）；`{NAME}` 是旧式 [Argument] 占位，Loon 在加载期替换。
     """
     kind = b["kind"]
-    attrs = [f"script-path={b.get('script_url') or b['path']}"]
+    attrs = [f"script-path={b['path']}"]
     if kind in ("request", "response"):
         attrs.append(f"requires-body={'true' if b.get('requires_body') else 'false'}")
         # v4.0.1 裁决（2026-11-10）：声明了 binary_body_mode 的 legacy 绑定必须带出，

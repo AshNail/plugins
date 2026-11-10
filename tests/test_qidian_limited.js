@@ -108,36 +108,24 @@ function check(name, cond, extra) {
 (async () => {
   {
     let output;
-    const diagnostic = [];
     const url = "https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage?source=welfare";
     const plugin = fs.readFileSync(path.join(ROOT, "plugins/qidian/qidian.plugin"), "utf8");
     const mitm = plugin.split("\n").find(line => line.startsWith("hostname = "));
     assert(mitm, "发布插件必须声明 MITM 域名");
     const hosts = mitm.split("=")[1].split(",").map(host => host.trim());
     assert.deepStrictEqual(hosts, ["h5.if.qidian.com", "magev6.if.qidian.com"]);
-    const deepBinding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=深度净化"));
-    assert(deepBinding && !new RegExp(deepBinding.split(" ")[1]).test(url));
-    const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=起点mainPage诊断D2"));
+    const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=深度净化"));
     assert(binding && new RegExp(binding.split(" ")[1]).test(url));
-    assert(binding.includes("script-path=https://raw.githubusercontent.com/AshNail/plugins/164082796f54c4afc63c1def711da918882de21a/plugins/qidian/scripts/Qidian.js"));
-    assert.strictEqual(require("crypto").createHash("sha256").update(ENGINE).digest("hex"),
-      "eac473815fcab7553d9b01343272a2527adc61db1aaacd669d2572fb8897cbba",
-      "回归测试必须运行固定 URL 对应的实际脚本");
+    assert(binding.includes("script-path=scripts/Qidian.js"));
     const context = {
       $request: { url, method: "GET" },
       $response: { body: JSON.stringify(FIXTURE) },
       $done: value => { output = value; },
       $persistentStore: { read: () => null, write: () => true },
-      $notification: { post: (...args) => diagnostic.push(args.join("\n")) },
+      $notification: { post: () => {} },
       console: { log: () => {} },
     };
     vm.runInNewContext(ENGINE, context);
-    assert.strictEqual(diagnostic.length, 2);
-    assert(diagnostic[0].includes("已进入 QD-MP-D2"));
-    assert(/entry.*URL=undefined/.test(diagnostic[0]));
-    assert(diagnostic[1].includes("handler\nparse ok\nclean"));
-    assert(diagnostic[1].includes("done body=string:"));
-    assert(!diagnostic.join("\n").includes("source=welfare"));
     assert(output && typeof output.body === "string", "发布引擎在无 URL 全局环境中必须回写 mainPage");
     const data = JSON.parse(output.body).Data;
     const expected = JSON.parse(JSON.stringify(FIXTURE));
@@ -147,24 +135,6 @@ function check(name, cond, extra) {
       "TaskShowData", "UserRewardModule", "PopFrequency"]) delete expected.Data[key];
     assert.deepStrictEqual(JSON.parse(output.body), expected);
     assert.strictEqual(data.ReadingPageTaskModule.TaskList.length, 6);
-    for (const [body, expectedStage] of [["not-json", "parse failed"], ["{}", "parse no-Data"]]) {
-      diagnostic.length = 0;
-      vm.runInNewContext(ENGINE, { ...context, $response: { body } });
-      assert.strictEqual(diagnostic.length, 2);
-      assert(diagnostic[1].includes(expectedStage));
-      assert(diagnostic[1].includes("done passthrough"));
-    }
-    diagnostic.length = 0;
-    const brokenResponse = {};
-    let reads = 0;
-    Object.defineProperty(brokenResponse, "body", { get() {
-      if (++reads > 1) throw new TypeError("diagnostic-test");
-      return "{}";
-    } });
-    vm.runInNewContext(ENGINE, { ...context, $response: brokenResponse });
-    assert.strictEqual(diagnostic.length, 2);
-    assert(diagnostic[1].includes("error"));
-    assert(diagnostic[1].includes("done passthrough"));
     check("发布绑定与无 URL 全局环境下 mainPage 回写回归", true);
   }
   console.log("\n[1] mainPage 净化：限时任务与正常激励全量保留，TaskId/Total 落盘");

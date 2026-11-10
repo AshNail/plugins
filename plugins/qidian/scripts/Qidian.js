@@ -208,40 +208,6 @@ const CLEAN_RULES = {
 // ==========================================
 // 🚀 主入口
 // ==========================================
-const MAINPAGE_TRACE = { active: false, events: [], id: "" };
-
-function mainPageTrace(stage, detail) {
-  if (!MAINPAGE_TRACE.active) return;
-  const message = stage + (detail ? " " + detail : "");
-  MAINPAGE_TRACE.events.push(message);
-  try { console.log("[QD-MP-D2 " + MAINPAGE_TRACE.id + "] " + message); } catch (e) {}
-}
-
-function installMainPageTrace() {
-  if (typeof $request === "undefined" || !/\/video\/adv\/mainPage(?:[?#]|$)/.test($request.url || "")) return;
-  MAINPAGE_TRACE.active = true;
-  MAINPAGE_TRACE.id = Date.now().toString(36);
-  const response = typeof $response === "undefined" ? null : $response;
-  const body = response && response.body;
-  const shape = typeof body === "string" ? "string:" + body.length
-    : body instanceof Uint8Array ? "Uint8Array:" + body.byteLength
-    : body instanceof ArrayBuffer ? "ArrayBuffer:" + body.byteLength
-    : typeof body;
-  mainPageTrace("entry", "phase=" + (response ? "response" : "request") + " body=" + shape + " URL=" + typeof URL);
-  try { $notification.post("起点 mainPage 已进入 QD-MP-D2", MAINPAGE_TRACE.id, MAINPAGE_TRACE.events.join("\n")); } catch (e) {}
-  const originalDone = $.done;
-  $.done = function (result) {
-    const modified = result && Object.prototype.hasOwnProperty.call(result, "body");
-    mainPageTrace("done", modified ? "body=string:" + String(result.body).length : "passthrough");
-    const summary = MAINPAGE_TRACE.events.join("\n");
-    try { $persistentStore.write(summary, "Qidian_MainPage_Diagnostic"); } catch (e) {}
-    try { $notification.post("起点 mainPage 诊断 QD-MP-D2", MAINPAGE_TRACE.id, summary); } catch (e) {}
-    return originalDone(result);
-  };
-}
-
-installMainPageTrace();
-
 !(async () => {
   if (typeof $request === "undefined") {
     await executeCronTasks();
@@ -371,7 +337,6 @@ installMainPageTrace();
   $.done();
 
 })().catch(e => {
-  mainPageTrace("dispatch-error", e instanceof Error ? e.name : "unknown");
   $.log(`异常: ${e}`);
   $.done();
 });
@@ -427,10 +392,8 @@ function handleClientConfig(response) {
  *       LastRewardItems(必中夺宝), IndexBannerTabs(顶部Banner)
  */
 function handleMainPage(response) {
-  mainPageTrace("handler");
   try {
     const obj = safeJsonParse(response.body);
-    mainPageTrace("parse", !obj ? "failed" : !obj.Data ? "no-Data" : "ok");
     if (!obj || !obj.Data) { $.done(); return; }
     const data = obj.Data;
 
@@ -456,17 +419,11 @@ function handleMainPage(response) {
       "UserRewardModule",          // 用户奖励统计
       "PopFrequency",              // 弹窗频率控制
     ];
-    const before = Object.keys(data).length;
-    const removed = REMOVE_KEYS.filter(k => Object.prototype.hasOwnProperty.call(data, k));
     REMOVE_KEYS.forEach(k => { delete data[k]; });
-    mainPageTrace("clean", "keys=" + before + "->" + Object.keys(data).length + " removed=" + removed.join(","));
 
     $.log("✨ 福利中心已净化");
     $.done({ body: JSON.stringify(obj) });
-  } catch (e) {
-    mainPageTrace("error", e instanceof Error ? e.name : "unknown");
-    $.done();
-  }
+  } catch (e) { $.done(); }
 }
 
 // ── LOCAL PATCH (AshNail/plugins v4.0.0)：限时激励任务收集 ──
