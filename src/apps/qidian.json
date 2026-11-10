@@ -541,7 +541,8 @@
         "requires_body": true,
         "timeout": 10,
         "tag": "起点mainPage诊断D2",
-        "note": "mainPage 独占诊断绑定；仍执行 config 的 handleMainPage，无额外净化规则"
+        "note": "mainPage 独占诊断绑定；仍执行 config 的 handleMainPage，无额外净化规则",
+        "script_url": "https://raw.githubusercontent.com/AshNail/plugins/164082796f54c4afc63c1def711da918882de21a/plugins/qidian/scripts/Qidian.js"
       },
       {
         "id": "engine-deep-clean",

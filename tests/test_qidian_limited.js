@@ -119,7 +119,10 @@ function check(name, cond, extra) {
     assert(deepBinding && !new RegExp(deepBinding.split(" ")[1]).test(url));
     const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=起点mainPage诊断D2"));
     assert(binding && new RegExp(binding.split(" ")[1]).test(url));
-    assert(binding.includes("script-path=scripts/Qidian.js"));
+    assert(binding.includes("script-path=https://raw.githubusercontent.com/AshNail/plugins/164082796f54c4afc63c1def711da918882de21a/plugins/qidian/scripts/Qidian.js"));
+    assert.strictEqual(require("crypto").createHash("sha256").update(ENGINE).digest("hex"),
+      "eac473815fcab7553d9b01343272a2527adc61db1aaacd669d2572fb8897cbba",
+      "回归测试必须运行固定 URL 对应的实际脚本");
     const context = {
       $request: { url, method: "GET" },
       $response: { body: JSON.stringify(FIXTURE) },
