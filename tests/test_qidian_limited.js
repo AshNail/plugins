@@ -108,6 +108,7 @@ function check(name, cond, extra) {
 (async () => {
   {
     let output;
+    const diagnostic = [];
     const url = "https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage?source=welfare";
     const plugin = fs.readFileSync(path.join(ROOT, "plugins/qidian/qidian.plugin"), "utf8");
     const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=深度净化"));
@@ -118,10 +119,15 @@ function check(name, cond, extra) {
       $response: { body: JSON.stringify(FIXTURE) },
       $done: value => { output = value; },
       $persistentStore: { read: () => null, write: () => true },
-      $notification: { post: () => {} },
+      $notification: { post: (...args) => diagnostic.push(args.join("\n")) },
       console: { log: () => {} },
     };
     vm.runInNewContext(ENGINE, context);
+    assert.strictEqual(diagnostic.length, 1);
+    assert(/entry.*URL=undefined/.test(diagnostic[0]));
+    assert(diagnostic[0].includes("handler\nparse ok\nclean"));
+    assert(diagnostic[0].includes("done body=string:"));
+    assert(!diagnostic[0].includes("source=welfare"));
     assert(output && typeof output.body === "string", "发布引擎在无 URL 全局环境中必须回写 mainPage");
     const data = JSON.parse(output.body).Data;
     const expected = JSON.parse(JSON.stringify(FIXTURE));
