@@ -185,11 +185,11 @@
 - `米家业务` ← `*.mihome.xiaomi.net`
 - `MIUI 业务域` ← `app.miui.com`, `feedback.miui.com`, `hybrid.miui.com`, `mcc.miui.com`, `rus.miui.com`, `india.miui.com`, `testit.miui.com`, `privacy.miui.com`, `search.miui.com`, `intl.up.w.xk.miui.com`, `fb.xk.miui.com`, `gtglobal.intl.miui.com`, `preload.xiaomi.com`, `*.sms.miui.com`
 
-## `qidian` — 生效黑洞 50 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `qidian` — 生效黑洞 0 域；缺口候选 A:1 B:0 C:4（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
-| `qdp.qidian.com` | 3: adrules,anti-ad,hagezi-pro | 已收录·默认关 |
+| `qdp.qidian.com` | 3: adrules,anti-ad,hagezi-pro | 缺口 |
 
 ## `qqnews` — 生效黑洞 0 域；缺口候选 A:0 B:0 C:1（已裁决排除 3 条；已收录但默认关闭 0 条）
 

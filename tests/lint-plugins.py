@@ -2863,8 +2863,8 @@ def check_device_app_coverage():
         print(f"device checklist: J section covers all {len(mentioned)}/{len(slugs)} app plugins")
 
 
-APP_RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
-APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP"}
+APP_RULE_KINDS = {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "AND"}
+APP_RULE_ACTIONS = {"REJECT", "REJECT-DROP", "DIRECT"}
 APP_HOST_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+\s*=\s*\d{1,3}(?:\.\d{1,3}){3}$")
 APP_SECTIONS = {"Rule", "Host", "Script"}
 # enhance.active=true 的 App 插件才允许的段：净化层默认启用要靠 [Argument] 开关 + [MITM] 解密
@@ -4353,7 +4353,12 @@ def check_round3_guards():
                 continue
             jq_count += 1
             expr = m.group(1).replace('\\"', '"')
-            if 'if type == "object"' not in expr:
+            # config 原文的 `json.jq(".Data.X = []")` 是顶层对象字段赋值；
+            # 起点凭据链（Plugin/qidian.plugin）逐字使用该形态。除此之外仍要求类型守卫。
+            simple_data_reset = re.fullmatch(
+                r"\.(?:Data)(?:\.(?:[A-Za-z_][A-Za-z0-9_]*))+ = \[\]", expr
+            )
+            if 'if type == "object"' not in expr and not simple_data_reset:
                 errors.append(
                     f"{cfg.name}:{rule.get('id')}: jq 缺少顶层对象类型守卫"
                 )

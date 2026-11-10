@@ -74,9 +74,9 @@ hostname = %APPEND% api.zhihu.com, www.zhihu.com, zhida.zhihu.com
 # ========================================================================
 # 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
 # ------------------------------------------------------------------------
-# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在
-# 出网前就地返回合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与
-# 字段级改写（不依赖脚本层 $utils.ungzip），Accept-Encoding 协商保护同域脚本链。
+# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_* 在出网前就地返回
+# 合法空载荷；response 阶段 reject_* 与 response.json.* 在回包后由引擎完成解压
+# 与字段级改写（不依赖脚本层 $utils.ungzip）。
 # 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径
 # 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。
 # ========================================================================

@@ -13,7 +13,7 @@
   python3 tools/build-apps.py --check  # 字节级漂移门禁（本地 / npm run check:apps）
 
 设计约束（与 plugins/ads 相同的纪律，零证书网络层拦截）：
-- 只用 [Rule]（DOMAIN-SUFFIX / DOMAIN-KEYWORD）与 [Host] 黑洞两类段；
+- 只用 [Rule]（DOMAIN / DOMAIN-SUFFIX / DOMAIN-KEYWORD / AND 复合）与 [Host] 黑洞两类段；
   不生成拦截/改写型配置（[MITM]/[Rewrite]/request·response 型 [Script]）——
   这些插件服务银行与业务敏感 App，零证书是底线。
 - 唯一例外：`enhance.active=true` 的 App（未做证书固定，用户裁决）允许默认输出
@@ -53,6 +53,7 @@ from redlines import (
     load_app_redlines,
     redline_hit,
     redline_roots,
+    rule_match_items,
     rule_redline_hits,
 )
 from source_hash import source_value
@@ -66,8 +67,8 @@ DEFAULT_SYSTEM = "iOS,iPadOS,tvOS,macOS"
 DEFAULT_ICON = "https://cdn.adguard.com/public/Adguard/Common/logo.png"
 DOMAIN_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+$")
 WILDCARD_GLOB_RE = re.compile(r"^[a-z0-9*?\[\]!.-]+$")
-RULE_KINDS = {"DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}
-ACTIONS = {"REJECT", "REJECT-DROP"}
+RULE_KINDS = {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "AND"}
+ACTIONS = {"REJECT", "REJECT-DROP", "DIRECT"}
 KEY_ORDER = ("name", "desc", "author", "version", "homepage", "openUrl", "icon",
              "system", "date", "tag", "type")
 
@@ -121,31 +122,78 @@ def glob_to_regex(pattern: str) -> re.Pattern[str]:
     return re.compile("^" + "".join(out) + "$")
 
 
-def validate_rule(raw: str, where: str, roots: set[str]) -> None:
-    parts = raw.split(",")
+def split_rule(raw: str) -> tuple[str, str, str]:
+    """把一条 [Rule] 拆成 (类型, 目标, 动作)。
+
+    `AND,((USER-AGENT,QDReader*),(DOMAIN-KEYWORD,x)),REJECT` 的目标里带逗号，
+    按逗号直切会把复合条件切碎——这里从右侧取动作，左侧整体保留。
+    """
+    raw = raw.strip()
+    if raw.startswith("AND,"):
+        target, sep, action = raw[4:].rpartition(",")
+        if not sep:
+            raise BuildError(f"rule needs an action: {raw!r}")
+        return "AND", target.strip(), action.strip()
+    parts = [p.strip() for p in raw.split(",")]
     if len(parts) not in (2, 3):
-        raise BuildError(f"{where}: rule needs 2-3 comma fields: {raw!r}")
-    kind = parts[0]
-    if kind not in RULE_KINDS:
-        raise BuildError(f"{where}: rule kind {kind!r} not allowed in app plugins "
-                         f"(allowed: {sorted(RULE_KINDS)})")
-    action = parts[-1]
-    if action not in ACTIONS:
-        raise BuildError(f"{where}: action must be one of {sorted(ACTIONS)}: {raw!r}")
-    target = parts[1]
-    if kind == "DOMAIN-WILDCARD":
-        if not WILDCARD_GLOB_RE.match(target):
-            raise BuildError(f"{where}: illegal glob chars in {target!r}")
+        raise BuildError(f"rule needs 2-3 comma fields: {raw!r}")
+    return parts[0], parts[1], parts[-1]
+
+
+def validate_domain_match(kind: str, target: str, raw: str, where: str, roots: set[str]) -> None:
+    """域名类匹配项的共享主域保护（顶层项与 AND 嵌套项走同一份判定）。"""
+    if kind == "DOMAIN":
+        if not DOMAIN_RE.match(target):
+            raise BuildError(f"{where}: invalid domain in {raw!r}")
         for root in roots:
-            if glob_to_regex(target).fullmatch(root):
-                raise BuildError(f"{where}: glob {target!r} matches protected shared root {root!r}")
-    elif kind in ("DOMAIN-SUFFIX",):
+            if target == root:
+                raise BuildError(f"{where}: DOMAIN {target!r} would blackhole "
+                                 f"protected shared root {root!r}")
+    elif kind == "DOMAIN-SUFFIX":
         if not DOMAIN_RE.match(target):
             raise BuildError(f"{where}: invalid domain in {raw!r}")
         for root in roots:
             if target == root or root.endswith("." + target):
                 raise BuildError(f"{where}: DOMAIN-SUFFIX {target!r} would swallow "
                                  f"protected shared root {root!r}")
+    elif kind == "DOMAIN-KEYWORD":
+        if not target:
+            raise BuildError(f"{where}: empty DOMAIN-KEYWORD in {raw!r}")
+        for root in roots:
+            if target in root:
+                raise BuildError(f"{where}: DOMAIN-KEYWORD {target!r} would swallow "
+                                 f"protected shared root {root!r}")
+
+
+def validate_rule(raw: str, where: str, roots: set[str]) -> None:
+    kind, target, action = split_rule(raw)
+    if kind not in RULE_KINDS:
+        raise BuildError(f"{where}: rule kind {kind!r} not allowed in app plugins "
+                         f"(allowed: {sorted(RULE_KINDS)})")
+    if action not in ACTIONS:
+        raise BuildError(f"{where}: action must be one of {sorted(ACTIONS)}: {raw!r}")
+    blocking = action != "DIRECT"
+    if kind == "AND":
+        if not (target.startswith("((") and target.endswith("))")):
+            raise BuildError(f"{where}: AND target must be ((cond),(cond)): {raw!r}")
+        items = rule_match_items(raw)
+        if not items:
+            raise BuildError(f"{where}: AND rule has no domain match item: {raw!r}")
+        # UA 限定的 AND（config 的 QDReader* 字节系 SDK 拦截）只对起点 App 生效，
+        # 不构成对共享主域的全局黑洞；共享根保护跳过，红线判定仍在 check_rule_redline。
+        ua_scoped = "USER-AGENT" in target.upper()
+        if blocking and not ua_scoped:
+            for item_kind, item_target in items:
+                validate_domain_match(item_kind, item_target, raw, where, roots)
+        return
+    if kind == "DOMAIN-WILDCARD":
+        if not WILDCARD_GLOB_RE.match(target):
+            raise BuildError(f"{where}: illegal glob chars in {target!r}")
+        for root in roots:
+            if glob_to_regex(target).fullmatch(root):
+                raise BuildError(f"{where}: glob {target!r} matches protected shared root {root!r}")
+    elif blocking:
+        validate_domain_match(kind, target, raw, where, roots)
 
 
 def app_redlines() -> list[dict]:
@@ -467,7 +515,10 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
             marked = g["disabled"]
             if marked:
                 out.append("# （默认关闭的组：整组注释，取消注释即启用）")
-            for item in dedup(sorted(gitems)):
+            # 默认按字典序稳定输出；声明 ordered=true 的组保留源内顺序
+            # （config 移植层要与上游 [Rule] 逐行同序，排序会破坏逐行对账）。
+            items = dedup(gitems) if g.get("ordered") else dedup(sorted(gitems))
+            for item in items:
                 line = emit(item)
                 if not marked:
                     if line in seen_active:
@@ -482,7 +533,8 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
         lines += render_arguments(enh, where)
     if rules:
         lines += section("Rule", rules, lambda r: r)
-    lines += section("Host", hosts, lambda h: h + f" = {HOST_BLACKHOLE}")
+    if hosts:
+        lines += section("Host", hosts, lambda h: h + f" = {HOST_BLACKHOLE}")
     cron_lines = render_crons(app)
     lines += cron_lines
     if active_enh:
@@ -857,8 +909,9 @@ def check_json_action(action: str, where: str) -> None:
     """response.json.replace|delete|jq 的参数形状校验。
 
     官方《Rewrite 新语法》两条硬约束在这里都会踩：① 批量参数是**两个等长平行数组**
-    （keys 与 values 按下标配对，写成扁平单数组会被加载期拒绝）；② JSON 值只支持
-    String/Number/Boolean/null/变量，**不含数组/对象**——置空数组必须走 json.jq。
+    （keys 与 values 按下标配对，写成扁平单数组会被加载期拒绝）；config 原文另有
+    `replace(["key","value"])` 的单对形态（Plugin/qidian.plugin），一并接受；② JSON
+    值只支持 String/Number/Boolean/null/变量，**不含数组/对象**——置空数组必须走 json.jq。
     """
     m = REWRITE_JSON_RE.match(action)
     if not m:
@@ -872,13 +925,27 @@ def check_json_action(action: str, where: str) -> None:
         if not args:
             raise BuildError(f"{where}: json.replace 需要参数: {action!r}")
         if args[0].startswith("["):
+            try:
+                first = json.loads(args[0])
+            except json.JSONDecodeError as e:
+                raise BuildError(f"{where}: json.replace 数组不是合法 JSON（{e}）: {action!r}") from e
+            if isinstance(first, list) and len(args) == 1 and len(first) == 2:
+                # config 原文的单对形态 `replace(["Data.ActionUrl", ""])`（Plugin/qidian.plugin）。
+                # 与批量形态共用同一条「键必须是点分路径、值只能是标量」校验。
+                if not (isinstance(first[0], str) and DOT_PATH_RE.match(first[0])):
+                    raise BuildError(f"{where}: json.replace 键名不是点分路径: {first[0]!r}")
+                if isinstance(first[1], (list, dict)):
+                    raise BuildError(
+                        f"{where}: json.replace 的值不支持数组/对象（官方口径），置空数组用 json.jq: {first[1]!r}"
+                    )
+                return
             if len(args) != 2 or not args[1].startswith("["):
                 raise BuildError(
                     f"{where}: json.replace 批量形态必须是两个等长平行数组 "
                     f"replace([k1,k2],[v1,v2])，得到 {args!r}"
                 )
             try:
-                keys, values = json.loads(args[0]), json.loads(args[1])
+                keys, values = first, json.loads(args[1])
             except json.JSONDecodeError as e:
                 raise BuildError(f"{where}: json.replace 数组不是合法 JSON（{e}）: {action!r}") from e
             if len(keys) != len(values):
@@ -960,9 +1027,11 @@ def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dic
         if stage not in REWRITE_STAGES:
             raise BuildError(f"{where_i}: stage {stage!r} 不在 {sorted(REWRITE_STAGES)}")
         url, endpoint = item.get("url", ""), item.get("endpoint", "")
-        if not url.startswith("^https://"):
+        # config 新语法复写不写 `^` 锚点（`${url} ~=` 是搜索语义）；本仓早期生成器
+        # 强行给每条加了 `^`，与上游原文不一致。两种形态都接受，产物按源逐字渲染。
+        if not url.startswith(("^https://", "https://")):
             raise BuildError(
-                f"{where_i}: url 必须以 ^https:// 开头——与 enhance.bindings 的 pattern 同口径，"
+                f"{where_i}: url 必须以 https://（config 原文）或 ^https:// 开头——"
                 f"真机 HAR 里起点这些接口只有 HTTPS 形态: {url!r}"
             )
         try:
@@ -991,11 +1060,10 @@ def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dic
                 raise BuildError(f"{where_i}: response.json.* 只能挂在 response 侧")
             check_json_action(action, where_i)
         elif REWRITE_TERMINATE_RE.match(action):
-            if stage != "request":
-                raise BuildError(
-                    f"{where_i}: reject_* 在 request 侧终止响应（两侧脚本都不执行），"
-                    "不许挂在 response 侧"
-                )
+            # reject_* 两阶段都合法：request 侧在出网前终止（两侧脚本都不执行），
+            # response 侧只替换已经回来的响应（request 脚本照常执行）。
+            # config 的起点插件刻意用 response 侧——保留上游验证过的交付语义。
+            pass
         elif is_req_header:
             if stage != "request":
                 raise BuildError(f"{where_i}: request.header.set 只能挂在 request 侧")
@@ -1009,8 +1077,8 @@ def validate_rewrite(enh: dict, where: str, names: list[str], bindings: list[dic
                 if b.get("kind") not in ("request", "response"):
                     continue
                 same_side = b["kind"] == stage
-                kills = REWRITE_TERMINATE_RE.match(action) is not None
-                if not (same_side or kills):
+                kills_both = stage == "request" and REWRITE_TERMINATE_RE.match(action) is not None
+                if not (same_side or kills_both):
                     continue
                 if endpoint in b.get("pattern", ""):
                     if not b.get("probe"):
@@ -1041,14 +1109,30 @@ def render_rewrite_section(enh: dict, where: str) -> list[str]:
     rules = enh.get("rewrite") or []
     if not rules:
         return []
+    stages = {item.get("stage") for item in rules}
+    if stages == {"response"}:
+        engine_note = [
+            "# 由 Loon [Rewrite] v2 引擎直接执行：response 阶段 reject_* 在回包后就地返回",
+            "# 合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与字段级改写",
+            "# （不依赖脚本层 $utils.ungzip）；请求照常出网，保留上游验证过的交付语义。",
+        ]
+    elif stages == {"request"}:
+        engine_note = [
+            "# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在",
+            "# 出网前就地返回合法空载荷，请求不再发出；本层不含响应体改写。",
+        ]
+    else:
+        engine_note = [
+            "# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_* 在出网前就地返回",
+            "# 合法空载荷；response 阶段 reject_* 与 response.json.* 在回包后由引擎完成解压",
+            "# 与字段级改写（不依赖脚本层 $utils.ungzip）。",
+        ]
     lines = [
         "",
         "# " + "=" * 72,
         "# 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）",
         "# " + "-" * 72,
-        "# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在",
-        "# 出网前就地返回合法空载荷，response.json.* 由引擎底层自动完成 gzip/br 解压与",
-        "# 字段级改写（不依赖脚本层 $utils.ungzip），Accept-Encoding 协商保护同域脚本链。",
+        *engine_note,
         "# 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径",
         "# 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。",
         "# " + "=" * 72,
@@ -1119,10 +1203,10 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
             "# " + "=" * 72,
             "# 脚本层（绑定行由 enhance.bindings 生成，lint 逐行对账）",
             "# " + "-" * 72,
-            "# 自研净化链用 v2 内联语法（scripts/auto-task.min.js 按 URL 分流：净化/秒播/阅读积分）；",
-            "# 换挂的 vendored 引擎 scripts/Qidian.js 走旧式绑定（config 范式逐字形状，",
-            "# 参数经 argument=[{NAME}] 传入）。同一条 URL 上两种绑定只有净化组与引擎的",
-            "# 深净化/客户端配置净化不重叠——B 方案的注册边界。",
+            "# 脚本绑定由 enhance.bindings 生成，lint 逐行对账。v2 内联绑定用",
+            "# script(\"scripts/<name>.min.js\", {...})；config 范式的 vendored 引擎走旧式",
+            "# 绑定（script-path=scripts/<name>.js），参数经 argument=[{NAME}] 传入。",
+            "# 同 URL 的复写与脚本绑定按官方互斥语义注册（命中复写则同阶段脚本不执行）。",
             "# " + "=" * 72,
             "",
             "[Script]",

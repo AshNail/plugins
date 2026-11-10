@@ -32,9 +32,14 @@ def render(app, sdklib, ads_groups):
     active_enh = bool(enh.get("active"))
     crons = app.get("crons") or []
     if active_enh:
+        # 有的默认增强层只用 [Rule]（config 移植的起点、腾讯新闻）：本仓不再有 [Host] 黑洞时，
+        # 别在 README 顶上继续宣称拦截面包含 [Host]。
+        host_note = "`[Host]`/`[Rule]`" if any(
+            g.get("hosts") for g in app.get("groups", [])
+        ) else "`[Rule]`（本插件无 `[Host]` 黑洞层）"
         tier_line = (
             "净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 "
-            "Loon 证书）· 拦截面 `[Host]`/`[Rule]`"
+            f"Loon 证书）· 拦截面 {host_note}"
         )
     elif enh:
         tier_line = "零证书 · 纯 `[Host]`/`[Rule]`（另含默认注释的可选 MITM 增强层，见下）"
@@ -130,16 +135,21 @@ def render(app, sdklib, ads_groups):
             f"- 解密主机（`[MITM] hostname`，{n_hosts} 个，"
             + ("本层已默认生效" if active_enh else "注释态，取消注释才解密")
             + f"）：{', '.join('`' + h + '`' for h in enh.get('mitm_hosts', []))}",
-            f"- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，{len(quic)} 条，"
-            + ("已生效" if active_enh else "注释态")
-            + "）："
-            "MITM 只解密 TCP，App 走 HTTP/3 时"
-            + (" `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效" if n_rules
-               else " `URL-REGEX` 与 `response.json.jq` 都会静默失效" if n_json
-               else " `URL-REGEX` 会静默失效")
-            + ("；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。"
-               if active_enh else "；启用本层时应连同这些行一起取消注释。"),
         ]
+        # 只有生成器真的下发 QUIC 回退时，README 才能声称有这一层：
+        # active 层由 enhance.quic_fallback 决定；注释态由 render_enhance 固定补齐。
+        if (not active_enh) or enh.get("quic_fallback"):
+            lines.append(
+                f"- 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，{len(quic)} 条，"
+                + ("已生效" if active_enh else "注释态")
+                + "）："
+                "MITM 只解密 TCP，App 走 HTTP/3 时"
+                + (" `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效" if n_rules
+                   else " `URL-REGEX` 与 `response.json.jq` 都会静默失效" if n_json
+                   else " `URL-REGEX` 会静默失效")
+                + ("；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。"
+                   if active_enh else "；启用本层时应连同这些行一起取消注释。")
+            )
         if active_enh:
             lines += [
                 "",

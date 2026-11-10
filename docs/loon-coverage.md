@@ -16,7 +16,7 @@
 | 层 | 已用 | 可用未用 | 判死 | 不适用 | 未文档化 | 利用率 |
 |---|---:|---:|---:|---:|---:|---:|
 | 传输层 | 4 | 0 | 3 | 0 | 2 | **100%** |
-| 规则层 | 10 | 9 | 9 | 1 | 0 | **53%** |
+| 规则层 | 11 | 8 | 9 | 1 | 0 | **58%** |
 | Host 层 | 2 | 4 | 2 | 0 | 0 | **33%** |
 | 复写层 | 8 | 6 | 13 | 0 | 0 | **57%** |
 | 脚本层 | 22 | 13 | 12 | 0 | 0 | **63%** |
@@ -27,7 +27,7 @@
 | 旧版语法 | 1 | 0 | 1 | 0 | 0 | **100%** |
 | 分发 | 0 | 0 | 0 | 2 | 0 | **0%** |
 | 元数据 | 11 | 1 | 1 | 0 | 2 | **92%** |
-| **合计** | **77** | **36** | **47** | **12** | **4** | **68%** |
+| **合计** | **78** | **35** | **47** | **12** | **4** | **69%** |
 
 ## 传输层
 
@@ -39,16 +39,16 @@
 | `hostname = %APPEND% …`（官方查不到该 token） | ⚪ 未文档化 | 官方 MitM 页的参数表只有 `hostname` / `ca-p12` / `ca-passphrase` 三行，整站 26 个正文页都扫不到 `%APPEND%`（这条断言现在是机器数出来的：`tools/loon-token-audit.py` 的 `absent_claims[%append%] == 0`，命中数一变非 0 就报「断言已被推翻」）——它是 Surge 的「追加而非覆盖」写法。插件段与主配置同名键的合并语义官方同样没写（与订阅 Host Map 同一类未定义）。留着它的理由是对称的：Loon 若认识，删掉会让本插件整行覆盖用户主配置的解密名单；若不认识，它只是一个永不匹配的空主机项。**保留但不计入能力口径**；真机取证见 `docs/device-checklist.md` |
 | `ca-p12` / `ca-passphrase` | ❌ 判死 | 自带 CA 私钥意味着把私钥塞进公开插件，安全与可移植性双输；统一用 Loon 内置 CA |
 | QUIC→TCP 回退（`PROTOCOL,QUIC`） | ✅ 已用 | 已落地 |
-| 压缩协商降到脚本能解的形状（gzip / identity） | ✅ 已用 | 脚本层只有 ungzip；br/zstd 解不开就是静默跳过。两种合法形状各有理由：gzip 把体压进 ungzip 的能力圈（soda/douyin，保带宽），identity 干脆让上游不压（qidian v3.5.7，把 binary_body_mode + ungzip + 手写 UTF-8 解码这三层真机未确认的前提从主路上摘掉） |
+| 压缩协商降到脚本能解的形状（gzip / identity） | ✅ 已用 | 脚本层只有 ungzip；br/zstd 解不开就是静默跳过。gzip 把体压进 ungzip 的能力圈（soda/douyin，保带宽）；identity 曾用于 qidian v3.5.7，v4.0.0 移植 config 后已撤下——config 的净化由 response 复写或脚本绑定承担，不再改 Accept-Encoding |
 | `h2 = true`（官方查不到该键） | ⚪ 未文档化 | 同 `%APPEND%`：官方 MitM 参数表没有 `h2`，而官方产品页把「解密 HTTPS 与 HTTP/2」写成内置默认行为、没有开关。社区插件通行写 `h2 = true`，我们保留它当作「未知键被忽略」时的零成本保险——但保险不是能力，所以不进利用率；写成 `h2 = false` 才是真错（lint 锁死）。旧文档里那句「不计入能力点」在本轮才真正落地：此前它一直挂在「已用」上 |
-| 免压缩（删 `Accept-Encoding`） | ❌ 判死 | `del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 183~191 KB，膨胀 5~10 倍不可控。v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 `set(..., "identity")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游 |
+| 免压缩（删 `Accept-Encoding`） | ❌ 判死 | `del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 183~191 KB，膨胀 5~10 倍不可控。历史形态 v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 `set(..., "identity")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游；v4.0.0 移植 config 后起点已撤下这条 |
 
 ## 规则层
 
 | 能力 | 状态 | 说明 |
 |---|---|---|
-| `DOMAIN` | 🟡 可用未用 | 原 adfilter 的精确 DOMAIN 规则并入 ads 时改用 [Host] 精确映射（ad.21cn.com 等 6 个新主机 + 既有 adnxs 族）；[Rule] DOMAIN 目前没有生效用法 |
-| `DOMAIN-SUFFIX` | ✅ 已用 | ads 通配层与 app 插件（banks/qidian/x）整域 REJECT 使用；`[Host]` 的 `*.` 只映射 DNS，SUFFIX 还能表达 REJECT-DROP 等规则动作 |
+| `DOMAIN` | ✅ 已用 | qidian v4.0.0 严格移植 config 的 [Rule] 层：10 条精确域 REJECT （publiclog.zhiyan / zhiyan.monitor / galileotelemetry / gatherer.m.qq / dl.tiku.qq / apmplus.volces / mssdk.volces / tobapplog.ctobsnssdk / noahqd.yuewen / ali-stats.jpush）。精确 DOMAIN 只拦单主机，不吞子树 |
+| `DOMAIN-SUFFIX` | ✅ 已用 | ads 通配层与 app 插件（banks/x）整域 REJECT 使用；qidian 的 pangolin 激励白名单用 `DOMAIN-SUFFIX, … , DIRECT`。`[Host]` 的 `*.` 只映射 DNS，SUFFIX 还能表达 REJECT-DROP 等规则动作 |
 | `DOMAIN-KEYWORD` | ✅ 已用 | 已落地 |
 | `DOMAIN-WILDCARD`（含 `[0-9]` 字符类） | 🟡 可用未用 | 语法仅 3.5.3(1008)+ 提供且当前只在 TestFlight；App Store 正式版 3.5.2(996) 对未知规则类型的行为未文档化，ads 插件把 41 条通配/家族 glob 默认注释收录，3.5.3+ 用户取消注释即生效 |
 | `URL-REGEX` | ✅ 已用 | 已写 6 条，**全部锚定 `^http://`**（HTTPDNS 配置与明文上报）。技术上有效、不依赖解密，但只吃明文 HTTP，而现代 App 接口几乎全 HTTPS，实际命中面很窄。见 `docs/rule-effectiveness.md` 第 4 节 |
@@ -107,12 +107,12 @@
 | `reject_img(status)` | ✅ 已用 | 共享图床（meituan p[0-9]/flowplus/img.meituan.net、taobao gw.alicdn.com）下的广告目录路径在 request 阶段返回 200 + 1px GIF，避免图片加载器进入破损图重试分支，并支持 `${cleanAds} == true` 开关控制 |
 | `reject_array(status)` | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` 全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条：样本 + enhance.url_regex 白名单 + 来源登记 |
 | `reject_video(status)` | ❌ 判死 | 同上，视频素材域名不进 MITM |
-| `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian），防止 br/zstd 压缩响应穿透脚本层 |
+| `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin），防止 br/zstd 压缩响应穿透脚本层；qidian v4.0.0 移植 config 后已不用这条 |
 | `response.header.add/set/del/replace` | 🟡 可用未用 | 响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖 |
 | `request.body.replace` | ❌ 判死 | 正文级正则对 JSON 不安全（可能命中字符串内部的同名字段） |
 | `response.body.replace` | ❌ 判死 | 同上；且命中后同阶段脚本不再执行，等于用正则换掉全部 JSON 逻辑 |
 | `request.json.*` | ❌ 判死 | 本插件不改请求体；请求侧无广告载荷需要剥 |
-| `response.json.add/delete/replace` | ✅ 已用 | soda / qqnews / xianyu 等固定键级净化主力（soda `/luna/me` 删 `reward_ad_banner`、qqnews 列表 `adList` 置 `null`、xianyu `search.discover`/`item.buy.feeds` 删键）：引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。qidian 因 getconf 平行数组改写曾触发挂起已于 v3.5.0 迁回 `[Script]`；soda/douyin 激励与信息流端点仍交由脚本处理（保奖励判断） |
+| `response.json.add/delete/replace` | ✅ 已用 | soda / qqnews / xianyu 等固定键级净化主力（soda `/luna/me` 删 `reward_ad_banner`、qqnews 列表 `adList` 置 `null`、xianyu `search.discover`/`item.buy.feeds` 删键）：引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。qidian v4.0.0 的 31 条 response 复写里既有 config 的 `replace` 平行数组（getconf 30 项）也有 `delete`/`jq`；与 `[Script]` 同 URL 时按 `CAPTURE_ENABLE` 二选一，不叠加 |
 | `response.json.jq` | ✅ 已用 | soda / netease / qqnews / youtube / bilibili / meituan / xianyu / taobao / zhihu 全面启用原生 jq（统一采用官方双引号 + `\"` 转义与顶层类型防御守卫，修复历史反引号语法导致未执行的问题） |
 | `response.json.jq_file` | ❌ 判死 | 插件资源文件会引入包外依赖；本仓库要求自包含 |
 | `request.body.mock` | ❌ 判死 | 同上：改写请求体不属于本插件职责 |
@@ -120,7 +120,7 @@
 | 多 Action 管道 `\|` | ❌ 判死 | 每条命中 URL 只需要一个动作；多动作会增加同一请求的副作用面，没有收益 |
 | `reject(status, body)` 自定义 body | ❌ 判死 | 自定义 body 不如 `reject_dict` 语义清楚；按 JSON 解析的 SDK 回 `{}` 最稳 |
 | `body.mock_file` / 远程文件 | ❌ 判死 | Mock 会整包替换响应，包络写错就是白屏；插件也不应依赖运行时远程拉取 |
-| 批量数组参数 | ✅ 已用 | v3.6.3 从 config 项目移植：qidian getconf 用一条 `response.json.replace` 平行数组改 30 个开关字段。v3.5.0 曾因 H2-to-H1 桥接流挂起 75s 撤下 response.json.*，v3.6.3 配合 [Rewrite] force-identity 压缩降级重新启用（不再走 gzip，引擎原生处理 JSON 字段级改写）。值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq` |
+| 批量数组参数 | ✅ 已用 | qidian v4.0.0 从 config 移植：getconf 用一条 `response.json.replace` 平行数组改 30 个开关字段，另用 `delete` 删 11 项、`jq` 关发现 tab。值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq`；同 URL 的 `[Script]` 绑定由 `CAPTURE_ENABLE` 门控，互斥不叠加 |
 
 ## 脚本层
 
@@ -149,7 +149,7 @@
 | `$request.url` / `method` / `headers` | ✅ 已用 | 已落地 |
 | `$request.body`（需 `requires_body`） | 🟡 可用未用 | 本插件只改响应；请求体里没有需要剥的广告载荷 |
 | `$response.body` | ✅ 已用 | 已落地 |
-| `$done({headers})` 改响应头 | ✅ 已用 | 回写 body 时同步处理压缩头与诊断标记。手册只说「修改响应 Body 后 Loon 会根据传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」，而 §11.3/§11.5 又提醒「提供 headers 时应先复制原 Header，避免无意删除其他字段」——这句读实了就是**整包替换**语义，所以 respondHeaders 从 `Object.assign({}, $response.headers)` 起步（Content-Type 一丢，App 侧按 content-type 分发的解析器会整包拒收，形状与「脚本跑了、字段改了、UI 一动不动」一样）。压缩头本身按 v3.5.5 口径**就地改写原键名**（identity + 新体字节数），只在原键存在时动手；替换语义下它其实会被 Loon 重算，就地改写对两种语义都无害。v3.5.7 起起点主路已是 identity，这段属兜底 |
+| `$done({headers})` 改响应头 | ✅ 已用 | 回写 body 时同步处理压缩头与诊断标记。手册只说「修改响应 Body 后 Loon 会根据传输协议处理 Content-Length/Transfer-Encoding/Content-Encoding」，而 §11.3/§11.5 又提醒「提供 headers 时应先复制原 Header，避免无意删除其他字段」——这句读实了就是**整包替换**语义，所以 respondHeaders 从 `Object.assign({}, $response.headers)` 起步（Content-Type 一丢，App 侧按 content-type 分发的解析器会整包拒收，形状与「脚本跑了、字段改了、UI 一动不动」一样）。压缩头本身按 v3.5.5 口径**就地改写原键名**（identity + 新体字节数），只在原键存在时动手；替换语义下它其实会被 Loon 重算，就地改写对两种语义都无害。qidian v4.0.0 移植 config 后不再走 identity 主路，这段仍是脚本回写 body 时的兜底 |
 | `$done({status})` 单独改状态码 | ❌ 判死 | 只翻状态码、Body 仍是原广告响应，SDK 照样解析；要改回包就整包给（嵌套 `response`），单改 status 没有可用形态。此前标「已用」是探测式写漏了 `{` 边界，把嵌套回包误算成顶层用法 |
 | `$done({url})` 改请求 URL | 🟡 可用未用 | 改 URL 归复写层 `url.replace`：正则、捕获和替换范围都在配置里看得见。搬进脚本会变成「先 Rewrite 后 JS 再改一次」，排障时无法归因 |
 | `$done({node})` / `$done({policy})` 改本次路由 | ❌ 判死 | 拦截插件替用户决定这条请求走哪个节点，等于把去广告和分流耦合；出问题时无法区分是谁改的路由 |
@@ -180,10 +180,10 @@
 |---|---|---|
 | `enable`（可动态） | ✅ 已用 | 已落地 |
 | `tag` | ✅ 已用 | 已落地 |
-| `debug`（可动态） | ✅ 已用 | v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死：两条净化绑定 debug 常开后主日志仍 0 条 [起点锚点]（match/Trigger/Finished 齐全）。官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」，主日志导出不含它，锚点只能在 App 内脚本日志页看。debug 仍常开（保住 App 内那份脚本日志），但远程取证面只剩两个：`tag` 字面量会原样出现在主日志的 match/Trigger/Finished 行里（v3.5.5 起把 build 号写进 tag），以及响应头 X-Qidian-Plugin |
+| `debug`（可动态） | ✅ 已用 | v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死：debug 常开后主日志仍 0 条 [起点锚点]（match/Trigger/Finished 齐全）。官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」，主日志导出不含它，锚点只能在 App 内脚本日志页看。qidian v4.0.0 移植 config 后绑定不再写 debug（调试交给 `QDREADER_DEBUG` 参数）；douyin 仍用 `debug=${debugLog}` 保住 App 内那份脚本日志 |
 | `timeout` | ✅ 已用 | 已落地 |
 | `requires_body` | ✅ 已用 | 已落地 |
-| `binary_body_mode` | ❌ 判死 | v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）开启它：真机 16:21 日志证伪了「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。v3.5.7 起它从「主路」降为「兜底」：[Rewrite] 不再逼上游压 gzip 而是直接要 identity，主路只剩 JSON.parse 一步；保留该键是因为万一某条 CDN 无视 identity 仍回 gzip，只有字节形态还能救（字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，不可逆）。v3.6.2 判死：HAR 实证脚本跑了（Trigger/Finished 齐全）但返回的修改被 Loon 丢弃——响应头没有 X-Qidian-Plugin，响应体大小与原始相同，ActivityCenterModule 等营销模块还在。根因是 binary_body_mode=true 下，脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 {"0":123,"1":34,...}，不是有效的 JSON，App 解析失败后回落缓存。修复：删除 getconf-clean 和 deep-clean 绑定的 binary_body_mode=true，respondJson 统一返回字符串，不再根据来路形态返回不同形态。 |
+| `binary_body_mode` | ❌ 判死 | qidian v3.5.3–v3.6.2 曾在 getconf-clean / deep-clean 上开它，最终判死并移除：binary_body_mode=true 下脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 {"0":123,"1":34,...}，不是有效 JSON，App 解析失败后回落缓存（HAR 实证：Trigger/Finished 齐全、无 X-Qidian-Plugin、响应体大小不变）。v4.0.0 移植 config 后生成物里已无此属性——config 的净化走 `[Rewrite]` 或脚本字符串路径，不再需要字节交接 |
 | `img_url` | ✅ 已用 | 已落地 |
 
 ## 参数层

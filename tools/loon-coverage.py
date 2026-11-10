@@ -160,9 +160,9 @@ CAPABILITIES = [
     dict(layer="传输层", key="gzip-negotiate", name="压缩协商降到脚本能解的形状（gzip / identity）", expect="used",
          probe=r'request\.header\.set\(\s*"Accept-Encoding"\s*,\s*"(?:gzip|identity)"\s*\)',
          href=DOC + "/Rewrite/rewrite_v2",
-         why="脚本层只有 ungzip；br/zstd 解不开就是静默跳过。两种合法形状各有理由：gzip 把体压进 ungzip "
-             "的能力圈（soda/douyin，保带宽），identity 干脆让上游不压（qidian v3.5.7，把 binary_body_mode + "
-             "ungzip + 手写 UTF-8 解码这三层真机未确认的前提从主路上摘掉）"),
+         why="脚本层只有 ungzip；br/zstd 解不开就是静默跳过。gzip 把体压进 ungzip 的能力圈"
+             "（soda/douyin，保带宽）；identity 曾用于 qidian v3.5.7，v4.0.0 移植 config 后已撤下——"
+             "config 的净化由 response 复写或脚本绑定承担，不再改 Accept-Encoding"),
     dict(layer="传输层", key="h2", name="`h2 = true`（官方查不到该键）", expect="undocumented",
          token="MITM.h2",
          probe=r"(?m)^\s*h2\s*=\s*true\s*$",
@@ -175,17 +175,21 @@ CAPABILITIES = [
          probe=r'request\.header\.(del|replace)\(\s*"Accept-Encoding"',
          href=DOC + "/Rewrite/rewrite_v2",
          why="`del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 "
-             "183~191 KB，膨胀 5~10 倍不可控。v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 "
-             "`set(..., \"identity\")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游"),
+             "183~191 KB，膨胀 5~10 倍不可控。历史形态 v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 "
+             "`set(..., \"identity\")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游；"
+             "v4.0.0 移植 config 后起点已撤下这条"),
 
     # ---------------- 规则层 ----------------
-    dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="open",
+    dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="used",
          probe=r"(?m)^DOMAIN\s*,", href=DOC + "/Rule/domain_rule",
-         why="原 adfilter 的精确 DOMAIN 规则并入 ads 时改用 [Host] 精确映射（ad.21cn.com 等 6 个新主机 + 既有 adnxs 族）；[Rule] DOMAIN 目前没有生效用法"),
+         why="qidian v4.0.0 严格移植 config 的 [Rule] 层：10 条精确域 REJECT "
+             "（publiclog.zhiyan / zhiyan.monitor / galileotelemetry / gatherer.m.qq / dl.tiku.qq / "
+             "apmplus.volces / mssdk.volces / tobapplog.ctobsnssdk / noahqd.yuewen / ali-stats.jpush）。"
+             "精确 DOMAIN 只拦单主机，不吞子树"),
     dict(layer="规则层", key="r-suffix", name="`DOMAIN-SUFFIX`", expect="used",
          probe=r"(?m)^DOMAIN-SUFFIX\s*,", href=DOC + "/Rule/domain_rule",
-         why="ads 通配层与 app 插件（banks/qidian/x）整域 REJECT 使用；`[Host]` 的 `*.` 只映射 DNS，"
-             "SUFFIX 还能表达 REJECT-DROP 等规则动作"),
+         why="ads 通配层与 app 插件（banks/x）整域 REJECT 使用；qidian 的 pangolin 激励白名单用 "
+             "`DOMAIN-SUFFIX, … , DIRECT`。`[Host]` 的 `*.` 只映射 DNS，SUFFIX 还能表达 REJECT-DROP 等规则动作"),
     dict(layer="规则层", key="r-keyword", name="`DOMAIN-KEYWORD`", expect="used",
          probe=r"(?m)^DOMAIN-KEYWORD\s*,", href=DOC + "/Rule/domain_rule"),
     dict(layer="规则层", key="r-wildcard", name="`DOMAIN-WILDCARD`（含 `[0-9]` 字符类）", expect="open",
@@ -363,7 +367,8 @@ CAPABILITIES = [
          why="同上，视频素材域名不进 MITM"),
     dict(layer="复写层", key="w-req-header", name="`request.header.add/set/del/replace`", expect="used",
          probe=r"then\s+request\.header\.(add|set|del|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian），防止 br/zstd 压缩响应穿透脚本层"),
+         why="用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin），防止 br/zstd 压缩响应穿透脚本层；"
+             "qidian v4.0.0 移植 config 后已不用这条"),
     dict(layer="复写层", key="w-res-header", name="`response.header.add/set/del/replace`", expect="open",
          probe=r"then\s+response\.header\.(add|set|del|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖"),
@@ -380,7 +385,8 @@ CAPABILITIES = [
          probe=r"then\s+response\.json\.(?:add|delete|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="soda / qqnews / xianyu 等固定键级净化主力（soda `/luna/me` 删 `reward_ad_banner`、qqnews 列表 `adList` 置 `null`、xianyu `search.discover`/`item.buy.feeds` 删键）："
              "引擎底层自动解压 gzip/br，不依赖 Build ≥ 988 的 `$utils.ungzip`，也不会受 macOS 下 jq 兼容性影响。"
-             "qidian 因 getconf 平行数组改写曾触发挂起已于 v3.5.0 迁回 `[Script]`；soda/douyin 激励与信息流端点仍交由脚本处理（保奖励判断）"),
+             "qidian v4.0.0 的 31 条 response 复写里既有 config 的 `replace` 平行数组（getconf 30 项）也有 "
+             "`delete`/`jq`；与 `[Script]` 同 URL 时按 `CAPTURE_ENABLE` 二选一，不叠加"),
     dict(layer="复写层", key="w-res-json-jq", name="`response.json.jq`", expect="used",
          probe=r"then\s+response\.json\.jq\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="soda / netease / qqnews / youtube / bilibili / meituan / xianyu / taobao / zhihu 全面启用原生 jq（统一采用官方双引号 + `\\\"` 转义与顶层类型防御守卫，修复历史反引号语法导致未执行的问题）"),
@@ -405,10 +411,9 @@ CAPABILITIES = [
          why="Mock 会整包替换响应，包络写错就是白屏；插件也不应依赖运行时远程拉取"),
     dict(layer="复写层", key="w-batch", name="批量数组参数", expect="used",
          probe=r"then\s+\w+\.[\w.]*\(\s*\[", href=DOC + "/Rewrite/rewrite_v2",
-         why="v3.6.3 从 config 项目移植：qidian getconf 用一条 `response.json.replace` 平行数组改 30 个开关字段。"
-             "v3.5.0 曾因 H2-to-H1 桥接流挂起 75s 撤下 response.json.*，v3.6.3 配合 [Rewrite] force-identity "
-             "压缩降级重新启用（不再走 gzip，引擎原生处理 JSON 字段级改写）。值只能是 String/Number/Boolean/null，"
-             "置空数组必须走 `response.json.jq`"),
+         why="qidian v4.0.0 从 config 移植：getconf 用一条 `response.json.replace` 平行数组改 30 个开关字段，"
+             "另用 `delete` 删 11 项、`jq` 关发现 tab。值只能是 String/Number/Boolean/null，"
+             "置空数组必须走 `response.json.jq`；同 URL 的 `[Script]` 绑定由 `CAPTURE_ENABLE` 门控，互斥不叠加"),
 
     # ---------------- 脚本层 ----------------
     dict(layer="脚本层", key="s-trigger-request", name="Request Script（`request if ...`）", expect="used",
@@ -486,7 +491,7 @@ CAPABILITIES = [
              "从 `Object.assign({}, $response.headers)` 起步（Content-Type 一丢，App 侧按 content-type 分发的"
              "解析器会整包拒收，形状与「脚本跑了、字段改了、UI 一动不动」一样）。压缩头本身按 v3.5.5 口径"
              "**就地改写原键名**（identity + 新体字节数），只在原键存在时动手；替换语义下它其实会被 Loon 重算，"
-             "就地改写对两种语义都无害。v3.5.7 起起点主路已是 identity，这段属兜底"),
+             "就地改写对两种语义都无害。qidian v4.0.0 移植 config 后不再走 identity 主路，这段仍是脚本回写 body 时的兜底"),
 
     dict(layer="脚本层", key="s-done-status", name="`$done({status})` 单独改状态码", expect="reject",
          probe=r"(?s)\$done\(\s*\{[^{}]*\bstatus\s*:",
@@ -569,30 +574,22 @@ CAPABILITIES = [
          probe=r"with[^\n]*\btag\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-debug", name="`debug`（可动态）", expect="used",
          probe=r"with[^\n]*\bdebug\s*=", href=DOC + "/Script/script_v2",
-         why="v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死：两条净化绑定 "
+         why="v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死："
              "debug 常开后主日志仍 0 条 [起点锚点]（match/Trigger/Finished 齐全）。官方 Script API 的口径是 "
              "console.log「向**当前脚本日志**写入一条记录」，主日志导出不含它，锚点只能在 App 内脚本日志页看。"
-             "debug 仍常开（保住 App 内那份脚本日志），但远程取证面只剩两个：`tag` 字面量会原样出现在主日志的 "
-             "match/Trigger/Finished 行里（v3.5.5 起把 build 号写进 tag），以及响应头 X-Qidian-Plugin"),
+             "qidian v4.0.0 移植 config 后绑定不再写 debug（调试交给 `QDREADER_DEBUG` 参数）；douyin 仍用 "
+             "`debug=${debugLog}` 保住 App 内那份脚本日志"),
     dict(layer="脚本属性", key="o-timeout", name="`timeout`", expect="used",
          probe=r"with[^\n]*\btimeout\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-body", name="`requires_body`", expect="used",
          probe=r"with[^\n]*\brequires_body\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="reject",
          probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2",
-         why="v3.5.3 起 qidian 两条净化绑定（getconf-clean / deep-clean）开启它：真机 16:21 日志证伪了"
-             "「`[Rewrite]` 压成 gzip 后引擎会替脚本解压」这句前提——不带该键时 `$response.body` 是按 UTF-8 "
-             "硬解的乱码串，`1f 8b` 魔数检测失效、`JSON.parse` 必抛，脚本 Finished 却零字段变更。"
-             "开字节模式后由 `$utils.ungzip` 解压，回写侧 respondJson 按来路形态还原 `Uint8Array`。"
-             "v3.5.7 起它从「主路」降为「兜底」：[Rewrite] 不再逼上游压 gzip 而是直接要 identity，"
-             "主路只剩 JSON.parse 一步；保留该键是因为万一某条 CDN 无视 identity 仍回 gzip，只有字节形态"
-             "还能救（字符串形态的 gzip 高位字节已被 U+FFFD 吃掉，不可逆）。"
-             "v3.6.2 判死：HAR 实证脚本跑了（Trigger/Finished 齐全）但返回的修改被 Loon 丢弃——"
-             "响应头没有 X-Qidian-Plugin，响应体大小与原始相同，ActivityCenterModule 等营销模块还在。"
-             "根因是 binary_body_mode=true 下，脚本返回的 Uint8Array 被 Loon 当成普通对象处理，"
-             "JSON.stringify 后变成 {\"0\":123,\"1\":34,...}，不是有效的 JSON，App 解析失败后回落缓存。"
-             "修复：删除 getconf-clean 和 deep-clean 绑定的 binary_body_mode=true，"
-             "respondJson 统一返回字符串，不再根据来路形态返回不同形态。"),
+         why="qidian v3.5.3–v3.6.2 曾在 getconf-clean / deep-clean 上开它，最终判死并移除："
+             "binary_body_mode=true 下脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 "
+             "{\"0\":123,\"1\":34,...}，不是有效 JSON，App 解析失败后回落缓存（HAR 实证：Trigger/Finished 齐全、"
+             "无 X-Qidian-Plugin、响应体大小不变）。v4.0.0 移植 config 后生成物里已无此属性——config 的净化"
+             "走 `[Rewrite]` 或脚本字符串路径，不再需要字节交接"),
     dict(layer="脚本属性", key="o-img", name="`img_url`", expect="used",
          probe=r"with[^\n]*\bimg_url\s*=", href=DOC + "/Script/script_v2"),
 

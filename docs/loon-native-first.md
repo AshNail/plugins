@@ -38,7 +38,7 @@
 ## 0. 五条判断
 
 1. **增量不在「堆总量」，在「按类型补齐」。** ads 已有 1301 条展开 `[Host]` 映射、30 条 `DOMAIN-WILDCARD` + 11 条字符类家族，域名总量接近饱和；但**按广告类型看仍有整类空白**——贴片、大屏、聚合长尾、直播挂件。第六轮补的是「类」不是「量」：FreeWheel / Sizmek / 倍孜三个域，把视频贴片从「无效」提到「弱效」，并用 `tools/ad-surface-audit.py` 把这条判断变成可回归的数字。`[Rewrite]` 生效动作此前只有 `reject_dict(200)`；第十七轮起 xianyu 在注释态 MITM 层新增 `response.json.jq` ×15（只删信息流广告字段），生效项仍为 0。`header.*` / `body.mock` / `reject_array` 仍未使用（`reject_img` 已在 meituan 注释增强层落地；`header.del` 经实测后主动放弃，见 E2）。
-2. **MITM 的真实边界是传输层，不是规则层。** 脚本只能看见 TCP+TLS。两个绕过面：HTTPDNS（已有 `[Host]` + `REJECT-DROP` + `[IP Rewrite]` 三重）与 QUIC/HTTP/3（soda 17 / douyin 16 域常开；meituan/xianyu/qidian 的可选 MITM 层按精确主机带注释态回退，通配主机 `p?.meituan.net` 无法用 `DOMAIN-SUFFIX` 表达、已在生成物中注明）。
+2. **MITM 的真实边界是传输层，不是规则层。** 脚本只能看见 TCP+TLS。两个绕过面：HTTPDNS（已有 `[Host]` + `REJECT-DROP` + `[IP Rewrite]` 三重）与 QUIC/HTTP/3（soda 17 / douyin 16 域常开；meituan/xianyu 的可选 MITM 层按精确主机带注释态回退，qidian v4.0.0 的两台主机默认启用解密（未配 QUIC 回退，与 config 原文一致），通配主机 `p?.meituan.net` 无法用 `DOMAIN-SUFFIX` 表达、已在生成物中注明）。
 3. **三个站点证明的范式是「一份源码 → 多端产物 + 参数 schema + 原生降级版」。** 本仓库第 1 项已做到（`families.json`），参数 schema 已由 E6 补上；原生降级版按 E7 结论明确不做。
 4. **当前最大风险是一致性，不是功能不足。** soda 39 条 `response if`、37 处 `requires_body`；同一批开关名曾散在 5 个地方手写，E6 已把 `[Argument]`、`SWITCH_LABELS`、README 表收敛到 `src/args/*.json`，lint 的开关清单也改为从 schema 派生。只剩 `[Script]` 绑定是行为接线，继续由 lint 对账。
 5. **边界不动。** 不做激励欺诈；外部资源依赖（`mock_file`、第三方网关）继续拒绝。但**内联 `body.mock`** 不引入任何外部依赖，不在禁令范围内。
@@ -105,17 +105,17 @@ Biliverse 的 Rewrite 版把 JSON 接口整体重定向到第三方网关 `app.n
 | `[Rule]` | `AND` / `OR` / `NOT` 逻辑组合 | 规则 | ✅ `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC))` |
 | `[Rule]` | `REJECT` / `-DROP` / `-DICT` | 规则 | ✅ |
 | `[Rule]` | `REJECT-IMG` / `REJECT-ARRAY` | 规则 | ❌ 见 §9.1 |
-| `[Rewrite]` | `reject` 族六种（含 `reject_video`） | 复写（规则匹配前）**【文档】** | ✅ 生效仅 `reject_dict` ×3；xianyu 注释层另有 `response.json.jq` ×15；其余见 §9.1 |
+| `[Rewrite]` | `reject` 族六种（含 `reject_video`） | 复写（规则匹配前）**【文档】** | ✅ qidian v4.0.0 的 31 条 response 复写里 `reject_dict` / `response.json.delete` / `replace` / `jq` 均生效；xianyu 注释层另有 `response.json.jq` ×15；其余见 §9.1 |
 | `[Rewrite]` | `header-add` / `header-del` / `header-replace` | 复写 | ❌ 评估后放弃（E2） |
 | `[Rewrite]` | URL 重写 / 302 / 307 | 复写 | ❌ |
 | `[Rewrite]` v2 | `response.body.mock(...)` / `response.header.set(...)` | 复写 | ❌ **实证可用** |
 | `[Rewrite]` | `json.add/replace/delete/jq` · `body.replace` · `body.mock` | 复写 | 🟡 `response.json.jq` 在 xianyu 注释层；其余与脚本二选一，见 §8 / §9.1 |
-| `[Rewrite]` | 批量数组参数（`*.header.set([...],[...])`） | 复写 | ❌ 等价多写几条，见 §9.1 |
+| `[Rewrite]` | 批量数组参数（`*.header.set([...],[...])`） | 复写 | ✅ qidian getconf 用 `response.json.replace` 平行数组一次改 30 项；`header.set` 的平行数组仍等价多写几条（§9.1） |
 | `[Script]` | `http-request` / `http-response` | 脚本 | ✅ 57 条绑定（soda 43 / douyin 14） |
 | `[Script]` | `cron` / `generic` | 脚本 | ✅ 提醒 + 状态看板 |
 | `[Script]` | `network-changed` | 脚本 | ❌ 全量执行、只能弹通知（§9.3） |
 | `[Script]` | `${response.status}` / `${response.header[…]}` / `${request.method}` 条件 | 脚本 | ❌ 与 `readBody` 的 not-json 分支重复（§9.2） |
-| `[Script]` | `with debug` / `binary_body_mode` / 动态 `timeout` | 脚本 | 🟡 debug 只保住 App 内脚本日志（21:35 判死「debug=true 落主日志」）；timeout 已用；binary 已用于起点两条净化绑定（v3.5.3） |
+| `[Script]` | `with debug` / `binary_body_mode` / 动态 `timeout` | 脚本 | 🟡 debug 只保住 App 内脚本日志（21:35 判死「debug=true 落主日志」）；timeout 已用；binary 已判死（qidian v3.6.2：字节回写被 Loon 丢弃，见 §9.2） |
 | `[Script]` | `$done()` 无参 = 断开连接 **【文档】** | 脚本 | ❌（未用中断语义） |
 | `[MITM]` | `hostname = %APPEND% ...` **【未收录】** | 解密 | ⚪ 未文档化：保留待真机取证（§9.3） |
 | `[MITM]` | `h2 = true` **【未收录】** | 解密 | ⚪ 未文档化：防御性冗余，不进能力口径（§9.3） |
@@ -187,7 +187,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
   `/luna/treasure/task/page/v2` 是 **16–21 KB**。JSON 的 gzip 比通常 5~10 倍，去压缩等于把这些响应放大一个数量级。
   为了省一次原生 `ungzip`（微秒级）去换每屏几十 KB 到 1 MB 的流量，是负收益。
 - **唯一真实收益**：983–987（无 `$utils.ungzip`）能真正清理。但这批用户占比极低，且脚本已有“跳过并打标”的兜底。
-- **保留的可能性 → 已兑现（2026-11-06，起点 v3.5.7）**：预留的那两个条件同时成立了——起点这几个 Argus 接口体量小
+- **保留的可能性 → 曾兑现（2026-11-06，起点 v3.5.7；v4.0.0 严格移植 config 后已撤下，生成物不再改 `Accept-Encoding`）**：预留的那两个条件同时成立了——起点这几个 Argus 接口体量小
   （getconf/getaccountpage 明文几百 KB 级、其余几十 KB），而真机 22:15 把断点定在「Loon 字节交接 → `$utils.ungzip`
   → 手写 UTF-8 解码」这条链上（调试模式开着、净化绑定 19/19/19、锁屏零通知 ⇒ `respondJson` 一次没走到）。
   于是**只对该域名族**把 `Accept-Encoding` 设成 `identity`，`tests/lint-plugins.py` 的白名单随之从「只许 gzip」
@@ -385,7 +385,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | `reject_img(status)` | ✅ | 共享图床（meituan `p0/p1/flowplus/img.meituan.net`、taobao `gw.alicdn.com`）下的广告目录路径在 request 阶段返回 200 + 1×1 GIF，避免图片加载器进入破损图重试分支 |
 | `reject_array(status)` | 🟡 | 端点响应必须是数组时才换（`[]`）；目前没有一个这样的上报接口 |
 | `reject_video(status)` | 🟡 | 开屏/激励素材若**直接在 MITM 可见的接口上返回视频字节**，用空视频比空包友好（播放器解码成功、不进重试）。现实里素材都走 CDN 域名拦截，用不上 |
-| `*.header.add/set/del/replace` | ⚠️ 一处 | 我们改 Body 不改头，唯一的例外是 `Accept-Encoding` 降级：soda/douyin 设 `gzip`、起点 v3.5.7 设 `identity`（E2，见 §4）。`del`/`replace` 仍全线禁止 |
+| `*.header.add/set/del/replace` | ⚠️ 一处 | 我们改 Body 不改头，唯一的例外是 `Accept-Encoding` 降级：soda/douyin 设 `gzip`；qidian v4.0.0 已不用这条（E2，见 §4）。`del`/`replace` 仍全线禁止 |
 | `*.body.replace(Regex, …)` | ❌ | 正文级正则替换对 JSON 不安全：嵌套括号、转义序列、同名字段都会误伤。字段级裁剪必须走解析 |
 | `*.json.add/replace/delete(KeyPath)` | ✅ | 在无响应脚本的端点上直接执行固定键删改（soda `/luna/me`、qqnews `adList`、xianyu 搜索发现/订单流删键），引擎底层自动完成 gzip/br 解压，与脚本严格二选一（§8） |
 | `*.json.jq(JQ)`（原生 jq） | ✅ | 在无响应脚本的端点上全面启用（soda `more-panel`、netease、qqnews、youtube、bilibili、meituan、xianyu、taobao、zhihu），统一使用官方双引号 + `\"` 转义与顶层类型防御守卫 |
@@ -407,7 +407,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | 动态 `cron ${reminderCron}` | ✅ | 每日提醒的 cron 由 `[Argument]` input 提供 |
 | `with tag` / `with img_url` | ✅ | 状态按钮的图标与分组 |
 | `with debug=${开关}` | 🟡 | Loon 自己的脚本调试开关。2026-11-06 21:35 真机判死「debug=true 会把脚本 console 落主日志」：两条净化绑定 debug 常开后主日志仍 0 条脚本输出，官方口径 console.log 写「当前脚本日志」，只进 App 内脚本日志页；主日志侧的自证面只剩 `tag` 字面量与 `X-*-Plugin` 响应头 |
-| `binary_body_mode` | ✅ | 起点 getconf-clean / deep-clean 在用：真机证伪了「引擎替脚本解压 gzip」，字符串形态的 gzip 体 `1f 8b` 检测失效 ⇒ 脚本跑完零字段变更。`respondJson` 按来路形态回写字节属防御性冗余（$done 手册 String/Uint8Array 都收）；手册没说清脚本 headers 与原始 headers 是替换还是合并，故 v3.5.5 起对过期的 content-encoding/content-length 就地改写而非删键 |
+| `binary_body_mode` | ❌ | qidian v3.5.3–v3.6.2 曾用于 getconf-clean / deep-clean，最终判死：字节回写被 Loon 当成普通对象 stringify，App 解析失败后回落缓存；v4.0.0 移植 config 后生成物已无此属性（净化走 `[Rewrite]` 或脚本字符串路径） |
 | `$done()` 无参（断开连接） | ❌ | 等价于 `REJECT-DROP`，会给客户端「连接被掐」而不是「服务器回了空」，反而更容易触发秒级重试 |
 
 ### 9.3 规则、MITM、General
@@ -1007,7 +1007,7 @@ body 重算。两种实现下都对：Loon 自己重压 → 它补头；Loon 原
 | 传输层 | 100% | QUIC 回退、MITM 通配、压缩降级全用上；只剩「免压缩」是判死；`h2` / `%APPEND%` 记为**未文档化**，两边都不计（§9.3） |
 | 插件段落 | 100% | 8 个段落里 7 个在用，`[IP Rewrite]` 判死 |
 | 元数据 | 92% | 只剩 `#!system_version`——见下方说明，**故意不写** |
-| 脚本属性 | 100% | `binary_body_mode` 由起点 v3.5.3 补上 |
+| 脚本属性 | 100% | 由 `tag` / `timeout` / `requires_body` 等覆盖；`binary_body_mode` 已判死 |
 | 参数层 | 67% | 只剩 `type=number` / `type=boolean`，本插件没有数值参数 |
 | 脚本层 | 62% | 未用大多与拦截无关（`$httpClient`/`$dns.query`/AES 判死，其余无收益） |
 | 规则层 | 58% | `DOMAIN`/`DOMAIN-SUFFIX` 被 `[Host]` 覆盖，`OR`/`NOT` 无场景 |
@@ -1316,9 +1316,10 @@ Ogury 走 `ogury.io`、AdTiming 的端点根本没公开。加进去的结果是
   `${开关} == true && ${url} ~= ...` 或纯 URL，没有出现用 `||` 绕过 URL 判断的写法）。
 - **「第一条命中即止」**：同一响应最多执行一条 response 脚本；`enable=false` 的规则**不占位**，
   被完全跳过。所以清理组与观测组按开关分层是正确的——但两者同开时观测组不会执行。
-- **`Accept-Encoding` 降级已在用**（soda:154 / douyin:143 设 `gzip`，qidian v3.5.7 起 `force-identity` 设 `identity`）：
-  请求阶段显式声明编码，绕开 br/zstd 无解码器的死路；起点多走一步是因为真机把断点定在字节交接链上，
-  而这几接口明文代价可控。写法合规由 lint 的 `AE_DOWNGRADE` 白名单 + 「每个 [MITM] 域名必须被降级规则覆盖」共同锁住。
+- **`Accept-Encoding` 降级已在用**（soda:154 / douyin:143 设 `gzip`）：
+  请求阶段显式声明编码，绕开 br/zstd 无解码器的死路。qidian v4.0.0 起不再走这条：净化由 config 的
+  31 条 response `[Rewrite]` 或七条 `[Script]` 绑定承担，生成物里没有 `Accept-Encoding` 复写。
+  写法合规由 lint 的 `AE_DOWNGRADE` 白名单 + 「每个 [MITM] 域名必须被降级规则覆盖」共同锁住。
 
 ---
 
