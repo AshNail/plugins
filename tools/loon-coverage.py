@@ -403,13 +403,12 @@ CAPABILITIES = [
     dict(layer="复写层", key="w-mock-file", name="`body.mock_file` / 远程文件", expect="reject",
          probe=r"\.body\.mock_file\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="Mock 会整包替换响应，包络写错就是白屏；插件也不应依赖运行时远程拉取"),
-    dict(layer="复写层", key="w-batch", name="批量数组参数", expect="open",
+    dict(layer="复写层", key="w-batch", name="批量数组参数", expect="used",
          probe=r"then\s+\w+\.[\w.]*\(\s*\[", href=DOC + "/Rewrite/rewrite_v2",
-         why="qidian 曾用一条 `response.json.replace` 平行数组改 getconf 30 个开关字段；v3.5.0 整段"
-             "撤下 response.json.*（本机 11-06 14:34 日志：复写命中的 47 条请求挂起中位 20s、最长 75.7s，"
-             "15 条以 SSL Code=6 断连，未命中的 165 条 0s 零失败），改回 [Script] 侧改写，故此项归零。"
-             "值只能是 String/Number/Boolean/null，置空数组必须走 `response.json.jq`；"
-             "真要用回来必须先在同一条 gzip 响应上验证「命中且不挂起」"),
+         why="v3.6.3 从 config 项目移植：qidian getconf 用一条 `response.json.replace` 平行数组改 30 个开关字段。"
+             "v3.5.0 曾因 H2-to-H1 桥接流挂起 75s 撤下 response.json.*，v3.6.3 配合 [Rewrite] force-identity "
+             "压缩降级重新启用（不再走 gzip，引擎原生处理 JSON 字段级改写）。值只能是 String/Number/Boolean/null，"
+             "置空数组必须走 `response.json.jq`"),
 
     # ---------------- 脚本层 ----------------
     dict(layer="脚本层", key="s-trigger-request", name="Request Script（`request if ...`）", expect="used",

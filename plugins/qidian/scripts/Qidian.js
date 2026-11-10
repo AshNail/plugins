@@ -403,24 +403,60 @@ function handleMainPage(response) {
 
     // ── 保留：RedeemGifts(积分兑换), ScoreDrawModule(幸运抽抽乐) ──
 
-    // ── 删除：营销/活动/邀请/会员/限时模块 ───────────────
+    // ── 删除：营销/活动/邀请/会员模块 ───────────────
     const REMOVE_KEYS = [
       "MemberExclusiveTaskModule", // 会员尊享（90天畅读等）
       "PrivilegedTaskModule",      // 邀好友活动（邀友一起读/3300点等）
       "MoreRewardTab",             // 更多奖励（关注微信服务号等）
-      "SurpriseBenefit",           // 限时福利
       "LastRewardItems",           // 必中夺宝
       "IndexBannerTabs",           // 顶部 banner
       "BaizeModule",               // 白泽装扮气泡
       "TaskShowData",              // 任务展示配置
       "UserRewardModule",          // 用户奖励统计
       "PopFrequency",              // 弹窗频率控制
+      "ActivityCenterModule",      // 活动中心
+      "CharityModule",             // 公益读书
     ];
     REMOVE_KEYS.forEach(k => { delete data[k]; });
 
-    $.log("✨ 福利中心已净化");
+    // ── LOCAL PATCH (AshNail/plugins v3.6.3)：限时激励任务收集 ──
+    // 从 auto-task.js 移植 collectLimitedTasks 逻辑：收集 mainPage 的
+    // ReadingPageTaskModule 中的限时任务（TaskType 300），落盘到 Qidian_LimitedTasks，
+    // 供引擎 finishWatch 重放按 Total 自动完成。
+    const limited = collectLimitedTasks(data);
+    try {
+      $.set(JSON.stringify(limited), "Qidian_LimitedTasks");
+    } catch (e) { /* 存储不可用时只记录日志，不影响净化 */ }
+    $.log(`✨ 福利中心已净化，限时任务=${limited.length}` +
+      (limited.length ? " [" + limited.map(t => t.id + "*" + t.total).join(" / ") + "]" : ""));
+
     $.done({ body: JSON.stringify(obj) });
   } catch (e) { $.done(); }
+}
+
+// ── LOCAL PATCH (AshNail/plugins v3.6.3)：限时激励任务收集 ──
+// 从 auto-task.js 移植：收集 ReadingPageTaskModule 中的限时任务（TaskType 300，
+// 标题「【限时】广告·加点！」），返回 [{id, total, title}]。
+function collectLimitedTasks(data) {
+  const out = [];
+  const seen = {};
+  const add = (it) => {
+    if (!it || typeof it !== "object") return;
+    const title = typeof it.Title === "string" ? it.Title : "";
+    const isLimited = it.TaskType === 300 || title.indexOf("限时") >= 0 || /广告[·.]?加点/.test(title);
+    if (!isLimited) return;
+    const id = it.TaskId || it.SubTaskId;
+    if (!id || seen[String(id)]) return;
+    seen[String(id)] = true;
+    out.push({
+      id: String(id),
+      total: Number(it.Total) > 0 ? Number(it.Total) : 1,
+      title: title || "限时激励",
+    });
+  };
+  const mod = data.ReadingPageTaskModule;
+  if (mod && Array.isArray(mod.TaskList)) mod.TaskList.forEach(add);
+  return out;
 }
 
 /**
