@@ -838,6 +838,14 @@ def render_binding_legacy(b: dict) -> str:
     attrs = [f"script-path={b['path']}"]
     if kind in ("request", "response"):
         attrs.append(f"requires-body={'true' if b.get('requires_body') else 'false'}")
+        # v4.0.1 裁决（2026-11-10）：声明了 binary_body_mode 的 legacy 绑定必须带出，
+        # 否则 Loon 把 gzip 体按 UTF-8 硬解成字符串交给脚本（高位字节已成 U+FFFD），
+        # safeJsonParse 必然 null → 深度净化静默透传（same-day HAR：mainPage 三次
+        # 回包全是原样 23 键）。v3.6.2 判死的是「旧脚本统一回字符串」，v4.0.1 的脚本
+        # 已改为按来路形态回写（字节进→字节出），两者不冲突。probe 面不影响：
+        # append 在 requires-body 之后，与 v2 的属性顺序一致。
+        if b.get("binary_body_mode"):
+            attrs.append("binary_body_mode=true")
     attrs.append(f"timeout={b['timeout']}")
     attrs.append(f"tag={b['tag']}")
     if b.get("switch"):

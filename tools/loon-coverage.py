@@ -585,11 +585,13 @@ CAPABILITIES = [
          probe=r"with[^\n]*\brequires_body\s*=", href=DOC + "/Script/script_v2"),
     dict(layer="脚本属性", key="o-binary", name="`binary_body_mode`", expect="reject",
          probe=r"with[^\n]*\bbinary_body_mode\s*=", href=DOC + "/Script/script_v2",
-         why="qidian v3.5.3–v3.6.2 曾在 getconf-clean / deep-clean 上开它，最终判死并移除："
-             "binary_body_mode=true 下脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 "
-             "{\"0\":123,\"1\":34,...}，不是有效 JSON，App 解析失败后回落缓存（HAR 实证：Trigger/Finished 齐全、"
-             "无 X-Qidian-Plugin、响应体大小不变）。v4.0.0 移植 config 后生成物里已无此属性——config 的净化"
-             "走 `[Rewrite]` 或脚本字符串路径，不再需要字节交接"),
+         why="v2 形状不碰：binary_body_mode=true 下回字符串被静默丢弃（v3.5.1）、统一字符串脚本被字节形态"
+             "连坐（v3.6.2 判死并移除）。2026-11-10 v4.0.2 起唯一豁免口：legacy 旧式深净化绑定"
+             "（qidian engine-deep-clean）——v4.0.1 起 handleMainPage 按来路形态回写（字节进→字节出），"
+             "生成器 render_binding_legacy 此前静默丢掉该属性行导致 mainPage 净化零生效，已修。"
+             "真机若再证 JSON.stringify({\"0\":123,...}) 坏包（v3.6.2 旧案），回滚单位=删"
+             " src/apps/qidian.json engine-deep-clean 的 binary_body_mode，转 [Rewrite] "
+             "Accept-Encoding=identity 路线；probe 只盯 v2 的 `with` 行，legacy 直排行不在其视野内"),
     dict(layer="脚本属性", key="o-img", name="`img_url`", expect="used",
          probe=r"with[^\n]*\bimg_url\s*=", href=DOC + "/Script/script_v2"),
 

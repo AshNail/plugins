@@ -183,7 +183,7 @@
 | `debug`（可动态） | ✅ 已用 | v3.5.4 曾押「绑定带 debug=true 就能把脚本 console 落主日志」，21:35 真机日志判死：debug 常开后主日志仍 0 条 [起点锚点]（match/Trigger/Finished 齐全）。官方 Script API 的口径是 console.log「向**当前脚本日志**写入一条记录」，主日志导出不含它，锚点只能在 App 内脚本日志页看。qidian v4.0.0 移植 config 后绑定不再写 debug（调试交给 `QDREADER_DEBUG` 参数）；douyin 仍用 `debug=${debugLog}` 保住 App 内那份脚本日志 |
 | `timeout` | ✅ 已用 | 已落地 |
 | `requires_body` | ✅ 已用 | 已落地 |
-| `binary_body_mode` | ❌ 判死 | qidian v3.5.3–v3.6.2 曾在 getconf-clean / deep-clean 上开它，最终判死并移除：binary_body_mode=true 下脚本返回的 Uint8Array 被 Loon 当成普通对象处理，JSON.stringify 后变成 {"0":123,"1":34,...}，不是有效 JSON，App 解析失败后回落缓存（HAR 实证：Trigger/Finished 齐全、无 X-Qidian-Plugin、响应体大小不变）。v4.0.0 移植 config 后生成物里已无此属性——config 的净化走 `[Rewrite]` 或脚本字符串路径，不再需要字节交接 |
+| `binary_body_mode` | ❌ 判死 | v2 形状不碰：binary_body_mode=true 下回字符串被静默丢弃（v3.5.1）、统一字符串脚本被字节形态连坐（v3.6.2 判死并移除）。2026-11-10 v4.0.2 起唯一豁免口：legacy 旧式深净化绑定（qidian engine-deep-clean）——v4.0.1 起 handleMainPage 按来路形态回写（字节进→字节出），生成器 render_binding_legacy 此前静默丢掉该属性行导致 mainPage 净化零生效，已修。真机若再证 JSON.stringify({"0":123,...}) 坏包（v3.6.2 旧案），回滚单位=删 src/apps/qidian.json engine-deep-clean 的 binary_body_mode，转 [Rewrite] Accept-Encoding=identity 路线；probe 只盯 v2 的 `with` 行，legacy 直排行不在其视野内 |
 | `img_url` | ✅ 已用 | 已落地 |
 
 ## 参数层
