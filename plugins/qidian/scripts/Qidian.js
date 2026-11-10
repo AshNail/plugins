@@ -390,6 +390,8 @@ function handleClientConfig(response) {
  */
 function handleMainPage(response) {
   try {
+    const bodyIsUint8 = response.body instanceof Uint8Array;
+    const bodyIsArrayBuffer = response.body instanceof ArrayBuffer;
     const obj = safeJsonParse(response.body);
     if (!obj || !obj.Data) { $.done(); return; }
     const data = obj.Data;
@@ -431,7 +433,15 @@ function handleMainPage(response) {
     $.log(`✨ 福利中心已净化，限时任务=${limited.length}` +
       (limited.length ? " [" + limited.map(t => t.id + "*" + t.total).join(" / ") + "]" : ""));
 
-    $.done({ body: JSON.stringify(obj) });
+    // 按来路形态回写：字节进→字节出、字符串进→字符串出
+    const newBody = JSON.stringify(obj);
+    if (bodyIsUint8) {
+      $.done({ body: new TextEncoder().encode(newBody) });
+    } else if (bodyIsArrayBuffer) {
+      $.done({ body: new TextEncoder().encode(newBody).buffer });
+    } else {
+      $.done({ body: newBody });
+    }
   } catch (e) { $.done(); }
 }
 
@@ -959,7 +969,47 @@ function applyCleanRule(target, segments, index = 0) {
 }
 
 function safeJsonParse(body) {
-  try { return JSON.parse(body); } catch (e) { return null; }
+  try {
+    // 直接解析（字符串或已解压的内容）
+    if (typeof body === "string") {
+      return JSON.parse(body);
+    }
+    // Uint8Array：先转字符串再解析
+    if (body instanceof Uint8Array) {
+      const text = new TextDecoder("utf-8").decode(body);
+      return JSON.parse(text);
+    }
+    // ArrayBuffer：转 Uint8Array 再处理
+    if (body instanceof ArrayBuffer) {
+      const text = new TextDecoder("utf-8").decode(new Uint8Array(body));
+      return JSON.parse(text);
+    }
+    return null;
+  } catch (e) {
+    // 可能是 gzip 压缩的字节，尝试解压
+    try {
+      if (typeof $utils !== "undefined" && $utils.ungzip) {
+        let bytes = body;
+        if (typeof body === "string") {
+          // 字符串可能是 gzip 字节的错误解码，尝试转回字节
+          bytes = new TextEncoder().encode(body);
+        }
+        if (bytes instanceof ArrayBuffer) {
+          bytes = new Uint8Array(bytes);
+        }
+        if (bytes instanceof Uint8Array) {
+          const decompressed = $utils.ungzip(bytes);
+          const text = typeof decompressed === "string" 
+            ? decompressed 
+            : new TextDecoder("utf-8").decode(decompressed);
+          return JSON.parse(text);
+        }
+      }
+    } catch (e2) {
+      // ungzip 也失败，返回 null
+    }
+    return null;
+  }
 }
 
 // ==========================================
