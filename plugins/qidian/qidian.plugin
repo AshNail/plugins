@@ -1,4 +1,4 @@
-#!name=起点读书 · 看书激励助手
+#!name=起点读书 · 看书激励助手 v4.0.1
 #!desc=起点全能助手 Pro（严格移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：CAPTURE_ENABLE 决定净化走 [Rewrite] 还是 [Script]——开启时由 31 条 response 复写接管（getconf 30 项覆写/11 项删除/关发现 tab、纯广告端点 reject_dict、混业务端点字段级删除、deeplink/adv tab/悬浮卡清空）；关闭时同一批端点由 [Script] 的客户端配置净化与深度净化绑定接管。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getconf、深度净化、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检；引擎 vendored 在 scripts/Qidian.js。限时激励任务（mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」）当轮 TaskId/Total 落盘 Qidian_LimitedTasks，finishWatch 按 Total-1 重放，与 config TaskMapping 的 count-1 同口径。自动化六开关与 Cookie 捕获默认开，服务端风控后果自担。
 #!author=edy
 #!version=4.0.1
@@ -12,7 +12,7 @@
 #!source=60a9c1e72b00fe908b80bc3e402450b3b8caa330e7ebcfd4599b0d512e856bdf
 
 # ========================================================================
-# 起点读书 · 看书激励助手
+# 起点读书 · 看书激励助手 v4.0.1
 # ------------------------------------------------------------------------
 # v4.0.1 修复 mainPage 净化不生效（用户裁决 2026-11-10）：HAR 实证 mainPage 响应是 gzip 压缩的，而脚本的 safeJsonParse 直接 JSON.parse 失败返回 null ⇒ 净化静默零生效。修法：① 给"深度净化"绑定加 binary_body_mode=true，让 Loon 把 gzip 字节以 Uint8Array 形式交给脚本；② safeJsonParse 增加 Uint8Array/ArrayBuffer 分支与 $utils.ungzip 兜底；③ handleMainPage 按来路形态回写（字节进→字节出）。config 的脚本没有这些处理，但 config 在真机上有效——推测 config 用户要么 CAPTURE_ENABLE=false（走脚本但 mainPage 也清理不了），要么 Loon 版本/设置不同。本仓按 v3.5.x 的判死经验补上这条链。限时激励任务收集逻辑不变。
 # v4.0.0 严格移植 config（用户裁决 2026-11-10）：以 /Users/seeu/dev/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js 为唯一基线，撤掉本仓自研净化链与额外的 [Host]/[Rule] 黑洞组。① 参数层换回 config 的 11 项（CAPTURE_ENABLE / QDREADER_COOKIE_ENABLE / CRONEXP / QDREADER_DEBUG / TIMEOUT + 六个任务开关），QDREADER_CLEAN_ENABLE 退役；② [Rewrite] 逐条对齐 config 的 31 条 response 规则（正则与动作逐字照搬，不加 ^ 锚点、不改 jq 表达式），全部由 ${CAPTURE_ENABLE} == true 门控——开着走复写、关掉走 [Script]，两模式互斥不叠加；③ [Script] 逐条对齐 config 的七条绑定（含 getconf 与深度净化两条大族），与复写同 URL 的两条按本仓互斥校验标 probe=true，输出行不变；④ 引擎回到 config 原版，只保留限时激励补丁：handleMainPage 与 cron 的 mainPage 预热响应都收集 ReadingPageTaskModule（TaskType 300）并落盘（空列表不覆盖），handleReplay 动态映射按 total-1 重放；config 删除 SurpriseBenefit 的行为恢复，本仓曾加的 ActivityCenterModule/CharityModule 删除撤回；⑤ [Rule] 采用 config 的 13 条追踪/广告 SDK 拦截 + 1 条 pangolin 白名单，生成器为此补上 DOMAIN / DOMAIN-SUFFIX DIRECT / AND 复合规则支持；⑥ [MITM] 收窄到 h5.if.qidian.com 与 magev6.if.qidian.com（config 复写与脚本只覆盖这两个主机）；不设 QUIC 回退，与 config 原文一致。

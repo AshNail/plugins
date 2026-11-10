@@ -1,4 +1,4 @@
-# 起点读书 · 看书激励助手
+# 起点读书 · 看书激励助手 v4.0.1
 
 > 起点全能助手 Pro（严格移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：CAPTURE_ENABLE 决定净化走 [Rewrite] 还是 [Script]——开启时由 31 条 response 复写接管（getconf 30 项覆写/11 项删除/关发现 tab、纯广告端点 reject_dict、混业务端点字段级删除、deeplink/adv tab/悬浮卡清空）；关闭时同一批端点由 [Script] 的客户端配置净化与深度净化绑定接管。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getconf、深度净化、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检；引擎 vendored 在 scripts/Qidian.js。限时激励任务（mainPage 的 ReadingPageTaskModule，TaskType 300/「【限时】广告·加点！」）当轮 TaskId/Total 落盘 Qidian_LimitedTasks，finishWatch 按 Total-1 重放，与 config TaskMapping 的 count-1 同口径。自动化六开关与 Cookie 捕获默认开，服务端风控后果自担。
 
@@ -6,7 +6,7 @@
 
 ## 安装
 
-[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
+[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B%20v4.0.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plugin
