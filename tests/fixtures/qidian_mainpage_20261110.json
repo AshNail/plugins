@@ -50,8 +50,7 @@
   "keep_incentive": [
     "DailyBenefitModule",
     "VideoRewardTab",
-    "ReadingPageTaskModule",
-    "SurpriseBenefit"
+    "ReadingPageTaskModule"
   ],
   "keep_render_scalars": [
     "Guid",
@@ -73,8 +72,38 @@
     "PrivilegedTaskModule",
     "RedeemGifts",
     "ScoreDrawModule",
+    "SurpriseBenefit",
     "TaskShowData",
     "UserRewardModule"
   ],
-  "verdict": "用户 2026-11-10 裁决：只留 4 个广告激励模块（常驻 2 + 限时 2）；MoreRewardTab 的 8 条限时福利任务按「非广告任务」剔除；PrivilegedTaskModule 邀友拉新剔除；7 个身份/账户标量保留防白屏；布局与奖励展示字段全删。"
+  "drop_task_items": {
+    "VideoRewardTab.TaskList": [
+      {
+        "TaskRawId": "T2024010102",
+        "TaskId": "1218712929269776389",
+        "Title": "完成1个广告任务得奖励",
+        "Desc": "+满10点-3点订阅券",
+        "TaskType": 3
+      },
+      {
+        "TaskRawId": "T2023111401",
+        "TaskId": "1218712929269776387",
+        "Title": "做任务得白泽宇航员装扮",
+        "Desc": "+白泽宇航员装扮1天",
+        "TaskType": 109
+      }
+    ]
+  },
+  "keep_task_items": {
+    "VideoRewardTab.TaskList": [
+      {
+        "TaskRawId": "T2024010101",
+        "TaskId": "1218712929269776388",
+        "Title": "完成3个广告任务得奖励",
+        "Desc": "+10点章节卡",
+        "TaskType": 3
+      }
+    ]
+  },
+  "verdict": "用户 2026-11-10 裁决：只留广告激励模块与 7 个身份/账户标量（防白屏），MoreRewardTab 的 8 条限时福利任务按「非广告任务」剔除，PrivilegedTaskModule 邀友拉新剔除，布局与奖励展示字段全删。2026-11-11 13:23 追加裁决：SurpriseBenefit（每1小时广告任务）整模块剔除；VideoRewardTab.TaskList 里 T2024010102「完成1个广告任务得奖励」与 T2023111401「做任务得白泽宇航员装扮」两条单次激励条目剔除，只留 T2024010101「完成3个广告任务得奖励」。"
 }
