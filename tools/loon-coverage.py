@@ -138,18 +138,13 @@ CAPABILITIES = [
          href=DOC + "/MitM/",
          why="现有 MITM 名单是精确主机或窄通配（soda/douyin），没有需要排除的敏感兄弟域；"
              "排除语法本身可用，但当前没有场景"),
-    dict(layer="传输层", key="mitm-append", name="`hostname = %APPEND% …`（官方查不到该 token）",
-         expect="undocumented",
-         token="lint:MITM.hostname-prefix",
+    dict(layer="传输层", key="mitm-append", name="`hostname = %APPEND% …`（官方查不到该 token，真机已证伪）",
+         expect="reject",
          probe=r"(?m)^\s*hostname\s*=.*%APPEND%",
          href=DOC + "/MitM/",
-         why="官方 MitM 页的参数表只有 `hostname` / `ca-p12` / `ca-passphrase` 三行，整站 26 个正文页"
-             "都扫不到 `%APPEND%`（这条断言现在是机器数出来的：`tools/loon-token-audit.py` 的 "
-             "`absent_claims[%append%] == 0`，命中数一变非 0 就报「断言已被推翻」）——它是 Surge 的"
-             "「追加而非覆盖」写法。插件段与主配置同名键的合并语义"
-             "官方同样没写（与订阅 Host Map 同一类未定义）。留着它的理由是对称的：Loon 若认识，删掉会"
-             "让本插件整行覆盖用户主配置的解密名单；若不认识，它只是一个永不匹配的空主机项。"
-             "**保留但不计入能力口径**；真机取证见 `docs/device-checklist.md`"),
+         why="官方 MitM 页参数表只有 hostname / ca-p12 / ca-passphrase，官方整站查不到 %APPEND%。"
+             "真机取证（commit 623b87c）已实锤：Loon 3.5.1+ 设备上该标记会被当做首个域名的一部分，"
+             "直接导致首个域名 MitM 静默失效。现已彻底禁止并从所有插件中清除。"),
     dict(layer="传输层", key="mitm-ca", name="`ca-p12` / `ca-passphrase`", expect="reject",
          probe=r"(?m)^\s*(?:ca-p12|ca-passphrase)\s*=",
          href=DOC + "/MitM/",
@@ -291,7 +286,7 @@ CAPABILITIES = [
          probe=r"(?m)^\*[a-z0-9.*?\[\]-]*\s*=\s*\d+\.\d+\.\d+\.\d+\s*$",
          href=DOC + "/DNS/hostmap"),
     dict(layer="Host 层", key="h-alias", name="`域名 = 域名别名`", expect="open",
-         probe=r"(?m)^[a-z0-9][a-z0-9.*?\[\]-]*\s*=\s*[a-z0-9][a-z0-9.-]*\.[a-z]{2,}\s*$",
+         probe=r"(?m)^(?!hostname\s*=)[a-z0-9][a-z0-9.*?\[\]-]*\s*=\s*[a-z0-9][a-z0-9.-]*\.[a-z]{2,}\s*$",
          href=DOC + "/DNS/hostmap",
          why="别名只能换解析目标，拦不住广告；拦截要的是黑洞 IP"),
     dict(layer="Host 层", key="h-server", name="`域名 = server:8.8.8.4`", expect="open",

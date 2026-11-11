@@ -3201,7 +3201,7 @@ def check_app_plugins():
                     return -1
 
             if active_enh:
-                want_hostname = "hostname = %APPEND% " + ", ".join(enh.get("mitm_hosts", []))
+                want_hostname = "hostname = " + ", ".join(enh.get("mitm_hosts", []))
                 if parsed.get("MITM", []) != [want_hostname]:
                     errors.append(
                         f"apps/{slug}: active 层的 [MITM] 必须是唯一一行 {want_hostname!r}，"

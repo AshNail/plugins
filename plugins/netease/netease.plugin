@@ -67,5 +67,5 @@ response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interf
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/v2\/banner\/get/i then response.json.jq("(if (type == \"object\" and (.banners | type) == \"array\") then .banners |= map(select(type != \"object\" or (.adid == null and .adurl == null and .adSource == null))) else . end) | walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 
 [MITM]
-hostname = %APPEND% music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com
+hostname = music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com
 h2 = true

@@ -17,7 +17,7 @@
 - `[Rewrite]`：
   - 请求阶段：6 条广告/推广 `reject_dict(200)`（`cleanAds` 控制）+ 3 条界面精简 `reject_dict(200)`（`slimUI` 控制）；**已剔除上游误伤「我的收藏歌手」（`user/sub/artist`）与手动检查更新（`ios/version`）的两个端点**；`/api/ad` 收紧尾边界避免前缀误伤。
   - 响应阶段：10 条原生 `response.json.jq`，对首页、发现、我的、收银台、评论区、`/batch`、`v1/user/info`、推荐页、关注推荐及 `v2/banner/get` 横幅轮播（按 `.adid`/`.adurl`/`.adSource` 过滤纯广告帧并递归删除监控字段）进行剥离；零第三方 JS。
-- `[MITM]`：`%APPEND% music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com`（覆盖 `interface0..9` 全分片及 IPv4/IPv6 入口，不覆盖主配置其它 MITM 域名）。
+- `[MITM]`：`music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com`（覆盖 `interface0..9` 全分片及 IPv4/IPv6 入口，不覆盖主配置其它 MITM 域名）。
 
 ## 边界
 

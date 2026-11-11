@@ -1329,7 +1329,7 @@ def render_enhance(enh: dict, where: str, roots: set[str], active: bool = False)
         out.append("# [MITM]")
         out.append("# " + "-" * 60)
         out.append("# hostname 只列本 App 广告相关的具体接口域，不列整主域；一行取消注释即全部解密。")
-        out.append("# hostname = %APPEND% " + ", ".join(mitm_hosts))
+        out.append("# hostname = " + ", ".join(mitm_hosts))
     if rewrite_json:
         out.append("#")
         out.append("# [Rewrite]")

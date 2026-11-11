@@ -254,5 +254,5 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal
 
 [MITM]
 
-hostname = %APPEND% beta-luna.douyin.com, polaris.zijieapi.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn
+hostname = beta-luna.douyin.com, polaris.zijieapi.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn
 h2 = true

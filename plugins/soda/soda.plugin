@@ -400,5 +400,5 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${
 
 [MITM]
 
-hostname = %APPEND% api.qishui.com, conf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, aweme.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn, beta-luna.douyin.com
+hostname = api.qishui.com, conf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, aweme.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn, beta-luna.douyin.com
 h2 = true
