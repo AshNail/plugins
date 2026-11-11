@@ -652,11 +652,17 @@ async function handleReplay(request) {
     // v6.5: 单轮可观测 (状态码 + 耗时) + 15s 超时 + 异常截断记日志
     const t0 = Date.now();
     try {
+      let replayBody = request.body;
+      if (typeof replayBody === "string" && /gradientLevel=\d+/.test(replayBody)) {
+        const m = replayBody.match(/gradientLevel=(\d+)/);
+        const curLevel = m ? parseInt(m[1], 10) : 1;
+        replayBody = replayBody.replace(/gradientLevel=\d+/, "gradientLevel=" + (curLevel + i + 1));
+      }
       const res = await $.fetch({
         url: request.url,
         method: "POST",
         headers: headers,
-        body: request.body,
+        body: replayBody,
         timeout: 15000
       });
       const ms = Date.now() - t0;
@@ -1207,14 +1213,25 @@ async function _executeLimitedAdvTasks(_0xclient) {
       return is300 && isUnlocked && notDone;
     });
 
+    const totalCount = _taskList.length;
+    const doneCount = _taskList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length;
+    const nextTask = _taskList.find(t => t["IsFinished"] !== 1 && t["IsReceived"] !== 1);
+    const nextTip = nextTask ? (nextTask["Subtitle"] || nextTask["ActionText"] || "需阅读解锁") : "";
+
     if (!_activeTasks.length) {
-      const doneCount = _taskList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length;
-      const lockedTask = _taskList.find(t => t["ReadingPageFlag"] !== 0);
-      const lockedTip = lockedTask ? (lockedTask["Subtitle"] || lockedTask["ActionText"] || "需阅读解锁") : "";
-      const statusText = doneCount > 0 ? ("已完成 " + doneCount + " 轮" + (lockedTip ? " (" + lockedTip + ")" : "")) : "未解锁";
-      _log("[限时激励] " + statusText);
-      return _result(_taskName, true, doneCount > 0 ? "任务已完成" : "未解锁");
+      let summary = "";
+      if (doneCount >= totalCount) {
+        summary = "全部 " + totalCount + " 轮已完成";
+      } else if (doneCount > 0) {
+        summary = "已完成 " + doneCount + "/" + totalCount + " 轮" + (nextTip ? " (" + nextTip + ")" : "");
+      } else {
+        summary = "未解锁 (需阅读解锁)";
+      }
+      _log("[限时激励] " + summary);
+      return _result(_taskName, true, summary);
     }
+
+    _log("[限时激励] 发现待执行任务链 (当前已完成 " + doneCount + "/" + totalCount + " 轮)");
 
     let _successCount = 0;
     for (const task of _activeTasks) {
@@ -1223,9 +1240,18 @@ async function _executeLimitedAdvTasks(_0xclient) {
       const needed = Math.max(1, total - process);
 
       for (let i = 0; i < needed; i++) {
-        _log("[限时激励] 执行第 " + (i + 1) + "/" + needed + " 次广告任务: " + (task["Title"] || "【限时】广告·加点！"));
+        const currentLevel = process + i + 1;
+        _log("[限时激励] 执行第 " + (i + 1) + "/" + needed + " 次广告任务: " + (task["Title"] || "【限时】广告·加点！") + " (梯度 " + currentLevel + "/" + total + ")");
         const payloadCandidates = [
-          // 490 HAR entry 13 真机看播完成逆向结构 (POST /argus/api/v1/video/adv/finishWatch)
+          // 494/496 HAR 真机递增梯度结构
+          {
+            banId: "0",
+            gradientLevel: String(currentLevel),
+            h5: "0",
+            taskId: String(task["TaskId"] || task["SubTaskId"]),
+            type: "1"
+          },
+          // 490 HAR 首轮单次结构 (oneOff=1, gradientLevel=0)
           {
             banId: "0",
             gradientLevel: "0",
@@ -1284,14 +1310,18 @@ async function _executeLimitedAdvTasks(_0xclient) {
     const _checkRes = await _0xclient["getAdvMainPage"]();
     const _checkModule = _checkRes && _checkRes["biz"] && _checkRes["biz"]["data"] && _checkRes["biz"]["data"]["ReadingPageTaskModule"];
     const _checkList = _checkModule && _checkModule["TaskList"];
-    const _checkTask = Array.isArray(_checkList) && _checkList.find(t => _activeTasks.some(a => String(a["TaskId"]) === String(t["TaskId"])));
-    const _isDone = _checkTask ? (_checkTask["IsFinished"] === 1 || _checkTask["IsReceived"] === 1 || Number(_checkTask["Process"]) >= Number(_checkTask["Total"])) : (_successCount > 0);
+    const newTotal = Array.isArray(_checkList) ? _checkList.length : totalCount;
+    const newDone = Array.isArray(_checkList) ? _checkList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length : doneCount;
+    const newNext = Array.isArray(_checkList) ? _checkList.find(t => t["IsFinished"] !== 1 && t["IsReceived"] !== 1) : null;
+    const newTip = newNext ? (newNext["Subtitle"] || newNext["ActionText"] || "需阅读解锁") : "";
 
     let _detail = "";
-    if (_isDone) {
-      _detail = "任务已完成";
+    if (newDone >= newTotal) {
+      _detail = "全部 " + newTotal + " 轮已完成";
+    } else if (newDone > 0) {
+      _detail = "已完成 " + newDone + "/" + newTotal + " 轮" + (newTip ? " (" + newTip + ")" : "");
     } else if (_successCount > 0) {
-      _detail = "完成 " + _successCount + " 次";
+      _detail = "完成 " + _successCount + " 次看播";
     } else {
       _detail = "需App内点[去完成]1次(自动重放已就绪)";
     }
