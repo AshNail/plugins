@@ -4415,9 +4415,7 @@ def check_qidian_har_guards():
     protected = ("Data.Goods", "Data.UserBasicInfo", "Data.AccountBalance")
     marketing = (
         "Data.BenefitButtonList", "Data.Member", "Data.FunctionButtonList",
-        "Data.BottomButtonList", "Data.SchoolText", "Data.SchoolUrl", "Data.SchoolImage",
-        "Data.DianNiangWorldSwitch", "Data.DianNiangUrl", "Data.DianNiangWorldImage",
-        "Data.PursueBookCard", "Data.ActiveActionUrl", "Data.FreshManGuideSwitch",
+        "Data.BottomButtonList",
     )
     by_id = {rule.get("id"): rule for rule in rules}
     for rule in rules:

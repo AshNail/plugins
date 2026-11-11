@@ -329,20 +329,18 @@ def simulate(snap, rules):
         problems += [] if data.get("MainInfo") and data.get("Items") else [
             "书架样本里 MainInfo 或 Items 为空，红框断言失去基线"
         ]
-        if "Data" in after:
-            problems.append("kill-topoperation 模拟后 Data 仍在：大横幅没删掉")
+        new_data = after.get("Data") or {}
+        if "MainInfo" in new_data or "Items" in new_data:
+            problems.append("kill-topoperation 模拟后 MainInfo 或 Items 仍在：大横幅或图标没删掉")
         for key in ("Message", "Result"):
             if after.get(key) != before.get(key):
                 problems.append("kill-topoperation 把响应包络 {} 也改了".format(key))
 
-    # ② 我的页：13 个营销键全删，身份与账户原样，且不是把整个 Data 清空。
+    # ② 我的页：4 个红框营销键全删（v4.1.1 回退 9 个崩溃字段），身份与账户原样，且不是把整个 Data 清空。
     before, after = clean_up("clean-accountpage", "user/getaccountpage")
     if before and after:
         removed = [
             "BenefitButtonList", "Member", "FunctionButtonList", "BottomButtonList",
-            "SchoolText", "SchoolUrl", "SchoolImage", "DianNiangWorldSwitch",
-            "DianNiangUrl", "DianNiangWorldImage", "PursueBookCard",
-            "ActiveActionUrl", "FreshManGuideSwitch",
         ]
         old_data, new_data = before.get("Data") or {}, after.get("Data") or {}
         if not isinstance(new_data, dict) or not new_data:
@@ -511,7 +509,7 @@ def check():
     else:
         action = account.get("action", "")
         must = ["Data.Member", "Data.FunctionButtonList", "Data.BottomButtonList",
-                "Data.BenefitButtonList", "Data.SchoolText", "Data.DianNiangWorldSwitch"]
+                "Data.BenefitButtonList"]
         missing = [key for key in must if key not in action]
         if missing:
             problems.append("clean-accountpage: 少删 {}".format(", ".join(missing)))
