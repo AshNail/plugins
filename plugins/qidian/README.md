@@ -1,12 +1,12 @@
-# 起点读书 · 看书激励助手 v4.2.4
+# 起点读书 · 看书激励助手 v4.2.5
 
-> 起点全能助手 Pro（移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：净化主通道是常开的 [Rewrite] v2 原生复写，v4.2.4 共 18 条（1 条 request 强制明文 + 17 条 response 字段级净化）——CAPTURE_ENABLE 在 v4.0.0 移植 config 参数层时已移除，现仅存于版本沿革注释，不构成开关。v4.1.0 按真机 HAR 466 重写过 15 条：删 8 条零命中端点、6 条空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框删 getTopOperation 的 MainInfo+Items，我的页按 v4.1.1 真机裁决只删 4 个营销键（删满 13 个会白屏），每日导读按用户裁决保留。v4.2.0 新增 mainPage 福利中心精简（只留广告激励模块 + 7 个身份标量防白屏）；v4.2.1 按追加裁决再剔除 SurpriseBenefit 整模块与 VideoRewardTab 里的两条单次激励条目；v4.2.2 将 script-path 指向 GitHub raw 绝对 URL；v4.2.4 恢复书架悬浮广告挂件（点币狂欢送）原生复写净化 kill-hoveradv。每条规则都带 evidence，由 tools/qidian-har-evidence.py --check 反向钉住。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检/手动激励、深度净化；深度净化标 probe=true，与同 URL 复写按官方互斥语义共存（复写命中即抑制脚本）。限时激励任务（【限时】广告·加点！）全自动支持：自动解析 ReadingPageTaskModule 当前解锁任务并自动完成多轮看广告，同时保留 App 手动触发时的 finishWatch 动态重放。Cookie 捕获与自动化任务默认开，服务端风控后果自担。
+> 起点全能助手 Pro（移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：净化主通道是常开的 [Rewrite] v2 原生复写，v4.2.5 共 18 条（1 条 request 强制明文 + 17 条 response 字段级净化）——CAPTURE_ENABLE 在 v4.0.0 移植 config 参数层时已移除，现仅存于版本沿革注释，不构成开关。v4.1.0 按真机 HAR 466 重写过 15 条：删 8 条零命中端点、6 条空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框删 getTopOperation 的 MainInfo+Items，我的页按 v4.1.1 真机裁决只删 4 个营销键（删满 13 个会白屏），每日导读按用户裁决保留。v4.2.0 新增 mainPage 福利中心精简（只留广告激励模块 + 7 个身份标量防白屏）；v4.2.1 按追加裁决再剔除 SurpriseBenefit 整模块与 VideoRewardTab 里的两条单次激励条目；v4.2.2 将 script-path 指向 GitHub raw 绝对 URL；v4.2.4 恢复书架悬浮广告挂件（点币狂欢送）原生复写净化 kill-hoveradv；v4.2.5 修复限时激励日志与延迟变量引用。每条规则都带 evidence，由 tools/qidian-har-evidence.py --check 反向钉住。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检/手动激励、深度净化；深度净化标 probe=true，与同 URL 复写按官方互斥语义共存（复写命中即抑制脚本）。限时激励任务（【限时】广告·加点！）全自动支持：自动解析 ReadingPageTaskModule 当前解锁任务并自动完成多轮看广告，同时保留 App 手动触发时的 finishWatch 动态重放。Cookie 捕获与自动化任务默认开，服务端风控后果自担。
 
-版本 **4.2.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
+版本 **4.2.5** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
 
 ## 安装
 
-[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B%20v4.2.4-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
+[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B%20v4.2.5-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plugin
@@ -87,6 +87,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 
 ## 红线与天花板（如实）
 
+- v4.2.5 修复限时激励日志与延迟变量引用（用户 2026-11-11 19:16 取证驱动）：修复 v4.2.4 在高阶引擎注入 _executeLimitedAdvTasks 时 logger 变量缺少 _0x 前缀导致的 ReferenceError（Can't find variable: _552e0a），新增内部安全容错包装（_log/_warn/_delay/_result），自动检测上下文宿主与混淆环境，降级保护确保在任何宿主与引擎作用域下稳定执行，完成 3 轮广告自动提交并展示限时激励任务结果。
 - v4.2.4 限时激励任务自动化（用户 2026-11-11 17:18 取证驱动）：真机证据显示普通激励任务（9次激励碎片、每日任务、抽奖）均可自动执行完成，但「【限时】广告·加点！」（ReadingPageTaskModule, TaskType 300）此前未自动触发。参考普通激励任务（finishWatchAdv 携带标准参数与鉴权签名）的执行逻辑，在高阶引擎任务管线中新增限时任务自动处理：自动读取 ReadingPageTaskModule 中当前已解锁的限时任务（ReadingPageFlag === 0 且未完成），按其 Total 轮次自动调用 finishWatch 完成，并汇入执行结果与系统通知；同时在 limitedTaskMapping 中增强持久化兼容，确保 App 内手动触发与定时自动运行双通道均可稳定完成。
 - v4.2.3 恢复书架悬浮广告挂件净化（用户 2026-11-11 17:18 取证驱动）：真机书架右下角出现「点币狂欢送」金色活动悬浮挂件，真身为 bookshelf/getHoverAdv；v4.1.0 因 HAR 466 抓包当时恰逢空档（ItemList=[]）被误当空转规则移除，现恢复 kill-hoveradv 原生 response.json.delete(["Data.ItemList"]) 复写，由 Loon 原生引擎直接消除该悬浮挂件。
 - v4.2.2 脚本路径切换为 GitHub raw 远端绝对 URL（用户 2026-11-11 16:47 取证驱动）：真机证据显示点击 View Script 打开是空文件、点击运行白屏且无日志，根因是 Loon 在通过远程订阅安装插件时，不具备自动根据相对路径 script-path=Qidian.js 去仓库下载远端脚本的能力，导致在设备 localScripts/ 创建了 0 字节空文件。改为使用 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/Qidian.js 完整 URL 后，Loon 订阅解析器会触发网络拉取将完整引擎脚本下载并缓存，既支持远程热更新与本地自动同步，也支持直接点击运行和在脚本查看器中查看完整内容。
