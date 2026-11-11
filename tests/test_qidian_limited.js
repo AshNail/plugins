@@ -119,7 +119,7 @@ function check(name, cond, extra) {
     assert.deepStrictEqual(hosts, ["h5.if.qidian.com", "magev6.if.qidian.com"]);
     const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=深度净化"));
     assert(binding && new RegExp(binding.split(" ")[1]).test(url));
-    assert(binding.includes("script-path=Qidian.js") || binding.includes("script-path=scripts/Qidian.js"));
+    assert(binding.includes("Qidian.js"));
     const context = {
       $request: { url, method: "GET" },
       $response: { body: JSON.stringify(FIXTURE) },

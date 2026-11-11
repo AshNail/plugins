@@ -2986,8 +2986,12 @@ def check_app_plugins():
                 errors.append(f"apps/{slug}: [Script] 多出源里没有的绑定行: {extra}")
             for b in enh.get("bindings", []):
                 if b.get("legacy"):
-                    # legacy 绑定的 path 字段自带 scripts/ 前缀（相对 vendored 指针）
-                    dist = ROOT / "plugins" / slug / str(b.get("path") or "")
+                    b_path = str(b.get("path") or "")
+                    repo_prefix = f"https://raw.githubusercontent.com/AshNail/plugins/main/plugins/{slug}/"
+                    if b_path.startswith(repo_prefix):
+                        dist = ROOT / "plugins" / slug / b_path[len(repo_prefix):]
+                    else:
+                        dist = ROOT / "plugins" / slug / b_path
                 else:
                     dist = ROOT / "plugins" / slug / "scripts" / f"{b.get('script')}.min.js"
                 if not dist.exists():
@@ -3369,7 +3373,11 @@ def check_no_legacy_syntax():
         for num, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if line.lstrip().startswith(("#", ";")):
                 continue
-            if "script-path=scripts/" in line or "script-path=Qidian.js" in line:
+            if (
+                "script-path=scripts/" in line
+                or "script-path=Qidian.js" in line
+                or "raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/Qidian.js" in line
+            ):
                 continue
             for rx in LEGACY_TOKENS:
                 if re.search(rx, line):

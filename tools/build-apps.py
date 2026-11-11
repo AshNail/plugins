@@ -543,10 +543,16 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
         lines += render_enhance(enh, where, roots, active=active_enh)
     # legacy vendored 引擎指针必须真实落盘：相对 script-path 在 build 期就验存在——
     # 生成一个引用不存在文件的插件等于生成一个静默不执行的绑定（比不引用更糟）。
-    blob = "\n".join(lines)
-    for rel in sorted(set(re.findall(r"script-path=((?:scripts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.js)", blob))):
-        if not (ROOT / "plugins" / slug / rel).exists():
-            raise BuildError(f"{where}: legacy 绑定引用的 vendored 脚本不存在: plugins/{slug}/{rel}")
+    raw_prefix = f"https://raw.githubusercontent.com/AshNail/plugins/main/plugins/{slug}/"
+    for line in lines:
+        if line.lstrip().startswith(("#", ";")):
+            continue
+        m = re.search(r"script-path=([^,\s]+)", line)
+        if m:
+            ref = m.group(1)
+            rel = ref[len(raw_prefix):] if ref.startswith(raw_prefix) else ref
+            if not (ROOT / "plugins" / slug / rel).exists():
+                raise BuildError(f"{where}: legacy 绑定引用的 vendored 脚本不存在: plugins/{slug}/{rel}")
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
@@ -561,9 +567,11 @@ BIND_KINDS = {"request", "response", "cron", "generic"}
 # [Argument] 控件白名单：官方只定义 switch / input / select 三类。app-json 源目前只用到
 # switch 与 input（input 用于 CRONEXP/TIMEOUT 这类文本参数，见 config 范式的 QDREADER_* 体系）。
 ARG_TYPES = ("switch", "input")
-# legacy（旧式）绑定的 vendored 引擎指针：只能是插件目录内的相对路径，禁远程 URL——
-# 旧式 script-path 一旦指向远程，就变成第三方热更依赖，与「本仓自包含」纪律冲突。
-VENDORED_PATH_RE = re.compile(r"^(?:scripts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.js$")
+# legacy（旧式）绑定的 vendored 引擎指针：相对路径或本仓 main 分支 raw 绝对路径
+# （Loon 在安装订阅插件时仅对远程完整 URL 自动下载到本地缓存并执行；相对路径在远端安装时会落空）
+VENDORED_PATH_RE = re.compile(
+    r"^(?:(?:scripts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.js|https://raw\.githubusercontent\.com/AshNail/plugins/main/plugins/[A-Za-z0-9_-]+/(?:scripts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.js)$"
+)
 # legacy 绑定里的 [Argument] 占位：旧语法用 {NAME} 指代参数（config 有效基线的逐字形状）。
 TIMEOUT_PH = "{TIMEOUT}"
 CRON_PH = "{CRONEXP}"
@@ -686,10 +694,10 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
             raise BuildError(f"{where}: bindings[{bid}].kind {kind!r} 不在 {sorted(BIND_KINDS)}")
         legacy = b.get("legacy") is True
         if legacy:
-            # config 范式的引擎绑定：本体 vendored 相对路径 + 旧语法 {NAME} 占位参数。
+            # config 范式的引擎绑定：本体 vendored 相对路径/本仓 raw 绝对路径 + 旧语法 {NAME} 占位参数。
             if not VENDORED_PATH_RE.match(b.get("path", "")):
                 raise BuildError(
-                    f"{where}: bindings[{bid}].path 需为相对 vendored 指针/(?:scripts/)?<name>.js: {b.get('path')!r}"
+                    f"{where}: bindings[{bid}].path 需为相对 vendored 指针/(?:scripts/)?<name>.js 或本仓 raw URL: {b.get('path')!r}"
                 )
             if b.get("args"):
                 raise BuildError(
