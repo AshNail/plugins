@@ -1,7 +1,7 @@
-#!name=起点读书 · 看书激励助手 v4.2.7
-#!desc=起点全能助手 Pro（移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：净化主通道是常开的 [Rewrite] v2 原生复写，v4.2.7 共 18 条（1 条 request 强制明文 + 17 条 response 字段级净化）——CAPTURE_ENABLE 在 v4.0.0 移植 config 参数层时已移除，现仅存于版本沿革注释，不构成开关。v4.1.0 按真机 HAR 466 重写过 15 条：删 8 条零命中端点、6 条空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框删 getTopOperation 的 MainInfo+Items，我的页按 v4.1.1 真机裁决只删 4 个营销键（删满 13 个会白屏），每日导读按用户裁决保留。v4.2.0 新增 mainPage 福利中心精简（只留广告激励模块 + 7 个身份标量防白屏）；v4.2.1 按追加裁决再剔除 SurpriseBenefit 整模块与 VideoRewardTab 里的两条单次激励条目；v4.2.2 将 script-path 指向 GitHub raw 绝对 URL；v4.2.4 恢复书架悬浮广告挂件（点币狂欢送）原生复写净化 kill-hoveradv；v4.2.5 修复限时激励日志与延迟变量引用；v4.2.7 增加限时激励多候选参数与 v1/v2 端点探测及重放就绪引导。每条规则都带 evidence，由 tools/qidian-har-evidence.py --check 反向钉住。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检/手动激励、深度净化；深度净化标 probe=true，与同 URL 复写按官方互斥语义共存（复写命中即抑制脚本）。限时激励任务（【限时】广告·加点！）全自动支持：自动解析 ReadingPageTaskModule 当前解锁任务并执行多候选参数与 v1/v2 端点请求，遇到服务端需真机看播时自动标记重放就绪并引导在 App 内点击[去完成]1次自动重放补满。Cookie 捕获与自动化任务默认开，服务端风控后果自担。
+#!name=起点读书 · 看书激励助手 v4.2.8
+#!desc=起点全能助手 Pro（移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：净化主通道是常开的 [Rewrite] v2 原生复写，v4.2.8 共 18 条（1 条 request 强制明文 + 17 条 response 字段级净化）——CAPTURE_ENABLE 在 v4.0.0 移植 config 参数层时已移除，现仅存于版本沿革注释，不构成开关。v4.1.0 按真机 HAR 466 重写过 15 条：删 8 条零命中端点、6 条空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框删 getTopOperation 的 MainInfo+Items，我的页按 v4.1.1 真机裁决只删 4 个营销键（删满 13 个会白屏），每日导读按用户裁决保留。v4.2.0 新增 mainPage 福利中心精简（只留广告激励模块 + 7 个身份标量防白屏）；v4.2.1 按追加裁决再剔除 SurpriseBenefit 整模块与 VideoRewardTab 里的两条单次激励条目；v4.2.2 将 script-path 指向 GitHub raw 绝对 URL；v4.2.4 恢复书架悬浮广告挂件（点币狂欢送）原生复写净化 kill-hoveradv；v4.2.5 修复限时激励日志与延迟变量引用；v4.2.8 增加限时激励多候选参数与 v1/v2 端点探测及重放就绪引导。每条规则都带 evidence，由 tools/qidian-har-evidence.py --check 反向钉住。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检/手动激励、深度净化；深度净化标 probe=true，与同 URL 复写按官方互斥语义共存（复写命中即抑制脚本）。限时激励任务（【限时】广告·加点！）全自动支持：自动解析 ReadingPageTaskModule 当前解锁任务并执行多候选参数与 v1/v2 端点请求，遇到服务端需真机看播时自动标记重放就绪并引导在 App 内点击[去完成]1次自动重放补满。Cookie 捕获与自动化任务默认开，服务端风控后果自担。
 #!author=edy
-#!version=4.2.7
+#!version=4.2.8
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qidian/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/8e/f8/13/8ef8132f-e3d6-84c2-5157-e85a8d4c75d0/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
@@ -12,8 +12,9 @@
 #!source=60a9c1e72b00fe908b80bc3e402450b3b8caa330e7ebcfd4599b0d512e856bdf
 
 # ========================================================================
-# 起点读书 · 看书激励助手 v4.2.7
+# 起点读书 · 看书激励助手 v4.2.8
 # ------------------------------------------------------------------------
+# v4.2.8 限时激励状态透明化（用户 2026-11-11 20:38 取证驱动）：针对已完成当轮或处于锁定状态时控制台静默跳过导致用户感知不到执行的问题，增强限时任务状态可观测性，控制台显式打印「已完成 N 轮 (下一轮解锁条件)」或「暂无任务」，使自动化过程透明清晰。
 # v4.2.7 逆向对齐真机看播完成结构（用户 2026-11-11 20:06 & HAR 490 取证驱动）：分析用户提供的 490_1794399144930.har 真实看播结单请求（entry 13 POST /argus/api/v1/video/adv/finishWatch），限时任务（ReadingPageTaskModule）真实请求体为 banId=0&gradientLevel=0&h5=0&oneOff=1&taskId=...&type=1。修复 v4.2.6 探测 v2 端点被签名服务 api.120399.xyz 白名单拦截（返回 444 url 不在允许的接口列表内）的问题，彻底移除 v2 探测，精准对齐真机 6 字段参数；真机证据显示 Loon 原生 handleReplay 重放机制完美生效（单次看播后自动补齐重放至 Process=5，首轮加点章节卡已全额到账），双通道机制闭环验证。
 # v4.2.6 限时激励任务多候选降级与重放就绪引导（用户 2026-11-11 19:26 取证驱动）：针对部分账号限时任务（ReadingPageTaskModule，TaskType 300）直接调 finishWatch 接口返回「失败」的问题，新增多候选参数探测（含 subTaskId/taskType/taskRawId/readingPageFlag 完整参数候选与 TaskRawId 降级）及 v1/v2 双端点支持，并输出服务端原始诊断信息；当接口因风控需真机播放广告时，结果清晰引导「需App内点[去完成]1次(自动重放已就绪)」，由 Loon 的 handleReplay 自动拦截重放补满剩余轮次。
 # v4.2.5 修复限时激励日志与延迟变量引用（用户 2026-11-11 19:16 取证驱动）：修复 v4.2.4 在高阶引擎注入 _executeLimitedAdvTasks 时 logger 变量缺少 _0x 前缀导致的 ReferenceError（Can't find variable: _552e0a），新增内部安全容错包装（_log/_warn/_delay/_result），自动检测上下文宿主与混淆环境，降级保护确保在任何宿主与引擎作用域下稳定执行，完成 3 轮广告自动提交并展示限时激励任务结果。

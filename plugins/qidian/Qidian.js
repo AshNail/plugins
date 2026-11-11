@@ -1195,6 +1195,7 @@ async function _executeLimitedAdvTasks(_0xclient) {
     const _module = _biz["data"] && _biz["data"]["ReadingPageTaskModule"];
     const _taskList = _module && _module["TaskList"];
     if (!Array.isArray(_taskList) || !_taskList.length) {
+      _log("[限时激励] 暂无阅读页限时任务");
       return _result(_taskName, true, "无需完成或无任务");
     }
 
@@ -1207,8 +1208,12 @@ async function _executeLimitedAdvTasks(_0xclient) {
     });
 
     if (!_activeTasks.length) {
-      const hasDone = _taskList.some(t => t["IsFinished"] === 1 || t["IsReceived"] === 1);
-      return _result(_taskName, true, hasDone ? "任务已完成" : "未解锁");
+      const doneCount = _taskList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length;
+      const lockedTask = _taskList.find(t => t["ReadingPageFlag"] !== 0);
+      const lockedTip = lockedTask ? (lockedTask["Subtitle"] || lockedTask["ActionText"] || "需阅读解锁") : "";
+      const statusText = doneCount > 0 ? ("已完成 " + doneCount + " 轮" + (lockedTip ? " (" + lockedTip + ")" : "")) : "未解锁";
+      _log("[限时激励] " + statusText);
+      return _result(_taskName, true, doneCount > 0 ? "任务已完成" : "未解锁");
     }
 
     let _successCount = 0;
