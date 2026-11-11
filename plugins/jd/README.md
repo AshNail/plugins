@@ -1,12 +1,12 @@
-# 京东 · 去广告（自建广告交易层）
+# 京东 · 去广告（自建广告交易层） v1.0.3
 
-> 京东 App：可 DNS 切断的是自建广告交易/点击监测域（生效：dsp-x 京媒 SDK、ads-union、ccc-x、addata、skdisplay；默认关：x.jd.com 族、埋点日志族）。首页/搜索信息流广告与商品同 API、同图床（mapi.m.jd.com、img*.360buyimg.com、img-x.jd.com），DNS 不可分；交易/风控/登录/推送/客服零接触。零证书，不提供 MITM 层。
+> 京东自建广告交易、京媒联盟与点击监测域 DNS 黑洞拦截；交易支付与风控绝对放行。零证书。
 
 版本 **1.0.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 jd.plugin](https://img.shields.io/badge/Loon-导入%E4%BA%AC%E4%B8%9C%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E8%87%AA%E5%BB%BA%E5%B9%BF%E5%91%8A%E4%BA%A4%E6%98%93%E5%B1%82%EF%BC%89-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fjd%2Fjd.plugin)
+[![一键导入 jd.plugin](https://img.shields.io/badge/Loon-导入%E4%BA%AC%E4%B8%9C%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E8%87%AA%E5%BB%BA%E5%B9%BF%E5%91%8A%E4%BA%A4%E6%98%93%E5%B1%82%EF%BC%89%20v1.0.3-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fjd%2Fjd.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/jd/jd.plugin

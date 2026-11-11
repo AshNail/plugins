@@ -1,6 +1,6 @@
 # 起点读书 · 看书激励助手 v4.2.9
 
-> 起点全能助手 Pro（移植自 3kaiu/config 的 Plugin/qidian.plugin 与 Scripts/Qidian.js）：净化主通道是常开的 [Rewrite] v2 原生复写，v4.2.9 共 18 条（1 条 request 强制明文 + 17 条 response 字段级净化）——CAPTURE_ENABLE 在 v4.0.0 移植 config 参数层时已移除，现仅存于版本沿革注释，不构成开关。v4.1.0 按真机 HAR 466 重写过 15 条：删 8 条零命中端点、6 条空转规则、4 条会打断签到/兑换/青少年模式的功能面规则；书架红框删 getTopOperation 的 MainInfo+Items，我的页按 v4.1.1 真机裁决只删 4 个营销键（删满 13 个会白屏），每日导读按用户裁决保留。v4.2.0 新增 mainPage 福利中心精简（只留广告激励模块 + 7 个身份标量防白屏）；v4.2.1 按追加裁决再剔除 SurpriseBenefit 整模块与 VideoRewardTab 里的两条单次激励条目；v4.2.2 将 script-path 指向 GitHub raw 绝对 URL；v4.2.4 恢复书架悬浮广告挂件（点币狂欢送）原生复写净化 kill-hoveradv；v4.2.5 修复限时激励日志与延迟变量引用；v4.2.9 增加限时激励多候选参数与 v1/v2 端点探测及重放就绪引导。每条规则都带 evidence，由 tools/qidian-har-evidence.py --check 反向钉住。[Script] 保持 config 七条绑定：finishWatch 重放、Token 获取、getlogininfo Cookie 捕获、cron 自动签到、generic 手动自检/手动激励、深度净化；深度净化标 probe=true，与同 URL 复写按官方互斥语义共存（复写命中即抑制脚本）。限时激励任务（【限时】广告·加点！）全自动支持：自动解析 ReadingPageTaskModule 当前解锁任务并执行多候选参数与 v1/v2 端点请求，遇到服务端需真机看播时自动标记重放就绪并引导在 App 内点击[去完成]1次自动重放补满。Cookie 捕获与自动化任务默认开，服务端风控后果自担。
+> 起点读书开屏与页面广告原生复写清理，福利中心精简，全自动看书激励、签到与每日任务助手。
 
 版本 **4.2.9** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
 

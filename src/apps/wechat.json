@@ -1,7 +1,7 @@
 {
   "slug": "wechat",
-  "name": "微信 · 广告素材黑洞",
-  "desc": "微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。",
+  "name": "微信 · 广告素材黑洞 v1.1.8",
+  "desc": "微信广点通与优量汇广告素材 CDN 专用主机黑洞拦截；核心通讯、朋友圈、支付域绝对放行。零证书。",
   "version": "1.1.8",
   "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
@@ -16,12 +16,42 @@
     "频道情报核对（2026-10-30）：「广告必须死」公开频道（GitCube / Aa28413761）清单含 wxs.qq.com 整域与 mp.weixin.qq.com 路径改写。前者是微信核心静态资源域（本插件素材组只精确到 wxsnsdy/wxa/wximg/wxsmw 等子主机，不碰整域），后者是公众号正文域且已列红线；路径改写需 MITM 微信核心链路，按证书固定类 App 红线零证书（lint APP_NO_ENHANCE_SLUGS 锁定），两条均拒收。频道里的 badjs.weixinbridge.com 已在 telemetry 默认关组，无需重复。"
   ],
   "redlines": [
-    {"domain": "sns.weixin.qq.com", "kind": "host", "quote": "sns.weixin.qq.com（真机证实 NXDOMAIN，不存在）", "why": "真机证实 NXDOMAIN，不存在"},
-    {"domain": "weixin110.qq.com", "kind": "host", "quote": "weixin110.qq.com", "why": "安全中心"},
-    {"domain": "mp.weixin.qq.com", "kind": "host", "quote": "mp.weixin.qq.com", "why": "公众号正文"},
-    {"domain": "wechat.com", "kind": "family", "quote": "*.wechat.com 收发与支付", "why": "消息收发与支付"},
-    {"domain": "gtimg.com", "kind": "family", "quote": "*.gtimg.com 通用 CDN 整域", "why": "腾讯通用 CDN 整域（pgdt.gtimg.cn 是另一个 TLD，精确主机不受本条约束）"},
-    {"domain": "ads.privacy.qq.com", "kind": "host", "quote": "ads.privacy.qq.com 必须放行——广点通隐私/合规入口，拦了反而触发 SDK 异常逻辑（217heidai issue #175 教训）", "why": "广点通隐私/合规入口，拦了反而触发 SDK 异常逻辑"}
+    {
+      "domain": "sns.weixin.qq.com",
+      "kind": "host",
+      "quote": "sns.weixin.qq.com（真机证实 NXDOMAIN，不存在）",
+      "why": "真机证实 NXDOMAIN，不存在"
+    },
+    {
+      "domain": "weixin110.qq.com",
+      "kind": "host",
+      "quote": "weixin110.qq.com",
+      "why": "安全中心"
+    },
+    {
+      "domain": "mp.weixin.qq.com",
+      "kind": "host",
+      "quote": "mp.weixin.qq.com",
+      "why": "公众号正文"
+    },
+    {
+      "domain": "wechat.com",
+      "kind": "family",
+      "quote": "*.wechat.com 收发与支付",
+      "why": "消息收发与支付"
+    },
+    {
+      "domain": "gtimg.com",
+      "kind": "family",
+      "quote": "*.gtimg.com 通用 CDN 整域",
+      "why": "腾讯通用 CDN 整域（pgdt.gtimg.cn 是另一个 TLD，精确主机不受本条约束）"
+    },
+    {
+      "domain": "ads.privacy.qq.com",
+      "kind": "host",
+      "quote": "ads.privacy.qq.com 必须放行——广点通隐私/合规入口，拦了反而触发 SDK 异常逻辑（217heidai issue #175 教训）",
+      "why": "广点通隐私/合规入口，拦了反而触发 SDK 异常逻辑"
+    }
   ],
   "sdks": [
     "gdt"

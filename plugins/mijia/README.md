@@ -1,12 +1,12 @@
-# 米家 · 去广告（小米广告平台层）
+# 米家 · 去广告（小米广告平台层） v1.1.4
 
-> 如实定位:米家 App 首页运营卡片/商城推荐为第一方内嵌(api.io.mi.com 响应体),DNS 不可分。本插件黑洞小米统一广告平台(*.ad.xiaomi.com/o2o/有品推荐)——对 MIUI/澎湃系统投放有效,iOS 米家是否调用该平台未经抓包证实。设备控制/账号/推送域名零接触。零证书。
+> 米家接入的小米统一广告平台及有品商业化推荐域 DNS 黑洞拦截；设备控制与账号推送绝对放行。零证书。
 
 版本 **1.1.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 mijia.plugin](https://img.shields.io/badge/Loon-导入%E7%B1%B3%E5%AE%B6%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%B0%8F%E7%B1%B3%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E5%B1%82%EF%BC%89-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmijia%2Fmijia.plugin)
+[![一键导入 mijia.plugin](https://img.shields.io/badge/Loon-导入%E7%B1%B3%E5%AE%B6%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%B0%8F%E7%B1%B3%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E5%B1%82%EF%BC%89%20v1.1.4-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmijia%2Fmijia.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mijia/mijia.plugin

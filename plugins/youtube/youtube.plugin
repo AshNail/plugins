@@ -1,5 +1,5 @@
-#!name=YouTube · 广告字段清理（原生复写）
-#!desc=不复制可莉 YouTube 脚本：默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——对 www.youtube.com 的 pagead/、api/stats/(ads|atr|qoe)、ptracking、error_204 以及 youtubei.googleapis.com 的 youtubei/v1/log_event 请求直接 reject_dict(200) 终止，对 youtubei.googleapis.com 的 browse/next/player/search 等 JSON 响应使用原生 response.json.jq 递归删除 adPlacements/playerAds/adSlots 等广告字段；不改播放地址、不碰 googlevideo 传输、零 JS 脚本。前置：需已安装并信任 Loon 证书。
+#!name=YouTube · 广告字段清理（原生复写） v1.2.2
+#!desc=YouTube 广告跟踪请求直接阻断，首页、搜索与播放器推荐广告字段原生 jq 过滤；不改音视频流，零JS脚本。
 #!author=edy
 #!version=1.2.2
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=155b89ed5ed7d346a08223292de55fa62ff1c232d699223ca653555a41485e63
 
 # ========================================================================
-# YouTube · 广告字段清理（原生复写）
+# YouTube · 广告字段清理（原生复写） v1.2.2
 # ------------------------------------------------------------------------
 # 红线：*.youtube.com / *.googlevideo.com / *.ytimg.com / youtubei.googleapis.com 承载登录、播放、缩略图与 API；本插件只做 youtubei JSON 广告字段清理，不黑洞整域，不改播放地址。
 # v1.2.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 3 条原生复写规则 + 配套 QUIC 回退，并将 youtubei/v1/log_event 高频遥测上报移至 request 阶段直接 reject_dict(200) 阻断出网。

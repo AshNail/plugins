@@ -1,5 +1,5 @@
-#!name=米家 · 去广告（小米广告平台层）
-#!desc=如实定位:米家 App 首页运营卡片/商城推荐为第一方内嵌(api.io.mi.com 响应体),DNS 不可分。本插件黑洞小米统一广告平台(*.ad.xiaomi.com/o2o/有品推荐)——对 MIUI/澎湃系统投放有效,iOS 米家是否调用该平台未经抓包证实。设备控制/账号/推送域名零接触。零证书。
+#!name=米家 · 去广告（小米广告平台层） v1.1.4
+#!desc=米家接入的小米统一广告平台及有品商业化推荐域 DNS 黑洞拦截；设备控制与账号推送绝对放行。零证书。
 #!author=edy
 #!version=1.1.4
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=120e873e43de8c10bb739615d8f888c16a8d8c03f319c9f098e1211ed00a1342
 
 # ========================================================================
-# 米家 · 去广告（小米广告平台层）
+# 米家 · 去广告（小米广告平台层） v1.1.4
 # ------------------------------------------------------------------------
 # 红线（误伤=掉设备,任何组绝不出现）：api.io.mi.com / app.io.mi.com / center.io.mi.com / token.io.mi.com / ot.io.mi.com / iothub.io.mi.com / account.xiaomi.com 系 / api.xmpush.xiaomi.com 系（营销推送与设备推送同通道,不可选择性拦截）/ miot-spec.org。
 # 米家证书固定 + IoT 控制安全 → 明确不做 MITM;首页卡片/有品推荐/场景推荐随主 API 下发,DNS 层无解。

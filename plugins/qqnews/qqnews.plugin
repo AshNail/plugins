@@ -1,5 +1,5 @@
-#!name=腾讯新闻 · 广告字段清理（原生复写）
-#!desc=不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。
+#!name=腾讯新闻 · 广告字段清理（原生复写） v1.1.2
+#!desc=腾讯新闻开屏、列表及专题广告原生复写清理，保留正文内容与互动功能。
 #!author=edy
 #!version=1.1.2
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=1123633066c7ed18b0e7ba0695c4b733ea751eef94734977d18c2135233287e1
 
 # ========================================================================
-# 腾讯新闻 · 广告字段清理（原生复写）
+# 腾讯新闻 · 广告字段清理（原生复写） v1.1.2
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：news.ssp.qq.com 是腾讯新闻开屏页与频道配置接口主机；r.inews.qq.com 是腾讯新闻要闻/频道/专题/评论接口主机，正文与广告同主机——DNS 黑洞整域 = 新闻页白屏重试。本插件不做 [Host] 整域黑洞，只做路径级与字段级 Loon 原生 [Rewrite] v2 清理（需装 Loon 证书）。
 # v1.1.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 3 条原生复写规则 + 配套 QUIC 回退，解决远程订阅插件无法手工取消 # 注释导致 0 生效的问题；列表接口 adList 改用原生 response.json.replace("adList", null)，不依赖 jq 即可在 iOS/macOS 全平台置空。

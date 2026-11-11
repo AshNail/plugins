@@ -1,5 +1,5 @@
-#!name=京东 · 去广告（自建广告交易层）
-#!desc=京东 App：可 DNS 切断的是自建广告交易/点击监测域（生效：dsp-x 京媒 SDK、ads-union、ccc-x、addata、skdisplay；默认关：x.jd.com 族、埋点日志族）。首页/搜索信息流广告与商品同 API、同图床（mapi.m.jd.com、img*.360buyimg.com、img-x.jd.com），DNS 不可分；交易/风控/登录/推送/客服零接触。零证书，不提供 MITM 层。
+#!name=京东 · 去广告（自建广告交易层） v1.0.3
+#!desc=京东自建广告交易、京媒联盟与点击监测域 DNS 黑洞拦截；交易支付与风控绝对放行。零证书。
 #!author=edy
 #!version=1.0.3
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=6c374cf0b06364a78850470299fe36d35bd5fb7a02b611804318511ea2ce1226
 
 # ========================================================================
-# 京东 · 去广告（自建广告交易层）
+# 京东 · 去广告（自建广告交易层） v1.0.3
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：mapi.m.jd.com / api.m.jd.com（移动 API 网关）、janapi.jd.com（App 数据请求网关）、cactus.jd.com（h5st 风控签名 /request_algo，拦=下单/搜索签名失败）、passport.jd.com（登录）、jpushjd.m.jd.com（推送）、msg.m.jd.com（消息/登录凭证，wskey 抓取教程显示与 im-x 同链路）、chat1.jd.com（客服）、dns.jd.com / blackhole.m.jd.com / h5speed.m.jd.com / gia(s).jd.com（解析/监控/加速）、kepler.jd.com（开普勒 H5 容器）、dgstatic.jd.com（静态资源）、wl.jd.com（物流）、policy.jd.com（规则页）、cps.360buy.com（联盟 CPS 结算）、jrclick.jd.com（金融业务点击）、union.jd.com（联盟站）。
 # 商品图 CDN 必须放行：360buyimg.com / img2.360buyimg.com / img-x.jd.com——AWAvenue-Ads-Rule issue #197 明确把 img2/img-x 标为商品详情页图片必需并加 allowlist；黑洞会白图。

@@ -1,12 +1,12 @@
-# MBA大师 · 去广告
+# MBA大师 · 去广告 v1.0.2
 
-> MBA大师（mbajm）开屏走穿山甲,课程列表插屏走优量汇;讲义/题库内嵌不可分。看广告领课程依赖这些 SDK——启用即断。零证书。
+> MBA大师穿山甲与优量汇开屏、插屏广告黑洞拦截；讲义与题库核心功能零接触。零证书。
 
 版本 **1.0.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 mba-dashi.plugin](https://img.shields.io/badge/Loon-导入MBA%E5%A4%A7%E5%B8%88%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmba-dashi%2Fmba-dashi.plugin)
+[![一键导入 mba-dashi.plugin](https://img.shields.io/badge/Loon-导入MBA%E5%A4%A7%E5%B8%88%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20v1.0.2-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmba-dashi%2Fmba-dashi.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mba-dashi/mba-dashi.plugin

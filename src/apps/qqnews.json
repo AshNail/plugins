@@ -1,7 +1,7 @@
 {
   "slug": "qqnews",
-  "name": "腾讯新闻 · 广告字段清理（原生复写）",
-  "desc": "不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。",
+  "name": "腾讯新闻 · 广告字段清理（原生复写） v1.1.2",
+  "desc": "腾讯新闻开屏、列表及专题广告原生复写清理，保留正文内容与互动功能。",
   "version": "1.1.2",
   "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",

@@ -1,7 +1,7 @@
 {
   "slug": "x",
-  "name": "X · 广告像素与遥测瘦身",
-  "desc": "如实定位:X 时间线推广推文与正常内容同 API 同 CDN(pbs/video.twimg.com),DNS 层 App 内广告减少≈0。本插件黑洞广告像素/嵌入 syndication/广告后台域——隐私收益真实,广告数量不变。零证书。",
+  "name": "X · 广告像素与遥测瘦身 v1.0.3",
+  "desc": "X (Twitter) 广告像素、网页内嵌分析与后台追踪域黑洞拦截；正常时间线与媒体传输零接触。零证书。",
   "version": "1.0.3",
   "date": "2026-11-09",
   "loonVersion": "3.5.1(983)",
@@ -12,12 +12,42 @@
     "第二轮取证复检(2026-10-28)：iOS 信息流推广与正常内容同走 api.x.com/GraphQL 响应内联,App 内无第三方 ADN(X 自有广告栈);AdguardFilters 一方跟踪清单零 twitter.com 条目;static.ads-twitter.com(X Pixel/Web 埋点)已被现有 DOMAIN-SUFFIX,ads-twitter.com 覆盖,ads-api/ads.x.com 组维持默认关——iOS DNS 层增量见底是已验证结论,不是漏查。"
   ],
   "redlines": [
-    {"domain": "t.co", "kind": "host", "quote": "t.co", "why": "短链服务"},
-    {"domain": "twimg.com", "kind": "family", "quote": "*.twimg.com", "why": "媒体 CDN 整域"},
-    {"domain": "api.twitter.com", "kind": "host", "quote": "api.twitter.com", "why": "主 API"},
-    {"domain": "x.com", "kind": "host", "quote": "x.com / twitter.com", "why": "主域"},
-    {"domain": "twitter.com", "kind": "host", "quote": "x.com / twitter.com", "why": "主域（旧）"},
-    {"domain": "api-stream.twitter.com", "kind": "host", "quote": "api-stream.twitter.com——全部核心", "why": "流式接口"}
+    {
+      "domain": "t.co",
+      "kind": "host",
+      "quote": "t.co",
+      "why": "短链服务"
+    },
+    {
+      "domain": "twimg.com",
+      "kind": "family",
+      "quote": "*.twimg.com",
+      "why": "媒体 CDN 整域"
+    },
+    {
+      "domain": "api.twitter.com",
+      "kind": "host",
+      "quote": "api.twitter.com",
+      "why": "主 API"
+    },
+    {
+      "domain": "x.com",
+      "kind": "host",
+      "quote": "x.com / twitter.com",
+      "why": "主域"
+    },
+    {
+      "domain": "twitter.com",
+      "kind": "host",
+      "quote": "x.com / twitter.com",
+      "why": "主域（旧）"
+    },
+    {
+      "domain": "api-stream.twitter.com",
+      "kind": "host",
+      "quote": "api-stream.twitter.com——全部核心",
+      "why": "流式接口"
+    }
   ],
   "sdks": [],
   "groups": [

@@ -1,12 +1,12 @@
-# 知乎 · 去广告与精简
+# 知乎 · 去广告与精简 v1.2.2
 
-> 知乎 iOS：自建遥测/分析（zhihu-web-analytics/sugar/crash2）+ 商业化数据追踪（udd1i5）零证书 DNS 黑洞；同域商业化广告接口（commercial_api/ad-style-service）、推广/预置词及首页推荐流（topstory/recommend）/关注流（moments_v3）内联广告卡片默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) + response.json.jq 字段级剥离，零 JS 脚本）；核心问答/文章/个人页/图床/推送严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+> 知乎自建遥测黑洞，开屏、商业推广、推荐流与关注流广告卡片原生复写过滤；问答文章核心功能零接触。
 
 版本 **1.2.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 zhihu.plugin](https://img.shields.io/badge/Loon-导入%E7%9F%A5%E4%B9%8E%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fzhihu%2Fzhihu.plugin)
+[![一键导入 zhihu.plugin](https://img.shields.io/badge/Loon-导入%E7%9F%A5%E4%B9%8E%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.2.2-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fzhihu%2Fzhihu.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugin

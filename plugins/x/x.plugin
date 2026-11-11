@@ -1,5 +1,5 @@
-#!name=X · 广告像素与遥测瘦身
-#!desc=如实定位:X 时间线推广推文与正常内容同 API 同 CDN(pbs/video.twimg.com),DNS 层 App 内广告减少≈0。本插件黑洞广告像素/嵌入 syndication/广告后台域——隐私收益真实,广告数量不变。零证书。
+#!name=X · 广告像素与遥测瘦身 v1.0.3
+#!desc=X (Twitter) 广告像素、网页内嵌分析与后台追踪域黑洞拦截；正常时间线与媒体传输零接触。零证书。
 #!author=edy
 #!version=1.0.3
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=8bb7473ac4d60c82363b9264fd5d305c7e9095d475b1d65a1a4788ef888a6f24
 
 # ========================================================================
-# X · 广告像素与遥测瘦身
+# X · 广告像素与遥测瘦身 v1.0.3
 # ------------------------------------------------------------------------
 # 红线（绝不进任何组）：t.co / *.twimg.com / api.twitter.com / x.com / twitter.com / api-stream.twitter.com——全部核心。
 # AdGuard 官方口径:Twitter/X 广告与内容同服务器,DNS 拦截无法阻止,只能靠浏览器内容规则（MITM 层）——超出本插件约束。

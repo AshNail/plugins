@@ -1,5 +1,5 @@
-#!name=Instagram · 像素与遥测瘦身
-#!desc=如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内原生赞助帖 DNS 层≈0。默认黑洞 Meta 广告/转化像素 SDK、已停用徽章域与真机高频 netseer 公网 IP 关联遥测(DOMAIN-KEYWORD 精准命中随机 UUID 分片);不碰 graph/gateway/fbcdn 主域。零证书。
+#!name=Instagram · 像素与遥测瘦身 v1.2.1
+#!desc=Instagram 广告与转化像素 SDK、停用徽章域及高频遥测分片黑洞拦截；主动态网关零接触。零证书。
 #!author=edy
 #!version=1.2.1
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=4ab2b87311235e4a93aa980ca2465e518a56fb17366b768fef6fc08b2ff9edcb
 
 # ========================================================================
-# Instagram · 像素与遥测瘦身
+# Instagram · 像素与遥测瘦身 v1.2.1
 # ------------------------------------------------------------------------
 # 红线（绝不进任何组）：gateway.instagram.com / graph.instagram.com / graph.facebook.com / api.facebook.com / edge-mqtt.facebook.com（推送=通知生死线）/ *.fbcdn.net 整域 / *.cdninstagram.com。
 # anti-AD 收录 graph.instagram.com 属误杀高危项——本插件明确不采。

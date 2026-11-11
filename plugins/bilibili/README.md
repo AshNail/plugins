@@ -1,12 +1,12 @@
-# 哔哩哔哩 · 去广告与精简
+# 哔哩哔哩 · 去广告与精简 v1.2.1
 
-> 哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏（含品牌/活动开屏）、导航栏、首页推荐流、视频详情页播放下相关推荐广告与搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+> 哔哩哔哩开屏、推荐流、视频页推广与搜索广场广告原生复写过滤，遥测及HTTPDNS黑洞；核心播放直播零接触。
 
 版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 bilibili.plugin](https://img.shields.io/badge/Loon-导入%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbilibili%2Fbilibili.plugin)
+[![一键导入 bilibili.plugin](https://img.shields.io/badge/Loon-导入%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.2.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbilibili%2Fbilibili.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili.plugin

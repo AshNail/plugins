@@ -1,12 +1,12 @@
-# 银行 App 聚合 · 遥测瘦身
+# 银行 App 聚合 · 遥测瘦身 v1.3.0
 
-> 覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:全面覆盖中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与招行/浦发/平安/云闪付已证实的自建商业广告专域与营销系统;登录/支付/付款码/动账提醒绝对放行(零接触红线);银行App内置SSL Pinning,纯连接层零证书零MITM安全绝育。
+> 覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:全面拦截银行自建广告专域与营销推送；登录支付绝对放行，零证书零MITM。
 
 版本 **1.3.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 banks.plugin](https://img.shields.io/badge/Loon-导入%E9%93%B6%E8%A1%8C%20App%20%E8%81%9A%E5%90%88%20%C2%B7%20%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbanks%2Fbanks.plugin)
+[![一键导入 banks.plugin](https://img.shields.io/badge/Loon-导入%E9%93%B6%E8%A1%8C%20App%20%E8%81%9A%E5%90%88%20%C2%B7%20%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB%20v1.3.0-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbanks%2Fbanks.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/banks/banks.plugin

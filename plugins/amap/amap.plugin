@@ -1,5 +1,5 @@
-#!name=高德地图 · 去广告与精简
-#!desc=高德地图 iOS/iPadOS：日志与遥测（logs/dualstack-logs/amap-aos-info-nogw/adashx）+ 商业化广告域（optimus-ads）走 [Host] 127.0.0.1 零证书黑洞；同域开屏 alimama 广告、首页推荐流、路线规划推广卡片、订单 Tip、消息中心营销推送（msgbox/pull）、ASA 归因与天气推广默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 终止，零 JS 脚本）；核心逆地理编码（apsrgeo）、基站定位（cgicol）、路线规划网关（restapi）与轨迹定位（ts）严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+#!name=高德地图 · 去广告与精简 v1.2.1
+#!desc=高德地图开屏与同域商业化广告原生复写清理，遥测及日志域黑洞拦截；核心定位导航零接触。
 #!author=edy
 #!version=1.2.1
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=2b664257016a6f56dc3961969c16985dee806e03b4be65f73ab9121be37bddde
 
 # ========================================================================
-# 高德地图 · 去广告与精简
+# 高德地图 · 去广告与精简 v1.2.1
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：restapi.amap.com 核心路线规划、地点搜索与地理编码网关 / ts.amap.com 猎鹰轨迹服务与定位上报核心 API / sns.amap.com 账号与安全服务 / apsrgeo.amap.com 逆地理编码服务，经纬度转换道路门牌地址依赖 / cgicol.amap.com 与 dualstack-cgicol.amap.com 基站定位服务，室内与隧道定位依赖。
 # 高德地图业务共享根域 *.amap.com，禁止整域通配。

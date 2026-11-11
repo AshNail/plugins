@@ -1,7 +1,7 @@
 {
   "slug": "jd",
-  "name": "京东 · 去广告（自建广告交易层）",
-  "desc": "京东 App：可 DNS 切断的是自建广告交易/点击监测域（生效：dsp-x 京媒 SDK、ads-union、ccc-x、addata、skdisplay；默认关：x.jd.com 族、埋点日志族）。首页/搜索信息流广告与商品同 API、同图床（mapi.m.jd.com、img*.360buyimg.com、img-x.jd.com），DNS 不可分；交易/风控/登录/推送/客服零接触。零证书，不提供 MITM 层。",
+  "name": "京东 · 去广告（自建广告交易层） v1.0.3",
+  "desc": "京东自建广告交易、京媒联盟与点击监测域 DNS 黑洞拦截；交易支付与风控绝对放行。零证书。",
   "version": "1.0.3",
   "date": "2026-11-06",
   "loonVersion": "3.5.1(983)",

@@ -1,5 +1,5 @@
-#!name=闲鱼 · 去广告（原生复写层）
-#!desc=闲鱼广告 100% 内嵌 goofish mtop 主网关（splash.ads / nextfresh bizType / item.recommend bizType=mamaAD 均为同域 API 名）。DNS 层阻断阿里广告 SDK 端点 iyes.youku.com 与淘宝客 Tunion 归因接口；同域 mtop 广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、cleanFeed 激进精简开关默认关，零 JS 脚本）。前置：同域复写层需已安装并信任 Loon 证书。
+#!name=闲鱼 · 去广告（原生复写层） v1.6.4
+#!desc=闲鱼开屏、推荐与活动广告原生复写清理，阿里广告 SDK 与淘客归因阻断；交易支付沟通零接触。
 #!author=edy
 #!version=1.6.4
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=13a961ce4a851b292b5505369e9414aee9ccb7c0ec298b778698b1a92dd8845e
 
 # ========================================================================
-# 闲鱼 · 去广告（原生复写层）
+# 闲鱼 · 去广告（原生复写层） v1.6.4
 # ------------------------------------------------------------------------
 # 红线：*.goofish.com / *.idlefish.com / mtop 网关域（g-acs.m.goofish.com→alibabacorp mtop ingress）全部是核心功能;acs.m.goofish.com 出现在个别模块的 REJECT 里是错误规则,打死整个 App——拒收。
 # 取证否决：m.goofish.com / awl.goofish.com 实测 NXDOMAIN（不存在）;xianyu.mobi 与 blackmatrix7 的 16 个乱码域是淘宝短链跳转服务（cname.tb.cn），拦=断分享链接;cdn.ynuf.aliapp.org=阿里无线安全 UMID 指纹,禁拦。

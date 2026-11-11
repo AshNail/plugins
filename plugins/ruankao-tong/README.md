@@ -1,12 +1,12 @@
-# 软考通 · 去广告
+# 软考通 · 去广告 v1.0.2
 
-> 软考通（ixinz 系）开屏/课程列表插屏走穿山甲+优量汇;题库内容与广告同源不可分。看广告解锁真题依赖这些 SDK——启用即断。零证书。
+> 软考通穿山甲与优量汇开屏、插屏广告黑洞拦截；真题题库核心功能零接触。零证书。
 
 版本 **1.0.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 ruankao-tong.plugin](https://img.shields.io/badge/Loon-导入%E8%BD%AF%E8%80%83%E9%80%9A%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fruankao-tong%2Fruankao-tong.plugin)
+[![一键导入 ruankao-tong.plugin](https://img.shields.io/badge/Loon-导入%E8%BD%AF%E8%80%83%E9%80%9A%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20v1.0.2-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fruankao-tong%2Fruankao-tong.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/ruankao-tong/ruankao-tong.plugin

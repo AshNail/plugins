@@ -1,5 +1,5 @@
-#!name=广告平台拦截器 · All-in-One
-#!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，App Store 3.5.2(996) 即可导入全量生效。[Host]/[Rule]/[General] 三层；DOMAIN-WILDCARD 通配/家族两层为 TF 3.5.3+ 可选注释段；默认零证书，另含默认注释的可选 MITM/URL 层（原 adfilter 并入，启用需证书）；HTTP/3 同样生效；归因/统计组默认注释。
+#!name=广告平台拦截器 · All-in-One v2.8.24
+#!desc=单插件 All-in-One：DNS 广告拦截 + HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，零证书默认全量生效。
 #!author=edy
 #!version=2.8.24
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=9201d3d3f45c80d27754fcb9a4ea489fb4d364f8d278e30141e661f1dc34f201
 
 # ============================================================================
-# 广告平台拦截器 · All-in-One
+# 广告平台拦截器 · All-in-One v2.8.24
 # ----------------------------------------------------------------------------
 # 工作机制：单插件 = [Host] DNS 广告拦截 + [Rule] HTTPDNS/DoT 兜底 + [General] IP 形式 DoH 加密解析。
 # 核心 [Host] 把广告专域、HTTPDNS/私有 DoH、公网 DoH 入口映射到 127.0.0.1；DNS 阶段生效，HTTP/3 同样拦截。

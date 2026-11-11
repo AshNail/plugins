@@ -1,12 +1,12 @@
-# 腾讯新闻 · 广告字段清理（原生复写）
+# 腾讯新闻 · 广告字段清理（原生复写） v1.1.2
 
-> 不搬 app2smile 远程 JS：腾讯新闻 iOS 的开屏/列表/专题广告位走 HTTPS JSON。本插件默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——news.ssp.qq.com/app 开屏配置请求在 request 阶段 reject_dict(200) 终止、列表接口 adList 用 response.json.replace 置 null、专题/频道 widget_list 用 response.json.jq 过滤 widget_type=ad_list；零 JS 脚本。前置：需已安装并信任 Loon 证书。
+> 腾讯新闻开屏、列表及专题广告原生复写清理，保留正文内容与互动功能。
 
 版本 **1.1.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
 
 ## 安装
 
-[![一键导入 qqnews.plugin](https://img.shields.io/badge/Loon-导入%E8%85%BE%E8%AE%AF%E6%96%B0%E9%97%BB%20%C2%B7%20%E5%B9%BF%E5%91%8A%E5%AD%97%E6%AE%B5%E6%B8%85%E7%90%86%EF%BC%88%E5%8E%9F%E7%94%9F%E5%A4%8D%E5%86%99%EF%BC%89-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqqnews%2Fqqnews.plugin)
+[![一键导入 qqnews.plugin](https://img.shields.io/badge/Loon-导入%E8%85%BE%E8%AE%AF%E6%96%B0%E9%97%BB%20%C2%B7%20%E5%B9%BF%E5%91%8A%E5%AD%97%E6%AE%B5%E6%B8%85%E7%90%86%EF%BC%88%E5%8E%9F%E7%94%9F%E5%A4%8D%E5%86%99%EF%BC%89%20v1.1.2-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqqnews%2Fqqnews.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qqnews/qqnews.plugin

@@ -1,12 +1,12 @@
-# 智慧房东 · 去广告
+# 智慧房东 · 去广告 v1.0.2
 
-> 智慧房东（uni-app 打包+多广告网络聚合）:穿山甲/优量汇/快手联盟/倍孜黑洞,开屏、插屏、信息流广告位加载失败即本插件生效方式。通通锁控门与个推收租提醒零接触。零证书。
+> 智慧房东穿山甲、优量汇、快手联盟及倍孜开屏与插屏广告黑洞拦截；门锁控制与房租管理零接触。零证书。
 
 版本 **1.0.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 zhihuifangdong.plugin](https://img.shields.io/badge/Loon-导入%E6%99%BA%E6%85%A7%E6%88%BF%E4%B8%9C%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fzhihuifangdong%2Fzhihuifangdong.plugin)
+[![一键导入 zhihuifangdong.plugin](https://img.shields.io/badge/Loon-导入%E6%99%BA%E6%85%A7%E6%88%BF%E4%B8%9C%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20v1.0.2-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fzhihuifangdong%2Fzhihuifangdong.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihuifangdong/zhihuifangdong.plugin

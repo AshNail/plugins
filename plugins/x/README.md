@@ -1,12 +1,12 @@
-# X · 广告像素与遥测瘦身
+# X · 广告像素与遥测瘦身 v1.0.3
 
-> 如实定位:X 时间线推广推文与正常内容同 API 同 CDN(pbs/video.twimg.com),DNS 层 App 内广告减少≈0。本插件黑洞广告像素/嵌入 syndication/广告后台域——隐私收益真实,广告数量不变。零证书。
+> X (Twitter) 广告像素、网页内嵌分析与后台追踪域黑洞拦截；正常时间线与媒体传输零接触。零证书。
 
 版本 **1.0.3** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 x.plugin](https://img.shields.io/badge/Loon-导入X%20%C2%B7%20%E5%B9%BF%E5%91%8A%E5%83%8F%E7%B4%A0%E4%B8%8E%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fx%2Fx.plugin)
+[![一键导入 x.plugin](https://img.shields.io/badge/Loon-导入X%20%C2%B7%20%E5%B9%BF%E5%91%8A%E5%83%8F%E7%B4%A0%E4%B8%8E%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB%20v1.0.3-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fx%2Fx.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/x/x.plugin

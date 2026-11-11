@@ -1,12 +1,12 @@
-# 美团 · 去广告
+# 美团 · 去广告 v1.3.4
 
-> 美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。
+> 美团及大众点评第三方联盟、开屏、搜索热词与购物车横幅原生复写及黑洞拦截；交易支付调度零接触。
 
 版本 **1.3.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 meituan.plugin](https://img.shields.io/badge/Loon-导入%E7%BE%8E%E5%9B%A2%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmeituan%2Fmeituan.plugin)
+[![一键导入 meituan.plugin](https://img.shields.io/badge/Loon-导入%E7%BE%8E%E5%9B%A2%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20v1.3.4-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmeituan%2Fmeituan.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.plugin

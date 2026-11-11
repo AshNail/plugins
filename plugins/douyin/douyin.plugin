@@ -1,5 +1,5 @@
-#!name=抖音 · douyin
-#!desc=抖音唯一插件 v0.9.2：福利页精简（只留【攒时长 听歌不中断】）、信息流/搜索广告条目清理（含 previewGuide/priorityDisplay 与 video_track_mix 混播卡）、商业化弹窗/商城/演出清理（兼容 upsells v1 与 v2/upsell）、激励广告开关、广告域名拦截、开屏请求与品牌响应清理、只读日志。功能用 [Argument] 开关，传输层常开（QUIC 回退 + 压缩统一 gzip + h2）。数据来自 2026-10 真实 HAR 取证。需要 Loon 3.5.1(983)+（gzip 解析需 988+）；响应头带 X-Soda-Plugin 诊断标记。
+#!name=抖音 · 净化与福利 v0.9.2
+#!desc=抖音福利页精简（攒时长听歌不中断）、信息流及搜索广告清理、商业化弹窗过滤与开屏净化；支持 [Argument] 自定义开关。
 #!author=edy
 #!version=0.9.2
 #!homepage=https://github.com/AshNail/plugins

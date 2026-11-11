@@ -1,12 +1,12 @@
-# 不背单词 · 跟踪瘦身
+# 不背单词 · 跟踪瘦身 v1.0.1
 
-> 如实结论:不背单词官方 SDK 目录(learnywhere.cn/lexis/sdklist 渲染取证)没有任何广告联盟——变现是酷币/会员内购,「去广告」对这个 App 实际=去跟踪。本插件只裁埋点组,友盟推送系默认关(拦了断签到提醒)。零证书。
+> 不背单词遥测埋点与第三方分析跟踪黑洞拦截，保留签到提醒与核心背词功能。零证书。
 
 版本 **1.0.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 bubei-danci.plugin](https://img.shields.io/badge/Loon-导入%E4%B8%8D%E8%83%8C%E5%8D%95%E8%AF%8D%20%C2%B7%20%E8%B7%9F%E8%B8%AA%E7%98%A6%E8%BA%AB-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbubei-danci%2Fbubei-danci.plugin)
+[![一键导入 bubei-danci.plugin](https://img.shields.io/badge/Loon-导入%E4%B8%8D%E8%83%8C%E5%8D%95%E8%AF%8D%20%C2%B7%20%E8%B7%9F%E8%B8%AA%E7%98%A6%E8%BA%AB%20v1.0.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbubei-danci%2Fbubei-danci.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bubei-danci/bubei-danci.plugin

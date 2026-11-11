@@ -1,12 +1,12 @@
-# 淘宝 · 去广告（原生复写层）
+# 淘宝 · 去广告（原生复写层） v1.2.4
 
-> 淘宝广告分两层：Alimama/Tanx/Simba/adashx 等独立广告域走 DNS 黑洞；开屏、推荐、活动等广告入口是 acs.m.taobao.com / guide-acs.m.taobao.com 的 mtop 路径，默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开）——10 条广告 mtop 路径在 request 阶段 reject_dict(200) 终止，开屏大图路径用 reject_img(200) 返回 1px 透明图；不包含上游 JS，交易/登录/支付红线不动。前置：同域复写层需已安装并信任 Loon 证书。
+> 淘宝阿里妈妈/Tanx/Simba等独立广告域黑洞，开屏、推荐与活动广告原生复写清理；交易支付风控零接触。
 
 版本 **1.2.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 taobao.plugin](https://img.shields.io/badge/Loon-导入%E6%B7%98%E5%AE%9D%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%8E%9F%E7%94%9F%E5%A4%8D%E5%86%99%E5%B1%82%EF%BC%89-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Ftaobao%2Ftaobao.plugin)
+[![一键导入 taobao.plugin](https://img.shields.io/badge/Loon-导入%E6%B7%98%E5%AE%9D%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%8E%9F%E7%94%9F%E5%A4%8D%E5%86%99%E5%B1%82%EF%BC%89%20v1.2.4-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Ftaobao%2Ftaobao.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plugin

@@ -1,12 +1,12 @@
-# 高德地图 · 去广告与精简
+# 高德地图 · 去广告与精简 v1.2.1
 
-> 高德地图 iOS/iPadOS：日志与遥测（logs/dualstack-logs/amap-aos-info-nogw/adashx）+ 商业化广告域（optimus-ads）走 [Host] 127.0.0.1 零证书黑洞；同域开屏 alimama 广告、首页推荐流、路线规划推广卡片、订单 Tip、消息中心营销推送（msgbox/pull）、ASA 归因与天气推广默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开，request 阶段 reject_dict(200) 终止，零 JS 脚本）；核心逆地理编码（apsrgeo）、基站定位（cgicol）、路线规划网关（restapi）与轨迹定位（ts）严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+> 高德地图开屏与同域商业化广告原生复写清理，遥测及日志域黑洞拦截；核心定位导航零接触。
 
 版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 amap.plugin](https://img.shields.io/badge/Loon-导入%E9%AB%98%E5%BE%B7%E5%9C%B0%E5%9B%BE%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Famap%2Famap.plugin)
+[![一键导入 amap.plugin](https://img.shields.io/badge/Loon-导入%E9%AB%98%E5%BE%B7%E5%9C%B0%E5%9B%BE%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.2.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Famap%2Famap.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin

@@ -1,7 +1,7 @@
 {
   "slug": "ruankao-tong",
-  "name": "软考通 · 去广告",
-  "desc": "软考通（ixinz 系）开屏/课程列表插屏走穿山甲+优量汇;题库内容与广告同源不可分。看广告解锁真题依赖这些 SDK——启用即断。零证书。",
+  "name": "软考通 · 去广告 v1.0.2",
+  "desc": "软考通穿山甲与优量汇开屏、插屏广告黑洞拦截；真题题库核心功能零接触。零证书。",
   "version": "1.0.2",
   "date": "2026-11-07",
   "loonVersion": "3.5.1(983)",
@@ -13,8 +13,18 @@
     "本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。"
   ],
   "redlines": [
-    {"domain": "www.ixinz.com", "kind": "host", "quote": "www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰", "why": "课程/题库内容分发"},
-    {"domain": "s2.ixinz.com", "kind": "family", "quote": "www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰", "why": "题库内容分发整族"}
+    {
+      "domain": "www.ixinz.com",
+      "kind": "host",
+      "quote": "www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰",
+      "why": "课程/题库内容分发"
+    },
+    {
+      "domain": "s2.ixinz.com",
+      "kind": "family",
+      "quote": "www.ixinz.com 与 *.s2.ixinz.com 是课程/题库内容分发域,绝不碰",
+      "why": "题库内容分发整族"
+    }
   ],
   "sdks": [
     "pangle",

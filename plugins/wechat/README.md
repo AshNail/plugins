@@ -1,12 +1,12 @@
-# 微信 · 广告素材黑洞
+# 微信 · 广告素材黑洞 v1.1.8
 
-> 微信进程内广点通/优量汇 SDK 基建 + 朋友圈/视频号广告素材主机黑洞。素材域全 A 级（反编译+现网 DNS 证实）：拦下后广告位空白、占位保留——朋友圈条目本身不可移除（mmtls 内联，DNS 层天花板）。零证书，不动任何微信核心域。
+> 微信广点通与优量汇广告素材 CDN 专用主机黑洞拦截；核心通讯、朋友圈、支付域绝对放行。零证书。
 
 版本 **1.1.8** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 wechat.plugin](https://img.shields.io/badge/Loon-导入%E5%BE%AE%E4%BF%A1%20%C2%B7%20%E5%B9%BF%E5%91%8A%E7%B4%A0%E6%9D%90%E9%BB%91%E6%B4%9E-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fwechat%2Fwechat.plugin)
+[![一键导入 wechat.plugin](https://img.shields.io/badge/Loon-导入%E5%BE%AE%E4%BF%A1%20%C2%B7%20%E5%B9%BF%E5%91%8A%E7%B4%A0%E6%9D%90%E9%BB%91%E6%B4%9E%20v1.1.8-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fwechat%2Fwechat.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/wechat/wechat.plugin

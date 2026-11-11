@@ -1,5 +1,5 @@
-#!name=汽水音乐 · soda
-#!desc=汽水音乐全能助手 v3.3.3(补齐 sanitize 对 v2/upsell 与 //luna/advert/fallback/done/info 绑定 + auto-task.js gzip 解码与过期头剥离 + homepage-tabs 编码与布尔开关守卫):整合去广告 + 激励任务自动化v2(MITM响应注入)。基于 REA 21.4.0 二进制逆向 + HAR 抓包深度分析。核心发现:time_token/nonce 每次动态生成,纯重放不可行;设备已被风控(err_no=210021)。方案:拦截 Pangle 广告→伪造完成→增强 incentive/done 奖励→注入签到成功。开关收敛:16→9。支持 Bundle ID 变化(com.luna.music → com.soda.music)。v3.2.0 传输层:真机日志取证显示汽水 API 的真实入口是 api<n>-<shard>.qishui.com 分片(api3/api5 × hl/lf/lq + conf5-lf,2026-10-29 单份日志 747 次 SNI,而 api.qishui.com 只有 34 次),v3.3.1 已撤出 7 台固定证书的 API 分片 MITM。v3.3.0 净化面与 kelee SodaMusic_remove_ads.lpx 逐条对账:采纳 5 条端点(media_ads / activities / listen-video·reminder 引擎侧 reject_dict(200),me 剥 reward_ad_banner,more-panel 摘 related_video 块),sanitize 补 luna/card 的 previewGuide/priorityDisplay 与 song-tab 的 video_track_mix 混播卡。致谢:起点读书 finishWatch 重放机制启发。
+#!name=汽水音乐 · 全能助手 v3.3.3
+#!desc=汽水音乐去广告与福利自动化：信息流广告过滤、弹窗清理、音质解锁与激励任务增强；支持 [Argument] 自定义开关。
 #!author=edy
 #!version=3.3.3
 #!homepage=https://github.com/AshNail/plugins

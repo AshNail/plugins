@@ -1,5 +1,5 @@
-#!name=美团 · 去广告
-#!desc=美团/点评：iOS 官方 SDK 目录实证第三方变现 = Sigmob/ToBid/美数（穿山甲/优量汇仅 Android）+ 自建广告端点 impdsp/mads + 纯遥测家族黑洞；同域开屏接口、共享图床广告目录图片、搜索热词与购物车 Banner 默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds 开关默认开、slimUI 开关默认关，零 JS 脚本）。交易、支付、骑手调度零接触。前置：同域复写层需已安装并信任 Loon 证书。
+#!name=美团 · 去广告 v1.3.4
+#!desc=美团及大众点评第三方联盟、开屏、搜索热词与购物车横幅原生复写及黑洞拦截；交易支付调度零接触。
 #!author=edy
 #!version=1.3.4
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=531dc7bf27640abdc0f98d8629bc5c2a3325f5341d049c865fd5ff7f243ae957
 
 # ========================================================================
-# 美团 · 去广告
+# 美团 · 去广告 v1.3.4
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：appsec-mobile.meituan.com（mtgsig 签名+设备指纹上报，拦=触发下单/支付风控，无任何黑名单收录）/ api-unionid.meituan.com（统一账号）/ api-map.meituan.net（地图瓦片）/ shark.dianping.com（Pike 长连通道，核弹模块 S9 也误伤它）/ ddplus(+quic).meituan.net（TitansX/Picasso 动态模板包）/ mrn.meituan.net 与 beauty-*.meituan.net（VOD/直播拉流）/ assistify.meituan.com（零证据，暂判 CORE）/ awp-assets 与 awps-assets（H5 容器与活动混装）/ apimobile.meituan.com / paymp / i.meituan.com。
 # 拒收条目（取证否决）：meituan.xn / meituan.yoga / meituangov.cn / meituancdn.cc——AliDNS 无解析或非美团主体，来源可疑，写了也不会命中。

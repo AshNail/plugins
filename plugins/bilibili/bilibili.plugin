@@ -1,5 +1,5 @@
-#!name=哔哩哔哩 · 去广告与精简
-#!desc=哔哩哔哩 iOS/iPadOS：遥测上报（dataflow/data/tracker）+ HTTPDNS 解析防劫持域（httpdns.bilivideo.com）走 [Host] 127.0.0.1 零证书黑洞；同域开屏（含品牌/活动开屏）、导航栏、首页推荐流、视频详情页播放下相关推荐广告与搜索广场广告默认启用 Loon 原生 [Rewrite] v2 引擎复写（cleanAds / slimNav 开关默认开，零 JS 脚本）；核心登录/视频播放/直播/图床严格设防红线。前置：同域复写层需已安装并信任 Loon 证书。
+#!name=哔哩哔哩 · 去广告与精简 v1.2.1
+#!desc=哔哩哔哩开屏、推荐流、视频页推广与搜索广场广告原生复写过滤，遥测及HTTPDNS黑洞；核心播放直播零接触。
 #!author=edy
 #!version=1.2.1
 #!homepage=https://github.com/AshNail/plugins
@@ -12,7 +12,7 @@
 #!source=0394746db7fe06e32132ea8620f5275d3e5ee6db655ba5fa8835f207c1313b90
 
 # ========================================================================
-# 哔哩哔哩 · 去广告与精简
+# 哔哩哔哩 · 去广告与精简 v1.2.1
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：passport.bilibili.com 账号与安全登录网关 / api.bilibili.com 核心业务 API，视频/播放/稿件接口 / app.bilibili.com 移动端核心业务接口，启动/信息流/导航 / live.bilibili.com 直播核心业务 / message.bilibili.com 私信与消息通知长连接通道。
 # 哔哩哔哩主站业务共享根域 *.bilibili.com，禁止整域通配。

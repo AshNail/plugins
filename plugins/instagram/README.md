@@ -1,12 +1,12 @@
-# Instagram · 像素与遥测瘦身
+# Instagram · 像素与遥测瘦身 v1.2.1
 
-> 如实定位:IG 赞助帖内嵌 feed API(gateway/graph),素材与内容同 fbcdn——App 内原生赞助帖 DNS 层≈0。默认黑洞 Meta 广告/转化像素 SDK、已停用徽章域与真机高频 netseer 公网 IP 关联遥测(DOMAIN-KEYWORD 精准命中随机 UUID 分片);不碰 graph/gateway/fbcdn 主域。零证书。
+> Instagram 广告与转化像素 SDK、停用徽章域及高频遥测分片黑洞拦截；主动态网关零接触。零证书。
 
 版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 instagram.plugin](https://img.shields.io/badge/Loon-导入Instagram%20%C2%B7%20%E5%83%8F%E7%B4%A0%E4%B8%8E%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Finstagram%2Finstagram.plugin)
+[![一键导入 instagram.plugin](https://img.shields.io/badge/Loon-导入Instagram%20%C2%B7%20%E5%83%8F%E7%B4%A0%E4%B8%8E%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB%20v1.2.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Finstagram%2Finstagram.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/instagram/instagram.plugin
