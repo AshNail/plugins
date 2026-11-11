@@ -26,6 +26,7 @@
       ],
       "globals": {
         "URL": "readonly",
+        "TextEncoder": "readonly",
         "atob": "readonly",
         "setTimeout": "readonly",
         "$argument": "readonly",

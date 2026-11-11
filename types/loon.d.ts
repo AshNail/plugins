@@ -11,5 +11,6 @@ declare const $config: any;
 declare const $environment: any;
 declare const $script: any;
 declare const $loon: any;
+declare const TextEncoder: any;
 /** Compatibility spelling observed in older docs; guarded by typeof in status.js. */
 declare const $envirnoment: any;
