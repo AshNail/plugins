@@ -104,6 +104,68 @@ function installGlobalSecretMask() {
 
 installGlobalSecretMask();
 
+// ==========================================
+// ⚙️ 参数规范化 (兼容 Script v2 与 Legacy 语法)
+// ==========================================
+// 本仓起点脚本支持两种传入形式：
+// 1. Script v2 对象语法：{ QDREADER_DEBUG, QDREADER_AUTO_ENABLE }
+// 2. Legacy 参数语法：argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
+// 当用户配置了统一总开关 QDREADER_AUTO_ENABLE 时，在此自动展开映射到引擎内使用的 6 个细分任务开关，
+// 保证关闭总开关时能准确短路高阶任务与 400s 引擎空等，杜绝重复参数告警。
+function normalizeGlobalArgument() {
+  try {
+    let arg = typeof $argument !== "undefined" ? $argument : (typeof globalThis !== "undefined" ? globalThis.$argument : undefined);
+    if (!arg) return;
+    if (typeof arg === "string") {
+      const s = arg.trim();
+      if ((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))) {
+        try {
+          arg = JSON.parse(s);
+        } catch (_) {}
+      } else if (s.includes(",")) {
+        arg = s.split(",").map((x) => x.trim());
+      }
+    }
+    const subTasks = [
+      "QDREADER_ADV_JOB_ENABLE",
+      "QDREADER_EXTRA_ADV_JOB_ENABLE",
+      "QDREADER_LOTTERY_ENABLE",
+      "QDREADER_WEEKLY_EXCHANGE_ENABLE",
+      "QDREADER_CHAPTER_CARD_ENABLE",
+      "QDREADER_MESSAGE_BOX_ENABLE",
+    ];
+    if (Array.isArray(arg)) {
+      const debugVal = arg[0];
+      const autoVal = arg[1] !== undefined ? arg[1] : true;
+      const obj = {
+        QDREADER_DEBUG: debugVal,
+        QDREADER_AUTO_ENABLE: autoVal,
+      };
+      for (const k of subTasks) {
+        obj[k] = autoVal;
+      }
+      arg = obj;
+    } else if (typeof arg === "object" && arg !== null) {
+      if ("QDREADER_AUTO_ENABLE" in arg) {
+        const autoVal = arg.QDREADER_AUTO_ENABLE;
+        for (const k of subTasks) {
+          if (arg[k] === undefined) {
+            arg[k] = autoVal;
+          }
+        }
+      }
+    }
+    if (typeof $argument !== "undefined" && typeof $argument === "object" && $argument !== null && arg !== $argument) {
+      Object.assign($argument, arg);
+    }
+    if (typeof globalThis !== "undefined") {
+      globalThis.$argument = arg;
+    }
+  } catch (_) {}
+}
+
+normalizeGlobalArgument();
+
 const $ = new Env("起点助手");
 
 const CONFIG = {
@@ -830,8 +892,10 @@ async function handleSimpleCheckin() {
 // $argument 缺失 (如单测/手动调用) 按默认全开处理，保持全量等待。
 function engineTaskSwitchesOff() {
   try {
-    if (typeof $argument === "undefined" || !$argument) return false;
-    const off = (k) => String($argument[k]) === "false";
+    normalizeGlobalArgument();
+    const arg = (typeof globalThis !== "undefined" && globalThis.$argument) || (typeof $argument !== "undefined" && $argument);
+    if (!arg) return false;
+    const off = (k) => String(arg[k]) === "false";
     return off("QDREADER_ADV_JOB_ENABLE")
       && off("QDREADER_EXTRA_ADV_JOB_ENABLE")
       && off("QDREADER_LOTTERY_ENABLE")
@@ -1091,6 +1155,7 @@ function runQdreaderEngine() {
   // 脚本上下文中 globalThis 可能不是顶层作用域，导致引擎内 globalThis['$argument'] 返回 undefined
   // 显式将 $argument 挂载到 globalThis，确保引擎能读取到插件传入的开关参数
   try {
+    normalizeGlobalArgument();
     if (typeof $argument !== "undefined" && typeof globalThis !== "undefined") {
       globalThis.$argument = $argument;
     }

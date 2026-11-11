@@ -502,11 +502,6 @@
         "switch": "QDREADER_COOKIE_ENABLE",
         "argument": [
           "QDREADER_DEBUG",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
           "QDREADER_AUTO_ENABLE"
         ],
         "tag": "起点读书获取Cookie",
@@ -521,11 +516,6 @@
         "timeout": "{TIMEOUT}",
         "argument": [
           "QDREADER_DEBUG",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
           "QDREADER_AUTO_ENABLE"
         ],
         "tag": "起点读书自动签到(包含高阶任务)",
@@ -539,11 +529,6 @@
         "timeout": "{TIMEOUT}",
         "argument": [
           "QDREADER_DEBUG",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
           "QDREADER_AUTO_ENABLE"
         ],
         "tag": "起点手动执行激励任务(不签到)",
@@ -557,11 +542,6 @@
         "timeout": "{TIMEOUT}",
         "argument": [
           "QDREADER_DEBUG",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
-          "QDREADER_AUTO_ENABLE",
           "QDREADER_AUTO_ENABLE"
         ],
         "tag": "起点手动签到/自检(与自动签到同任务)",

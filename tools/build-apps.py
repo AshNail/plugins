@@ -730,6 +730,11 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
                     raise BuildError(
                         f"{where}: bindings[{bid}].argument 里的 {arg!r} 不是已声明的参数"
                     )
+            if len(b["argument"]) != len(set(b["argument"])):
+                dups = [x for x in b["argument"] if b["argument"].count(x) > 1]
+                raise BuildError(
+                    f"{where}: bindings[{bid}].argument 包含重复参数名 {dups}（无法对齐 Script v2 规范，官方转换器会报 duplicate-plugin-argument）"
+                )
         if kind in ("request", "response"):
             pattern = b.get("pattern", "")
             ok_prefix = (
