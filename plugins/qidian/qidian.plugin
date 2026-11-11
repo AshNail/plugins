@@ -196,29 +196,29 @@ response if ${url} ~= /https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v\d+\
 # ------------------------------------------------------------------------
 # 脚本绑定由 enhance.bindings 生成，lint 逐行对账。v2 内联绑定用
 # script("scripts/<name>.min.js", {...})；config 范式的 vendored 引擎走旧式
-# 绑定（script-path=scripts/<name>.js），参数经 argument=[{NAME}] 传入。
+# 绑定（script-path=<name>.js），参数经 argument=[{NAME}] 传入。
 # 同 URL 的复写与脚本绑定按官方互斥语义注册（命中复写则同阶段脚本不执行）。
 # ========================================================================
 
 [Script]
 
 # engine-replay: config 同形：finishWatch 请求阶段重放激励视频看播（9 次重放 + 递增等待约 90 秒，timeout 120）；不设 enable 门控
-http-request ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v\d+\/video\/adv\/finishWatch script-path=scripts/Qidian.js, requires-body=true, timeout=120, tag=自动重放
+http-request ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/v\d+\/video\/adv\/finishWatch script-path=Qidian.js, requires-body=true, timeout=120, tag=自动重放
 
 # engine-token: config 同形：getconf/checkin/simpleinfo 请求自带 auth headers，引擎在请求阶段缓存凭据
-http-request ^https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/(client\/getconf|checkin\/checkin|checkin\/simpleinfo) script-path=scripts/Qidian.js, requires-body=false, timeout=10, tag=获取Token
+http-request ^https:\/\/magev6\.if\.qidian\.com\/argus\/api\/v\d+\/(client\/getconf|checkin\/checkin|checkin\/simpleinfo) script-path=Qidian.js, requires-body=false, timeout=10, tag=获取Token
 
 # engine-cookie: config 同形：getlogininfo 响应带完整用户凭据，独立开关 QDREADER_COOKIE_ENABLE 门控
-http-response ^https?:\/\/h5\.if\.qidian\.com\/argus\/api\/v1\/user\/getlogininfo script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=起点读书获取Cookie, enable={QDREADER_COOKIE_ENABLE}, argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
+http-response ^https?:\/\/h5\.if\.qidian\.com\/argus\/api\/v1\/user\/getlogininfo script-path=Qidian.js, requires-body=true, timeout=10, tag=起点读书获取Cookie, enable={QDREADER_COOKIE_ENABLE}, argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
 
 # engine-cron: config 同形：CRONEXP/TIMEOUT 参数化定时与超时；7 个 argument 开关控制任务取舍；cron 不得被 enable 门控
-cron {CRONEXP} script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点读书自动签到(包含高阶任务), argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
+cron {CRONEXP} script-path=Qidian.js, timeout={TIMEOUT}, tag=起点读书自动签到(包含高阶任务), argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
 
 # engine-manual-job: v4.1.1 新增：独立的手动触发入口，只执行激励任务（不执行签到/抽奖）。与 cron 和 engine-manual 分开，方便用户随时手动触发一次
-generic script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点手动执行激励任务(不签到), argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
+generic script-path=Qidian.js, timeout={TIMEOUT}, tag=起点手动执行激励任务(不签到), argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
 
 # engine-manual: config 同形：官方 generic 为 cron 的手动自检位，同脚本同参数点一下即跑一次
-generic script-path=scripts/Qidian.js, timeout={TIMEOUT}, tag=起点手动签到/自检(与自动签到同任务), argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
+generic script-path=Qidian.js, timeout={TIMEOUT}, tag=起点手动签到/自检(与自动签到同任务), argument=[{QDREADER_DEBUG},{QDREADER_AUTO_ENABLE}]
 
 # engine-deep-clean: config 同形：处理 22 个端点族（含 mainPage 限时任务收集）
-http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/(v\d+\/video\/adv\/mainPage(?!Dialog)|v\d+\/video\/adv\/mainPageDialog|v\d+\/video\/adv\/reportDialog|v\d+\/adv\/getadvlistbatch|v\d+\/deeplink\/geturl|v\d+\/dailyrecommend|v\d+\/checkin\/(lottery|checkinexchangepage)|v\d+\/user\/getsimplediscover|v\d+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v\d+\/client\/iosad|v\d+\/push\/getdialog|v\d+\/maintain\/playstrip|v\d+\/young\/getconf|v\d+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v\d+\/message\/(pullOperationPush|pullSocialPush)|v\d+\/followsubscribe\/showChapterEndModule|v\d+\/client\/getsplashscreen|v\d+\/reddot\/getdot|v\d+\/popup\/batchget|v\d+\/ploy\/getactivitylist|v\d+\/interaction\/getclassicbookinfo|v\d+\/readtime\/readpage) script-path=scripts/Qidian.js, requires-body=true, timeout=10, tag=深度净化
+http-response ^https:\/\/(h5|magev6)\.if\.qidian\.com\/argus\/api\/(v\d+\/video\/adv\/mainPage(?!Dialog)|v\d+\/video\/adv\/mainPageDialog|v\d+\/video\/adv\/reportDialog|v\d+\/adv\/getadvlistbatch|v\d+\/deeplink\/geturl|v\d+\/dailyrecommend|v\d+\/checkin\/(lottery|checkinexchangepage)|v\d+\/user\/getsimplediscover|v\d+\/bookshelf\/(getHoverAdv|getTopOperation|getad)|v\d+\/client\/iosad|v\d+\/push\/getdialog|v\d+\/maintain\/playstrip|v\d+\/young\/getconf|v\d+\/freshman\/(bookshelfbtn|freshmanGuidePopup)|v\d+\/message\/(pullOperationPush|pullSocialPush)|v\d+\/followsubscribe\/showChapterEndModule|v\d+\/client\/getsplashscreen|v\d+\/reddot\/getdot|v\d+\/popup\/batchget|v\d+\/ploy\/getactivitylist|v\d+\/interaction\/getclassicbookinfo|v\d+\/readtime\/readpage) script-path=Qidian.js, requires-body=true, timeout=10, tag=深度净化

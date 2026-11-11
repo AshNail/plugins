@@ -7,7 +7,9 @@ const test = require("node:test");
 const ROOT = path.join(__dirname, "..");
 const QIDIAN_JSON = path.join(ROOT, "src", "apps", "qidian.json");
 const QIDIAN_PLUGIN = path.join(ROOT, "plugins", "qidian", "qidian.plugin");
-const QIDIAN_SCRIPT = path.join(ROOT, "plugins", "qidian", "scripts", "Qidian.js");
+const QIDIAN_SCRIPT = fs.existsSync(path.join(ROOT, "plugins", "qidian", "Qidian.js"))
+  ? path.join(ROOT, "plugins", "qidian", "Qidian.js")
+  : path.join(ROOT, "plugins", "qidian", "scripts", "Qidian.js");
 
 test("qidian argument duplicate check in json and plugin", () => {
   const json = JSON.parse(fs.readFileSync(QIDIAN_JSON, "utf8"));

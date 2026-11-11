@@ -489,7 +489,7 @@
           "h5.if.qidian.com",
           "magev6.if.qidian.com"
         ],
-        "path": "scripts/Qidian.js",
+        "path": "Qidian.js",
         "requires_body": true,
         "timeout": 120,
         "tag": "自动重放",
@@ -503,7 +503,7 @@
         "hosts": [
           "magev6.if.qidian.com"
         ],
-        "path": "scripts/Qidian.js",
+        "path": "Qidian.js",
         "requires_body": false,
         "timeout": 10,
         "tag": "获取Token",
@@ -517,7 +517,7 @@
         "hosts": [
           "h5.if.qidian.com"
         ],
-        "path": "scripts/Qidian.js",
+        "path": "Qidian.js",
         "requires_body": true,
         "timeout": 10,
         "switch": "QDREADER_COOKIE_ENABLE",
@@ -533,7 +533,7 @@
         "kind": "cron",
         "legacy": true,
         "cron": "{CRONEXP}",
-        "path": "scripts/Qidian.js",
+        "path": "Qidian.js",
         "timeout": "{TIMEOUT}",
         "argument": [
           "QDREADER_DEBUG",
@@ -546,7 +546,7 @@
         "id": "engine-manual-job",
         "kind": "generic",
         "legacy": true,
-        "path": "scripts/Qidian.js",
+        "path": "Qidian.js",
         "timeout": "{TIMEOUT}",
         "argument": [
           "QDREADER_DEBUG",
@@ -559,7 +559,7 @@
         "id": "engine-manual",
         "kind": "generic",
         "legacy": true,
-        "path": "scripts/Qidian.js",
+        "path": "Qidian.js",
         "timeout": "{TIMEOUT}",
         "argument": [
           "QDREADER_DEBUG",
@@ -577,7 +577,7 @@
           "h5.if.qidian.com",
           "magev6.if.qidian.com"
         ],
-        "path": "scripts/Qidian.js",
+        "path": "Qidian.js",
         "requires_body": true,
         "timeout": 10,
         "tag": "深度净化",

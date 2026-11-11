@@ -544,7 +544,7 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     # legacy vendored 引擎指针必须真实落盘：相对 script-path 在 build 期就验存在——
     # 生成一个引用不存在文件的插件等于生成一个静默不执行的绑定（比不引用更糟）。
     blob = "\n".join(lines)
-    for rel in sorted(set(re.findall(r"script-path=(scripts/[A-Za-z0-9][A-Za-z0-9._-]*\.js)", blob))):
+    for rel in sorted(set(re.findall(r"script-path=((?:scripts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.js)", blob))):
         if not (ROOT / "plugins" / slug / rel).exists():
             raise BuildError(f"{where}: legacy 绑定引用的 vendored 脚本不存在: plugins/{slug}/{rel}")
     return "\n".join(lines).rstrip("\n") + "\n"
@@ -563,7 +563,7 @@ BIND_KINDS = {"request", "response", "cron", "generic"}
 ARG_TYPES = ("switch", "input")
 # legacy（旧式）绑定的 vendored 引擎指针：只能是插件目录内的相对路径，禁远程 URL——
 # 旧式 script-path 一旦指向远程，就变成第三方热更依赖，与「本仓自包含」纪律冲突。
-VENDORED_PATH_RE = re.compile(r"^scripts/[A-Za-z0-9][A-Za-z0-9._-]*\.js$")
+VENDORED_PATH_RE = re.compile(r"^(?:scripts/)?[A-Za-z0-9][A-Za-z0-9._-]*\.js$")
 # legacy 绑定里的 [Argument] 占位：旧语法用 {NAME} 指代参数（config 有效基线的逐字形状）。
 TIMEOUT_PH = "{TIMEOUT}"
 CRON_PH = "{CRONEXP}"
@@ -689,7 +689,7 @@ def validate_enhance_active(enh: dict, where: str) -> list[str]:
             # config 范式的引擎绑定：本体 vendored 相对路径 + 旧语法 {NAME} 占位参数。
             if not VENDORED_PATH_RE.match(b.get("path", "")):
                 raise BuildError(
-                    f"{where}: bindings[{bid}].path 需为相对 vendored 指针/scripts/<name>.js: {b.get('path')!r}"
+                    f"{where}: bindings[{bid}].path 需为相对 vendored 指针/(?:scripts/)?<name>.js: {b.get('path')!r}"
                 )
             if b.get("args"):
                 raise BuildError(
@@ -1218,7 +1218,7 @@ def render_active_layer(enh: dict, where: str, has_cron_section: bool) -> list[s
             "# " + "-" * 72,
             "# 脚本绑定由 enhance.bindings 生成，lint 逐行对账。v2 内联绑定用",
             "# script(\"scripts/<name>.min.js\", {...})；config 范式的 vendored 引擎走旧式",
-            "# 绑定（script-path=scripts/<name>.js），参数经 argument=[{NAME}] 传入。",
+            "# 绑定（script-path=<name>.js），参数经 argument=[{NAME}] 传入。",
             "# 同 URL 的复写与脚本绑定按官方互斥语义注册（命中复写则同阶段脚本不执行）。",
             "# " + "=" * 72,
             "",

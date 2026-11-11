@@ -20,7 +20,10 @@ const src = require("./load-script")("auto-task.js", "qidian");
 const ROOT = path.resolve(__dirname, "..");
 const FIXTURE = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "qidian_mainpage_limited.json"), "utf8"));
 const MAINPAGE_URL = "https://magev6.if.qidian.com/argus/api/v2/video/adv/mainPage";
-const ENGINE = fs.readFileSync(path.join(ROOT, "plugins", "qidian", "scripts", "Qidian.js"), "utf8");
+const ENGINE_PATH = fs.existsSync(path.join(ROOT, "plugins", "qidian", "Qidian.js"))
+  ? path.join(ROOT, "plugins", "qidian", "Qidian.js")
+  : path.join(ROOT, "plugins", "qidian", "scripts", "Qidian.js");
+const ENGINE = fs.readFileSync(ENGINE_PATH, "utf8");
 
 function runSanitizer(body) {
   return new Promise((resolve) => {
@@ -116,7 +119,7 @@ function check(name, cond, extra) {
     assert.deepStrictEqual(hosts, ["h5.if.qidian.com", "magev6.if.qidian.com"]);
     const binding = plugin.split("\n").find(line => line.startsWith("http-response ") && line.includes("tag=深度净化"));
     assert(binding && new RegExp(binding.split(" ")[1]).test(url));
-    assert(binding.includes("script-path=scripts/Qidian.js"));
+    assert(binding.includes("script-path=Qidian.js") || binding.includes("script-path=scripts/Qidian.js"));
     const context = {
       $request: { url, method: "GET" },
       $response: { body: JSON.stringify(FIXTURE) },

@@ -34,19 +34,19 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 | `TIMEOUT` | 420 | TIMEOUT（默认420秒，高阶任务全量需3-4分钟） |
 | `QDREADER_AUTO_ENABLE` | true | 开启后执行全部自动化任务（激励/每日/抽奖/兑换/章节卡/荐书）。关闭则 cron 只签到不跑高阶任务 |
 
-> 本层绑定引用的开关默认全开（用户显式裁决，服务端风控后果自担）：任何一个开关单独关掉即切面停用，不必动插件其余部分。legacy 引擎绑定（`scripts/Qidian.js`）按 config 范式不设 enable 门控——cron/generic 一旦门控会静默消失，任务取舍由 `argument=[{NAME}]` 参数承担，`{…}` 是 Loon 加载期对 `[Argument]` 的占位替换。
+> 本层绑定引用的开关默认全开（用户显式裁决，服务端风控后果自担）：任何一个开关单独关掉即切面停用，不必动插件其余部分。legacy 引擎绑定（`Qidian.js`）按 config 范式不设 enable 门控——cron/generic 一旦门控会静默消失，任务取舍由 `argument=[{NAME}]` 参数承担，`{…}` 是 Loon 加载期对 `[Argument]` 的占位替换。
 
 ### 绑定（`[Script]`）
 
 | 脚本 | 触发面 | 开关 | 行为 |
 |---|---|---|---|
-| `scripts/Qidian.js` | `^https://(h5|magev6)\.if\.qidian\.com/argus/api/v\d+/video/adv/finishWatch` | `—` | config 同形：finishWatch 请求阶段重放激励视频看播（9 次重放 + 递增等待约 90 秒，timeout 120）；不设 enable 门控 |
-| `scripts/Qidian.js` | `^https://magev6\.if\.qidian\.com/argus/api/v\d+/(client/getconf|checkin/checkin|checkin/simpleinfo)` | `—` | config 同形：getconf/checkin/simpleinfo 请求自带 auth headers，引擎在请求阶段缓存凭据 |
-| `scripts/Qidian.js` | `^https?://h5\.if\.qidian\.com/argus/api/v1/user/getlogininfo` | `QDREADER_COOKIE_ENABLE` | config 同形：getlogininfo 响应带完整用户凭据，独立开关 QDREADER_COOKIE_ENABLE 门控 |
-| `scripts/Qidian.js` | `{CRONEXP}` | `—` | config 同形：CRONEXP/TIMEOUT 参数化定时与超时；7 个 argument 开关控制任务取舍；cron 不得被 enable 门控 |
-| `scripts/Qidian.js` | `generic` | `—` | v4.1.1 新增：独立的手动触发入口，只执行激励任务（不执行签到/抽奖）。与 cron 和 engine-manual 分开，方便用户随时手动触发一次 |
-| `scripts/Qidian.js` | `generic` | `—` | config 同形：官方 generic 为 cron 的手动自检位，同脚本同参数点一下即跑一次 |
-| `scripts/Qidian.js` | `^https://(h5|magev6)\.if\.qidian\.com/argus/api/(v\d+/video/adv/mainPage(?!Dialog)|v\d+/video/adv/mainPageDialog|v\d+/video/adv/reportDialog|v\d+/adv/getadvlistbatch|v\d+/deeplink/geturl|v\d+/dailyrecommend|v\d+/checkin/(lottery|checkinexchangepage)|v\d+/user/getsimplediscover|v\d+/bookshelf/(getHoverAdv|getTopOperation|getad)|v\d+/client/iosad|v\d+/push/getdialog|v\d+/maintain/playstrip|v\d+/young/getconf|v\d+/freshman/(bookshelfbtn|freshmanGuidePopup)|v\d+/message/(pullOperationPush|pullSocialPush)|v\d+/followsubscribe/showChapterEndModule|v\d+/client/getsplashscreen|v\d+/reddot/getdot|v\d+/popup/batchget|v\d+/ploy/getactivitylist|v\d+/interaction/getclassicbookinfo|v\d+/readtime/readpage)` | `—` | config 同形：处理 22 个端点族（含 mainPage 限时任务收集）（探针） |
+| `Qidian.js` | `^https://(h5|magev6)\.if\.qidian\.com/argus/api/v\d+/video/adv/finishWatch` | `—` | config 同形：finishWatch 请求阶段重放激励视频看播（9 次重放 + 递增等待约 90 秒，timeout 120）；不设 enable 门控 |
+| `Qidian.js` | `^https://magev6\.if\.qidian\.com/argus/api/v\d+/(client/getconf|checkin/checkin|checkin/simpleinfo)` | `—` | config 同形：getconf/checkin/simpleinfo 请求自带 auth headers，引擎在请求阶段缓存凭据 |
+| `Qidian.js` | `^https?://h5\.if\.qidian\.com/argus/api/v1/user/getlogininfo` | `QDREADER_COOKIE_ENABLE` | config 同形：getlogininfo 响应带完整用户凭据，独立开关 QDREADER_COOKIE_ENABLE 门控 |
+| `Qidian.js` | `{CRONEXP}` | `—` | config 同形：CRONEXP/TIMEOUT 参数化定时与超时；7 个 argument 开关控制任务取舍；cron 不得被 enable 门控 |
+| `Qidian.js` | `generic` | `—` | v4.1.1 新增：独立的手动触发入口，只执行激励任务（不执行签到/抽奖）。与 cron 和 engine-manual 分开，方便用户随时手动触发一次 |
+| `Qidian.js` | `generic` | `—` | config 同形：官方 generic 为 cron 的手动自检位，同脚本同参数点一下即跑一次 |
+| `Qidian.js` | `^https://(h5|magev6)\.if\.qidian\.com/argus/api/(v\d+/video/adv/mainPage(?!Dialog)|v\d+/video/adv/mainPageDialog|v\d+/video/adv/reportDialog|v\d+/adv/getadvlistbatch|v\d+/deeplink/geturl|v\d+/dailyrecommend|v\d+/checkin/(lottery|checkinexchangepage)|v\d+/user/getsimplediscover|v\d+/bookshelf/(getHoverAdv|getTopOperation|getad)|v\d+/client/iosad|v\d+/push/getdialog|v\d+/maintain/playstrip|v\d+/young/getconf|v\d+/freshman/(bookshelfbtn|freshmanGuidePopup)|v\d+/message/(pullOperationPush|pullSocialPush)|v\d+/followsubscribe/showChapterEndModule|v\d+/client/getsplashscreen|v\d+/reddot/getdot|v\d+/popup/batchget|v\d+/ploy/getactivitylist|v\d+/interaction/getclassicbookinfo|v\d+/readtime/readpage)` | `—` | config 同形：处理 22 个端点族（含 mainPage 限时任务收集）（探针） |
 
 ### 净化复写（`[Rewrite]`）
 

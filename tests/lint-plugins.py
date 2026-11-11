@@ -3369,7 +3369,7 @@ def check_no_legacy_syntax():
         for num, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if line.lstrip().startswith(("#", ";")):
                 continue
-            if "script-path=scripts/" in line:
+            if "script-path=scripts/" in line or "script-path=Qidian.js" in line:
                 continue
             for rx in LEGACY_TOKENS:
                 if re.search(rx, line):
