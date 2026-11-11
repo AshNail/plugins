@@ -369,7 +369,7 @@ Branch 同时承载深链跳转与归因回调，**主域整封会同时断掉 A
 | `tools/loon-coverage.py` | 能力表 +`#!source` 一行（175 → 176 条） | `check:loon` 门禁 |
 | `docs/device-checklist.md` | +1 条真机取证项（`#!source` 不匹配时的实际行为） | 人工执行 |
 
-**门禁现状（含第三轮）**：`npm test` **62 套件 / 2122 断言全过**；
+**门禁现状（含第三轮，v4.2.0 复核）**：`npm test` **64 套件 / 2212 断言全过**；
 `npm run check` **全部阶段全绿**。`check:icons` 的历史抖动已按「修探针、不降校验强度」
 的路线修掉（见 §8.5），不是靠反复 `--write` 去追一个会自己变回去的值。
 
@@ -431,7 +431,7 @@ Branch 同时承载深链跳转与归因回调，**主域整封会同时断掉 A
 | `tools/ad-surface-audit.py` | 推广弹窗探针精确匹配 v2；信息流 `limits` 补上分页门禁已设防的事实 | `check:surfaces` + `--write` 重生成策略文档 |
 | `tests/test_round3_regressions.js`（新） | 90 条双向断言：广告仍被删 + 业务字段原样 | `npm test`（src / dist 各一遍） |
 | `tests/lint-plugins.py` | +`check_round3_guards()`：扫 6 个净化脚本、30 条 jq 表达式、4 条纪律 | `npm run lint` |
-| `tests/run-all.py`、`tests/README.md`、`docs/loon-native-first.md` | 注册套件并同步「31 套件 ×2 = 62 套件 / 2122 断言」 | 数字门禁反向核对 |
+| `tests/run-all.py`、`tests/README.md`、`docs/loon-native-first.md` | 注册套件并同步「31 套件 ×2 = 62 套件 / 2122 断言」（第三轮当时；v4.2.0 已更新为 32 套件 ×2 = 64 套件 / 2212 断言） | 数字门禁反向核对 |
 | `docs/ad-type-strategy.md` | 由 `ad-surface-audit.py --write` 重生成（**不手改生成物**） | `check:surfaces` |
 
 ### 8.3 门禁有鉴别力：4 次故意破坏，全部转红
@@ -488,6 +488,6 @@ Branch 同时承载深链跳转与归因回调，**主域整封会同时断掉 A
 | 2151 条生效 Host（exact 1363 / wildcard 788） | `python3 tools/build-ads.py --stats-json` |
 | 19 类广告面覆盖 72.7%（40/55），12 类结构性停住 | `npm run surfaces` |
 | 17 条旁路，封死率 54.5% / 加权 72.7% | `npm run bypass` |
-| 62 套件 / 2122 断言 | `npm test` |
+| 64 套件 / 2212 断言 | `npm test` |
 | 278 个净化键 / 0 个分页字段命中 | `npm run lint` 的 `pagination integrity` 行 |
 | 25 条 ads README 规模声明 | `npm run lint` 的 `readme numbers` 行 |

@@ -1,0 +1,80 @@
+{
+  "_comment": "2026-11-10 20:25 用户在对话中提供的 mainPage 原始响应，逐键核对结论。原文未重复落盘：与 tests/fixtures/qidian_mainpage_limited.json 是同一账号、同一接口、同一 AdvId / TaskId 集合的两次抓包，23 个 Data 键逐键一致，只有下列 5 处动态值随时间变化。回归测试以既有完整 fixture 为输入，本文件负责把「二次抓包结构稳定」和「哪些键算激励任务」钉成机器可读事实。",
+  "captured_at": "2026-11-10T20:25:04+08:00",
+  "endpoint": "video/adv/mainPage",
+  "url": "https://h5.if.qidian.com/argus/api/v2/video/adv/mainPage",
+  "har_url_hits": 1,
+  "same_shape_as": "tests/fixtures/qidian_mainpage_limited.json",
+  "data_keys": [
+    "ActivityCenterModule",
+    "AutoJumpSignDetailForHM",
+    "Avatar",
+    "BaizeModule",
+    "CharityModule",
+    "DailyBenefitModule",
+    "DiffAmount",
+    "EncryptedGuid",
+    "Guid",
+    "IndexBannerTabs",
+    "LastRewardItems",
+    "MoreRewardTab",
+    "NickName",
+    "NineReward",
+    "PopFrequency",
+    "PrivilegedTaskModule",
+    "ReadingPageTaskModule",
+    "RedeemGifts",
+    "ScoreDrawModule",
+    "SurpriseBenefit",
+    "TaskShowData",
+    "UserRewardModule",
+    "VideoRewardTab"
+  ],
+  "dynamic_delta": {
+    "Data.MoreRewardTab.CurrentTime": { "fixture": 1794201897851, "captured": 1794311570623 },
+    "Data.VideoRewardTab.CurrentTime": { "fixture": 1794201897841, "captured": 1794311570531 },
+    "Data.PrivilegedTaskModule.ExpireTime": { "fixture": 596102139, "captured": 446829371 },
+    "Data.UserRewardModule.AvailableCount": { "fixture": "7550", "captured": "7580" },
+    "Data.UserRewardModule.ScoreCount": { "fixture": "230", "captured": "260" }
+  },
+  "task_counts": {
+    "DailyBenefitModule.TaskList": 9,
+    "VideoRewardTab.TaskList": 3,
+    "ReadingPageTaskModule.TaskList": 6,
+    "MoreRewardTab.TaskList": 8,
+    "PrivilegedTaskModule.TaskList": 2,
+    "RedeemGifts": 6,
+    "IndexBannerTabs": 1
+  },
+  "ad_ids": ["AD20261103-25-iOS", "AD20261103-28-iOS"],
+  "keep_incentive": [
+    "DailyBenefitModule",
+    "VideoRewardTab",
+    "ReadingPageTaskModule",
+    "SurpriseBenefit"
+  ],
+  "keep_render_scalars": [
+    "Guid",
+    "EncryptedGuid",
+    "NickName",
+    "Avatar",
+    "AutoJumpSignDetailForHM",
+    "DiffAmount",
+    "NineReward"
+  ],
+  "drop": [
+    "ActivityCenterModule",
+    "BaizeModule",
+    "CharityModule",
+    "IndexBannerTabs",
+    "LastRewardItems",
+    "MoreRewardTab",
+    "PopFrequency",
+    "PrivilegedTaskModule",
+    "RedeemGifts",
+    "ScoreDrawModule",
+    "TaskShowData",
+    "UserRewardModule"
+  ],
+  "verdict": "用户 2026-11-10 裁决：只留 4 个广告激励模块（常驻 2 + 限时 2）；MoreRewardTab 的 8 条限时福利任务按「非广告任务」剔除；PrivilegedTaskModule 邀友拉新剔除；7 个身份/账户标量保留防白屏；布局与奖励展示字段全删。"
+}
