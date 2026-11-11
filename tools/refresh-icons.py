@@ -30,14 +30,15 @@ logo CDN」这件事不需要另外找——它就是图标文件的原始出处
 用法
 ----
     python3 tools/refresh-icons.py            看现状（离线读，不发请求）
-    python3 tools/refresh-icons.py --check    门禁：取在线 URL 比对，漂移就 exit 1
+    python3 tools/refresh-icons.py --check    门禁：校验图标可用性（原 URL 存活时漂移仅告警，图标失效 exit 1）
+    python3 tools/refresh-icons.py --check --strict  严格门禁：任何漂移均 exit 1
     python3 tools/refresh-icons.py --write    取在线 URL 并写回源
 
-`--check` 需要网络；离线时它报「取不到」并按失败处理，不静默通过。
-`--check` 对 Apple CDN 的 `<hash>` 段做**身份级比对**：hash 不同但源里那条 URL
-HEAD 仍是 `200 image/*` 时判 `token-ok`（CDN 换了分配串，图标没坏）；
-只有源 URL 真的被回收成 404、或非 hash 部分变了才报 drift。
-这样既不会被同一次会话里来回变的 token 误报，也不会放过「图标已死」。
+`--check` 需要网络；离线或网络超时时若原 URL 仍有效则告警放行，原 URL 也失效时 exit 1。
+`--check` 对 Apple CDN 的 `<hash>` 段及版本变动做容灾比对：
+当在线 artwork 更新但源里那条 URL HEAD 仍是 `200 image/*` 时判 `token-ok` 或 `drift`（原图可用，仅告警提示）；
+只有源 URL 真的被回收成 404、或本地缺失图标时才报硬故障（exit 1）。
+开启 `--strict` 时，任何在线漂移都会按失败处理。
 生成物（`plugins/<slug>/<slug>.plugin` 里由 `tools/build-apps.py` 渲染的那些）
 只改源——改生成物会在下一次 `npm run build:apps` 被覆盖，这是仓库的既定纪律。
 """
@@ -164,11 +165,12 @@ def write_url(path: Path, url: str) -> None:
         path.write_text(new, encoding="utf-8")
 
 
-def report(rows: list[dict]) -> int:
-    drift = sum(1 for r in rows if r["state"] in ("drift", "missing", "dead"))
+def report(rows: list[dict]) -> tuple[int, int]:
+    drift_count = sum(1 for r in rows if r["state"] in ("drift", "warn"))
+    hard_failures = sum(1 for r in rows if r["state"] in ("missing", "dead", "orphan"))
     for r in rows:
         print(f"  {r['state']:8s} {r['slug']:16s} {r['target']:34s} {r['detail']}")
-    return drift
+    return drift_count, hard_failures
 
 
 def main(argv: list[str]) -> int:
@@ -176,6 +178,7 @@ def main(argv: list[str]) -> int:
     targets = app_files()
     write = "--write" in argv
     checking = "--check" in argv
+    strict = "--strict" in argv
 
     rows = []
     failures = 0
@@ -201,25 +204,39 @@ def main(argv: list[str]) -> int:
             want, name = expected_url(entry, spec["country"], spec["size"])
             verified = head_ok(want)
         except (urllib.error.URLError, LookupError, ValueError, TimeoutError) as exc:
+            # 在线查询网络异常时，若原 URL 仍然有效则容灾放行并告警，否则报 dead
+            live = ""
+            if have:
+                try:
+                    live = head_ok(have)
+                except (urllib.error.URLError, LookupError, ValueError, TimeoutError):
+                    live = ""
+            if live.startswith("200"):
+                rows.append({"slug": slug, "state": "warn", "target": rel,
+                             "detail": f"在线查询失败({type(exc).__name__})，原 URL 仍可用 ({live})"})
+                continue
             rows.append({"slug": slug, "state": "dead", "target": rel,
-                         "detail": f"取不到：{type(exc).__name__} {exc}"})
+                         "detail": f"取不到且原 URL 失效：{type(exc).__name__} {exc}"})
             failures += 1
             continue
         if have == want:
             rows.append({"slug": slug, "state": "ok", "target": rel,
                          "detail": f"{name} · {verified}"})
             continue
-        # hash 段漂移不等于图标坏了：源 URL 还能 200 image/* 就仍是同一张图。
-        # 反过来，旧串被 CDN 回收（404）必须继续报 dead，不能靠放宽比较蒙过去。
-        if checking and have.startswith(MZSTATIC_PREFIX) and \
-                cdn_identity(have) == cdn_identity(want):
+        # hash 段或版本漂移不等于图标坏了：源 URL 还能 200 image/* 就仍是可用图。
+        # 反过来，旧串被 CDN 回收（404）必须报 dead。
+        if checking and have.startswith(MZSTATIC_PREFIX):
             try:
                 live = head_ok(have)
             except (urllib.error.URLError, LookupError, ValueError, TimeoutError):
                 live = ""
             if live.startswith("200"):
-                rows.append({"slug": slug, "state": "token-ok", "target": rel,
-                             "detail": f"{name} · CDN token 漂移，原 URL 仍 {live}"})
+                if cdn_identity(have) == cdn_identity(want):
+                    rows.append({"slug": slug, "state": "token-ok", "target": rel,
+                                 "detail": f"{name} · CDN token 漂移，原 URL 仍 {live}"})
+                else:
+                    rows.append({"slug": slug, "state": "drift", "target": rel,
+                                 "detail": f"{name} · 在线版本更新漂移，原 URL 仍 {live} · 现值 {have[-24:]}"})
                 continue
             rows.append({"slug": slug, "state": "dead", "target": rel,
                          "detail": f"{name} · 原 URL 已失效（{live or 'HEAD 失败'}），需 --write"})
@@ -235,15 +252,20 @@ def main(argv: list[str]) -> int:
             failures += 1
 
     print(f"icons: {len(rows)} plugin(s) 经 iTunes Lookup + HEAD 校验")
-    drift = report(rows)
+    drift_count, hard_failures = report(rows)
     if write:
         print("wrote 源；生成物请跑 `npm run build:apps` 同步（本工具不碰生成物）")
         return 0
     if checking:
-        if drift:
-            print(f"icons drift: {drift} 处与在线 artwork 不一致"
-                  f"（跑 `python3 tools/refresh-icons.py --write`）", file=sys.stderr)
+        if hard_failures:
+            print(f"icons error: {hard_failures} 处图标失效或缺失，必须修复！", file=sys.stderr)
             return 1
+        if drift_count:
+            if strict:
+                print(f"icons drift: {drift_count} 处与在线 artwork 不一致（--strict 模式失败；请跑 `python3 tools/refresh-icons.py --write`）", file=sys.stderr)
+                return 1
+            print(f"⚠️ icons warning: {drift_count} 处与在线 artwork 存在漂移（原 URL 仍可用；可随时跑 `python3 tools/refresh-icons.py --write` 刷新）")
+            return 0
         print("icons ok")
         return 0
     return 0
