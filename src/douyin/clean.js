@@ -557,6 +557,11 @@ function recordBlock(type, item) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    /* 快速前缀短路：非目标路径零开销放行，避免无谓正则计算与参数解析 */
+    if (url.indexOf("/luna/") === -1 && url.indexOf("/luckycat/") === -1) {
+      return $done({});
+    }
+
     const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity", "debugLog", "blockSplashAd"]);
     const debugOn = pflag(args, "debugLog", false);
 

@@ -13,6 +13,7 @@
     "lint": "python3 tests/lint-plugins.py",
     "tokens": "python3 tools/loon-token-audit.py",
     "check:tokens": "python3 tools/loon-token-audit.py --check",
+    "benchmark": "node tools/benchmark.js",
     "check": "npm run check:args && npm run build && npm run build:ads && npm run build:apps && npm run build:app-readmes && npm run check:types && npm run check:oxlint && npm run check:ruff && npm run lint && npm run check:tokens && npm run check:loon && npm run check:icons && npm run check:surfaces && npm run check:effective && npm run check:bypass && npm run check:apps && npm run check:app-readmes && npm run check:app-coverage && npm run check:qidian-har && npm test",
     "check:types": "tsc -p tsconfig.json",
     "check:oxlint": "oxlint --deny-warnings src tests tools",

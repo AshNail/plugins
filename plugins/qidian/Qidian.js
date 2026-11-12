@@ -1021,6 +1021,9 @@ function applyCleanRule(target, segments, index = 0) {
   applyCleanRule(current, segments, index + 1);
 }
 
+const _SHARED_UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+const _SHARED_UTF8_ENCODER = typeof TextEncoder !== "undefined" ? new TextEncoder() : null;
+
 function safeJsonParse(body) {
   try {
     // 直接解析（字符串或已解压的内容）
@@ -1029,12 +1032,12 @@ function safeJsonParse(body) {
     }
     // Uint8Array：先转字符串再解析
     if (body instanceof Uint8Array) {
-      const text = new TextDecoder("utf-8").decode(body);
+      const text = _SHARED_UTF8_DECODER ? _SHARED_UTF8_DECODER.decode(body) : new TextDecoder("utf-8").decode(body);
       return JSON.parse(text);
     }
     // ArrayBuffer：转 Uint8Array 再处理
     if (body instanceof ArrayBuffer) {
-      const text = new TextDecoder("utf-8").decode(new Uint8Array(body));
+      const text = _SHARED_UTF8_DECODER ? _SHARED_UTF8_DECODER.decode(new Uint8Array(body)) : new TextDecoder("utf-8").decode(new Uint8Array(body));
       return JSON.parse(text);
     }
     return null;
@@ -1045,7 +1048,7 @@ function safeJsonParse(body) {
         let bytes = body;
         if (typeof body === "string") {
           // 字符串可能是 gzip 字节的错误解码，尝试转回字节
-          bytes = new TextEncoder().encode(body);
+          bytes = _SHARED_UTF8_ENCODER ? _SHARED_UTF8_ENCODER.encode(body) : new TextEncoder().encode(body);
         }
         if (bytes instanceof ArrayBuffer) {
           bytes = new Uint8Array(bytes);
@@ -1054,7 +1057,7 @@ function safeJsonParse(body) {
           const decompressed = $utils.ungzip(bytes);
           const text = typeof decompressed === "string" 
             ? decompressed 
-            : new TextDecoder("utf-8").decode(decompressed);
+            : (_SHARED_UTF8_DECODER ? _SHARED_UTF8_DECODER.decode(decompressed) : new TextDecoder("utf-8").decode(decompressed));
           return JSON.parse(text);
         }
       }

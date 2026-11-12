@@ -133,13 +133,16 @@ async function minifyFile(family, file) {
   const source = fs.readFileSync(sourceFile, "utf8");
 
   const result = await terser.minify(source, {
+    ecma: 2020,
     compress: {
       passes: 2,
       toplevel: true,
       drop_console: false,
       // Keep top-level feature flags (AGGRESSIVE / DRY_RUN / ...) visible so
       // tests can toggle them in both source and minified builds.
-      evaluate: false
+      evaluate: false,
+      dead_code: true,
+      unused: true
     },
     mangle: {
       toplevel: true,

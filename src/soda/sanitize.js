@@ -985,6 +985,11 @@ function recordBlock(type, item) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    /* 快速前缀短路：非 /luna/ 路径零开销放行，避免无谓解体、正则计算与参数解析 */
+    if (url.indexOf("/luna/") === -1) {
+      return $done({});
+    }
+
     const raw = readBody($response);
 
     /*
