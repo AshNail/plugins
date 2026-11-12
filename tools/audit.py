@@ -99,11 +99,24 @@ def check_refs():
             referenced = {p.name for p in refs}
             for f in sorted(scripts_dir.glob("*.min.js")):
                 if f.name not in referenced:
+                    # qidian 的 auto-task.min.js 为伴生编译与回归测试资产，vendored 模式下主插件使用 Qidian.js
+                    if plugin.name == "qidian.plugin" and f.name == "auto-task.min.js":
+                        continue
                     orphans.append(f.name)
         if orphans:
             bad(f"{plugin.name} 孤儿 min.js（未被引用）: {orphans}")
         else:
             ok(f"{plugin.name}: 无孤儿 min.js")
+
+
+def semver_tuple(s):
+    try:
+        parts = [int(x) for x in re.findall(r"\d+", str(s))[:3]]
+        while len(parts) < 3:
+            parts.append(0)
+        return tuple(parts)
+    except Exception:
+        return (0, 0, 0)
 
 
 def check_versions():
@@ -127,12 +140,18 @@ def check_versions():
                 ok(f"{name}: plugins/{family}/README.md 与 #!version 同步（v{v}）")
             continue
         if preadme.is_file():
-            # ads 的版本记录写作 `**2.0.0**`，soda/douyin 写作 `v2.6.1`；
-            # 只匹配这两种明确格式，避免把 Loon 3.5.1 当成插件版本。
+            # 优先匹配规范的版本标题或列表项：
+            # 格式 1: `### vX.Y.Z` (soda, douyin 等)
+            # 格式 2: `- **X.Y.Z**` 或 `- **vX.Y.Z**` (ads 等)
+            # 格式 3: `**vX.Y.Z ...**` (soda 核心变更段落等)
             readme_text = preadme.read_text()
-            mention = re.findall(r"\bv(\d+\.\d+\.\d+)\b", readme_text)
-            mention += re.findall(r"\*\*(\d+\.\d+\.\d+)\*\*", readme_text)
-            newest = max(mention) if mention else "?"
+            mention = re.findall(r"^###?\s+v(\d+\.\d+\.\d+)", readme_text, re.M)
+            mention += re.findall(r"^-\s+\*\*v?(\d+\.\d+\.\d+)\*\*", readme_text, re.M)
+            mention += re.findall(r"^\*\*v(\d+\.\d+\.\d+).*?\*\*", readme_text, re.M)
+            if not mention:
+                mention = re.findall(r"\bv(\d+\.\d+\.\d+)\b", readme_text)
+                mention += re.findall(r"\*\*(\d+\.\d+\.\d+)\*\*", readme_text)
+            newest = max(mention, key=semver_tuple) if mention else "?"
             if newest != v:
                 bad(f"{name}: 插件版本 v{v}，但 plugins/{family}/README.md 最新提到 v{newest}")
             else:
@@ -159,13 +178,13 @@ def check_switches():
         orphans = sorted(declared - used)
         if orphans:
             warn(f"{plugin.name}: 定义了但未引用: {orphans}（可留作预留位）")
-        # cron 行
+        # cron 行（兼容 Loon v2 then script() 与 legacy script-path= 语法）
         cron_lines = [l.strip() for l in plugin_lines(plugin) if l.strip().startswith("cron ")]
         for l in cron_lines:
-            if "then script(" not in l:
-                bad(f"{plugin.name} cron 行缺 then script(): {l[:70]}")
+            if "then script(" not in l and "script-path=" not in l:
+                bad(f"{plugin.name} cron 行非法（需含 then script() 或 script-path=）: {l[:70]}")
         if cron_lines:
-            ok(f"{plugin.name}: cron 行 {len(cron_lines)} 条，均含 then script()")
+            ok(f"{plugin.name}: cron 行 {len(cron_lines)} 条，格式有效")
 
 
 def check_leaks():
