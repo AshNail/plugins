@@ -1,12 +1,12 @@
-# 起点读书 · 看书激励助手 v4.2.10
+# 起点读书 · 看书激励助手 v4.2.11
 
 > 起点读书开屏与页面广告原生复写清理，福利中心精简，全自动看书激励、签到与每日任务助手。
 
-版本 **4.2.10** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
+版本 **4.2.11** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Rule]`（本插件无 `[Host]` 黑洞层）
 
 ## 安装
 
-[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B%20v4.2.10-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
+[![一键导入 qidian.plugin](https://img.shields.io/badge/Loon-导入%E8%B5%B7%E7%82%B9%E8%AF%BB%E4%B9%A6%20%C2%B7%20%E7%9C%8B%E4%B9%A6%E6%BF%80%E5%8A%B1%E5%8A%A9%E6%89%8B%20v4.2.11-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fqidian%2Fqidian.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plugin
@@ -87,6 +87,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/qidian/qidian.plu
 
 ## 红线与天花板（如实）
 
+- v4.2.11 限时激励 6 轮全任务链单次自动推进闭环（用户 2026-11-12 取证驱动）：分析用户真机运行反馈及 492/494/495/496 HAR 抓包，定位到【限时】广告·加点！（ReadingPageTaskModule）6 轮任务在服务端各阶段按序解锁（未完成轮次处于 Status=0 或 Status=2 状态，未来轮次为 Status=-1）。修复此前脚本单次运行仅抓取首轮任务执行即退出、导致用户需反复手动重跑 5 次脚本才能逐轮解锁推进的缺陷。在 _executeLimitedAdvTasks 中实现多轮自动推进循环（maxRounds=6），每轮 3 次看播结单后自动重新拉取 getAdvMainPage()，智能感知服务端最新解锁的轮次（支持 Status=0/2 及未完成任务链自动探测），并在单次自动化运行中无缝连续完成全部 6 轮加点任务（累计直领 60 点章节卡），无需用户每次进入 App 刷新或多次手动触发。
 - v4.2.10 限时激励前置阅读任务直通探测与智能状态接管（用户 2026-11-12 取证驱动）：分析 492/494/495/496 HAR 抓包，定位到【限时】广告·加点！（ReadingPageTaskModule，TaskType 300）在第 2~6 轮具有「再阅读1分钟解锁福利任务」前置状态（Status=2, ReadingPageFlag=1）。修复脚本此前将 Status=2 判定为未解锁而直接跳过的缺陷，放宽 _activeTasks 准入门槛将进行中轮次（Status=0 或 2）全部纳入执行，主动向服务端直刷看播结单；若服务端强校验阅读时长则输出清晰引导，与 App 内 1 分钟挂机及 handleReplay 自动重放机制形成闭环。
 - v4.2.9 限时激励 6 轮全任务链与梯度重放闭环（用户 2026-11-11 22:27 HAR 492/494/495/496 取证驱动）：深度逆向分析 4 份最新真机 HAR 证据，确认 ReadingPageTaskModule 包含首轮加点（TaskId ...1088）与后续 5 轮链式加点（...1089~1093）共 6 轮任务。后续各轮均需「前置阅读 1 分钟（Status=2 -> Status=0）+ 看 3 轮广告领取 10 点章节卡」，看播接口严格校验递增梯度参数 gradientLevel=1/2/3。升级 handleReplay 重放拦截器，识别到限时看播时自动将 gradientLevel 递增替换并补满剩余 2 次重放，实现 App 内任意一轮看 1 次自动打满 3 轮；同时优化脱机自动脚本的梯度参数构造与 6 轮任务链总进度汇总，闭环覆盖全套加点任务链。
 - v4.2.8 限时激励状态透明化（用户 2026-11-11 20:38 取证驱动）：针对已完成当轮或处于锁定状态时控制台静默跳过导致用户感知不到执行的问题，增强限时任务状态可观测性，控制台显式打印「已完成 N 轮 (下一轮解锁条件)」或「暂无任务」，使自动化过程透明清晰。

@@ -1193,63 +1193,76 @@ async function _executeLimitedAdvTasks(_0xclient) {
   };
 
   try {
-    const _pageRes = await _0xclient["getAdvMainPage"]();
-    const _biz = _pageRes && _pageRes["biz"];
-    if (!_biz || !_biz["ok"]) {
-      return _result(_taskName, false, (_biz && _biz["message"]) || "获取任务列表失败");
-    }
-    const _module = _biz["data"] && _biz["data"]["ReadingPageTaskModule"];
-    const _taskList = _module && _module["TaskList"];
-    if (!Array.isArray(_taskList) || !_taskList.length) {
-      _log("[限时激励] 暂无阅读页限时任务");
-      return _result(_taskName, true, "无需完成或无任务");
-    }
-
-    const _activeTasks = _taskList.filter(t => {
-      if (!t || typeof t !== "object") return false;
-      const is300 = t["TaskType"] === 300 || String(t["TaskType"]) === "300" || (t["Title"] && t["Title"].indexOf("限时") >= 0);
-      const isUnlocked = t["ReadingPageFlag"] === 0 || t["Status"] === 0 || t["Status"] === 2;
-      const notDone = t["IsFinished"] !== 1 && t["IsReceived"] !== 1;
-      return is300 && isUnlocked && notDone;
-    });
-
-    const totalCount = _taskList.length;
-    const doneCount = _taskList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length;
-    const nextTask = _taskList.find(t => t["IsFinished"] !== 1 && t["IsReceived"] !== 1);
-    const nextTip = nextTask ? (nextTask["Subtitle"] || nextTask["ActionText"] || "需阅读解锁") : "";
-
-    if (!_activeTasks.length) {
-      let summary = "";
-      if (doneCount >= totalCount) {
-        summary = "全部 " + totalCount + " 轮已完成";
-      } else if (doneCount > 0) {
-        summary = "已完成 " + doneCount + "/" + totalCount + " 轮" + (nextTip ? " (" + nextTip + ")" : "");
-      } else {
-        summary = "未解锁 (需阅读解锁)";
-      }
-      _log("[限时激励] " + summary);
-      return _result(_taskName, true, summary);
-    }
-
-    _log("[限时激励] 发现待执行任务链 (当前已完成 " + doneCount + "/" + totalCount + " 轮)");
-
     let _successCount = 0;
-    for (const task of _activeTasks) {
-      const total = Number(task["Total"]) > 0 ? Number(task["Total"]) : 3;
-      const process = Number(task["Process"]) || 0;
+    let _totalCount = 6;
+    let _doneCount = 0;
+    const maxRounds = 6;
+
+    for (let roundIdx = 0; roundIdx < maxRounds; roundIdx++) {
+      const _pageRes = await _0xclient["getAdvMainPage"]();
+      const _biz = _pageRes && _pageRes["biz"];
+      if (!_biz || !_biz["ok"]) {
+        if (roundIdx === 0) {
+          return _result(_taskName, false, (_biz && _biz["message"]) || "获取任务列表失败");
+        }
+        break;
+      }
+      const _module = _biz["data"] && _biz["data"]["ReadingPageTaskModule"];
+      const _taskList = _module && _module["TaskList"];
+      if (!Array.isArray(_taskList) || !_taskList.length) {
+        if (roundIdx === 0) {
+          _log("[限时激励] 暂无阅读页限时任务");
+          return _result(_taskName, true, "无需完成或无任务");
+        }
+        break;
+      }
+
+      _totalCount = _taskList.length;
+      _doneCount = _taskList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length;
+
+      // 寻找当前未完成且已就绪或处于阅读状态的轮次 (Status === 0 或 Status === 2)
+      let currentTask = _taskList.find(t => {
+        if (!t || typeof t !== "object") return false;
+        const is300 = t["TaskType"] === 300 || String(t["TaskType"]) === "300" || (t["Title"] && t["Title"].indexOf("限时") >= 0);
+        const isEligible = t["ReadingPageFlag"] === 0 || t["Status"] === 0 || t["Status"] === 2;
+        const notDone = t["IsFinished"] !== 1 && t["IsReceived"] !== 1;
+        return is300 && isEligible && notDone;
+      });
+
+      // 若无显式处于 0 或 2 的轮次，但在总链条中仍有未完成轮次，取首个未完成轮次直接尝试
+      if (!currentTask && _doneCount < _totalCount) {
+        currentTask = _taskList.find(t => {
+          if (!t || typeof t !== "object") return false;
+          const is300 = t["TaskType"] === 300 || String(t["TaskType"]) === "300" || (t["Title"] && t["Title"].indexOf("限时") >= 0);
+          const notDone = t["IsFinished"] !== 1 && t["IsReceived"] !== 1;
+          return is300 && notDone;
+        });
+      }
+
+      if (!currentTask) {
+        // 没有更多可执行的轮次（已全部完成）
+        break;
+      }
+
+      const currentRoundNum = _doneCount + 1;
+      _log("[限时激励] 发现待执行轮次: 第 " + currentRoundNum + "/" + _totalCount + " 轮 (TaskId: " + (currentTask["TaskId"] || currentTask["SubTaskId"]) + ")");
+
+      const total = Number(currentTask["Total"]) > 0 ? Number(currentTask["Total"]) : 3;
+      const process = Number(currentTask["Process"]) || 0;
       const needed = Math.max(1, total - process);
 
+      let roundOk = true;
       for (let i = 0; i < needed; i++) {
         const currentLevel = process + i + 1;
-        const statusTip = task["Status"] === 2 ? " [前置阅读状态直刷探测]" : "";
-        _log("[限时激励] 执行第 " + (i + 1) + "/" + needed + " 次广告任务: " + (task["Title"] || "【限时】广告·加点！") + " (梯度 " + currentLevel + "/" + total + ")" + statusTip);
+        const statusTip = currentTask["Status"] === 2 ? " [前置阅读状态直刷]" : "";
+        _log("[限时激励] 执行第 " + currentRoundNum + " 轮广告任务 (" + (i + 1) + "/" + needed + " 次, 梯度 " + currentLevel + "/" + total + ")" + statusTip);
         const payloadCandidates = [
           // 494/496 HAR 真机递增梯度结构
           {
             banId: "0",
             gradientLevel: String(currentLevel),
             h5: "0",
-            taskId: String(task["TaskId"] || task["SubTaskId"]),
+            taskId: String(currentTask["TaskId"] || currentTask["SubTaskId"]),
             type: "1"
           },
           // 490 HAR 首轮单次结构 (oneOff=1, gradientLevel=0)
@@ -1258,12 +1271,12 @@ async function _executeLimitedAdvTasks(_0xclient) {
             gradientLevel: "0",
             h5: "0",
             oneOff: "1",
-            taskId: String(task["TaskId"] || task["SubTaskId"]),
+            taskId: String(currentTask["TaskId"] || currentTask["SubTaskId"]),
             type: "1"
           },
           // 常规激励后备参数
           {
-            taskId: String(task["TaskId"] || task["SubTaskId"]),
+            taskId: String(currentTask["TaskId"] || currentTask["SubTaskId"]),
             BanId: "0",
             BanMessage: "",
             CaptchaAId: "",
@@ -1300,31 +1313,37 @@ async function _executeLimitedAdvTasks(_0xclient) {
         }
 
         if (!okOne) {
-          const failTip = task["Status"] === 2 ? " (服务端强校验阅读前置任务，需在App内阅读1分钟)" : "";
-          _warn("[限时激励] 第 " + (i + 1) + " 次任务未直接完成: " + lastErr + failTip);
-          continue;
+          const failTip = currentTask["Status"] === 2 ? " (服务端强校验阅读前置任务，需在App内阅读1分钟)" : "";
+          _warn("[限时激励] 第 " + currentRoundNum + " 轮第 " + (i + 1) + " 次任务未直接完成: " + lastErr + failTip);
+          roundOk = false;
+          break;
         }
         _successCount++;
         await _delay();
       }
+
+      if (!roundOk) {
+        break;
+      }
+      await _delay();
     }
 
     const _checkRes = await _0xclient["getAdvMainPage"]();
     const _checkModule = _checkRes && _checkRes["biz"] && _checkRes["biz"]["data"] && _checkRes["biz"]["data"]["ReadingPageTaskModule"];
     const _checkList = _checkModule && _checkModule["TaskList"];
-    const newTotal = Array.isArray(_checkList) ? _checkList.length : totalCount;
-    const newDone = Array.isArray(_checkList) ? _checkList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length : doneCount;
-    const newNext = Array.isArray(_checkList) ? _checkList.find(t => t["IsFinished"] !== 1 && t["IsReceived"] !== 1) : null;
-    const newTip = newNext ? (newNext["Subtitle"] || newNext["ActionText"] || "需阅读解锁") : "";
+    const finalTotal = Array.isArray(_checkList) ? _checkList.length : _totalCount;
+    const finalDone = Array.isArray(_checkList) ? _checkList.filter(t => t["IsFinished"] === 1 || t["IsReceived"] === 1).length : _doneCount;
+    const finalNext = Array.isArray(_checkList) ? _checkList.find(t => t["IsFinished"] !== 1 && t["IsReceived"] !== 1) : null;
+    const finalTip = finalNext ? (finalNext["Subtitle"] || finalNext["ActionText"] || "需阅读解锁") : "";
 
     let _detail = "";
-    if (newDone >= newTotal) {
-      _detail = "全部 " + newTotal + " 轮已完成";
-    } else if (newDone > 0) {
-      _detail = "已完成 " + newDone + "/" + newTotal + " 轮" + (newTip ? " (" + newTip + ")" : "");
+    if (finalDone >= finalTotal) {
+      _detail = "全部 " + finalTotal + " 轮已完成";
+    } else if (finalDone > 0) {
+      _detail = "已完成 " + finalDone + "/" + finalTotal + " 轮" + (finalTip ? " (" + finalTip + ")" : "");
     } else if (_successCount > 0) {
       _detail = "完成 " + _successCount + " 次看播";
-    } else if (newNext && newNext["Status"] === 2) {
+    } else if (finalNext && finalNext["Status"] === 2) {
       _detail = "需在App内打开书籍阅读1分钟解锁(自动重放已就绪)";
     } else {
       _detail = "需App内点[去完成]1次(自动重放已就绪)";
