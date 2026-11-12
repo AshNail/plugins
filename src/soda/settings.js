@@ -568,6 +568,15 @@ function markHeaders(reason, bodyChanged) {
       return $done({});
     }
 
+    const url = ($request && $request.url) || "";
+    const isSettingsHost =
+      url.indexOf("conf.qishui.com") !== -1 ||
+      url.indexOf("://i.snssdk.com/") !== -1 ||
+      url.indexOf("://is.snssdk.com/") !== -1;
+    if (!isSettingsHost || url.indexOf("/service/settings/v3") === -1) {
+      return $done({});
+    }
+
     /*
      * 统一插件开关（两个独立开关，可单独开）：
      *   settingsClean  清空广告配置键（会关掉激励广告入口 → 保奖励模式下不做）
@@ -580,7 +589,6 @@ function markHeaders(reason, bodyChanged) {
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
     const debugOn = pflag(pluginArgs, "debugLog", false);
 
-    const url = ($request && $request.url) || "";
     const raw = readBody($response);
     if (debugOn) {
       console.log("[soda-trace] RESP settings url=" + url +
@@ -598,14 +606,6 @@ function markHeaders(reason, bodyChanged) {
     cleanAdsConfig = wantClean && !rewardSafe;
     hideDouyin = wantDouyin;
 
-    const isSettingsHost =
-      url.indexOf("conf.qishui.com") !== -1 ||
-      url.indexOf("://i.snssdk.com/") !== -1 ||
-      url.indexOf("://is.snssdk.com/") !== -1;
-    if (!isSettingsHost ||
-        url.indexOf("/service/settings/v3") === -1) {
-      return $done({});
-    }
     if (typeof raw !== "string" || raw.length === 0) {
       return $done({ headers: markHeaders("soda-settings;skip=no-body") });
     }

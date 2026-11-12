@@ -93,6 +93,10 @@ function recordBlock(type, item) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    /* 快速前缀短路：非目标域名或非开屏路径零开销放行 */
+    if (url.indexOf("zijieapi.com") === -1 || url.indexOf("splash") === -1) {
+      return $done({});
+    }
 
     const args = pargs(["blockSplashAd", "debugLog"]);
     const debugOn = pflag(args, "debugLog", false);
