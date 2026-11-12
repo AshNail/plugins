@@ -37,15 +37,24 @@ function benchmark(name, fn, iterations = 5000) {
   const gc = global.gc;
   if (gc) gc();
 
+  const times = new Float64Array(iterations);
   const startMem = process.memoryUsage().heapUsed;
   const t0 = process.hrtime.bigint();
 
   for (let i = 0; i < iterations; i++) {
+    const iterT0 = process.hrtime.bigint();
     fn();
+    const iterT1 = process.hrtime.bigint();
+    times[i] = Number(iterT1 - iterT0) / 1e3;
   }
 
   const t1 = process.hrtime.bigint();
   const endMem = process.memoryUsage().heapUsed;
+
+  times.sort();
+  const p50 = times[Math.floor(iterations * 0.50)];
+  const p95 = times[Math.floor(iterations * 0.95)];
+  const p99 = times[Math.floor(iterations * 0.99)];
 
   const totalNs = Number(t1 - t0);
   const totalMs = totalNs / 1e6;
@@ -54,14 +63,15 @@ function benchmark(name, fn, iterations = 5000) {
   const memDiffKb = Math.round((endMem - startMem) / 1024);
 
   console.log(
-    `  ${name.padEnd(45)} | ${String(iterations).padStart(6)} runs | ` +
+    `  ${name.padEnd(42)} | ${String(iterations).padStart(5)} runs | ` +
     `${totalMs.toFixed(1).padStart(7)} ms | ` +
-    `${avgUs.toFixed(2).padStart(8)} µs/op | ` +
-    `${String(opsSec).padStart(8)} ops/s | ` +
+    `avg:${avgUs.toFixed(1).padStart(5)} µs | ` +
+    `p50:${p50.toFixed(1).padStart(5)} p95:${p95.toFixed(1).padStart(5)} p99:${p99.toFixed(1).padStart(6)} µs | ` +
+    `${String(opsSec).padStart(6)} ops/s | ` +
     `${memDiffKb >= 0 ? "+" : ""}${memDiffKb} KB heap`
   );
 
-  return { name, totalMs, avgUs, opsSec };
+  return { name, totalMs, avgUs, p50, p95, p99, opsSec };
 }
 
 console.log("================================================================================");
