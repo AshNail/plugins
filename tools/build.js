@@ -173,6 +173,8 @@ async function minifyFile(family, file) {
   fs.mkdirSync(path.dirname(outputFile), { recursive: true });
   fs.writeFileSync(outputFile, output);
   return {
+    family,
+    file,
     sourceFile,
     outputFile,
     sourceBytes,
@@ -221,14 +223,16 @@ async function main() {
       }
     }
 
-    for (const file of sourceFiles) {
-      const result = await minifyFile(family, file);
+    const results = await Promise.all(
+      sourceFiles.map((file) => minifyFile(family, file))
+    );
+    for (const result of results) {
       totalSource += result.sourceBytes;
       totalOutput += result.outputBytes;
       totalFiles += 1;
       const ratio = ((1 - result.outputBytes / result.sourceBytes) * 100).toFixed(1);
       console.log(
-        `${family}/${file} -> plugins/${family}/scripts/${path.basename(result.outputFile)} ` +
+        `${result.family}/${result.file} -> plugins/${result.family}/scripts/${path.basename(result.outputFile)} ` +
           `(${result.sourceBytes} -> ${result.outputBytes} B, -${ratio}%)`
       );
     }

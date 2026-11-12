@@ -70,6 +70,8 @@ console.log("===================================================================
 
 const sodaSanitize = loadScript("plugins/soda/scripts/sanitize.min.js");
 const douyinClean = loadScript("plugins/douyin/scripts/clean.min.js");
+const sodaSettings = loadScript("plugins/soda/scripts/settings.min.js");
+const douyinTreasure = loadScript("plugins/douyin/scripts/treasure.min.js");
 
 const sampleFeedBody = JSON.stringify({
   status_code: 0,
@@ -114,6 +116,26 @@ benchmark("Douyin: Feed with ads (cleanFeedAds)", () => {
     $request: { url: "https://beta-luna.douyin.com/luna/ads/retrieve", method: "POST" },
     $response: { status: 200, body: sampleFeedBody },
     $argument: "cleanFeedAds=true",
+    $done: () => {}
+  });
+});
+
+console.log("\n[3] Soda Settings (plugins/soda/scripts/settings.min.js):");
+
+benchmark("Soda Settings: Non-matching URL", () => {
+  runScript(sodaSettings, {
+    $request: { url: "https://api.qishui.com/other/config", method: "GET" },
+    $response: { status: 200, body: "{}" },
+    $done: () => {}
+  });
+});
+
+console.log("\n[4] Douyin Treasure (plugins/douyin/scripts/treasure.min.js):");
+
+benchmark("Douyin Treasure: Non-matching URL", () => {
+  runScript(douyinTreasure, {
+    $request: { url: "https://beta-luna.douyin.com/luna/other/endpoint", method: "GET" },
+    $response: { status: 200, body: "{}" },
     $done: () => {}
   });
 });
