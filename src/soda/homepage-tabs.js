@@ -343,6 +343,12 @@ function markHeaders(reason, bodyChanged) {
 
 /* ---------------- 主逻辑 ---------------- */
 (function main() {
+  const url = ($request && $request.url) || "";
+  if (url.indexOf("/aweme/homepage/combine/") === -1) {
+    $done({});
+    return;
+  }
+
   const args = pargs(["hideDouyinTab", "listenOnly", "debugLog"]);
   const hideDouyin = pflag(args, "hideDouyinTab", false);
   const listenOnly = pflag(args, "listenOnly", false);
@@ -354,7 +360,6 @@ function markHeaders(reason, bodyChanged) {
   }
 
   const raw = readBody($response);
-  const url = ($request && $request.url) || "";
 
   if (debugOn) {
     console.log("[soda-trace] RESP homepage-tabs url=" + url +

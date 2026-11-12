@@ -369,6 +369,9 @@ function ceTag(resp) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    if (url.indexOf("/luna/") === -1 && url.indexOf("zijieapi.com") === -1) {
+      return $done({});
+    }
     const raw = readBody($response);
     if (typeof raw !== "string" || raw.length === 0) return $done({});
     const head = raw.trimStart().slice(0, 1);

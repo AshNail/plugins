@@ -112,6 +112,12 @@ const KILL_CONTAINERS = {
   }
 };
 
+for (const _kc of Object.keys(KILL_CONTAINERS)) {
+  const _c = KILL_CONTAINERS[_kc];
+  _c.killSet = new Set(_c.kill);
+  _c.falsySet = new Set(_c.falsy);
+}
+
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
@@ -146,7 +152,7 @@ function killContainers(node, spec, log, path, depth) {
   for (const k of Object.keys(node)) {
     const nk = normalizeKey(k);
     const val = node[k];
-    if (spec.kill.indexOf(nk) !== -1) {
+    if (spec.killSet ? spec.killSet.has(nk) : spec.kill.indexOf(nk) !== -1) {
       if (val === null || val === undefined) continue;
       const after = emptyLike(val);
       if (after === null) continue;
@@ -154,7 +160,7 @@ function killContainers(node, spec, log, path, depth) {
       log.push(path + "." + k + " -> " + (Array.isArray(after) ? "[]" : "{}"));
       continue;
     }
-    if (spec.falsy.indexOf(nk) !== -1) {
+    if (spec.falsySet ? spec.falsySet.has(nk) : spec.falsy.indexOf(nk) !== -1) {
       const after = offLike(val);
       node[k] = after;
       log.push(path + "." + k + " -> " + JSON.stringify(after));
@@ -168,22 +174,27 @@ function isAdFlag(v) {
   return v === true || v === 1 || v === "1" || v === "true";
 }
 
+const AD_FLAGS_SET = new Set([
+  "isad", "isadvert", "isadvertisement", "isaditem", "aditem", "adflag",
+  "ispromoted", "promoted", "issponsored", "sponsored", "iscommercial", "commercialad"
+]);
+const AD_DATA_SET = new Set(["adinfo", "addata", "adextra", "commercialdata", "promoteddata"]);
+const MEDIA_DATA_SET = new Set([
+  "video", "liveroom", "media", "track", "song", "aweme", "roomdata", "audio", "music", "artist", "album"
+]);
+const NESTED_AD_CONTAINERS = new Set(["card", "adinfo", "adsinfo", "addata", "adsdata", "adblock", "adsblock"]);
+
 function hasNestedAdFlag(o) {
   for (const k of Object.keys(o)) {
     const nk = normalizeKey(k);
-    if (nk !== "card" && nk !== "adinfo" && nk !== "adsinfo" &&
-        nk !== "addata" && nk !== "adsdata" && nk !== "adblock" && nk !== "adsblock") {
+    if (!NESTED_AD_CONTAINERS.has(nk)) {
       continue;
     }
     const v = o[k];
     if (!isPlainObject(v)) continue;
     for (const kk of Object.keys(v)) {
       const nn = normalizeKey(kk);
-      if ((nn === "isad" || nn === "isadvert" || nn === "isadvertisement" ||
-           nn === "isaditem" || nn === "aditem" || nn === "adflag" ||
-           nn === "ispromoted" || nn === "promoted" ||
-           nn === "issponsored" || nn === "sponsored" ||
-           nn === "iscommercial" || nn === "commercialad") && isAdFlag(v[kk])) {
+      if (AD_FLAGS_SET.has(nn) && isAdFlag(v[kk])) {
         return true;
       }
     }
@@ -197,25 +208,17 @@ function isAdItem(o) {
   for (const k of Object.keys(o)) {
     const nk = normalizeKey(k);
     const v = o[k];
-    if ((nk === "isad" || nk === "isadvert" || nk === "isadvertisement" ||
-         nk === "isaditem" || nk === "aditem" || nk === "adflag" ||
-         nk === "ispromoted" || nk === "promoted" ||
-         nk === "issponsored" || nk === "sponsored" ||
-         nk === "iscommercial" || nk === "commercialad") && isAdFlag(v)) {
+    if (AD_FLAGS_SET.has(nk) && isAdFlag(v)) {
       return true;
     }
     if (nk === "blocktype" && typeof v === "string" &&
         /^(?:ads?|advert(?:isement|ising)?|commercial|promot(?:ed|ion)|sponsored)(?:[_-]|$)/i.test(v)) {
       return true;
     }
-    if (nk === "adinfo" || nk === "addata" || nk === "adextra" ||
-        nk === "commercialdata" || nk === "promoteddata") {
+    if (AD_DATA_SET.has(nk)) {
       hasAd = true;
     }
-    if (nk === "video" || nk === "liveroom" || nk === "media" ||
-        nk === "track" || nk === "song" || nk === "aweme" ||
-        nk === "roomdata" || nk === "audio" || nk === "music" ||
-        nk === "artist" || nk === "album") {
+    if (MEDIA_DATA_SET.has(nk)) {
       hasMedia = true;
     }
   }
@@ -225,13 +228,14 @@ function isAdItem(o) {
 
 const AD_BANNER_RE = /ad[_-]?reward|reward[_-]?ad|ads?[_-]?banner|ad[_-]?snap|incentive[_-]?ad|advert(?:isement|ising)?|commercial|promoted|sponsored|看视频|看广告/i;
 const AD_BANNER_FIELDS = ["bannertype", "type", "key", "name", "schema", "title", "text"];
+const AD_BANNER_FIELDS_SET = new Set(AD_BANNER_FIELDS);
 
 function isAdBanner(item) {
   if (typeof item === "string") return AD_BANNER_RE.test(item);
   if (!isPlainObject(item)) return false;
   if (isAdItem(item)) return true;
   for (const k of Object.keys(item)) {
-    if (AD_BANNER_FIELDS.indexOf(normalizeKey(k)) === -1) continue;
+    if (!AD_BANNER_FIELDS_SET.has(normalizeKey(k))) continue;
     const v = item[k];
     if (typeof v === "string" && AD_BANNER_RE.test(v)) return true;
   }
@@ -324,7 +328,7 @@ function handleUpsell(obj, log) {
    * 还要把列表里所有广告/商城命名的条目一并去掉，否则冷启动仍会弹广告。
    */
   const dropFromList = function (n) {
-    if (removed.indexOf(n) !== -1) return true;
+    if (removedSet[n] === true) return true;
     if (AD_UPSELL_RE.test(n)) return true;
     if (MALL_UPSELLS.indexOf(n) !== -1) return true;
     return false;

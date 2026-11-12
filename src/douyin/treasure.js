@@ -272,7 +272,7 @@ function markHeaders(reason, bodyChanged) {
 (function main() {
   try {
     const url = ($request && $request.url) || "";
-    if (!/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) return $done({});
+    if (url.indexOf("/luna/treasure/task/page/v") === -1 || !/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) return $done({});
 
     const args = pargs(["treasureMinimal"]);
     if (!pflag(args, "treasureMinimal", true)) {

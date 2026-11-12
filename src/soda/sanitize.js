@@ -268,6 +268,11 @@ for (const rule of RULES) {
     parts.push("^\\s*\\[");
   }
   rule.fastReject = new RegExp(parts.join("|"), "i");
+  rule._kill = new Set((rule.kill || []).map(normalizeKey));
+  rule._falsy = new Set((rule.falsy || []).map(normalizeKey));
+  rule._prune = (rule.prune || []).map(function (p) {
+    return { key: normalizeKey(p.key), match: p.match };
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -413,6 +418,16 @@ function douyinOnly(raw, url) {
  *   3. card / ad_info 等嵌套对象里带 is_ad=true，且外层没有媒体载荷
  * 保守策略：正常内容即使带 ad_info，只要还有媒体字段就不删。
  */
+const AD_FLAGS_SET = new Set([
+  "isad", "isadvert", "isadvertisement", "isaditem", "aditem", "adflag",
+  "ispromoted", "promoted", "issponsored", "sponsored", "iscommercial", "commercialad"
+]);
+const AD_DATA_SET = new Set(["adinfo", "addata", "adextra", "commercialdata", "promoteddata"]);
+const MEDIA_DATA_SET = new Set([
+  "video", "liveroom", "media", "track", "song", "aweme", "roomdata", "audio", "music", "artist", "album"
+]);
+const NESTED_AD_CONTAINERS = new Set(["card", "adinfo", "adsinfo", "addata", "adsdata", "adblock", "adsblock"]);
+
 function isAdFlag(v) {
   return v === true || v === 1 || v === "1" || v === "true";
 }
@@ -420,21 +435,14 @@ function isAdFlag(v) {
 function hasNestedAdFlag(o) {
   for (const k of Object.keys(o)) {
     const nk = normalizeKey(k);
-    if (nk !== "card" && nk !== "adinfo" && nk !== "adsinfo" &&
-        nk !== "addata" && nk !== "adsdata" &&
-        nk !== "adblock" && nk !== "adsblock") {
+    if (!NESTED_AD_CONTAINERS.has(nk)) {
       continue;
     }
     const v = o[k];
     if (!v || typeof v !== "object" || Array.isArray(v)) continue;
     for (const kk of Object.keys(v)) {
       const nn = normalizeKey(kk);
-      if ((nn === "isad" || nn === "isadvert" || nn === "isadvertisement" ||
-           nn === "isaditem" || nn === "aditem" || nn === "adflag" ||
-           nn === "ispromoted" || nn === "promoted" ||
-           nn === "issponsored" || nn === "sponsored" ||
-           nn === "iscommercial" || nn === "commercialad") &&
-          isAdFlag(v[kk])) {
+      if (AD_FLAGS_SET.has(nn) && isAdFlag(v[kk])) {
         return true;
       }
     }
@@ -450,22 +458,13 @@ function isAdItem(o) {
     const nk = normalizeKey(k);
     const v = o[k];
 
-    if ((nk === "isad" || nk === "isadvert" || nk === "isadvertisement" ||
-         nk === "isaditem" || nk === "aditem" || nk === "adflag" ||
-         nk === "ispromoted" || nk === "promoted" ||
-         nk === "issponsored" || nk === "sponsored" ||
-         nk === "iscommercial" || nk === "commercialad") &&
-        isAdFlag(v)) {
+    if (AD_FLAGS_SET.has(nk) && isAdFlag(v)) {
       return true;
     }
-    if (nk === "adinfo" || nk === "addata" || nk === "adextra" ||
-        nk === "commercialdata" || nk === "promoteddata") {
+    if (AD_DATA_SET.has(nk)) {
       hasAd = true;
     }
-    if (nk === "video" || nk === "liveroom" || nk === "media" ||
-        nk === "track" || nk === "song" || nk === "aweme" ||
-        nk === "roomdata" || nk === "audio" || nk === "music" ||
-        nk === "artist" || nk === "album") {
+    if (MEDIA_DATA_SET.has(nk)) {
       hasMedia = true;
     }
   }
@@ -704,8 +703,9 @@ function extendExpiryValue(v, nowMs) {
 /* ------------------------------------------------------------------ */
 /* 遍历改写                                                           */
 /* ------------------------------------------------------------------ */
-function rewrite(node, rule, path, log, depth) {
+function rewrite(node, rule, path, log, depth, nowMs) {
   if (depth > 14) return;
+  if (!nowMs) nowMs = Date.now();
 
   if (Array.isArray(node)) {
     if (rule.killArrayData && depth === 0) {
@@ -716,7 +716,7 @@ function rewrite(node, rule, path, log, depth) {
       return;
     }
     for (let i = 0; i < node.length; i++) {
-      rewrite(node[i], rule, path + "[" + i + "]", log, depth + 1);
+      rewrite(node[i], rule, path + "[" + i + "]", log, depth + 1, nowMs);
     }
     return;
   }
@@ -725,7 +725,6 @@ function rewrite(node, rule, path, log, depth) {
   const killSet = rule._kill;
   const falsySet = rule._falsy;
   const pruneList = rule._prune || [];
-  const nowMs = Date.now();
 
   for (const k of Object.keys(node)) {
     const nk = normalizeKey(k);
@@ -809,7 +808,7 @@ function rewrite(node, rule, path, log, depth) {
       continue;
     }
 
-    rewrite(val, rule, path + "." + k, log, depth + 1);
+    rewrite(val, rule, path + "." + k, log, depth + 1, nowMs);
   }
 }
 
@@ -1068,15 +1067,9 @@ function recordBlock(type, item) {
       return $done({ headers: markHeaders("soda-sanitize;skip=json-parse" + ceTag($response)) });
     }
 
-    rule._kill = new Set((rule.kill || []).map(normalizeKey));
-    rule._falsy = new Set((rule.falsy || []).map(normalizeKey));
-    rule._prune = (rule.prune || []).map(function (p) {
-      return { key: normalizeKey(p.key), match: p.match };
-    });
-
     const log = [];
     const before = JSON.stringify(obj);
-    rewrite(obj, rule, "$", log, 0);
+    rewrite(obj, rule, "$", log, 0, Date.now());
     if (rule.id === "upsell-v2") cleanUpsellMap(obj, log);
     if (rule.id === "task-page") pruneTaskAdPreload(obj, log);
     if (rule.dropAdItems) dropAdItems(obj, log, "$", 0);

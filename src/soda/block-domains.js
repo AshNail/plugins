@@ -95,6 +95,11 @@ const BLOCKED_RX = BLOCKED_HOSTS.map(function (pattern) {
 });
 
 function hostBlocked(host) {
+  if (host.indexOf("zijieapi.com") === -1 &&
+      host.indexOf("snssdk.com") === -1 &&
+      host.indexOf("ugsdk.cn") === -1) {
+    return false;
+  }
   for (var i = 0; i < BLOCKED_RX.length; i++) {
     if (BLOCKED_RX[i].test(host)) return true;
   }

@@ -554,7 +554,10 @@ if (isRequest) {
 
 // ---- 响应阶段 ----
 if (isResponse) {
-  const body = readBody($response);
+  if (url.indexOf("/luna/") === -1) {
+    $done({});
+  } else {
+    const body = readBody($response);
 
   // ---- incentive/done 响应观测（只记录，不修改） ----
   if (/\/+luna\/advert\/incentive\/done/.test(url)) {
@@ -597,5 +600,6 @@ if (isResponse) {
   // ---- 默认放行 ----
   else {
     $done({});
+  }
   }
 }

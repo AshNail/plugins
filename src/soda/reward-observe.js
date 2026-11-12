@@ -597,6 +597,7 @@ let LOG_TASK_TITLES = false;
 (function main() {
   try {
     const url = ($request && $request.url) || "";
+    if (url.indexOf("/luna/") === -1) return $done({});
     const args = pargs(["logTaskTitles"]);
     LOG_TASK_TITLES = pflag(args, "logTaskTitles", false);
 
