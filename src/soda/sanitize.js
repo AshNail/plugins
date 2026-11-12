@@ -563,12 +563,19 @@ function pruneTaskAdPreload(obj, log) {
   if (Array.isArray(pre.task_ids)) {
     const ids = {};
     collectRetainedTaskIds(sections, ids);
-    const kept = pre.task_ids.filter(function (id) {
-      return ids[String(id)] === true;
-    });
-    if (kept.length !== pre.task_ids.length) {
+    const orig = pre.task_ids;
+    let kept = null;
+    for (let i = 0; i < orig.length; i++) {
+      const id = orig[i];
+      if (ids[String(id)] !== true) {
+        if (kept === null) kept = orig.slice(0, i);
+      } else if (kept !== null) {
+        kept.push(id);
+      }
+    }
+    if (kept !== null) {
       log.push("config.ad_api_preload.task_ids : " +
-        pre.task_ids.length + " -> " + kept.length);
+        orig.length + " -> " + kept.length);
       pre.task_ids = kept;
     }
   }
@@ -634,24 +641,40 @@ function cleanUpsellMap(obj, log) {
    * 因此按名字判据全量过滤，而不是只删 removed 里的条目。
    */
   if (Array.isArray(obj.sort_control_unique_names)) {
-    const before = obj.sort_control_unique_names.length;
-    obj.sort_control_unique_names = obj.sort_control_unique_names.filter(function (n) {
-      return !isHiddenUpsellName(n);
-    });
-    if (obj.sort_control_unique_names.length !== before) {
+    const list = obj.sort_control_unique_names;
+    const before = list.length;
+    let kept = null;
+    for (let i = 0; i < before; i++) {
+      const n = list[i];
+      if (isHiddenUpsellName(n)) {
+        if (kept === null) kept = list.slice(0, i);
+      } else if (kept !== null) {
+        kept.push(n);
+      }
+    }
+    if (kept !== null) {
       log.push("sort_control_unique_names : " + before + " -> " +
-        obj.sort_control_unique_names.length + " item(s)");
+        kept.length + " item(s)");
+      obj.sort_control_unique_names = kept;
     }
   }
   const clt = obj.cold_launch_timing;
   if (isPlainObject(clt) && Array.isArray(clt.upsell_item_unique_names)) {
-    const before = clt.upsell_item_unique_names.length;
-    clt.upsell_item_unique_names = clt.upsell_item_unique_names.filter(function (n) {
-      return !isHiddenUpsellName(n);
-    });
-    if (clt.upsell_item_unique_names.length !== before) {
+    const list = clt.upsell_item_unique_names;
+    const before = list.length;
+    let kept = null;
+    for (let i = 0; i < before; i++) {
+      const n = list[i];
+      if (isHiddenUpsellName(n)) {
+        if (kept === null) kept = list.slice(0, i);
+      } else if (kept !== null) {
+        kept.push(n);
+      }
+    }
+    if (kept !== null) {
       log.push("cold_launch_timing : " + before + " -> " +
-        clt.upsell_item_unique_names.length + " item(s)");
+        kept.length + " item(s)");
+      clt.upsell_item_unique_names = kept;
     }
   }
 }
@@ -660,17 +683,19 @@ function dropAdItems(node, log, path, depth) {
   if (depth > 14) return;
 
   if (Array.isArray(node)) {
-    const kept = [];
-    for (let i = 0; i < node.length; i++) {
+    let kept = null;
+    const len = node.length;
+    for (let i = 0; i < len; i++) {
       const item = node[i];
       if (item && typeof item === "object" && !Array.isArray(item) && isAdItem(item)) {
         log.push(path + "[" + i + "] : dropped ad item");
+        if (kept === null) kept = node.slice(0, i);
         continue;
       }
-      kept.push(item);
+      if (kept !== null) kept.push(item);
       dropAdItems(item, log, path + "[" + i + "]", depth + 1);
     }
-    if (kept.length !== node.length) {
+    if (kept !== null) {
       node.length = 0;
       for (let i = 0; i < kept.length; i++) node.push(kept[i]);
     }
@@ -737,14 +762,23 @@ function rewrite(node, rule, path, log, depth, nowMs) {
         if (nk !== p.key) continue;
         hit = true;
         const structured = (nk === "tasks" || nk === "taskinfos");
-        const kept = val.filter(function (item) {
-          if (structured) return !isAdTaskEntry(item);
-          return !p.match.test(safeString(item));
-        });
-        if (kept.length !== val.length) {
+        let kept = null;
+        const total = val.length;
+        for (let i = 0; i < total; i++) {
+          const item = val[i];
+          const drop = structured
+            ? isAdTaskEntry(item)
+            : p.match.test(safeString(item));
+          if (drop) {
+            if (kept === null) kept = val.slice(0, i);
+          } else if (kept !== null) {
+            kept.push(item);
+          }
+        }
+        if (kept !== null) {
           if (VERBOSE) {
             log.push(path + "." + k + " : dropped " +
-              (val.length - kept.length) + "/" + val.length + " ad item(s)");
+              (total - kept.length) + "/" + total + " ad item(s)");
           }
           node[k] = kept;
         }

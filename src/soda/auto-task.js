@@ -350,15 +350,25 @@ function cleanUpsell(responseBody) {
     for (const scene of Object.keys(sceneMap)) {
       const candidates = sceneMap[scene]?.candidates || [];
       const before = candidates.length;
-      sceneMap[scene].candidates = candidates.filter(c => {
+      let kept = null;
+      for (let i = 0; i < before; i++) {
+        const c = candidates[i];
         const name = c?.unique_name || c?.uniqueName || "";
-        // 保留奖励相关弹窗，删除广告/营销弹窗
-        if (name.includes("reward") || name.includes("coin") || name.includes("treasure")) return true;
-        if (name.includes("ads") || name.includes("popup") || name.includes("commerce")) return false;
-        return true;
-      });
-      if (sceneMap[scene].candidates.length !== before) {
-        changes.push(`scene.${scene}:${before}→${sceneMap[scene].candidates.length}`);
+        let retain = true;
+        if (name.includes("reward") || name.includes("coin") || name.includes("treasure")) {
+          retain = true;
+        } else if (name.includes("ads") || name.includes("popup") || name.includes("commerce")) {
+          retain = false;
+        }
+        if (!retain) {
+          if (kept === null) kept = candidates.slice(0, i);
+        } else if (kept !== null) {
+          kept.push(c);
+        }
+      }
+      if (kept !== null) {
+        sceneMap[scene].candidates = kept;
+        changes.push(`scene.${scene}:${before}→${kept.length}`);
       }
     }
 

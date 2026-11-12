@@ -33,6 +33,8 @@
 
 const KEEP_SECTIONS = ["duration_task_section"];
 const KEEP_TASKS = ["luna_rewards_ads"];
+const KEEP_SECTIONS_SET = new Set(KEEP_SECTIONS);
+const KEEP_TASKS_SET = new Set(KEEP_TASKS);
 
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
@@ -85,12 +87,19 @@ function pruneAdConfig(cfg, sections, log) {
 
   const ids = {};
   collectRetainedTaskIds(sections, ids);
-  const kept = pre.task_ids.filter(function (id) {
-    return ids[String(id)] === true;
-  });
-  if (kept.length !== pre.task_ids.length) {
+  const orig = pre.task_ids;
+  let kept = null;
+  for (let i = 0; i < orig.length; i++) {
+    const id = orig[i];
+    if (ids[String(id)] !== true) {
+      if (kept === null) kept = orig.slice(0, i);
+    } else if (kept !== null) {
+      kept.push(id);
+    }
+  }
+  if (kept !== null) {
     log.push("config.ad_api_preload.task_ids : " +
-      pre.task_ids.length + " -> " + kept.length);
+      orig.length + " -> " + kept.length);
     pre.task_ids = kept;
   }
   if (pre.preload === true && pre.task_ids.length === 0) {
@@ -107,22 +116,30 @@ function pruneTreasure(obj, log) {
   if (!Array.isArray(sections)) return false;
 
   const kept = [];
-  for (const section of sections) {
-    if (!isPlainObject(section) || KEEP_SECTIONS.indexOf(section.key) === -1) {
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    if (!isPlainObject(section) || !KEEP_SECTIONS_SET.has(section.key)) {
       log.push("drop section " + (section && section.key));
       continue;
     }
     const group = section.task_group || section.widget_task_group;
     if (isPlainObject(group) && Array.isArray(group.tasks)) {
-      const tasks = group.tasks.filter(function (task) {
-        return isPlainObject(task) && KEEP_TASKS.indexOf(task.key) !== -1;
-      });
-      if (tasks.length !== group.tasks.length) {
-        log.push(
-          section.key + " : kept " + tasks.length + "/" + group.tasks.length + " task(s)"
-        );
+      const origTasks = group.tasks;
+      let tasks = null;
+      for (let j = 0; j < origTasks.length; j++) {
+        const task = origTasks[j];
+        if (!isPlainObject(task) || !KEEP_TASKS_SET.has(task.key)) {
+          if (tasks === null) tasks = origTasks.slice(0, j);
+        } else if (tasks !== null) {
+          tasks.push(task);
+        }
       }
-      group.tasks = tasks;
+      if (tasks !== null) {
+        log.push(
+          section.key + " : kept " + tasks.length + "/" + origTasks.length + " task(s)"
+        );
+        group.tasks = tasks;
+      }
     }
     kept.push(section);
   }

@@ -48,6 +48,7 @@ const AD_UPSELL_RE = /(^|_)ads?(_|$)/;
 const MALL_UPSELLS = [
   "browse_mall_popup_acc_amount"
 ];
+const MALL_UPSELLS_SET = new Set(MALL_UPSELLS);
 
 const FEED_CONTENT_PATH = /\/+luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/;
 
@@ -245,17 +246,19 @@ function isAdBanner(item) {
 function dropAdItems(node, log, path, depth) {
   if (depth > 14 || !node || typeof node !== "object") return;
   if (Array.isArray(node)) {
-    const kept = [];
-    for (let i = 0; i < node.length; i++) {
+    let kept = null;
+    const len = node.length;
+    for (let i = 0; i < len; i++) {
       const item = node[i];
       if (isPlainObject(item) && isAdItem(item)) {
         log.push(path + "[" + i + "] : dropped ad item");
+        if (kept === null) kept = node.slice(0, i);
         continue;
       }
-      kept.push(item);
+      if (kept !== null) kept.push(item);
       dropAdItems(item, log, path + "[" + i + "]", depth + 1);
     }
-    if (kept.length !== node.length) {
+    if (kept !== null) {
       node.length = 0;
       for (let i = 0; i < kept.length; i++) node.push(kept[i]);
     }
@@ -265,17 +268,33 @@ function dropAdItems(node, log, path, depth) {
     const nk = normalizeKey(k);
     const val = node[k];
     if ((nk === "bannerlist" || nk === "banners") && Array.isArray(val)) {
-      const kept = val.filter(function (item) { return !isAdBanner(item); });
-      if (kept.length !== val.length) {
-        log.push(path + "." + k + " : dropped " + (val.length - kept.length) + " ad banner(s)");
+      let kept = null;
+      const total = val.length;
+      for (let i = 0; i < total; i++) {
+        const item = val[i];
+        if (isAdBanner(item)) {
+          if (kept === null) kept = val.slice(0, i);
+        } else if (kept !== null) {
+          kept.push(item);
+        }
+      }
+      if (kept !== null) {
+        log.push(path + "." + k + " : dropped " + (total - kept.length) + " ad banner(s)");
         node[k] = kept;
       }
     } else if (nk === "items" && Array.isArray(val)) {
-      const kept = val.filter(function (item) {
-        return !(isPlainObject(item) && item.type === "video_track_mix");
-      });
-      if (kept.length !== val.length) {
-        log.push(path + "." + k + " : dropped " + (val.length - kept.length) + " video_track_mix item(s)");
+      let kept = null;
+      const total = val.length;
+      for (let i = 0; i < total; i++) {
+        const item = val[i];
+        if (isPlainObject(item) && item.type === "video_track_mix") {
+          if (kept === null) kept = val.slice(0, i);
+        } else if (kept !== null) {
+          kept.push(item);
+        }
+      }
+      if (kept !== null) {
+        log.push(path + "." + k + " : dropped " + (total - kept.length) + " video_track_mix item(s)");
         node[k] = kept;
       }
     }
@@ -289,7 +308,7 @@ function handleUpsell(obj, log) {
 
   const removed = [];
   for (const name of Object.keys(map)) {
-    if (AD_UPSELL_RE.test(name) || MALL_UPSELLS.indexOf(name) !== -1) {
+    if (AD_UPSELL_RE.test(name) || MALL_UPSELLS_SET.has(name)) {
       delete map[name];
       removed.push(name);
     }
@@ -330,23 +349,40 @@ function handleUpsell(obj, log) {
   const dropFromList = function (n) {
     if (removedSet[n] === true) return true;
     if (AD_UPSELL_RE.test(n)) return true;
-    if (MALL_UPSELLS.indexOf(n) !== -1) return true;
+    if (MALL_UPSELLS_SET.has(n)) return true;
     return false;
   };
   if (Array.isArray(obj.sort_control_unique_names)) {
-    obj.sort_control_unique_names = obj.sort_control_unique_names.filter(function (n) {
-      return !dropFromList(n);
-    });
+    const list = obj.sort_control_unique_names;
+    let kept = null;
+    const len = list.length;
+    for (let i = 0; i < len; i++) {
+      const n = list[i];
+      if (dropFromList(n)) {
+        if (kept === null) kept = list.slice(0, i);
+      } else if (kept !== null) {
+        kept.push(n);
+      }
+    }
+    if (kept !== null) obj.sort_control_unique_names = kept;
   }
   const clt = obj.cold_launch_timing;
   if (isPlainObject(clt) && Array.isArray(clt.upsell_item_unique_names)) {
-    const before = clt.upsell_item_unique_names.length;
-    clt.upsell_item_unique_names = clt.upsell_item_unique_names.filter(function (n) {
-      return !dropFromList(n);
-    });
-    if (clt.upsell_item_unique_names.length !== before) {
+    const list = clt.upsell_item_unique_names;
+    const before = list.length;
+    let kept = null;
+    for (let i = 0; i < before; i++) {
+      const n = list[i];
+      if (dropFromList(n)) {
+        if (kept === null) kept = list.slice(0, i);
+      } else if (kept !== null) {
+        kept.push(n);
+      }
+    }
+    if (kept !== null) {
       log.push("cold_launch_timing : " + before + " -> " +
-        clt.upsell_item_unique_names.length + " item(s)");
+        kept.length + " item(s)");
+      clt.upsell_item_unique_names = kept;
     }
   }
   return true;
