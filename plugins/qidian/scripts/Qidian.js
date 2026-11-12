@@ -1208,7 +1208,7 @@ async function _executeLimitedAdvTasks(_0xclient) {
     const _activeTasks = _taskList.filter(t => {
       if (!t || typeof t !== "object") return false;
       const is300 = t["TaskType"] === 300 || String(t["TaskType"]) === "300" || (t["Title"] && t["Title"].indexOf("限时") >= 0);
-      const isUnlocked = t["ReadingPageFlag"] === 0 || t["Status"] === 0;
+      const isUnlocked = t["ReadingPageFlag"] === 0 || t["Status"] === 0 || t["Status"] === 2;
       const notDone = t["IsFinished"] !== 1 && t["IsReceived"] !== 1;
       return is300 && isUnlocked && notDone;
     });
@@ -1241,7 +1241,8 @@ async function _executeLimitedAdvTasks(_0xclient) {
 
       for (let i = 0; i < needed; i++) {
         const currentLevel = process + i + 1;
-        _log("[限时激励] 执行第 " + (i + 1) + "/" + needed + " 次广告任务: " + (task["Title"] || "【限时】广告·加点！") + " (梯度 " + currentLevel + "/" + total + ")");
+        const statusTip = task["Status"] === 2 ? " [前置阅读状态直刷探测]" : "";
+        _log("[限时激励] 执行第 " + (i + 1) + "/" + needed + " 次广告任务: " + (task["Title"] || "【限时】广告·加点！") + " (梯度 " + currentLevel + "/" + total + ")" + statusTip);
         const payloadCandidates = [
           // 494/496 HAR 真机递增梯度结构
           {
@@ -1299,7 +1300,8 @@ async function _executeLimitedAdvTasks(_0xclient) {
         }
 
         if (!okOne) {
-          _warn("[限时激励] 第 " + (i + 1) + " 次任务未直接完成: " + lastErr);
+          const failTip = task["Status"] === 2 ? " (服务端强校验阅读前置任务，需在App内阅读1分钟)" : "";
+          _warn("[限时激励] 第 " + (i + 1) + " 次任务未直接完成: " + lastErr + failTip);
           continue;
         }
         _successCount++;
@@ -1322,6 +1324,8 @@ async function _executeLimitedAdvTasks(_0xclient) {
       _detail = "已完成 " + newDone + "/" + newTotal + " 轮" + (newTip ? " (" + newTip + ")" : "");
     } else if (_successCount > 0) {
       _detail = "完成 " + _successCount + " 次看播";
+    } else if (newNext && newNext["Status"] === 2) {
+      _detail = "需在App内打开书籍阅读1分钟解锁(自动重放已就绪)";
     } else {
       _detail = "需App内点[去完成]1次(自动重放已就绪)";
     }
