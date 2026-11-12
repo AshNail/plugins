@@ -36,6 +36,7 @@
 // ==========================================
 // 🔒 凭据掩码
 // ==========================================
+const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
 /** @type {Array<[RegExp, string]>} */
 const MASK_RULES = [
   [/cmfuToken[=:]\s*([A-Za-z0-9_-]{8,})/gi, "cmfuToken=***MASKED***"],
@@ -1141,8 +1142,13 @@ function utf8Encode(str) {
   return new Uint8Array(out);
 }
 
-/* Uint8Array -> UTF-8 字符串（JavaScriptCore 没有可靠的 TextDecoder，自己解） */
+/* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8Decode(bytes) {
+  if (UTF8_DECODER) {
+    try {
+      return UTF8_DECODER.decode(bytes);
+    } catch (_) {}
+  }
   let out = "", i = 0;
   const n = bytes.length;
   while (i < n) {

@@ -267,7 +267,14 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
+const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+
 function utf8(bytes) {
+  if (UTF8_DECODER) {
+    try {
+      return UTF8_DECODER.decode(bytes);
+    } catch (_) {}
+  }
   var out = "", i = 0, n = bytes.length;
   while (i < n) {
     var b = bytes[i++] & 0xff;

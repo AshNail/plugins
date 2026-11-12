@@ -186,8 +186,15 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-/* Uint8Array -> UTF-8 字符串（不依赖 TextDecoder） */
+const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+
+/* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
+  if (UTF8_DECODER) {
+    try {
+      return UTF8_DECODER.decode(bytes);
+    } catch (_) {}
+  }
   var out = "", i = 0, n = bytes.length;
   while (i < n) {
     var b = bytes[i++] & 0xff;

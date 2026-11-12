@@ -453,8 +453,15 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-/* Uint8Array -> UTF-8 字符串（不依赖 TextDecoder） */
+const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+
+/* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
+  if (UTF8_DECODER) {
+    try {
+      return UTF8_DECODER.decode(bytes);
+    } catch (_) {}
+  }
   var out = "", i = 0, n = bytes.length;
   while (i < n) {
     var b = bytes[i++] & 0xff;
@@ -601,7 +608,13 @@ let LOG_TASK_TITLES = false;
     const args = pargs(["logTaskTitles"]);
     LOG_TASK_TITLES = pflag(args, "logTaskTitles", false);
 
-    const rule = RULES.find(function (r) { return r.match.test(url); });
+    let rule = null;
+    for (let i = 0; i < RULES.length; i++) {
+      if (RULES[i].match.test(url)) {
+        rule = RULES[i];
+        break;
+      }
+    }
     if (!rule) return $done({});
 
     const path = url.replace(/^https?:\/\/[^/]+/, "").split("?")[0];
