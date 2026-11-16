@@ -9,6 +9,14 @@ from urllib.parse import quote
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from redlines import expand_rule  # noqa: E402
+from importlib import util as _import_util  # noqa: E402
+
+_ba_spec = _import_util.spec_from_file_location(
+    "build_apps", str(pathlib.Path(__file__).resolve().parent / "build-apps.py")
+)
+_BUILD_APPS = _import_util.module_from_spec(_ba_spec)
+assert _ba_spec and _ba_spec.loader
+_ba_spec.loader.exec_module(_BUILD_APPS)
 
 APPS = ROOT / "src/apps"
 RAW = "https://raw.githubusercontent.com/AshNail/plugins/main/plugins"
@@ -78,6 +86,18 @@ def render(app, sdklib, ads_groups):
         lines.append(f"| {g['title']} | {g.get('tier','B')} | {status} | {note} |")
     hosts = sum(len(g.get("hosts", [])) for g in app.get("groups", []))
     rules = sum(len(g.get("rules", [])) for g in app.get("groups", []))
+    active_hosts: set[str] = set()
+    active_wildcards: set[str] = set()
+    active_rules: list[str] = []
+    for g in app.get("groups", []):
+        if g.get("disabled"):
+            continue
+        for h in g.get("hosts", []):
+            hl = h.lower()
+            active_hosts.add(hl)
+            if hl.startswith("*."):
+                active_wildcards.add(hl[2:])
+        active_rules.extend(g.get("rules", []))
     for sid in app.get("sdks", []):
         meta = dict(sdklib.get(sid, {}))
         if meta.get("adsGroup") and meta["adsGroup"] in ads_groups:
@@ -90,6 +110,13 @@ def render(app, sdklib, ads_groups):
         n_r = len(meta.get("rules", []))
         hosts += n_h
         rules += n_r
+        if not meta.get("disabled"):
+            for h in meta.get("hosts", []):
+                hl = h.lower()
+                active_hosts.add(hl)
+                if hl.startswith("*."):
+                    active_wildcards.add(hl[2:])
+            active_rules.extend(meta.get("rules", []))
         title = meta.get("title", sid)
         note = meta.get("note", "域名真源见 ads 组/SDK 库")
         lines.append(f"| {title}（引用组） | A | 启用 | {note} 共 {n_h} 域 / {n_r} 规则。 |")
@@ -100,6 +127,13 @@ def render(app, sdklib, ads_groups):
             f"| QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 "
             "这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 "
             f"{n_quic} 条。 |"
+        )
+    dual_rules = _BUILD_APPS.derive_dual_stack_rules(active_hosts, active_wildcards, active_rules)
+    if dual_rules:
+        rules += len(dual_rules)
+        lines.append(
+            f"| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，"
+            f"在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 {len(dual_rules)} 条。 |"
         )
     if crons:
         lines += [

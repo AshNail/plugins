@@ -9,10 +9,10 @@
 两者都只数**声明**。这一份数**前提**：一条规则写在插件里，
 是否具备它命中所需的条件。
 
-- 共审计 **287** 条会依赖前提的配置行，分布在 `[Rule]` / `[Script]` / `[Rewrite]`。
-- **前提满足 277 条**（97%）：连接层可见，或插件已声明 `[MITM]`。
-- **仅明文 6 条**（2%）：正则锚定 `^http://`，不依赖解密，但也只吃明文 HTTP——现代 App 几乎全 HTTPS，实际命中率很低。
-- **存疑 4 条**（1%）：需要 HTTP 报文内容，但插件没有 `[MITM]`。
+- 共审计 **2732** 条会依赖前提的配置行，分布在 `[Rule]` / `[Script]` / `[Rewrite]`。
+- **前提满足 2722 条**（100%）：连接层可见，或插件已声明 `[MITM]`。
+- **仅明文 6 条**（0%）：正则锚定 `^http://`，不依赖解密，但也只吃明文 HTTP——现代 App 几乎全 HTTPS，实际命中率很低。
+- **存疑 4 条**（0%）：需要 HTTP 报文内容，但插件没有 `[MITM]`。
 
 存疑不等于错，但必须登记。当前 4 条存疑全部已登记 waiver（见第 3 节），每条都写了保留理由与**真机证伪方法**。
 
@@ -36,22 +36,29 @@
 
 | 插件 | `[MITM]` | 审计条数 | 前提满足 | 仅明文 | 存疑 |
 |---|---|---:|---:|---:|---:|
-| `ads.plugin` | **无** | 13 | 3 | 6 | 4 |
-| `amap.plugin` | 有 | 12 | 12 | 0 | 0 |
-| `banks.plugin` | **无** | 2 | 2 | 0 | 0 |
-| `bilibili.plugin` | 有 | 8 | 8 | 0 | 0 |
-| `douyin.plugin` | 有 | 30 | 30 | 0 | 0 |
-| `instagram.plugin` | **无** | 1 | 1 | 0 | 0 |
-| `meituan.plugin` | 有 | 25 | 25 | 0 | 0 |
-| `netease.plugin` | 有 | 20 | 20 | 0 | 0 |
+| `ads.plugin` | **无** | 2018 | 2008 | 6 | 4 |
+| `amap.plugin` | 有 | 28 | 28 | 0 | 0 |
+| `banks.plugin` | **无** | 10 | 10 | 0 | 0 |
+| `bilibili.plugin` | 有 | 16 | 16 | 0 | 0 |
+| `bubei-danci.plugin` | **无** | 1 | 1 | 0 | 0 |
+| `douyin.plugin` | 有 | 35 | 35 | 0 | 0 |
+| `instagram.plugin` | **无** | 8 | 8 | 0 | 0 |
+| `jd.plugin` | **无** | 5 | 5 | 0 | 0 |
+| `mba-dashi.plugin` | **无** | 67 | 67 | 0 | 0 |
+| `meituan.plugin` | 有 | 38 | 38 | 0 | 0 |
+| `mijia.plugin` | **无** | 8 | 8 | 0 | 0 |
+| `netease.plugin` | 有 | 30 | 30 | 0 | 0 |
 | `qidian.plugin` | 有 | 32 | 32 | 0 | 0 |
 | `qqnews.plugin` | 有 | 5 | 5 | 0 | 0 |
+| `ruankao-tong.plugin` | **无** | 67 | 67 | 0 | 0 |
 | `soda.plugin` | 有 | 75 | 75 | 0 | 0 |
-| `taobao.plugin` | 有 | 15 | 15 | 0 | 0 |
-| `x.plugin` | **无** | 1 | 1 | 0 | 0 |
-| `xianyu.plugin` | 有 | 24 | 24 | 0 | 0 |
-| `youtube.plugin` | 有 | 5 | 5 | 0 | 0 |
-| `zhihu.plugin` | 有 | 19 | 19 | 0 | 0 |
+| `taobao.plugin` | 有 | 38 | 38 | 0 | 0 |
+| `wechat.plugin` | **无** | 35 | 35 | 0 | 0 |
+| `x.plugin` | **无** | 4 | 4 | 0 | 0 |
+| `xianyu.plugin` | 有 | 39 | 39 | 0 | 0 |
+| `youtube.plugin` | 有 | 7 | 7 | 0 | 0 |
+| `zhihu.plugin` | 有 | 30 | 30 | 0 | 0 |
+| `zhihuifangdong.plugin` | **无** | 136 | 136 | 0 | 0 |
 
 ## 3. 存疑清单与豁免登记
 

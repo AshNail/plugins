@@ -1,9 +1,9 @@
 {
   "slug": "bilibili",
-  "name": "哔哩哔哩 · 去广告与精简 v1.2.1",
-  "desc": "哔哩哔哩开屏、推荐流、视频页推广与搜索广场广告原生复写过滤，遥测及HTTPDNS黑洞；核心播放直播零接触。",
-  "version": "1.2.1",
-  "date": "2026-11-09",
+  "name": "哔哩哔哩 · 去广告与精简 v1.3.0",
+  "desc": "哔哩哔哩开屏、推荐流、竖屏 Story 广告、视频页与VIP物料推广原生复写过滤，遥测及HTTPDNS双栈拦截；核心播放直播零接触。",
+  "version": "1.3.0",
+  "date": "2026-11-16",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,哔哩哔哩",
   "comment": [
@@ -158,11 +158,22 @@
         "group": "请求阶段直接终止（reject_dict(200)）：纯开屏与顶栏挂件端点",
         "stage": "request",
         "gate": "slimNav",
-        "endpoint": "x/resource/top/activity",
-        "url": "^https://app\\.bilibili\\.com/x/resource/top/activity(\\?|$)",
+        "endpoint": "x/resource/",
+        "url": "^https://app\\.bilibili\\.com/x/resource/(?:top/activity|patch/tab(?:/v2)?)(\\?|$)",
         "action": "reject_dict(200)",
-        "note": "首页右上角活动推广挂件直接返回 200 + 空字典",
+        "note": "首页右上角活动推广挂件与 Tab 活动换肤直接返回 200 + 空字典",
         "source": "https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin"
+      },
+      {
+        "id": "kill-vip-ads-materials",
+        "group": "请求阶段直接终止（reject_dict(200)）：纯开屏与顶栏挂件端点",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "x/vip/ads/materials",
+        "url": "^https://app\\.bilibili\\.com/x/vip/ads/materials(\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "会员商业广告物料预拉取接口直接返回 200 + 空字典",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Bilibili_remove_ads.lpx"
       },
       {
         "id": "clean-feed-index",
@@ -182,9 +193,9 @@
         "gate": "cleanAds",
         "endpoint": "x/v2/feed/index/story",
         "url": "^https://app\\.bilibili\\.com/x/v2/feed/index/story(\\?|$)",
-        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.items | type) == \\\"array\\\" then .data.items |= map(select(type != \\\"object\\\" or (.ad_info == null and ((.card_goto | if type == \\\"string\\\" then startswith(\\\"ad_\\\") else false end) | not)))) else . end\")",
-        "note": "竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* 广告视频",
-        "source": "https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin"
+        "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" and (.data.items | type) == \\\"array\\\" then .data.items |= map(select(type != \\\"object\\\" or (.ad_info == null and ((.card_goto | if type == \\\"string\\\" then (startswith(\\\"ad_\\\") or startswith(\\\"vertical_ad_\\\")) else false end) | not)))) else . end\")",
+        "note": "竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* / vertical_ad_* 广告视频",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Bilibili_remove_ads.lpx"
       },
       {
         "id": "clean-view-relates",
@@ -218,8 +229,19 @@
         "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"object\\\" then .data |= ((if (.bottom | type) == \\\"array\\\" then .bottom |= map(select(type != \\\"object\\\" or (.name != \\\"会员购\\\" and .tab_id != \\\"会员购Bottom\\\" and .name != \\\"发布\\\"))) else . end) | (if (.top | type) == \\\"array\\\" then .top |= map(select(type != \\\"object\\\" or .name != \\\"游戏中心\\\")) else . end)) else . end\")",
         "note": "导航栏精简：过滤底栏会员购/发布与顶栏游戏中心",
         "source": "https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin"
+      },
+      {
+        "id": "clean-skin-equip",
+        "group": "响应字段级净化（response.json.jq）：保留业务数据流，只剥广告卡片与冗余入口",
+        "stage": "response",
+        "gate": "slimNav",
+        "endpoint": "x/resource/show/skin",
+        "url": "^https://app\\.bilibili\\.com/x/resource/show/skin(\\?|$)",
+        "action": "response.json.delete(\"data.common_equip\")",
+        "note": "精简首页主题皮肤装扮推广模块",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Bilibili_remove_ads.lpx"
       }
     ]
   },
-  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b7/70/99/b7709979-0703-0722-b561-c97b2bf5b644/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg"
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ef/28/7a/ef287aee-8a59-c8d2-d45b-9310fb31346d/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg"
 }

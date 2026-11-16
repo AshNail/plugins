@@ -59,11 +59,18 @@ function readArgs() {
   try { r = (typeof $argument === "undefined") ? null : $argument; } catch (e) { r = null; }
   if (!r) return {};
   if (typeof r === "string") {
-    var o = {};
-    var parts = r.split(/[&;,]/);
-    for (var i = 0; i < parts.length; i++) {
-      var kv = parts[i].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var o = {}, len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }

@@ -1,9 +1,9 @@
 {
   "slug": "zhihu",
-  "name": "知乎 · 去广告与精简 v1.2.2",
-  "desc": "知乎自建遥测黑洞，开屏、商业推广、推荐流与关注流广告卡片原生复写过滤；问答文章核心功能零接触。",
-  "version": "1.2.2",
-  "date": "2026-11-09",
+  "name": "知乎 · 去广告与精简 v1.3.0",
+  "desc": "知乎自建遥测黑洞/双栈拦截，开屏、商业推广、问答挂件与信息流广告卡片原生复写过滤；问答文章核心功能零接触。",
+  "version": "1.3.0",
+  "date": "2026-11-16",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,知乎",
   "comment": [
@@ -207,11 +207,22 @@
         "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
         "stage": "request",
         "gate": "cleanAds",
-        "endpoint": "content-distribution-core/bubble/common/show",
-        "url": "^https://api\\.zhihu\\.com/content-distribution-core/bubble/common/show",
+        "endpoint": "content-distribution-core/bubble/common/",
+        "url": "^https://api\\.zhihu\\.com/content-distribution-core/bubble/common/(?:show|settings)",
         "action": "reject_dict(200)",
-        "note": "内容分发气泡提示直接返回 200 + 空字典",
+        "note": "内容分发气泡展示与配置接口直接返回 200 + 空字典",
         "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "kill-fringe-ad",
+        "group": "请求阶段直接终止（reject_dict(200)）：商业化广告与推荐卡片接口",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "fringe/ad",
+        "url": "^https://api\\.zhihu\\.com/fringe/ad",
+        "action": "reject_dict(200)",
+        "note": "知乎边缘悬浮广告请求直接返回 200 + 空字典",
+        "source": "https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin"
       },
       {
         "id": "kill-homepage-card",
@@ -299,6 +310,61 @@
         "url": "^https://api\\.zhihu\\.com/moments_v3(\\?|$)",
         "action": "response.json.jq(\"if type == \\\"object\\\" and (.data | type) == \\\"array\\\" then .data |= map(select(type != \\\"object\\\" or (.type != \\\"feed_advert\\\" and ((.target | if type == \\\"object\\\" then (.type // \\\"\\\") else \\\"\\\" end) != \\\"advert\\\") and .adjson == null and .promotion_extra == null))) else . end\")",
         "note": "关注动态信息流：剔除穿插的商业推广与内联广告卡片",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "clean-question-feeds-ad",
+        "group": "响应字段级净化（response.json.delete）：剥离问题/回答/播客与搜索广告字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "questions/",
+        "url": "^https://api\\.zhihu\\.com/questions/\\d+/feeds(\\?|$)",
+        "action": "response.json.delete(\"ad_info\")",
+        "note": "问题流响应删除 ad_info 商业广告节点",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "clean-podcasts-banners",
+        "group": "响应字段级净化（response.json.delete）：剥离问题/回答/播客与搜索广告字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "podcasts/hub/v",
+        "url": "^https://api\\.zhihu\\.com/podcasts/hub/v\\d+(\\?|$)",
+        "action": "response.json.delete(\"banners\")",
+        "note": "知乎播客频道删除推广 banners",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "clean-search-pendant",
+        "group": "响应字段级净化（response.json.delete）：剥离问题/回答/播客与搜索广告字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "search_v",
+        "url": "^https://api\\.zhihu\\.com/search_v\\d+(\\?|$)",
+        "action": "response.json.delete(\"pendant\")",
+        "note": "搜索页删除浮动商业推广挂件 pendant",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "clean-comment-atmosphere",
+        "group": "响应字段级净化（response.json.delete）：剥离问题/回答/播客与搜索广告字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "root_comment",
+        "url": "^https://api\\.zhihu\\.com/comment_v\\d+/(?:answers|pins)/\\d+/root_comment(\\?|$)",
+        "action": "response.json.delete(\"atmosphere_voting_config\")",
+        "note": "评论区移除评论氛围满意度调查弹窗配置",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
+      },
+      {
+        "id": "clean-article-answer-promo",
+        "group": "响应字段级净化（response.json.delete）：剥离问题/回答/播客与搜索广告字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "/v",
+        "url": "^https://api\\.zhihu\\.com/(?:articles|answers|pins)/v\\d+/\\d+(\\?|$)",
+        "action": "response.json.delete([\"third_business\", \"ring_info\"])",
+        "note": "文章/回答/想法详情页移除第三方商业化挂件与圈子推广字段",
         "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx"
       }
     ]

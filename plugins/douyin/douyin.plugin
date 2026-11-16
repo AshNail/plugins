@@ -1,13 +1,13 @@
-#!name=抖音 · 净化与福利 v0.9.2
+#!name=抖音 · 净化与福利 v0.9.3
 #!desc=抖音福利页精简（攒时长听歌不中断）、信息流及搜索广告清理、商业化弹窗过滤与开屏净化；支持 [Argument] 自定义开关。
 #!author=edy
-#!version=0.9.2
+#!version=0.9.3
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/douyin/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/17/e6/90/17e690fe-f519-2fb8-5128-37a11d12c54b/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=iOS
 #!loon_version=3.5.1(983)
-#!date=2026-11-09
+#!date=2026-11-16
 #!tag=抖音,去广告,福利页,Loon
 #!type=normal
 
@@ -152,6 +152,21 @@ request if ${blockSplashAd} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\
 
 # DSP 广告展示上报：信息流去广告模式下阻断无用出网并回 200 + JSON {}；由 cleanFeedAds 开关控制。
 request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/ads\/report\/dsp\/show/ then reject_dict(200)
+
+# 媒体广告位配置：纯广告端点，响应体里没有业务字段；由 cleanFeedAds 开关控制。
+request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/media_ads(?:\?|$)/ then reject_dict(200)
+
+# 运营活动列表（beta-luna 域不固定证书，与 polaris 互补）：纯运营载荷；由 cleanActivity 开关控制。
+request if ${cleanActivity} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/activities(?:\?|$)/ then reject_dict(200)
+
+# 看视频听歌提醒弹窗：广告向引导，不含业务字段（避免匹配 clean.min.js 的 v2/feed/ 路由）；由 cleanFeedAds 控制。
+request if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/listen-video\/reminder(?:\?|$)/ then reject_dict(200)
+
+# 「我的」页：只剥激励广告 banner 字段，页面其余结构保留；由 cleanFeedAds 控制。
+response if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/me(?:\?|$)/ then response.json.delete("reward_ad_banner")
+
+# 更多面板：blocks 里只摘 type=related_video 的视频推广块；由 cleanFeedAds 控制。
+response if ${cleanFeedAds} == true && ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/more-panel(?:\?|$)/ then response.json.jq("if type == \"object\" and (.blocks | type) == \"array\" then .blocks |= map(select(type != \"object\" or .type != \"related_video\")) else . end")
 
 
 # ============================================================================

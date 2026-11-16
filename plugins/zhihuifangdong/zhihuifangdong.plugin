@@ -4,7 +4,7 @@
 #!version=1.0.2
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihuifangdong/README.md
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/28/c2/ef/28c2ef10-504d-1599-f531-1ec4d248e864/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/88/5c/ca/885ccaf8-28b2-a53b-01be-00fda322ce95/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-07
 #!tag=去广告,智慧房东,租房
@@ -20,6 +20,148 @@
 # 本插件 [Host]/[Rule] 全设备生效(Loon 无法按 App 限定):同一 SDK 域跨 App 共享黑洞,'按 App 插件'只是分组开关;配合全局 ads 插件 httpdns 组防绕过。
 # 本文件由 tools/build-apps.py 从 src/apps/zhihuifangdong.json 生成，不要手改生成物。
 # ========================================================================
+
+[Rule]
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN-SUFFIX,ad-scope.com.cn,REJECT
+DOMAIN-SUFFIX,adkwai.com,REJECT
+DOMAIN-SUFFIX,adn-plus.com.cn,REJECT
+DOMAIN-SUFFIX,adscope.cn,REJECT
+DOMAIN-SUFFIX,adscope.com.cn,REJECT
+DOMAIN-SUFFIX,adscope.xyz,REJECT
+DOMAIN-SUFFIX,adukwai.com,REJECT
+DOMAIN-SUFFIX,beizi.biz,REJECT
+DOMAIN-SUFFIX,beizi.info,REJECT
+DOMAIN-SUFFIX,beizi.online,REJECT
+DOMAIN-SUFFIX,cpro.baidu.com,REJECT
+DOMAIN-SUFFIX,e.kuaishou.cn,REJECT
+DOMAIN-SUFFIX,e.kuaishou.com,REJECT
+DOMAIN-SUFFIX,e.qq.com,REJECT
+DOMAIN-SUFFIX,gdt.qq.com,REJECT
+DOMAIN-SUFFIX,gdtimg.com,REJECT
+DOMAIN-SUFFIX,l.qq.com,REJECT
+DOMAIN-SUFFIX,mobads.baidu.com,REJECT
+DOMAIN-SUFFIX,open.kuaishouzt.com,REJECT
+DOMAIN-SUFFIX,open.kwaizt.com,REJECT
+DOMAIN-SUFFIX,pangle-ads.com,REJECT
+DOMAIN-SUFFIX,pangle.io,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-b.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao1.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao2.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao3.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao4.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao5.com,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
+DOMAIN-SUFFIX,popin.cc,REJECT
+DOMAIN-SUFFIX,pos.baidu.com,REJECT
+DOMAIN-SUFFIX,tencentmind.com,REJECT
+DOMAIN-SUFFIX,tiktokpangle-cdn-us.com,REJECT
+DOMAIN-SUFFIX,ugdtimg.com,REJECT
+DOMAIN-SUFFIX,ugdturner.com,REJECT
+DOMAIN-SUFFIX,wit.qq.com,REJECT
+DOMAIN,ad.a.yximgs.com,REJECT
+DOMAIN,ad.partner.gifshow.com,REJECT
+DOMAIN,ad.player.baidu.com,REJECT
+DOMAIN,ad.toutiao.com,REJECT
+DOMAIN,ada.baidu.com,REJECT
+DOMAIN,adm.baidu.com,REJECT
+DOMAIN,ads3-normal-gl2.zijieapi.com,REJECT
+DOMAIN,ads3-normal-hj.zijieapi.com,REJECT
+DOMAIN,ads3-normal-hl.zijieapi.com,REJECT
+DOMAIN,ads3-normal-lf.zijieapi.com,REJECT
+DOMAIN,ads3-normal-lq.zijieapi.com,REJECT
+DOMAIN,ads3-normal-xh.zijieapi.com,REJECT
+DOMAIN,ads3-normal.zijieapi.com,REJECT
+DOMAIN,ads5-normal-gl2.zijieapi.com,REJECT
+DOMAIN,ads5-normal-hj.zijieapi.com,REJECT
+DOMAIN,ads5-normal-hl.zijieapi.com,REJECT
+DOMAIN,ads5-normal-lf.zijieapi.com,REJECT
+DOMAIN,ads5-normal-lq.zijieapi.com,REJECT
+DOMAIN,ads5-normal-xh.zijieapi.com,REJECT
+DOMAIN,ads5-normal.zijieapi.com,REJECT
+DOMAIN,adscdn.baidu.com,REJECT
+DOMAIN,adsfile.qq.com,REJECT
+DOMAIN,adslvfile.qq.com,REJECT
+DOMAIN,adsmind.apdcdn.tc.qq.com,REJECT
+DOMAIN,ali-ad.a.yximgs.com,REJECT
+DOMAIN,als.baidu.com,REJECT
+DOMAIN,baifen.music.baidu.com,REJECT
+DOMAIN,besc.baidustatic.com,REJECT
+DOMAIN,btrace.qq.com,REJECT
+DOMAIN,cb.baidu.com,REJECT
+DOMAIN,cbjs.baidu.com,REJECT
+DOMAIN,click-bes.baidu.com,REJECT
+DOMAIN,cm.baidu.com,REJECT
+DOMAIN,cpro.baidustatic.com,REJECT
+DOMAIN,dm.isnssdk.com,REJECT
+DOMAIN,dm.pstatp.com,REJECT
+DOMAIN,dm.toutiao.com,REJECT
+DOMAIN,dmplog.qq.com,REJECT
+DOMAIN,drmcmm.baidu.com,REJECT
+DOMAIN,duiwai.baidu.com,REJECT
+DOMAIN,dup.baidustatic.com,REJECT
+DOMAIN,dxp.baidu.com,REJECT
+DOMAIN,eclick.baidu.com,REJECT
+DOMAIN,ecma.bdimg.com,REJECT
+DOMAIN,ecmb.bdimg.com,REJECT
+DOMAIN,eduad.baidu.com,REJECT
+DOMAIN,entry.baidu.com,REJECT
+DOMAIN,fclog.baidu.com,REJECT
+DOMAIN,fxgate.baidu.com,REJECT
+DOMAIN,gdfp.gifshow.com,REJECT
+DOMAIN,hao123union.baidu.com,REJECT
+DOMAIN,hmma.baidu.com,REJECT
+DOMAIN,hw-ot-ad.a.yximgs.com,REJECT
+DOMAIN,i.isnssdk.com,REJECT
+DOMAIN,i16-tb.isnssdk.com,REJECT
+DOMAIN,ichannel.isnssdk.com,REJECT
+DOMAIN,imgstat.baidu.com,REJECT
+DOMAIN,iwanad.baidu.com,REJECT
+DOMAIN,js-ad.a.yximgs.com,REJECT
+DOMAIN,lianmengapi.snssdk.com,REJECT
+DOMAIN,log-sdk.ksapisrv.com,REJECT
+DOMAIN,mdevstat.qqlive.qq.com,REJECT
+DOMAIN,miniapp-ad.cdn.bcebos.com,REJECT
+DOMAIN,mobads-logs.baidu.com,REJECT
+DOMAIN,mobads-pre-config.cdn.bcebos.com,REJECT
+DOMAIN,mtrace.qq.com,REJECT
+DOMAIN,nadvideo2.baidu.com,REJECT
+DOMAIN,open.isnssdk.com,REJECT
+DOMAIN,p3-ad-aweme.byteimg.com,REJECT
+DOMAIN,p3-ad-sign.byteimg.com,REJECT
+DOMAIN,p6-ad-sign.byteimg.com,REJECT
+DOMAIN,p9-ad-sign.byteimg.com,REJECT
+DOMAIN,pangolin-hl.snssdk.com,REJECT
+DOMAIN,pangolin-lf.snssdk.com,REJECT
+DOMAIN,pangolin-lq.snssdk.com,REJECT
+DOMAIN,pangolin.snssdk.com,REJECT
+DOMAIN,pangolin16.isnssdk.com,REJECT
+DOMAIN,pangolin16.sgsnssdk.com,REJECT
+DOMAIN,pingtcss.qq.com,REJECT
+DOMAIN,promotion-partner.kuaishou.com,REJECT
+DOMAIN,sestat.baidu.com,REJECT
+DOMAIN,snowflake.qq.com,REJECT
+DOMAIN,spcode.baidu.com,REJECT
+DOMAIN,tnc16-alisg.isnssdk.com,REJECT
+DOMAIN,tnc16-useast1a.isnssdk.com,REJECT
+DOMAIN,tnc31-normal-alisg.isnssdk.com,REJECT
+DOMAIN,tobapplog.ctobsnssdk.com,REJECT
+DOMAIN,toblog.ctobsnssdk.com,REJECT
+DOMAIN,tr.byteurl.cn,REJECT
+DOMAIN,tx-ad.a.yximgs.com,REJECT
+DOMAIN,ubmcmm.baidustatic.com,REJECT
+DOMAIN,ubmcvideo.baidustatic.com,REJECT
+DOMAIN,ulog-sdk.gifshow.com,REJECT
+DOMAIN,union.baidu.com,REJECT
+DOMAIN,v1-ad.video.yximgs.com,REJECT
+DOMAIN,v2-ad.video.yximgs.com,REJECT
+DOMAIN,v3-ad.video.yximgs.com,REJECT
+DOMAIN,web-trace.ksapisrv.com,REJECT
+DOMAIN,wlog.kuaishou.com,REJECT
 
 [Host]
 
@@ -90,7 +232,6 @@ tr.byteurl.cn = 127.0.0.1
 
 # ------------------------------------------------------------
 # 腾讯广告 / 优量汇（GDT）（置信 A）
-*.adnet.qq.com = 127.0.0.1
 *.e.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
 *.gdtimg.com = 127.0.0.1
@@ -99,7 +240,6 @@ tr.byteurl.cn = 127.0.0.1
 *.ugdtimg.com = 127.0.0.1
 *.ugdturner.com = 127.0.0.1
 *.wit.qq.com = 127.0.0.1
-adnet.qq.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1

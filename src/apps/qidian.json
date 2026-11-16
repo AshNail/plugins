@@ -134,6 +134,14 @@
       ]
     }
   ],
+  "triage_exclude": [
+    {
+      "label": "业务·起点推送与通知网关（拦后断推送，且本插件严格对齐 config 不设 [Host] 黑洞层）",
+      "globs": [
+        "qdp.qidian.com"
+      ]
+    }
+  ],
   "enhance": {
     "active": true,
     "debug_arg": "QDREADER_DEBUG",

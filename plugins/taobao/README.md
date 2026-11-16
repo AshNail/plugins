@@ -1,12 +1,12 @@
-# 淘宝 · 去广告（原生复写层） v1.2.4
+# 淘宝 · 去广告（原生复写层） v1.3.0
 
-> 淘宝阿里妈妈/Tanx/Simba等独立广告域黑洞，开屏、推荐与活动广告原生复写清理；交易支付风控零接触。
+> 淘宝阿里妈妈/Tanx/Simba等独立广告域双栈与黑洞拦截，开屏、推荐与活动广告原生复写清理；交易支付风控零接触。
 
-版本 **1.2.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 taobao.plugin](https://img.shields.io/badge/Loon-导入%E6%B7%98%E5%AE%9D%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%8E%9F%E7%94%9F%E5%A4%8D%E5%86%99%E5%B1%82%EF%BC%89%20v1.2.4-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Ftaobao%2Ftaobao.plugin)
+[![一键导入 taobao.plugin](https://img.shields.io/badge/Loon-导入%E6%B7%98%E5%AE%9D%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%8E%9F%E7%94%9F%E5%A4%8D%E5%86%99%E5%B1%82%EF%BC%89%20v1.3.0-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Ftaobao%2Ftaobao.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plugin
@@ -23,6 +23,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 | 阿里妈妈直通车点击跳转/外链（默认关） | B | 默认关闭 | mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com / click.mz.simba.taobao.com / click.tz.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。 |
 | 阿里妈妈 / TanX / 阿里广告监测（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 17 域 / 0 规则。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 4 条。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 21 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
@@ -51,6 +52,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 | `kill-idle-welcome` | request | `reject_dict` | `cleanAds` | 闲置频道欢迎弹窗营销接口 |
 | `kill-trip-tms` | request | `reject_dict` | `cleanAds` | 出行活动 TMS 营销资源查询接口 |
 | `kill-guide-secondfloor` | request | `reject_dict` | `cleanAds` | 首页二楼活动配置与开屏引导拉取 |
+| `kill-damai-popup` | request | `reject_dict` | `cleanAds` | 淘系内大麦演出商业推广弹窗拉取接口 |
+| `kill-homepage-launch` | request | `reject_dict` | `cleanAds` | 首页商业启动营销拉取接口 |
 | `kill-splash-img` | request | `reject_img` | `cleanAds` | 淘宝开屏全屏尺寸（1080/1125）octopus/tps 推广图返回 200 + 1px 透明 GIF |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
@@ -80,4 +83,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/taobao/taobao.plu
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/taobao.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 37 条，[Rule] 4 条。
+统计：精确/通配黑洞 37 条，[Rule] 25 条。

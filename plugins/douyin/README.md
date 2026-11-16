@@ -441,6 +441,10 @@ response if ${url} ~= /^https?:\/\/beta-luna\.douyin\.com\/luna\/treasure\/task\
 
 ## 7. 版本更新记录
 
+### v0.9.3（2026-11-16）协同 `soda` 落地 5 条 `beta-luna` 原生 `[Rewrite]` v2 规则
+
+- **原生 `[Rewrite]` v2 引擎规则补齐（与 `soda.plugin` / 可莉 `SodaMusic` 公开规则对齐）**：在 `beta-luna.douyin.com/luna/*` 补充 5 条零脚本原生复写规则——① `/luna/media_ads`、`reject_dict(200)`（`cleanFeedAds` 控制）；② `/luna/activities`、`reject_dict(200)`（`cleanActivity` 控制，落在未固定证书的 `beta-luna` 上）；③ `/luna/listen-video/reminder`、`reject_dict(200)`（`cleanFeedAds` 控制，与 `[Script]` `/luna/v2/feed/` 无重叠）；④ `/luna/me` 原生 `response.json.delete("reward_ad_banner")`；⑤ `/luna/more-panel` 原生 `response.json.jq` 仅摘 `.blocks` 中的 `type == "related_video"` 视频推广块。
+
 ### v0.9.2（2026-11-09）与汽水 `sanitize.js` 净化口径对齐
 
 - **路由与双斜杠兼容**：`cleanFeedAds` 覆盖 `/+luna/advert/fallback/done/info` 与双斜杠 `//luna/`；`cleanUpsell` 覆盖 `/+luna/commerce/(?:upsells|v2/upsell)`。

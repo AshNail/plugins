@@ -121,14 +121,23 @@ function observeIncentiveRetrieve(obj) {
 function observeUpsell(obj) {
   const map = isPlainObject(obj.upsell_map) ? obj.upsell_map : {};
   const names = Object.keys(map);
-  const adNames = names.filter(function (n) { return /ads|_ad$|^ad_/.test(n); });
-  const mallNames = names.filter(function (n) { return n.indexOf("mall") !== -1; });
+  const adNames = [];
+  const mallNames = [];
+  for (let i = 0; i < names.length; i++) {
+    const n = names[i];
+    if (/ads|_ad$|^ad_/.test(n)) adNames.push(n);
+    if (n.indexOf("mall") !== -1) mallNames.push(n);
+  }
   const lines = [];
   lines.push("upsell_map: " + names.length + " popup(s)");
   lines.push("ad popups: " + (adNames.length ? adNames.join(",") : "-"));
   lines.push("mall popups: " + (mallNames.length ? mallNames.join(",") : "-"));
   const vars = isPlainObject(obj.variables) ? obj.variables : {};
-  const adsVars = Object.keys(vars).filter(function (k) { return k.indexOf("ads") === 0; });
+  const vkeys = Object.keys(vars);
+  const adsVars = [];
+  for (let i = 0; i < vkeys.length; i++) {
+    if (vkeys[i].indexOf("ads") === 0) adsVars.push(vkeys[i]);
+  }
   lines.push("ads_* variables: " + (adsVars.length ? adsVars.join(",") : "-"));
   console.log("[douyin-reward] upsell\n  " + lines.join("\n  "));
 }
@@ -296,13 +305,22 @@ function observeAdPlatform(obj, url) {
 /* ------------------------------------------------------------------ */
 /* 通用工具：响应体解码 / 诊断标记                                     */
 /* ------------------------------------------------------------------ */
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const dec = getUtf8Decoder();
+  if (dec) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return dec.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -373,15 +391,38 @@ function ceTag(resp) {
   }
 }
 
+function matchObserver(url) {
+  if (/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) return observeTreasure;
+  if (/\/luna\/advert\/incentive\/config/.test(url)) return observeIncentiveConfig;
+  if (/\/luna\/advert\/incentive\/retrieve/.test(url)) return observeIncentiveRetrieve;
+  if (/\/luna\/advert\/incentive\/done/.test(url)) return observeIncentiveDone;
+  if (/\/+luna\/advert\/fallback\/done\/info/.test(url)) return observeFallback;
+  if (/\/+luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) return observeFeedAds;
+  if (/\/luna\/commerce\/v2\/upsell/.test(url)) return observeUpsell;
+  if (/zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/.test(url)) return observeAdPlatform;
+  return null;
+}
+
+function firstNonWsChar(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c > 32 && c !== 0xa0 && c !== 0xfeff) return s.charAt(i);
+  }
+  return "";
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
     if (url.indexOf("/luna/") === -1 && url.indexOf("zijieapi.com") === -1) {
       return $done({});
     }
+    const observe = matchObserver(url);
+    if (!observe) return $done({});
+
     const raw = readBody($response);
     if (typeof raw !== "string" || raw.length === 0) return $done({});
-    const head = raw.trimStart().slice(0, 1);
+    const head = firstNonWsChar(raw);
     if (head !== "{" && head !== "[") {
       /* 原本静默放行：接口换形状、返回 HTML 错误页、或换成 br 编码都看不出来 */
       console.log("[douyin-reward] non-JSON len=" + raw.length + ceTag($response) + " " + url);
@@ -395,16 +436,7 @@ function ceTag(resp) {
       return $done({});
     }
 
-    if (/\/luna\/treasure\/task\/page\/v[0-9]+/.test(url)) observeTreasure(obj);
-    else if (/\/luna\/advert\/incentive\/config/.test(url)) observeIncentiveConfig(obj);
-    else if (/\/luna\/advert\/incentive\/retrieve/.test(url)) observeIncentiveRetrieve(obj);
-    else if (/\/luna\/advert\/incentive\/done/.test(url)) observeIncentiveDone(obj);
-    else if (/\/+luna\/advert\/fallback\/done\/info/.test(url)) observeFallback(obj);
-    else if (/\/+luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) observeFeedAds(obj);
-    else if (/\/luna\/commerce\/v2\/upsell/.test(url)) observeUpsell(obj);
-    else if (/zijieapi\.com\/(?:api\/ad\/|api\/incentive\/marketing\/done)/.test(url)) {
-      observeAdPlatform(obj, url);
-    } else return $done({});
+    observe(obj, url);
 
     $done({});
   } catch (e) {

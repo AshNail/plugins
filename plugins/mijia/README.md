@@ -1,12 +1,12 @@
-# 米家 · 去广告（小米广告平台层） v1.1.4
+# 米家 · 去广告（小米广告平台层） v1.1.5
 
 > 米家接入的小米统一广告平台及有品商业化推荐域 DNS 黑洞拦截；设备控制与账号推送绝对放行。零证书。
 
-版本 **1.1.4** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.1.5** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 mijia.plugin](https://img.shields.io/badge/Loon-导入%E7%B1%B3%E5%AE%B6%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%B0%8F%E7%B1%B3%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E5%B1%82%EF%BC%89%20v1.1.4-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmijia%2Fmijia.plugin)
+[![一键导入 mijia.plugin](https://img.shields.io/badge/Loon-导入%E7%B1%B3%E5%AE%B6%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%EF%BC%88%E5%B0%8F%E7%B1%B3%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E5%B1%82%EF%BC%89%20v1.1.5-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fmijia%2Fmijia.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mijia/mijia.plugin
@@ -17,8 +17,9 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mijia/mijia.plugi
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | 小米统一广告平台 / MSA 投放 | A | 启用 | ad.xiaomi.com 全域成员(api/cdn/sdkconfig/ssp/test/zeus/new.api/diagnosis/track)+ ad1/ad.intl/api.admob + ad.mi.com + o2o.api（新零售广告）——anti-AD 与 edmon1024 小米专项清单一致收录。 |
-| MIUI/澎湃系统广告与分析面（默认关，仅小米 Android 设备有感知） | A | 默认关闭 | 覆盖率审计（tools/app-coverage-audit.py）从 hagezi-xiaomi/anti-ad/AdGuard 反查出的小米系统面缺口：adv.sec=安全中心推荐位、activity/hot.browser=浏览器运营/热榜广告位、stat.youpin=有品推荐、stat.pandora=应用商店推荐、tracking.intl/rus=国际版遥测、inf/apm-rum/api.collect/cc/ccc/metok/geofence.sys=系统分析与定位采集、xiaomi-dtv.m.cn.miaozhen=秒针广告测量。对 iPhone/iPad 米家用户零效果；小米手机用户试开。安全组件（auth.be/api.sec/mazu/notify/logupdate 族）刻意不列——防诈与推送通道不许碰。第十二轮补入 adx.tv.mi.com（电视端广告交易）与 adv.l7.34.sec.miui.com（安全中心广告位置）两条 B 级候选（2 源），仍为默认关。第十三轮补入 5 条广告基础设施（均 2 源）：global-ad-extranet-pri-azams/azpn.alb.xiaomi.com、global-ad-intl-pri-alisgp.alb.xiaomi.com（跨国广告投放 ALB）、wtradv.market.xiaomi.com（应用商店推广位）、xadx.file.market.xiaomi.com（小米 ADX 素材），仍为默认关。 |
+| MIUI/澎湃系统广告与分析面（默认关，仅小米 Android 设备有感知） | A | 默认关闭 | 覆盖率审计（tools/app-coverage-audit.py）从 hagezi-xiaomi/anti-ad/AdGuard 反查出的小米系统面缺口：adv.sec=安全中心推荐位、activity/hot.browser=浏览器运营/热榜广告位、stat.youpin=有品推荐、stat.pandora=应用商店推荐、tracking.intl/rus=国际版遥测、inf/apm-rum/api.collect/cc/ccc/metok/geofence.sys=系统分析与定位采集、xiaomi-dtv.m.cn.miaozhen=秒针广告测量。对 iPhone/iPad 米家用户零效果；小米手机用户试开。安全组件（auth.be/api.sec/mazu/notify/logupdate 族）刻意不列——防诈与推送通道不许碰。第十二轮补入 adx.tv.mi.com（电视端广告交易）与 adv.l7.34.sec.miui.com（安全中心广告位置）两条 B 级候选（2 源），仍为默认关。第十三轮补入 5 条广告基础设施（均 2 源）：global-ad-extranet-pri-azams/azpn.alb.xiaomi.com、global-ad-intl-pri-alisgp.alb.xiaomi.com（跨国广告投放 ALB）、wtradv.market.xiaomi.com（应用商店推广位）、xadx.file.market.xiaomi.com（小米 ADX 素材），仍为默认关。2026-11-16 补入同族跨国广告 ALB 节点 global-ad-pri-alisgp.alb.xiaomi.com（2 源，默认关）。 |
 | 小米数据追踪/AB 实验（默认关） | B | 默认关闭 | mistat 与设备端远程配置可能同链——收益=隐私,风险=配置拉取,默认关,抓包确认再开。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 8 条。 |
 
 ## 红线与天花板（如实）
 
@@ -33,4 +34,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mijia/mijia.plugi
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/mijia.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 50 条，[Rule] 0 条。
+统计：精确/通配黑洞 52 条，[Rule] 8 条。

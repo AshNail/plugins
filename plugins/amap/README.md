@@ -1,12 +1,12 @@
-# 高德地图 · 去广告与精简 v1.2.1
+# 高德地图 · 去广告与精简 v1.3.0
 
-> 高德地图开屏与同域商业化广告原生复写清理，遥测及日志域黑洞拦截；核心定位导航零接触。
+> 高德地图开屏、首页活动与打车推广原生复写清理，遥测及日志域黑洞/双栈拦截；核心定位导航零接触。
 
-版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 amap.plugin](https://img.shields.io/badge/Loon-导入%E9%AB%98%E5%BE%B7%E5%9C%B0%E5%9B%BE%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.2.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Famap%2Famap.plugin)
+[![一键导入 amap.plugin](https://img.shields.io/badge/Loon-导入%E9%AB%98%E5%BE%B7%E5%9C%B0%E5%9B%BE%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.3.0-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Famap%2Famap.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
@@ -19,6 +19,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
 | 高德自建日志遥测 / 阿里 UT 埋点 / 配置更新 | A | 启用 | logs.amap.com（6源）、dualstack-logs.amap.com（4源）、amap-aos-info-nogw.amap.com（3源）、adashx.ut.amap.com（3源）、h-adashx.ut.amap.com（2源）、v6-adashx.ut.amap.com（2源）。DNS 映射 127.0.0.1 阻断。 |
 | 高德商业化广告与擎天广告系统 | A | 启用 | optimus-ads.amap.com（4源，高德擎天广告投放系统）、optimus-ads-ykx.amap.com（1源，广告分片）。DNS 映射 127.0.0.1 阻断。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 4 条。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 8 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
@@ -45,6 +46,14 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
 | `kill-scene-recommend` | request | `reject_dict` | `cleanAds` | 首页场景推荐推广位直接返回 200 + 空字典 |
 | `kill-weather-ad` | request | `reject_dict` | `cleanAds` | 增值天气挂件推广卡片直接返回 200 + 空字典 |
 | `kill-msgbox-pull` | request | `reject_dict` | `cleanAds` | 消息中心营销推送与活动横幅拉取直接返回 200 + 空字典 |
+| `kill-main-page-assets` | request | `reject_dict` | `cleanAds` | 导航首页活动资源与 AI 推广问答卡片直接返回 200 + 空字典 |
+| `kill-promotion-web` | request | `reject_dict` | `cleanAds` | 出行促销 Web 资源与运营配置接口直接返回 200 + 空字典 |
+| `kill-ranking-card` | request | `reject_dict` | `cleanAds` | 排行榜商业推广卡片直接返回 200 + 空字典 |
+| `kill-search-marketing` | request | `reject_dict` | `cleanAds` | 搜索商业化结构化营销运营接口直接返回 200 + 空字典 |
+| `clean-updatable-ads` | response | `response.json.delete` | `cleanAds` | AOCS 云控配置响应删除开屏/广告开关/弹窗/推广活动键（保留优惠券与钱包功能键） |
+| `clean-car-order-promo` | response | `response.json.delete` | `cleanAds` | 打车订单页响应删除鲁班皮肤、气泡与营销弹窗字段 |
+| `clean-hitch-banner` | response | `response.json.delete` | `cleanAds` | 顺风车乘客页响应删除顶部运营 Banner |
+| `clean-near-recommend-activity` | response | `response.json.delete` | `cleanAds` | 附近推荐页响应删除运营活动浮层字段 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
 
@@ -73,4 +82,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/amap/amap.plugin
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/amap.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 8 条，[Rule] 4 条。
+统计：精确/通配黑洞 8 条，[Rule] 12 条。

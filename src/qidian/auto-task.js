@@ -36,7 +36,16 @@
 // ==========================================
 // 🔒 凭据掩码
 // ==========================================
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
+
 /** @type {Array<[RegExp, string]>} */
 const MASK_RULES = [
   [/cmfuToken[=:]\s*([A-Za-z0-9_-]{8,})/gi, "cmfuToken=***MASKED***"],
@@ -44,7 +53,8 @@ const MASK_RULES = [
 ];
 
 function maskSecrets(str) {
-  if (typeof str !== "string") return str;
+  if (typeof str !== "string" || str.length < 16) return str;
+  if (str.indexOf("=") === -1 && str.indexOf(":") === -1) return str;
   let out = str;
   for (const [re, rep] of MASK_RULES) out = out.replace(re, rep);
   return out;
@@ -262,16 +272,30 @@ const CLEAN_RULES = {
 // n 由净化处置函数写入本次字段变更数，两者一起进 X-Qidian-Plugin 头——脚本 stdout 进不了
 // 导出的主日志（21:35 判死），一份 HAR 是目前唯一能远程看到「改了几项」的通道。
 const BODY_OUT = { shape: "str", n: -1 };
+let discoverKeepSet = null;
+let rewardTimeSet = null;
+const AD_SKIP_RE = /"(video_duration|video_timelife|duration|play_time|total_time|show_time|max_time)":\s*\d+/g;
+const PARSED_RULE_CACHE = Object.create(null);
 
 function extractPath(url) {
   if (typeof url !== "string") return "";
-  const noHost = url.replace(/^https?:\/\/[^/?#]+/, "");
-  const q = noHost.indexOf("?");
-  const h = noHost.indexOf("#");
-  let end = noHost.length;
+  let start = 0;
+  if (url.startsWith("https://")) start = 8;
+  else if (url.startsWith("http://")) start = 7;
+  if (start > 0) {
+    let hostEnd = url.length;
+    for (let i = start; i < url.length; i++) {
+      const c = url.charCodeAt(i);
+      if (c === 47 || c === 63 || c === 35) { hostEnd = i; break; }
+    }
+    start = hostEnd;
+  }
+  const q = url.indexOf("?", start);
+  const h = url.indexOf("#", start);
+  let end = url.length;
   if (q !== -1 && q < end) end = q;
   if (h !== -1 && h < end) end = h;
-  return noHost.slice(0, end);
+  return url.slice(start, end);
 }
 
 function anchor(msg) {
@@ -297,8 +321,9 @@ function bodyShape(body) {
     return "u8:" + body.length + (body[0] === 0x1f && body[1] === 0x8b ? " gzip" : "");
   }
   if (typeof ArrayBuffer !== "undefined" && body instanceof ArrayBuffer) {
+    const u8 = new Uint8Array(body);
     return "ab:" + body.byteLength +
-      (new Uint8Array(body).length > 1 && new Uint8Array(body)[0] === 0x1f ? " gzip?" : "");
+      (u8.length > 1 && u8[0] === 0x1f && u8[1] === 0x8b ? " gzip" : "");
   }
   return typeof body;
 }
@@ -339,7 +364,7 @@ function anchorBody(response) {
   anchor("phase=" + (typeof $response === "undefined" ? "request" : "response") +
     " " + method + " " + url.replace(/^https?:\/\/[^/]+/, "").slice(0, 90) +
     " " + anchorEnv() + anchorBody($response));
-  debugLog("请求: " + method + " " + url.substring(0, 120));
+  if (DEBUG) debugLog("请求: " + method + " " + url.substring(0, 120));
 
   // ── A. Token 窃取（response 阶段） ──
   if (url.includes("/user/getlogininfo") && typeof $response !== "undefined") {
@@ -431,7 +456,8 @@ function anchorBody(response) {
     // 每日阅读积分
     if (path.includes("readtime/readpage")) { debugLog("处理每日阅读积分"); handleReadTime(E, $response); return; }
     // 净化规则
-    if (matchCleanRule(path)) { debugLog("匹配净化规则: " + path); handleClean(E, path, $response); return; }
+    const cleanRules = getCleanRules(path);
+    if (cleanRules) { debugLog("匹配净化规则: " + path); handleClean(E, path, $response, cleanRules); return; }
     anchor("js-sanitize=none path=" + path.slice(0, 80) + "（该 URL 没有被任何脚本处置认领）");
   }
 
@@ -575,6 +601,21 @@ async function autoReceiveRewards(E, headers) {
  * 构建响应头：来路声明过压缩/长度的，就地改写成新体的真实值
  * 添加 X-Qidian-Plugin 标记用于诊断
  */
+function utf8ByteLength(str) {
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    let c = str.charCodeAt(i);
+    if (c < 0x80) bytes += 1;
+    else if (c < 0x800) bytes += 2;
+    else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+      const next = str.charCodeAt(i + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) { bytes += 4; i++; }
+      else bytes += 3;
+    } else bytes += 3;
+  }
+  return bytes;
+}
+
 function respondHeaders(tag, text) {
   const h = Object.assign({}, (typeof $response !== "undefined" && $response.headers) || {});
   // in=<形态> 让一份 HAR 就能回答「新脚本跑到了吗、Loon 给的是字节还是字符串」——
@@ -588,15 +629,14 @@ function respondHeaders(tag, text) {
   // 原始的 `Content-Encoding: gzip` 就会连同明文新体一起发给 App——解压必失败→App 回落缓存→
   // 脚本跑了、字段改了、UI 却一动不动，正是真机「Trigger/Finished 齐全但看不到变更」的形状。
   // 只在原始键存在时改写：不凭空发明头（原体是 chunked 时不能塞 content-length）。
-  const write = (name, value) => {
-    let key = null;
-    for (const k of Object.keys(h)) {
-      if (String(k).toLowerCase() === name) { key = k; break; }
-    }
-    if (key !== null) h[key] = value;
-  };
-  write("content-encoding", "identity");
-  write("content-length", String(utf8Encode(text).length));
+  let ceKey = null, clKey = null;
+  for (const k of Object.keys(h)) {
+    const lk = String(k).toLowerCase();
+    if (lk === "content-encoding") ceKey = k;
+    else if (lk === "content-length") clKey = k;
+  }
+  if (ceKey !== null) h[ceKey] = "identity";
+  if (clKey !== null) h[clKey] = String(utf8ByteLength(text));
 
   return h;
 }
@@ -852,6 +892,14 @@ function collectLimitedTasks(data) {
   return out;
 }
 
+function getDiscoverKeepSet() {
+  return discoverKeepSet || (discoverKeepSet = new Set(CONFIG.DiscoverKeepKeys));
+}
+
+function getRewardTimeSet() {
+  return rewardTimeSet || (rewardTimeSet = new Set(CONFIG.RewardTimeKeys));
+}
+
 // 只剥数组里命中文案的那一条元素，不动模块、不动结构——「限时福利」和广告任务
 // 同页共存时，删模块会一起带走，按条目裁才不会误伤。深度限 6 层防成环。
 function pruneAdTaskItems(node, pruned, path, depth) {
@@ -859,13 +907,22 @@ function pruneAdTaskItems(node, pruned, path, depth) {
   const d = depth === undefined ? 0 : depth;
   if (d > 6 || node === null || typeof node !== "object") return;
   if (Array.isArray(node)) {
+    const titleKeys = CONFIG.TitleKeys;
+    const keywords = CONFIG.AdTaskKeywords;
     for (let i = node.length - 1; i >= 0; i--) {
       const item = node[i];
-      const title = item && typeof item === "object" && !Array.isArray(item)
-        ? CONFIG.TitleKeys.map(k => (typeof item[k] === "string" ? item[k] : "")).join("|")
-        : "";
-      if (title && CONFIG.AdTaskKeywords.some(kw => title.includes(kw))) {
-        pruned.push(here + "[" + i + "]=" + title.slice(0, 40));
+      let matched = "";
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        for (let k = 0; k < titleKeys.length && !matched; k++) {
+          const val = item[titleKeys[k]];
+          if (typeof val !== "string" || !val) continue;
+          for (let w = 0; w < keywords.length; w++) {
+            if (val.includes(keywords[w])) { matched = val; break; }
+          }
+        }
+      }
+      if (matched) {
+        pruned.push(here + "[" + i + "]=" + matched.slice(0, 40));
         node.splice(i, 1);
         continue;
       }
@@ -873,13 +930,18 @@ function pruneAdTaskItems(node, pruned, path, depth) {
     }
     return;
   }
-  Object.keys(node).forEach(k => pruneAdTaskItems(node[k], pruned, here + "." + k, d + 1));
+  const keys = Object.keys(node);
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    pruneAdTaskItems(node[k], pruned, here + "." + k, d + 1);
+  }
 }
 
 function handleDiscover(E, response) {
   const obj = safeJsonParse(response.body);
   if (!obj || !obj.Data || !Array.isArray(obj.Data.Items)) { E.done(); return; }
-  obj.Data.Items = obj.Data.Items.filter(item => CONFIG.DiscoverKeepKeys.includes(item.KeyName));
+  const keep = getDiscoverKeepSet();
+  obj.Data.Items = obj.Data.Items.filter(item => keep.has(item.KeyName));
   E.log("发现页过滤完成，保留 " + obj.Data.Items.length + " 项");
   respondJson(E, obj, "qidian-sanitize");
 }
@@ -899,7 +961,8 @@ function handleReadTime(E, response) {
   const data = obj.Data;
   if (data.ReadInfo) data.ReadInfo.TodayReadTime = CONFIG.ReadTimeFull;
   if (data.TaskModule && Array.isArray(data.TaskModule.TaskList)) {
-    data.TaskModule.TaskList.forEach(t => { t.Status = 2; });
+    const list = data.TaskModule.TaskList;
+    for (let i = 0; i < list.length; i++) list[i].Status = 2;
   }
   E.log("每日阅读积分已满");
   respondJson(E, obj, "qidian-sanitize");
@@ -923,37 +986,9 @@ function handleAdSkip(E, response) {
   }
   // 二进制体（binary_body_mode）下不是字符串，正则兜底无从谈起：放行，别把字节串成 "1,2,3"
   if (typeof response.body !== "string") { E.done(); return; }
-  let body = response.body;
   const s = CONFIG.VideoSkipSeconds;
-  body = body
-    .replace(/"video_duration":\s*\d+/g, '"video_duration":' + s)
-    .replace(/"video_timelife":\s*\d+/g, '"video_timelife":' + s)
-    .replace(/"duration":\s*\d+/g, '"duration":' + s)
-    .replace(/"play_time":\s*\d+/g, '"play_time":' + s)
-    .replace(/"total_time":\s*\d+/g, '"total_time":' + s)
-    .replace(/"show_time":\s*\d+/g, '"show_time":' + s)
-    .replace(/"max_time":\s*\d+/g, '"max_time":' + s);
+  const body = response.body.replace(AD_SKIP_RE, (_, key) => '"' + key + '":' + s);
   E.done({ body });
-}
-
-function matchCleanRule(path) {
-  return Object.keys(CLEAN_RULES).some(k => path.includes(k));
-}
-
-function getCleanRules(path) {
-  for (const [k, rules] of Object.entries(CLEAN_RULES)) {
-    if (path.includes(k)) return rules;
-  }
-  return null;
-}
-
-function handleClean(E, path, response) {
-  let obj = safeJsonParse(response.body);
-  if (!obj) { E.done(); return; }
-  const rules = getCleanRules(path);
-  if (rules) rules.forEach(r => applyCleanRule(obj, r.split(".")));
-  E.log("净化完成: " + path.split("/").pop());
-  respondJson(E, obj, "qidian-sanitize");
 }
 
 function parseSelector(segment) {
@@ -962,9 +997,40 @@ function parseSelector(segment) {
   return { key: match[1], filterKey: match[2], filterValue: match[3] };
 }
 
+function getCompiledCleanRules(k, rawRules) {
+  if (PARSED_RULE_CACHE[k]) return PARSED_RULE_CACHE[k];
+  const compiled = [];
+  for (let i = 0; i < rawRules.length; i++) {
+    const segs = rawRules[i].split(".");
+    const parsed = [];
+    for (let j = 0; j < segs.length; j++) parsed.push(parseSelector(segs[j]));
+    compiled.push(parsed);
+  }
+  PARSED_RULE_CACHE[k] = compiled;
+  return compiled;
+}
+
+function getCleanRules(path) {
+  for (const [k, rules] of Object.entries(CLEAN_RULES)) {
+    if (path.includes(k)) return getCompiledCleanRules(k, rules);
+  }
+  return null;
+}
+
+function handleClean(E, path, response, preMatched) {
+  const obj = safeJsonParse(response.body);
+  if (!obj) { E.done(); return; }
+  const rules = preMatched || getCleanRules(path);
+  if (rules) {
+    for (let i = 0; i < rules.length; i++) applyCleanRule(obj, rules[i]);
+  }
+  E.log("净化完成: " + path.split("/").pop());
+  respondJson(E, obj, "qidian-sanitize");
+}
+
 function applyCleanRule(target, segments, index = 0) {
   if (!target || index >= segments.length) return;
-  const { key, filterKey, filterValue } = parseSelector(segments[index]);
+  const { key, filterKey, filterValue } = segments[index];
   const current = target[key];
   if (current == null) return;
   if (index === segments.length - 1) {
@@ -976,8 +1042,10 @@ function applyCleanRule(target, segments, index = 0) {
     return;
   }
   if (filterKey && Array.isArray(current)) {
-    current.filter(item => String(item?.[filterKey]) === filterValue)
-           .forEach(item => applyCleanRule(item, segments, index + 1));
+    for (let i = 0; i < current.length; i++) {
+      const item = current[i];
+      if (String(item?.[filterKey]) === filterValue) applyCleanRule(item, segments, index + 1);
+    }
     return;
   }
   applyCleanRule(current, segments, index + 1);
@@ -986,13 +1054,14 @@ function applyCleanRule(target, segments, index = 0) {
 function patchDurationFields(value, keys, nextValue) {
   if (!value || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    value.forEach(item => patchDurationFields(item, keys, nextValue));
+    for (let i = 0; i < value.length; i++) patchDurationFields(value[i], keys, nextValue);
     return;
   }
-  if (value.name && CONFIG.RewardTimeKeys.includes(value.name) && Array.isArray(value.data)) {
-    value.data.forEach(d => {
+  if (value.name && getRewardTimeSet().has(value.name) && Array.isArray(value.data)) {
+    for (let i = 0; i < value.data.length; i++) {
+      const d = value.data[i];
       if (d && d.data && d.data.int_val !== undefined) d.data.int_val = String(nextValue);
-    });
+    }
   }
   for (const [key, item] of Object.entries(value)) {
     if (keys.includes(key)) {
@@ -1122,31 +1191,12 @@ function normalizeHeaders(headers) {
   return h;
 }
 
-/* UTF-8 字符串 -> Uint8Array（binary_body_mode 下来路是字节就还字节；$done 手册说 String/Uint8Array 都收，形态镜像属防御性冗余） */
-function utf8Encode(str) {
-  const out = [];
-  for (let i = 0; i < str.length; i++) {
-    let c = str.charCodeAt(i);
-    if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
-      const next = str.charCodeAt(i + 1);
-      if (next >= 0xdc00 && next <= 0xdfff) {
-        c = ((c - 0xd800) << 10) + (next - 0xdc00) + 0x10000;
-        i++;
-      }
-    }
-    if (c < 0x80) out.push(c);
-    else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
-    else if (c < 0x10000) out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
-    else out.push(0xf0 | (c >> 18), 0x80 | ((c >> 12) & 0x3f), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
-  }
-  return new Uint8Array(out);
-}
-
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8Decode(bytes) {
-  if (UTF8_DECODER) {
+  const decoder = getUtf8Decoder();
+  if (decoder) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return decoder.decode(bytes);
     } catch (_) {}
   }
   let out = "", i = 0;

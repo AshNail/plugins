@@ -43,6 +43,25 @@ cleanFeed = switch,false,tag=激进信息流与我的页精简（默认关）,de
 AND,((DOMAIN-SUFFIX,acs.m.goofish.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,g-acs.m.goofish.com),(PROTOCOL,QUIC)),REJECT
 
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN-SUFFIX,alimama.cn,REJECT
+DOMAIN-SUFFIX,alimama.com,REJECT
+DOMAIN-SUFFIX,iyes.youku.com,REJECT
+DOMAIN-SUFFIX,mmstat.com,REJECT
+DOMAIN-SUFFIX,tanx.com,REJECT
+DOMAIN,adash-emas.cn-hangzhou.aliyuncs.com,REJECT
+DOMAIN,adashx.m.taobao.com,REJECT
+DOMAIN,alimama.alicdn.com,REJECT
+DOMAIN,atanx.alicdn.com,REJECT
+DOMAIN,audid-api.taobao.com,REJECT
+DOMAIN,poplayer.template.alibaba.com,REJECT
+DOMAIN,rtb.julang.taobao.com,REJECT
+DOMAIN,tns.simba.taobao.com,REJECT
+DOMAIN,tunion-api.m.taobao.com,REJECT
+DOMAIN,wcp.taobao.com,REJECT
+
 [Host]
 
 # ------------------------------------------------------------

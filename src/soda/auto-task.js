@@ -152,29 +152,35 @@ function captureTokens(request) {
 
   // 从 URL 参数提取
   const urlParams = {};
-  try {
-    const u = new URL(url);
-    for (const [k, v] of u.searchParams) {
-      if (["openid", "device_id", "iid", "aid", "cdid"].includes(k)) {
-        urlParams[k] = v;
+  let paramCount = 0;
+  if (url.indexOf("?") !== -1) {
+    try {
+      const u = new URL(url);
+      for (const [k, v] of u.searchParams) {
+        if (k === "openid" || k === "device_id" || k === "iid" || k === "aid" || k === "cdid") {
+          urlParams[k] = v;
+          paramCount++;
+        }
       }
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
 
   // 从 headers 提取认证
   const authHeaders = {};
+  let headerCount = 0;
   for (const key of Object.keys(headers)) {
     const lk = key.toLowerCase();
     if (lk.includes("authorization") || lk.includes("x-ss-token") ||
         lk.includes("x-csrf-token") || lk === "cookie") {
       authHeaders[key] = headers[key];
+      headerCount++;
     }
   }
 
-  if (Object.keys(urlParams).length || Object.keys(authHeaders).length) {
+  if (paramCount || headerCount) {
     STATE.capturedTokens = { ...STATE.capturedTokens, ...urlParams, ...authHeaders };
     if (!CONFIG.SilentMode) {
-      console.log(`[SodaAuto] Token 捕获: ${Object.keys(urlParams).length} URL参数, ${Object.keys(authHeaders).length} auth headers`);
+      console.log(`[SodaAuto] Token 捕获: ${paramCount} URL参数, ${headerCount} auth headers`);
     }
   }
 }
@@ -473,12 +479,21 @@ function log(msg) {
   console.log(`[SodaAuto] ${msg}`);
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const dec = getUtf8Decoder();
+  if (dec) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return dec.decode(bytes);
     } catch (_) {}
   }
   let out = "", i = 0, n = bytes.length;
@@ -573,11 +588,9 @@ if (isRequest) {
 if (isResponse) {
   if (url.indexOf("/luna/") === -1) {
     $done({});
-  } else {
+  } else if (/\/+luna\/advert\/incentive\/done/.test(url)) {
+    // ---- incentive/done 响应观测（只记录，不修改） ----
     const body = readBody($response);
-
-  // ---- incentive/done 响应观测（只记录，不修改） ----
-  if (/\/+luna\/advert\/incentive\/done/.test(url)) {
     try {
       const data = typeof body === "string" ? JSON.parse(body) : body;
       if (data?.reward_details) {
@@ -585,38 +598,33 @@ if (isResponse) {
       }
     } catch (e) {}
     $done({});
-  }
-  // ---- 激励配置观测 ----
-  else if (/\/+luna\/advert\/incentive\/config/.test(url)) {
-    cacheIncentiveConfig(body);
+  } else if (/\/+luna\/advert\/incentive\/config/.test(url)) {
+    // ---- 激励配置观测 ----
+    cacheIncentiveConfig(readBody($response));
     $done({});
-  }
-  // ---- 💎 本地权益注入（commerce_info） ----
-  else if (/\/+luna\/commerce\/v2\/commerce_info/.test(url)) {
+  } else if (/\/+luna\/commerce\/v2\/commerce_info/.test(url)) {
+    // ---- 💎 本地权益注入（commerce_info） ----
+    const body = readBody($response);
     const injected = injectCommerceInfo(body);
     if (injected !== body) {
       $done({ body: injected, headers: cleanResponseHeaders($response?.headers) });
     } else {
       $done({});
     }
-  }
-  // ---- 🚫 Upsell 弹窗清空 ----
-  else if (/\/+luna\/commerce\/v2\/upsell/.test(url) && !url.includes("sort_decision")) {
+  } else if (/\/+luna\/commerce\/v2\/upsell/.test(url) && !url.includes("sort_decision")) {
+    // ---- 🚫 Upsell 弹窗清空 ----
+    const body = readBody($response);
     const cleaned = cleanUpsell(body);
     if (cleaned !== body) {
       $done({ body: cleaned, headers: cleanResponseHeaders($response?.headers) });
     } else {
       $done({});
     }
-  }
-  // ---- 任务页面观测 ----
-  else if (/\/+luna\/treasure\/task\/page\/v[0-9]+/.test(url)) {
-    observeTaskPage(body);
+  } else if (/\/+luna\/treasure\/task\/page\/v[0-9]+/.test(url)) {
+    // ---- 任务页面观测 ----
+    observeTaskPage(readBody($response));
     $done({});
-  }
-  // ---- 默认放行 ----
-  else {
+  } else {
     $done({});
-  }
   }
 }

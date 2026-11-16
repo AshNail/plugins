@@ -82,6 +82,8 @@ const sodaSanitize = loadScript("plugins/soda/scripts/sanitize.min.js");
 const douyinClean = loadScript("plugins/douyin/scripts/clean.min.js");
 const sodaSettings = loadScript("plugins/soda/scripts/settings.min.js");
 const douyinTreasure = loadScript("plugins/douyin/scripts/treasure.min.js");
+const sodaBlockDomains = loadScript("plugins/soda/scripts/block-domains.min.js");
+const sodaHomepageTabs = loadScript("plugins/soda/scripts/homepage-tabs.min.js");
 
 const sampleFeedBody = JSON.stringify({
   status_code: 0,
@@ -145,6 +147,34 @@ console.log("\n[4] Douyin Treasure (plugins/douyin/scripts/treasure.min.js):");
 benchmark("Douyin Treasure: Non-matching URL", () => {
   runScript(douyinTreasure, {
     $request: { url: "https://beta-luna.douyin.com/luna/other/endpoint", method: "GET" },
+    $response: { status: 200, body: "{}" },
+    $done: () => {}
+  });
+});
+
+console.log("\n[5] Soda Block Domains (plugins/soda/scripts/block-domains.min.js):");
+
+benchmark("Soda BlockDomains: rewardSafe passthrough", () => {
+  runScript(sodaBlockDomains, {
+    $request: { url: "https://ad.zijieapi.com/api/ad/v1/inspire/" },
+    $argument: "blockAdDomains=true&rewardSafe=true",
+    $done: () => {}
+  });
+});
+
+benchmark("Soda BlockDomains: matched domain block", () => {
+  runScript(sodaBlockDomains, {
+    $request: { url: "https://ads5-normal-hl.zijieapi.com/api/ad/v1/splash/" },
+    $argument: "blockAdDomains=true&rewardSafe=false",
+    $done: () => {}
+  });
+});
+
+console.log("\n[6] Soda Homepage Tabs (plugins/soda/scripts/homepage-tabs.min.js):");
+
+benchmark("Soda Tabs: Non-matching URL", () => {
+  runScript(sodaHomepageTabs, {
+    $request: { url: "https://api.qishui.com/luna/other/path", method: "GET" },
     $response: { status: 200, body: "{}" },
     $done: () => {}
   });

@@ -40,6 +40,12 @@ cleanAds = switch,true,tag=YouTubei 广告字段净化（默认开）,desc=启�
 AND,((DOMAIN-SUFFIX,www.youtube.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,youtubei.googleapis.com),(PROTOCOL,QUIC)),REJECT
 
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN,ad.youtube.com,REJECT
+DOMAIN,ads.youtube.com,REJECT
+
 [Host]
 
 # ------------------------------------------------------------

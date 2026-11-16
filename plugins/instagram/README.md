@@ -19,6 +19,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/instagram/instagr
 | IG 专属废弃徽章端点（A 级） | A | 启用 | badges.instagram.com=已停用的旧徽章服务（pixel.facebook.com 与 an.facebook.com 已由上方 sdks:["meta"] 统一提供，此处不重复声明）。 |
 | netseer 公网 IP 关联与广告归因遥测（A 级） | A | 启用 | Meta 寄生在 fbcdn 域名空间下的客户端公网 IP 关联/归因遥测（AdguardFilters #217505 / hagezi #3010 / anti-AD 多源收录）。2026-11 真机 Loon 日志实锤客户端实际请求形态为 <uuid>-netseer-ipaddr-assoc.xy/xz.fbcdn.net（单窗口 600+ 次，UUID 与 netseer 以连字符 '-' 拼接），用 DOMAIN-KEYWORD,netseer-ipaddr-assoc,REJECT 精确覆盖全部随机 UUID 分片且零触碰正常 *.fbcdn.net 图床；netseer.com=被 Meta 收购的测量公司本体域（4 源收录）。默认启用以阻断跨网络 IP 定向归因。 |
 | Meta / Audience Network（FAN）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 10 域 / 0 规则。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 7 条。 |
 
 ## 红线与天花板（如实）
 
@@ -33,4 +34,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/instagram/instagr
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/instagram.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 13 条，[Rule] 1 条。
+统计：精确/通配黑洞 13 条，[Rule] 8 条。

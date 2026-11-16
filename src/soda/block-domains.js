@@ -52,10 +52,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -82,17 +90,32 @@ const BLOCKED_HOSTS = [
   "praisewindow.ugsdk.cn"
 ];
 
-/* glob → RegExp：只把 `*`/`?` 当通配，其余字符按字面量转义。 */
-const BLOCKED_RX = BLOCKED_HOSTS.map(function (pattern) {
-  var src = "";
-  for (var i = 0; i < pattern.length; i++) {
-    var c = pattern.charAt(i);
-    if (c === "*") src += ".*";
-    else if (c === "?") src += ".";
-    else src += /[a-z0-9.-]/.test(c) ? c : "\\" + c;
+/* glob → RegExp + exact Set：首次命中后缀时懒初始化，精确域名走 Set O(1) 查找。 */
+/** @type {Set<string> | null} */
+let exactHostSet = null;
+/** @type {RegExp[] | null} */
+let blockedGlobRxs = null;
+
+function ensureHostMatchers() {
+  if (exactHostSet !== null) return;
+  exactHostSet = new Set();
+  blockedGlobRxs = [];
+  for (var i = 0; i < BLOCKED_HOSTS.length; i++) {
+    var pattern = BLOCKED_HOSTS[i];
+    if (pattern.indexOf("*") === -1 && pattern.indexOf("?") === -1) {
+      exactHostSet.add(pattern);
+      continue;
+    }
+    var src = "";
+    for (var j = 0; j < pattern.length; j++) {
+      var c = pattern.charAt(j);
+      if (c === "*") src += ".*";
+      else if (c === "?") src += ".";
+      else src += /[a-z0-9.-]/.test(c) ? c : "\\" + c;
+    }
+    blockedGlobRxs.push(new RegExp("^" + src + "$"));
   }
-  return new RegExp("^" + src + "$");
-});
+}
 
 function hostBlocked(host) {
   if (host.indexOf("zijieapi.com") === -1 &&
@@ -100,15 +123,32 @@ function hostBlocked(host) {
       host.indexOf("ugsdk.cn") === -1) {
     return false;
   }
-  for (var i = 0; i < BLOCKED_RX.length; i++) {
-    if (BLOCKED_RX[i].test(host)) return true;
+  ensureHostMatchers();
+  if (exactHostSet && exactHostSet.has(host)) return true;
+  if (blockedGlobRxs) {
+    for (var i = 0; i < blockedGlobRxs.length; i++) {
+      if (blockedGlobRxs[i].test(host)) return true;
+    }
   }
   return false;
 }
 
 function hostOf(url) {
-  const m = String(url || "").match(/^https?:\/\/([^/:?#]+)/i);
-  return m ? String(m[1]).toLowerCase() : "";
+  var s = String(url || "");
+  var scheme = s.indexOf("://");
+  if (scheme !== 4 && scheme !== 5) return "";
+  var proto = s.slice(0, scheme).toLowerCase();
+  if (proto !== "http" && proto !== "https") return "";
+  var start = scheme + 3;
+  var end = s.length;
+  for (var i = start; i < end; i++) {
+    var ch = s.charCodeAt(i);
+    if (ch === 47 || ch === 58 || ch === 63 || ch === 35) {
+      end = i;
+      break;
+    }
+  }
+  return end > start ? s.slice(start, end).toLowerCase() : "";
 }
 
 function todayKey() {
@@ -146,12 +186,12 @@ function recordBlock(type, item) {
     const url = ($request && $request.url) || "";
 
     const args = pargs(["blockAdDomains", "rewardSafe", "debugLog"]);
-    const debugOn = pflag(args, "debugLog", false);
 
     /* 只有明确打开 blockAdDomains 才拦截，避免被误挂到别的规则上 */
     if (!pflag(args, "blockAdDomains", false)) {
       return $done({});
     }
+    const debugOn = pflag(args, "debugLog", false);
     if (debugOn) {
       console.log("[soda-trace] REQ block-domains url=" + url +
         " rewardSafe=" + pflag(args, "rewardSafe", true));

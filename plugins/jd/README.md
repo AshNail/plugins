@@ -19,6 +19,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/jd/jd.plugin
 | 京东自建广告交易与点击监测（生效） | A | 启用 | dsp-x=京媒 SDK 广告请求（官方 FAQ 写明 /adx/sdk）、ads-union=京东联盟广告投放、ccc-x=广告点击监测、addata=广告数据、skdisplay=展示广告。五域均 ≥3 家上游清单收录，且语义由官方文档或公开广告点击链自证。 |
 | 竞价/曝光/点击监测与语义待核实广告域（默认关） | B | 默认关闭 | x.jd.com 族（x/im-x/u-x/wn.x）是广告竞价、曝光与 winnotice 监测；im-x 另有公开的 /dsp/np?log= 广告落地链，但多份 wskey 抓取教程显示 im-x/msg.m 请求携带登录凭证——**im-x 永不默认开**，msg.m 已列红线。sgm-w 被微信开放平台高风险域名单与 EasyPrivacy 同时收录，语义仍不明确（sgm-m1/sgm-w1 兄弟域不加剧）；cm/cc.m/jrad 语义未核实。默认关，先在日志确认域名真实出现、再逐条试开；u.x 单源未收。 |
 | 埋点/日志/推荐回流（默认关，隐私收益） | A | 默认关闭 | uranus=京东统一埋点上报（公开的埋点助手工具明确抓 Uranus 上报）、mercury=页面埋点 log.gif、knicks=推荐位点击回流（rec_common_clk）、mllog/xlog/log/jcm/hermes=日志与采集，均默认关。收益是隐私与流量，可能影响推荐反馈；不影响交易前先抓包确认。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 5 条。 |
 
 ## 红线与天花板（如实）
 
@@ -37,4 +38,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/jd/jd.plugin
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/jd.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 29 条，[Rule] 0 条。
+统计：精确/通配黑洞 29 条，[Rule] 5 条。

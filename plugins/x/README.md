@@ -18,6 +18,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/x/x.plugin
 |---|---|---|---|
 | 广告像素与嵌入（A 级,黑洞无损） | A | 启用 | ads-twitter.com/static=网页端转化像素;syndication/p/urls.api=第三方站点嵌入推文组件,X App 不用。 |
 | 广告后台与客户端遥测（默认关） | B | 默认关闭 | ads*.twitter/x.com=广告管理控制台后端（黑洞不影响时间线广告,只断广告主后台）;analytics/scribe=统计与日志。不用广告主后台可开。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 3 条。 |
 
 ## 红线与天花板（如实）
 
@@ -31,4 +32,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/x/x.plugin
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/x.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 9 条，[Rule] 1 条。
+统计：精确/通配黑洞 9 条，[Rule] 4 条。

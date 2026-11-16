@@ -50,10 +50,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -68,13 +76,22 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const decoder = getUtf8Decoder();
+  if (decoder) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return decoder.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -163,9 +180,17 @@ function markHeaders(reason, bodyChanged) {
 /* 归一化键名匹配（小写、去 _ 和 -），这样 has_update / hasUpdate /
  * 有同形后缀变体时也能对齐——但只改这一个键，绝无其它触点。 */
 var UPDATE_KEY = "hasupdate";
+var KEY_CACHE = Object.create(null);
 
 function normalizeKey(k) {
-  return String(k).toLowerCase().replace(/[_-]/g, "");
+  var s = String(k);
+  var cached = KEY_CACHE[s];
+  if (cached !== undefined) return cached;
+  var norm = s.indexOf("_") === -1 && s.indexOf("-") === -1
+    ? s.toLowerCase()
+    : s.toLowerCase().replace(/[_-]/g, "");
+  KEY_CACHE[s] = norm;
+  return norm;
 }
 
 function deepFlip(node, path, log, depth) {
@@ -178,7 +203,7 @@ function deepFlip(node, path, log, depth) {
   }
   if (typeof node !== "object") return;
   for (var k of Object.keys(node)) {
-    if (normalizeKey(k) === UPDATE_KEY && node[k] !== false) {
+    if ((k === "has_update" || k === "hasUpdate" || normalizeKey(k) === UPDATE_KEY) && node[k] !== false) {
       var before = node[k];
       node[k] = false;
       log.push(path + "." + k + " : " + String(before) + " → false");
@@ -190,17 +215,23 @@ function deepFlip(node, path, log, depth) {
 (function main() {
   /* 绑定只透传 ${debugLog}（观测噪声）；enable=${skipUpdateCheck} 已在绑定层生效，
    * 这里保留脚本内的独立保险，与 settings.js 的 ENABLED 同语义。 */
-  var pluginArgs = pargs(["debugLog"]);
-  var verbose = pflag(pluginArgs, "debugLog", false);
   if (!ENABLED) {
     return $done({ headers: markHeaders("soda-check-update;skip=disabled", false) });
   }
+  var pluginArgs = pargs(["debugLog"]);
+  var verbose = pflag(pluginArgs, "debugLog", false);
   var url = ($request && $request.url) || "";
   var raw = readBody($response);
   if (verbose) console.log("[soda] check-update verbose on: " + url);
 
   /* 非 JSON（含 gzip 解不开、空体）原样放行，标记里带上 ce= */
-  var head = (typeof raw === "string" ? raw : "").trimStart().slice(0, 1);
+  var head = "";
+  if (typeof raw === "string") {
+    for (var i = 0; i < raw.length; i++) {
+      var c = raw.charCodeAt(i);
+      if (c > 32 && c !== 0xa0 && c !== 0xfeff) { head = raw.charAt(i); break; }
+    }
+  }
   if (head !== "{" && head !== "[") {
     console.log("[soda] check-update non-JSON passthrough: " + url);
     return $done({ headers: markHeaders("soda-check-update;skip=not-json" + ceTag($response), false) });

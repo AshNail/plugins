@@ -1,18 +1,18 @@
-#!name=知乎 · 去广告与精简 v1.2.2
-#!desc=知乎自建遥测黑洞，开屏、商业推广、推荐流与关注流广告卡片原生复写过滤；问答文章核心功能零接触。
+#!name=知乎 · 去广告与精简 v1.3.0
+#!desc=知乎自建遥测黑洞/双栈拦截，开屏、商业推广、问答挂件与信息流广告卡片原生复写过滤；问答文章核心功能零接触。
 #!author=edy
-#!version=1.2.2
+#!version=1.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihu/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/6c/52/cf/6c52cf80-3df8-9705-d792-c5aa66de4570/AppIcon-0-0-1x_U007emarketing-0-7-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-09
+#!date=2026-11-16
 #!tag=去广告,知乎
 #!type=normal
 #!source=b809e81c352cc0847f0ee36a976c51624d78bb6007c13d6bff889773219aaa66
 
 # ========================================================================
-# 知乎 · 去广告与精简 v1.2.2
+# 知乎 · 去广告与精简 v1.3.0
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：passport.zhihu.com 账号与安全登录网关 / api.zhihu.com 知乎核心业务 API，问答与文章主服务 / zhuanlan.zhihu.com 知乎专栏核心域名 / unpkg.zhihu.com 前端静态资源与组件加载 / mqtt.zhihu.com 实时消息推送长连接通道 / lc-push.zhihu.com 移动端离线/在线推送通道 / pic1.zhimg.com 静态图片与用户头像图床。
 # 知乎主站与业务共享根域 *.zhihu.com，禁止整域通配。
@@ -41,6 +41,15 @@ cleanAds = switch,true,tag=同域商业化与推荐位去广告（默认开）,d
 AND,((DOMAIN-SUFFIX,api.zhihu.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,www.zhihu.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,zhida.zhihu.com),(PROTOCOL,QUIC)),REJECT
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN,adstatic.zhihu.com,REJECT
+DOMAIN,crash2.zhihu.com,REJECT
+DOMAIN,sugar.zhihu.com,REJECT
+DOMAIN,udd1i5.zhihu.com,REJECT
+DOMAIN,zhihu-web-analytics.zhihu.com,REJECT
 
 [Host]
 
@@ -107,8 +116,11 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/search\
 # kill-zhida-guidance: 知乎直答 AI 引导卡片直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/zhida\.zhihu\.com\/ai_ingress\/ai_chat\/guidance/ then reject_dict(200)
 
-# kill-bubble-show: 内容分发气泡提示直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/content-distribution-core\/bubble\/common\/show/ then reject_dict(200)
+# kill-bubble-show: 内容分发气泡展示与配置接口直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/content-distribution-core\/bubble\/common\/(?:show|settings)/ then reject_dict(200)
+
+# kill-fringe-ad: 知乎边缘悬浮广告请求直接返回 200 + 空字典（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/fringe\/ad/ then reject_dict(200)
 
 # kill-homepage-card: 个人主页推广卡片直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/www\.zhihu\.com\/api\/v\d+\/members\/homepage_card/ then reject_dict(200)
@@ -136,3 +148,21 @@ response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/topsto
 
 # clean-moments-feed: 关注动态信息流：剔除穿插的商业推广与内联广告卡片（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
 response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/moments_v3(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"array\" then .data |= map(select(type != \"object\" or (.type != \"feed_advert\" and ((.target | if type == \"object\" then (.type // \"\") else \"\" end) != \"advert\") and .adjson == null and .promotion_extra == null))) else . end")
+
+# ------------------------------------------------------------
+# 响应字段级净化（response.json.delete）：剥离问题/回答/播客与搜索广告字段
+# ------------------------------------------------------------
+# clean-question-feeds-ad: 问题流响应删除 ad_info 商业广告节点（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/questions\/\d+\/feeds(\?|$)/ then response.json.delete("ad_info")
+
+# clean-podcasts-banners: 知乎播客频道删除推广 banners（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/podcasts\/hub\/v\d+(\?|$)/ then response.json.delete("banners")
+
+# clean-search-pendant: 搜索页删除浮动商业推广挂件 pendant（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/search_v\d+(\?|$)/ then response.json.delete("pendant")
+
+# clean-comment-atmosphere: 评论区移除评论氛围满意度调查弹窗配置（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/comment_v\d+\/(?:answers|pins)\/\d+\/root_comment(\?|$)/ then response.json.delete("atmosphere_voting_config")
+
+# clean-article-answer-promo: 文章/回答/想法详情页移除第三方商业化挂件与圈子推广字段（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Zhihu_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/api\.zhihu\.com\/(?:articles|answers|pins)\/v\d+\/\d+(\?|$)/ then response.json.delete(["third_business", "ring_info"])

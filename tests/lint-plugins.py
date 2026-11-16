@@ -22,7 +22,7 @@ def escape_regex_slashes(pattern):
 # (path, sections, rules, rewrites, scripts, family)
 PLUGINS = [
     ("plugins/soda/soda.plugin", 5, 0, 5, 49, "soda"),
-    ("plugins/douyin/douyin.plugin", 5, 0, 2, 11, "douyin"),
+    ("plugins/douyin/douyin.plugin", 5, 0, 5, 11, "douyin"),
 ]
 
 # 只读观测脚本不需要 argument
@@ -519,6 +519,9 @@ BINDING_SAMPLES = {
             "https://ad.zijieapi.com/api/ad/v1/inspire/",
             "https://foo.zijieapi.com/api/ad/v2/ack/splash/collect",
             "https://beta-luna.douyin.com/luna/advert/splash/brand/report",
+            "https://beta-luna.douyin.com/luna/media_ads",
+            "https://beta-luna.douyin.com/luna/activities",
+            "https://beta-luna.douyin.com/luna/listen-video/reminder",
         ),
         "response": (
             "https://beta-luna.douyin.com/luna/treasure/task/page/v2",
@@ -536,6 +539,8 @@ BINDING_SAMPLES = {
             "https://beta-luna.douyin.com/luna/commerce/upsells",
             "https://beta-luna.douyin.com/luna/commerce/v2/upsell",
             "https://beta-luna.douyin.com/luna/growth/music_festival/performance_details",
+            "https://beta-luna.douyin.com/luna/me",
+            "https://beta-luna.douyin.com/luna/more-panel",
             "https://polaris.zijieapi.com/luckycat/activity/settings/v1/x",
             "https://ad.zijieapi.com/api/ad/v1/inspire/",
             "https://ad.zijieapi.com/api/incentive/marketing/done/",

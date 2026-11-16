@@ -70,136 +70,153 @@ const INJECT_MISSING = false;  // true = 响应里没有广告配置键时补一
  * ads_config_expire_time_ms 0x10e7c62c0 是过期时间，不在这里清，避免
  * 把缓存周期改成 0 反而引发更多请求。
  */
-const CONFIG_KEYS = new Set([
-  "commerceadconfig",
-  "commerceadfeedconfig",
-  "rewardadfallbackconfig",
-  "feedrewardadconfig",
-  "splashadearlyloadconfig",
-  "adwebviewsdkconfig",
-  "splashadconfig",
-  "rewardadconfig",
-  "feedadconfig",
-  "adrewardconfig",
-  "incentiveadvertconfig",
-  "feedrewardadentrance",
-  "commercelibraadconfig",
-  "commercecommonadconfig",
-  "adngroupconfig",
-  "splashdspconfig",
-  "preloaddspconfig",
-  "splashmannorconfig",
-  "adignoreplayerstatusconfig",
-  /* 开屏摇一摇/扭一扭/传感器广告与本地素材缓存配置（全方位去广告） */
-  "splashshakeadconfig",
-  "shakeadconfig",
-  "splashtwistadconfig",
-  "twistadconfig",
-  "motionadconfig",
-  "splashadcacheconfig",
-  "splashadpreloadconfig",
-  /* 拓展多种形态广告配置（插屏/搜索/H5/弹窗/横幅） */
-  "h5adconfig",
-  "webadconfig",
-  "popupadconfig",
-  "banneradconfig",
-  "interstitialadconfig",
-  "searchadconfig",
-  /* 21.4.0 二进制实测（`strings` 唯一命中）：
-     ad_feed_pre_show / ad_feed_loudness_config / ad_information_flow /
-     ad_center_page / ad_audition_intercept / ad_brand_launch_limit /
-     ad_charge_config / ad_charge_passive_unlock_config /
-     bdp_splash_ad_config（小程序开屏）。全部是广告配置容器，清空不影响发奖。 */
-  "adfeedpreshow",
-  "adfeedloudnessconfig",
-  "adinformationflow",
-  "adcenterpage",
-  "adauditionintercept",
-  "adbrandlaunchlimit",
-  "adchargeconfig",
-  "adchargepassiveunlockconfig",
-  "bdpsplashadconfig"
-]);
+let CONFIG_KEYS = null;
+let SCALAR_KEYS = null;
+let DOUYIN_ENTRY_KEYS = null;
+let AGGRESSIVE_SCALARS = null;
 
-/* 默认只关“广告功能开关”，不动全局广告 SDK 与时长/发奖 */
-const SCALAR_KEYS = new Map([
-  ["enablerewardad", "false"],
-  ["enablerewardads", "false"],
-  ["enableincentivead", "false"],
-  ["enablesplashad", "false"],
-  ["enablefeedad", "false"],
-  ["enablefeedads", "false"],
-  ["splashadswitch", "false"],
-  ["rewardadswitch", "false"],
-  ["feedadswitch", "false"],
-  ["feedrewardadswitch", "false"],
-  ["incentiveadswitch", "false"],
-  ["enableclientadsstrategy", "false"],
-  ["preloadfeedads", "false"],
-  ["basicmodedisablerewardadenabled", "true"],
-  ["kbasicmodedisablerewardadenabled", "true"],
-  /* 摇一摇与手势误触开关拦截 */
-  ["enablesplashshake", "false"],
-  ["enableshakead", "false"],
-  ["enableshake", "false"],
-  ["enabletwistad", "false"],
-  ["enabletwist", "false"],
-  ["enablemotionad", "false"],
-  ["shakeadswitch", "false"],
-  ["twistadswitch", "false"],
-  /* 不改 splash*Sensitivity / splash*Threshold：比较方向没有官方或抓包证据，
-   * 写 0 可能变成「任何晃动都触发」；只保留上面语义明确的禁用开关。 */
-  ["splashcacheenable", "false"],
-  ["splashcacheenabled", "false"],
-  ["enableadpreload", "false"],
-  ["enablesplashadpreload", "false"],
-  ["adpreloadenable", "false"],
-  /* 插屏/搜索/弹窗/横幅/H5 广告全形态开关 */
-  ["enableinterstitialad", "false"],
-  ["interstitialadswitch", "false"],
-  ["enablesearchad", "false"],
-  ["searchadswitch", "false"],
-  ["enablepopupad", "false"],
-  ["popupadswitch", "false"],
-  ["enablebannerad", "false"],
-  ["banneradswitch", "false"],
-  ["enableh5ad", "false"],
-  ["h5adswitch", "false"],
-  /* 21.4.0 二进制实测：开屏总开关 + 每日展示上限 + 开屏广告声音。
-     上限置 0 = 服务端下发的开屏当日不再展示；不影响激励广告。 */
-  ["enablesplashshow", "false"],
-  ["dailysplashshowlimit", "zero"],
-  ["audiblesplashad", "false"]
-]);
+function ensureSettingsTables() {
+  if (CONFIG_KEYS !== null) return;
+  CONFIG_KEYS = new Set([
+    "commerceadconfig",
+    "commerceadfeedconfig",
+    "rewardadfallbackconfig",
+    "feedrewardadconfig",
+    "splashadearlyloadconfig",
+    "adwebviewsdkconfig",
+    "splashadconfig",
+    "rewardadconfig",
+    "feedadconfig",
+    "adrewardconfig",
+    "incentiveadvertconfig",
+    "feedrewardadentrance",
+    "commercelibraadconfig",
+    "commercecommonadconfig",
+    "adngroupconfig",
+    "splashdspconfig",
+    "preloaddspconfig",
+    "splashmannorconfig",
+    "adignoreplayerstatusconfig",
+    /* 开屏摇一摇/扭一扭/传感器广告与本地素材缓存配置（全方位去广告） */
+    "splashshakeadconfig",
+    "shakeadconfig",
+    "splashtwistadconfig",
+    "twistadconfig",
+    "motionadconfig",
+    "splashadcacheconfig",
+    "splashadpreloadconfig",
+    /* 拓展多种形态广告配置（插屏/搜索/H5/弹窗/横幅） */
+    "h5adconfig",
+    "webadconfig",
+    "popupadconfig",
+    "banneradconfig",
+    "interstitialadconfig",
+    "searchadconfig",
+    /* 21.4.0 二进制实测（`strings` 唯一命中）：
+       ad_feed_pre_show / ad_feed_loudness_config / ad_information_flow /
+       ad_center_page / ad_audition_intercept / ad_brand_launch_limit /
+       ad_charge_config / ad_charge_passive_unlock_config /
+       bdp_splash_ad_config（小程序开屏）。全部是广告配置容器，清空不影响发奖。 */
+    "adfeedpreshow",
+    "adfeedloudnessconfig",
+    "adinformationflow",
+    "adcenterpage",
+    "adauditionintercept",
+    "adbrandlaunchlimit",
+    "adchargeconfig",
+    "adchargepassiveunlockconfig",
+    "bdpsplashadconfig"
+  ]);
 
-/*
- * 【听抖音】入口开关（hideDouyinEntry）
- * 取证：conf.qishui.com/service/settings/v3/ 真实响应
- *   anchor_luna_to_douyin     = 1   汽水 → 抖音 的“听抖音”入口（锚点）
- *   anchor_luna_to_douyin_mv  = 1   同一入口的 MV 变体
- * 关掉这两个开关 = 汽水里不再出现【听抖音】入口（服务端配置驱动，不是客户端硬编码）
- */
-const DOUYIN_ENTRY_KEYS = new Map([
-  ["anchorlunatodouyin", "0"],
-  ["anchorlunatodouyinmv", "0"]
-]);
+  /* 默认只关“广告功能开关”，不动全局广告 SDK 与时长/发奖 */
+  SCALAR_KEYS = new Map([
+    ["enablerewardad", "false"],
+    ["enablerewardads", "false"],
+    ["enableincentivead", "false"],
+    ["enablesplashad", "false"],
+    ["enablefeedad", "false"],
+    ["enablefeedads", "false"],
+    ["splashadswitch", "false"],
+    ["rewardadswitch", "false"],
+    ["feedadswitch", "false"],
+    ["feedrewardadswitch", "false"],
+    ["incentiveadswitch", "false"],
+    ["enableclientadsstrategy", "false"],
+    ["preloadfeedads", "false"],
+    ["basicmodedisablerewardadenabled", "true"],
+    ["kbasicmodedisablerewardadenabled", "true"],
+    /* 摇一摇与手势误触开关拦截 */
+    ["enablesplashshake", "false"],
+    ["enableshakead", "false"],
+    ["enableshake", "false"],
+    ["enabletwistad", "false"],
+    ["enabletwist", "false"],
+    ["enablemotionad", "false"],
+    ["shakeadswitch", "false"],
+    ["twistadswitch", "false"],
+    /* 不改 splash*Sensitivity / splash*Threshold：比较方向没有官方或抓包证据，
+     * 写 0 可能变成「任何晃动都触发」；只保留上面语义明确的禁用开关。 */
+    ["splashcacheenable", "false"],
+    ["splashcacheenabled", "false"],
+    ["enableadpreload", "false"],
+    ["enablesplashadpreload", "false"],
+    ["adpreloadenable", "false"],
+    /* 插屏/搜索/弹窗/横幅/H5 广告全形态开关 */
+    ["enableinterstitialad", "false"],
+    ["interstitialadswitch", "false"],
+    ["enablesearchad", "false"],
+    ["searchadswitch", "false"],
+    ["enablepopupad", "false"],
+    ["popupadswitch", "false"],
+    ["enablebannerad", "false"],
+    ["banneradswitch", "false"],
+    ["enableh5ad", "false"],
+    ["h5adswitch", "false"],
+    /* 21.4.0 二进制实测：开屏总开关 + 每日展示上限 + 开屏广告声音。
+       上限置 0 = 服务端下发的开屏当日不再展示；不影响激励广告。 */
+    ["enablesplashshow", "false"],
+    ["dailysplashshowlimit", "zero"],
+    ["audiblesplashad", "false"]
+  ]);
+
+  /*
+   * 【听抖音】入口开关（hideDouyinEntry）
+   * 取证：conf.qishui.com/service/settings/v3/ 真实响应
+   *   anchor_luna_to_douyin     = 1   汽水 → 抖音 的“听抖音”入口（锚点）
+   *   anchor_luna_to_douyin_mv  = 1   同一入口的 MV 变体
+   * 关掉这两个开关 = 汽水里不再出现【听抖音】入口（服务端配置驱动，不是客户端硬编码）
+   */
+  DOUYIN_ENTRY_KEYS = new Map([
+    ["anchorlunatodouyin", "0"],
+    ["anchorlunatodouyinmv", "0"]
+  ]);
+
+  /* 仅在 AGGRESSIVE=true 时处理（全局广告开关 / 播放器激励入口） */
+  AGGRESSIVE_SCALARS = new Map([
+    ["timorshouldenablead", "false"],
+    ["adrewardpositionexp", "zero"],
+    ["switchshowallad", "false"]
+  ]);
+}
 
 /* 运行期开关（由 main 设置，walk 读取） */
 let hideDouyin = false;
 let cleanAdsConfig = false;
 
-/* 仅在 AGGRESSIVE=true 时处理（全局广告开关 / 播放器激励入口） */
-const AGGRESSIVE_SCALARS = new Map([
-  ["timorshouldenablead", "false"],
-  ["adrewardpositionexp", "zero"],
-  ["switchshowallad", "false"]
-]);
-
 /* ------------------------------------------------------------------ */
 /* 工具                                                               */
 /* ------------------------------------------------------------------ */
+const KEY_CACHE = Object.create(null);
+
 function normalizeKey(k) {
-  return String(k).toLowerCase().replace(/[_-]/g, "");
+  const s = String(k);
+  const cached = KEY_CACHE[s];
+  if (cached !== undefined) return cached;
+  const norm = s.indexOf("_") === -1 && s.indexOf("-") === -1
+    ? s.toLowerCase()
+    : s.toLowerCase().replace(/[_-]/g, "");
+  KEY_CACHE[s] = norm;
+  return norm;
 }
 
 function short(v) {
@@ -325,7 +342,7 @@ function walk(node, path, changes, depth) {
 
   /* 形态 4：[{ key: "commerce_ad_config", value: ... }] */
   const keyField = findField(node, ["key", "settingkey", "name"]);
-  const valField = findField(node, ["value", "settingvalue", "val"]);
+  const valField = keyField ? findField(node, ["value", "settingvalue", "val"]) : null;
   if (keyField && valField) {
     const nk = normalizeKey(node[keyField]);
     const val = node[valField];
@@ -402,11 +419,10 @@ function walk(node, path, changes, depth) {
       } catch (e) {
         continue;
       }
-      const before = JSON.stringify(inner);
       const sub = [];
       walk(inner, path + "." + k, sub, depth + 1);
-      const after = JSON.stringify(inner);
-      if (sub.length && after !== before) {
+      if (sub.length) {
+        const after = JSON.stringify(inner);
         node[k] = after;
         changes.push({
           path: path + "." + k,
@@ -443,10 +459,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -461,13 +485,22 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const decoder = getUtf8Decoder();
+  if (decoder) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return decoder.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -596,6 +629,18 @@ function markHeaders(reason, bodyChanged) {
     const rewardSafe = pflag(pluginArgs, "rewardSafe", true);
     const debugOn = pflag(pluginArgs, "debugLog", false);
 
+    cleanAdsConfig = wantClean && !rewardSafe;
+    hideDouyin = wantDouyin;
+
+    if (!cleanAdsConfig && !hideDouyin && !debugOn) {
+      if (wantClean && rewardSafe) {
+        console.log("[soda-settings] rewardSafe=on, skip ad-config cleanup");
+      } else {
+        console.log("[soda-settings] no switch on, passthrough");
+      }
+      return $done({ headers: markHeaders(wantClean ? "soda-settings;skip=reward-safe" : "soda-settings;skip=switch-off") });
+    }
+
     const raw = readBody($response);
     if (debugOn) {
       console.log("[soda-trace] RESP settings url=" + url +
@@ -603,21 +648,25 @@ function markHeaders(reason, bodyChanged) {
         (wantClean ? "clean " : "") + (wantDouyin ? "douyin" : ""));
     }
 
-    if (!wantClean && !wantDouyin) {
-      console.log("[soda-settings] no switch on, passthrough");
-      return $done({ headers: markHeaders("soda-settings;skip=switch-off") });
+    if (!cleanAdsConfig && !hideDouyin) {
+      if (wantClean && rewardSafe) {
+        console.log("[soda-settings] rewardSafe=on, skip ad-config cleanup");
+      } else {
+        console.log("[soda-settings] no switch on, passthrough");
+      }
+      return $done({ headers: markHeaders(wantClean ? "soda-settings;skip=reward-safe" : "soda-settings;skip=switch-off") });
     }
-    if (wantClean && rewardSafe) {
-      console.log("[soda-settings] rewardSafe=on, skip ad-config cleanup");
-    }
-    cleanAdsConfig = wantClean && !rewardSafe;
-    hideDouyin = wantDouyin;
+    ensureSettingsTables();
 
     if (typeof raw !== "string" || raw.length === 0) {
       return $done({ headers: markHeaders("soda-settings;skip=no-body") });
     }
 
-    const head = raw.trimStart().slice(0, 1);
+    let head = "";
+    for (let i = 0; i < raw.length; i++) {
+      const c = raw.charCodeAt(i);
+      if (c > 32 && c !== 0xa0 && c !== 0xfeff) { head = raw.charAt(i); break; }
+    }
     if (head !== "{" && head !== "[" && head !== "\"") {
       console.log("[soda-settings] non-JSON body, passthrough (len=" + raw.length + ")");
       return $done({ headers: markHeaders("soda-settings;skip=not-json" + ceTag($response)) });

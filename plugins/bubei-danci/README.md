@@ -18,6 +18,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bubei-danci/bubei
 |---|---|---|---|
 | 站外埋点 | B | 启用 | ns.360wgjs.com 收录于 anti-AD/PiT 等三家列表;拦后无功能损失。 |
 | 友盟统计/超链（默认关——会连 U-Push 一起断） | B | 默认关闭 | umeng.com 族是它的统计+推送+一键登录底座:DOMAIN-SUFFIX 整域拦=签到提醒与号码认证同断。只在「不在乎推送、只要隐私」时开。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 1 条。 |
 
 ## 红线与天花板（如实）
 
@@ -31,4 +32,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bubei-danci/bubei
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/bubei-danci.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 1 条，[Rule] 1 条。
+统计：精确/通配黑洞 1 条，[Rule] 2 条。

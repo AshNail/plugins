@@ -560,6 +560,104 @@ def render_lines(lines: list[str], raw_lines: list[str], where: str, validator) 
         lines.append(raw.strip())
 
 
+def collect_host_groups(
+    plugin: dict,
+    protected: set[str],
+    redlines: list[dict],
+    seen: dict[str, str],
+) -> tuple[list[dict], list[str]]:
+    """Validate [Host] groups and derive exact pre-DNS IPv4/IPv6 [Rule] lines.
+
+    Loon matches `DOMAIN`/`DOMAIN-SUFFIX` before DNS resolution regardless of
+    IPv4 vs IPv6 (AAAA), whereas `[Host] = 127.0.0.1` only returns IPv4 A records.
+    Deriving `DOMAIN-SUFFIX` from active `=domain` entries and `DOMAIN` from
+    exact-only entries closes IPv6/AAAA bypasses without widening scope.
+    """
+    records: list[dict] = []
+    suffix_roots: set[str] = set()
+    wc_only: set[str] = set()
+    exact_candidates: set[str] = set()
+
+    for group in plugin["groups"]:
+        gid = group.get("id", "?")
+        title = group.get("title")
+        raw_rules = group.get("rules") or []
+        if not title:
+            raise BuildError(f"plugin {plugin['file']}: group {gid}: missing title")
+        if not raw_rules:
+            raise BuildError(f"plugin {plugin['file']}: group {gid}: empty rules")
+        disabled = bool(group.get("disabled"))
+        where = f"plugin {plugin['file']}, group {gid}"
+
+        group_rules: list[str] = []
+        for raw in raw_rules:
+            if not isinstance(raw, str) or not raw.strip():
+                raise BuildError(f"{where}: empty rule")
+            raw = raw.strip()
+            if not disabled:
+                low = raw.lower()
+                if low.startswith("="):
+                    suffix_roots.add(low[1:])
+                elif low.startswith("*."):
+                    wc_only.add(low[2:])
+                else:
+                    exact_candidates.add(low)
+            for rule in expand_rule(raw):
+                validate_host_rule(rule, where, protected)
+                if rule in seen:
+                    raise BuildError(
+                        f"{where}: duplicate rule {rule!r} "
+                        f"(already in {seen[rule]})"
+                    )
+                seen[rule] = where
+                group_rules.append(rule)
+
+        if not disabled:
+            for rule in group_rules:
+                for entry in redlines:
+                    if redline_hit(rule, entry):
+                        raise BuildError(
+                            f"{where}: 生效规则 {rule!r} 命中 "
+                            f"{describe_redline(entry)}。全局插件不许拦按 App 插件自己划的生死线："
+                            "要么删掉这条，要么把它放进默认注释组并写明两面理由。"
+                        )
+        records.append({
+            "id": gid,
+            "title": title,
+            "note": group.get("note"),
+            "disabled": disabled,
+            "rules": group_rules,
+        })
+
+    for base in sorted(wc_only - suffix_roots):
+        if not any(base.endswith("." + root) for root in suffix_roots):
+            raise BuildError(
+                f"plugin {plugin['file']}: active wildcard *.{base} has no active "
+                "'=ancestor' root for pre-DNS dual-stack [Rule] derivation"
+            )
+
+    explicit_targets: set[tuple[str, str]] = set()
+    for raw in plugin.get("rules") or []:
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) >= 2 and parts[0] in ("DOMAIN", "DOMAIN-SUFFIX"):
+            explicit_targets.add((parts[0], parts[1].lower()))
+
+    dual_stack: list[str] = []
+    for s in sorted(suffix_roots):
+        if ("DOMAIN-SUFFIX", s) not in explicit_targets:
+            dual_stack.append(f"DOMAIN-SUFFIX,{s},REJECT")
+    for d in sorted(exact_candidates):
+        if d in suffix_roots or any(d.endswith("." + s) for s in suffix_roots):
+            continue
+        if ("DOMAIN", d) not in explicit_targets:
+            dual_stack.append(f"DOMAIN,{d},REJECT")
+
+    return records, dual_stack
+
+
 def render_plugin(
     plugin: dict, meta: dict, seen: dict[str, str] | None = None
 ) -> tuple[str, dict]:
@@ -601,6 +699,8 @@ def render_plugin(
     counts = {
         "general": 0,
         "rules": 0,
+        "rules_explicit": 0,
+        "rules_dual_stack": 0,
         "wildcards": 0,
         "family_wildcards": 0,
         "rules_disabled": 0,
@@ -633,13 +733,14 @@ def render_plugin(
                 counts["general"] += 1
             lines.append(raw.strip())
 
+    group_records, dual_stack_rules = collect_host_groups(plugin, protected, redlines, seen)
     rules = plugin.get("rules") or []
-    counts["rule_match_items"] = check_rule_vectors(plugin, rules, redlines)
+    counts["rule_match_items"] = check_rule_vectors(plugin, rules + dual_stack_rules, redlines)
     wildcards = validate_domain_wildcards(plugin, protected)
     families = validate_family_wildcards(plugin, protected, enumerated_hosts(plugin))
     overlaps = validate_redline_overlap(plugin, wildcards + families, redlines)
     counts["redline_overlap"] = len(overlaps)
-    if rules or wildcards or families:
+    if rules or dual_stack_rules or wildcards or families:
         lines.append("")
         lines.append("")
         lines.append("[Rule]")
@@ -650,9 +751,26 @@ def render_plugin(
             f"plugin {plugin['file']}, [Rule]",
             validate_rule_line,
         )
-        counts["rules"] = sum(
+        counts["rules_explicit"] = sum(
             1 for raw in rules if raw.strip() and not raw.strip().startswith("#")
         )
+    if dual_stack_rules:
+        lines.append("")
+        lines.append("# " + "=" * 76)
+        lines.append("# 双栈防旁路层：pre-DNS DOMAIN-SUFFIX / DOMAIN 阻断（同步封死 IPv4 与 IPv6/AAAA）")
+        lines.append("# " + "-" * 76)
+        lines.append("# Loon 在目标地址为域名时先匹配 [Rule] 域名规则（先于 DNS 解析，不区分地址族），")
+        lines.append("# 20 万条以内官方实测 < 1ms + LRU 缓存。由上方生效 [Host] 精确映射同步派生：")
+        lines.append("# `=domain` -> `DOMAIN-SUFFIX,domain,REJECT`；精确独立域 -> `DOMAIN,domain,REJECT`。")
+        lines.append("# " + "=" * 76)
+        render_lines(
+            lines,
+            dual_stack_rules,
+            f"plugin {plugin['file']}, [Rule] dual-stack",
+            validate_rule_line,
+        )
+        counts["rules_dual_stack"] = len(dual_stack_rules)
+    counts["rules"] = counts["rules_explicit"] + counts["rules_dual_stack"]
     if wildcards:
         lines.append("")
         lines.append("# " + "=" * 76)
@@ -779,52 +897,23 @@ def render_plugin(
     lines.append("")
     lines.append("[Host]")
 
-    for group in plugin["groups"]:
-        gid = group.get("id", "?")
-        title = group.get("title")
-        raw_rules = group.get("rules") or []
-        if not title:
-            raise BuildError(f"plugin {plugin['file']}: group {gid}: missing title")
-        if not raw_rules:
-            raise BuildError(f"plugin {plugin['file']}: group {gid}: empty rules")
-        disabled = bool(group.get("disabled"))
+    for record in group_records:
+        gid = record["id"]
+        title = record["title"]
+        group_rules = record["rules"]
+        disabled = record["disabled"]
         lines.append("")
         lines.append("# " + "=" * 76)
         lines.append(f"# {title}")
         lines.append("# " + "-" * 76)
-        if group.get("note"):
-            lines.extend(wrap_comment(group["note"]))
+        if record["note"]:
+            lines.extend(wrap_comment(record["note"]))
         if disabled:
             lines.append("#")
             lines.append("# ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----")
         lines.append("# " + "=" * 76)
 
-        group_rules: list[str] = []
-        for raw in raw_rules:
-            if not isinstance(raw, str) or not raw.strip():
-                raise BuildError(f"plugin {plugin['file']}: group {gid}: empty rule")
-            raw = raw.strip()
-            for rule in expand_rule(raw):
-                where = f"plugin {plugin['file']}, group {gid}"
-                validate_host_rule(rule, where, protected)
-                if rule in seen:
-                    raise BuildError(
-                        f"{where}: duplicate rule {rule!r} "
-                        f"(already in {seen[rule]})"
-                    )
-                seen[rule] = f"plugin {plugin['file']}, group {gid}"
-                group_rules.append(rule)
-
         counts["groups"] += 1
-        if not disabled:
-            for rule in group_rules:
-                for entry in redlines:
-                    if redline_hit(rule, entry):
-                        raise BuildError(
-                            f"plugin {plugin['file']}, group {gid}: 生效规则 {rule!r} 命中 "
-                            f"{describe_redline(entry)}。全局插件不许拦按 App 插件自己划的生死线："
-                            "要么删掉这条，要么把它放进默认注释组并写明两面理由。"
-                        )
         counts["by_group"].append(
             {"id": gid, "title": title, "disabled": disabled, "rules": len(group_rules)}
         )

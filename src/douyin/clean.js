@@ -48,7 +48,11 @@ const AD_UPSELL_RE = /(^|_)ads?(_|$)/;
 const MALL_UPSELLS = [
   "browse_mall_popup_acc_amount"
 ];
-const MALL_UPSELLS_SET = new Set(MALL_UPSELLS);
+let MALL_UPSELLS_SET = null;
+
+function getMallUpsellsSet() {
+  return MALL_UPSELLS_SET || (MALL_UPSELLS_SET = new Set(MALL_UPSELLS));
+}
 
 const FEED_CONTENT_PATH = /\/+luna\/(?:(?:v2\/)?feed\/|playlist\/(?:feed\/|detail|related_media|search)|search\/track|search-block|search-categories|media\/(?:assistant\/)?related|video_playlist\/detail|me\/discover|discover\/mix|featured-content\/list|card)/;
 
@@ -65,7 +69,7 @@ const SPLASH_AD_SWITCHES = [
   "enablesplashadpreload", "splashadpreload", "splashadearlyload"
 ];
 
-/* kill/falsy 里的键名都是“归一化后”的形式：小写且去掉 _ 与 - */
+/* kill/falsy 里的键名都是“归一化后”的形式：小写且去掉 _ 与 -；extraKill/extraFalsy 延迟进 Set */
 const KILL_CONTAINERS = {
   "incentive-config": {
     kill: ["advertsources", "feedadvertconfig", "vids"],
@@ -85,9 +89,10 @@ const KILL_CONTAINERS = {
            "adngroupconfig", "commercelibraadconfig", "commercecommonadconfig",
            "feedrewardadentrance", "searchbanner", "feedwidget",
            "audioad", "midrollad", "pausead", "recommendad", "sponsorcard",
-           "commercialnotice", "interstitialad", "popupad", "bannerad"]
-      .concat(SPLASH_AD_CONTAINERS),
-    falsy: ["preload", "enableads", "enablead"].concat(SPLASH_AD_SWITCHES)
+           "commercialnotice", "interstitialad", "popupad", "bannerad"],
+    extraKill: SPLASH_AD_CONTAINERS,
+    falsy: ["preload", "enableads", "enablead"],
+    extraFalsy: SPLASH_AD_SWITCHES
   },
   "fallback-done": {
     /* 发奖凭证接口：只清广告素材，不碰 rewardConfig/adExtra/data，
@@ -99,9 +104,10 @@ const KILL_CONTAINERS = {
   "splash-brand": {
     kill: ["adlaunchlist", "adlaunch", "adlaunches", "adinfo", "adinfos", "ads",
            "splash", "brand", "splashactivedata", "jumpbtninfo", "shakeinfo",
-           "twistinfo", "motioninfo", "interactioninfo", "splashcache", "splashdspconfig"]
-      .concat(SPLASH_AD_CONTAINERS),
-    falsy: ["preload", "enableads", "enablead"].concat(SPLASH_AD_SWITCHES)
+           "twistinfo", "motioninfo", "interactioninfo", "splashcache", "splashdspconfig"],
+    extraKill: SPLASH_AD_CONTAINERS,
+    falsy: ["preload", "enableads", "enablead"],
+    extraFalsy: SPLASH_AD_SWITCHES
   },
   "feed-content": {
     kill: ["adsblocks", "adsinfo", "adinfo", "addata", "adextra", "videoendad",
@@ -113,18 +119,21 @@ const KILL_CONTAINERS = {
   }
 };
 
-for (const _kc of Object.keys(KILL_CONTAINERS)) {
-  const _c = KILL_CONTAINERS[_kc];
-  _c.killSet = new Set(_c.kill);
-  _c.falsySet = new Set(_c.falsy);
-}
-
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+const KEY_CACHE = Object.create(null);
+
 function normalizeKey(k) {
-  return String(k).toLowerCase().replace(/[_-]/g, "");
+  const s = String(k);
+  const cached = KEY_CACHE[s];
+  if (cached !== undefined) return cached;
+  const norm = s.indexOf("_") === -1 && s.indexOf("-") === -1
+    ? s.toLowerCase()
+    : s.toLowerCase().replace(/[_-]/g, "");
+  KEY_CACHE[s] = norm;
+  return norm;
 }
 
 function emptyLike(v) {
@@ -144,6 +153,12 @@ function offLike(v) {
 /* 递归清空广告容器（只处理 kill/falsy 名单里的键） */
 function killContainers(node, spec, log, path, depth) {
   if (depth > 12 || !node || typeof node !== "object") return;
+  if (!spec.killSet) {
+    spec.killSet = new Set(spec.kill);
+    if (spec.extraKill) for (let i = 0; i < spec.extraKill.length; i++) spec.killSet.add(spec.extraKill[i]);
+    spec.falsySet = new Set(spec.falsy);
+    if (spec.extraFalsy) for (let i = 0; i < spec.extraFalsy.length; i++) spec.falsySet.add(spec.extraFalsy[i]);
+  }
   if (Array.isArray(node)) {
     for (let i = 0; i < node.length; i++) {
       killContainers(node[i], spec, log, path + "[" + i + "]", depth + 1);
@@ -175,17 +190,28 @@ function isAdFlag(v) {
   return v === true || v === 1 || v === "1" || v === "true";
 }
 
-const AD_FLAGS_SET = new Set([
-  "isad", "isadvert", "isadvertisement", "isaditem", "aditem", "adflag",
-  "ispromoted", "promoted", "issponsored", "sponsored", "iscommercial", "commercialad"
-]);
-const AD_DATA_SET = new Set(["adinfo", "addata", "adextra", "commercialdata", "promoteddata"]);
-const MEDIA_DATA_SET = new Set([
-  "video", "liveroom", "media", "track", "song", "aweme", "roomdata", "audio", "music", "artist", "album"
-]);
-const NESTED_AD_CONTAINERS = new Set(["card", "adinfo", "adsinfo", "addata", "adsdata", "adblock", "adsblock"]);
+let AD_FLAGS_SET = null;
+let AD_DATA_SET = null;
+let MEDIA_DATA_SET = null;
+let NESTED_AD_CONTAINERS = null;
+let AD_BANNER_FIELDS_SET = null;
+
+function ensureAdSets() {
+  if (AD_FLAGS_SET !== null) return;
+  AD_FLAGS_SET = new Set([
+    "isad", "isadvert", "isadvertisement", "isaditem", "aditem", "adflag",
+    "ispromoted", "promoted", "issponsored", "sponsored", "iscommercial", "commercialad"
+  ]);
+  AD_DATA_SET = new Set(["adinfo", "addata", "adextra", "commercialdata", "promoteddata"]);
+  MEDIA_DATA_SET = new Set([
+    "video", "liveroom", "media", "track", "song", "aweme", "roomdata", "audio", "music", "artist", "album"
+  ]);
+  NESTED_AD_CONTAINERS = new Set(["card", "adinfo", "adsinfo", "addata", "adsdata", "adblock", "adsblock"]);
+  AD_BANNER_FIELDS_SET = new Set(["bannertype", "type", "key", "name", "schema", "title", "text"]);
+}
 
 function hasNestedAdFlag(o) {
+  ensureAdSets();
   for (const k of Object.keys(o)) {
     const nk = normalizeKey(k);
     if (!NESTED_AD_CONTAINERS.has(nk)) {
@@ -204,6 +230,7 @@ function hasNestedAdFlag(o) {
 }
 
 function isAdItem(o) {
+  ensureAdSets();
   let hasAd = false;
   let hasMedia = false;
   for (const k of Object.keys(o)) {
@@ -228,13 +255,12 @@ function isAdItem(o) {
 }
 
 const AD_BANNER_RE = /ad[_-]?reward|reward[_-]?ad|ads?[_-]?banner|ad[_-]?snap|incentive[_-]?ad|advert(?:isement|ising)?|commercial|promoted|sponsored|看视频|看广告/i;
-const AD_BANNER_FIELDS = ["bannertype", "type", "key", "name", "schema", "title", "text"];
-const AD_BANNER_FIELDS_SET = new Set(AD_BANNER_FIELDS);
 
 function isAdBanner(item) {
   if (typeof item === "string") return AD_BANNER_RE.test(item);
   if (!isPlainObject(item)) return false;
   if (isAdItem(item)) return true;
+  ensureAdSets();
   for (const k of Object.keys(item)) {
     if (!AD_BANNER_FIELDS_SET.has(normalizeKey(k))) continue;
     const v = item[k];
@@ -306,9 +332,10 @@ function handleUpsell(obj, log) {
   const map = obj.upsell_map;
   if (!isPlainObject(map)) return false;
 
+  const mallSet = getMallUpsellsSet();
   const removed = [];
   for (const name of Object.keys(map)) {
-    if (AD_UPSELL_RE.test(name) || MALL_UPSELLS_SET.has(name)) {
+    if (AD_UPSELL_RE.test(name) || mallSet.has(name)) {
       delete map[name];
       removed.push(name);
     }
@@ -349,7 +376,7 @@ function handleUpsell(obj, log) {
   const dropFromList = function (n) {
     if (removedSet[n] === true) return true;
     if (AD_UPSELL_RE.test(n)) return true;
-    if (MALL_UPSELLS_SET.has(n)) return true;
+    if (mallSet.has(n)) return true;
     return false;
   };
   if (Array.isArray(obj.sort_control_unique_names)) {
@@ -446,10 +473,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -464,13 +499,22 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const decoder = getUtf8Decoder();
+  if (decoder) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return decoder.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -601,46 +645,61 @@ function recordBlock(type, item) {
   } catch (e) {}
 }
 
+function firstNonWsChar(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c > 32 && c !== 0xa0 && c !== 0xfeff) return s.charAt(i);
+  }
+  return "";
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
     /* 快速前缀短路：非目标路径零开销放行，避免无谓正则计算与参数解析 */
-    if (url.indexOf("/luna/") === -1 && url.indexOf("/luckycat/") === -1) {
+    const hasLuna = url.indexOf("/luna/") !== -1;
+    if (!hasLuna && url.indexOf("/luckycat/activity/settings/") === -1) {
+      return $done({});
+    }
+
+    /* 先匹配路由与对应开关名；未命中任何已知端点直接放行，免除 pargs/RegExp 开销 */
+    let candMode = null;
+    let reqFlag = null;
+    if (hasLuna) {
+      if (url.indexOf("/advert/") !== -1) {
+        if (/\/+luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
+          candMode = "incentive"; reqFlag = "killRewardAds";
+        } else if (/\/+luna\/advert\/splash\/brand\/retrieve/.test(url)) {
+          candMode = "splash-brand"; reqFlag = "blockSplashAd";
+        } else if (/\/+luna\/advert\/fallback\/done\/info(?:\/|\?|$)/.test(url)) {
+          candMode = "fallback-done"; reqFlag = "cleanFeedAds";
+        }
+      } else if (/\/+luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) {
+        candMode = "feed-ads"; reqFlag = "cleanFeedAds";
+      } else if (FEED_CONTENT_PATH.test(url)) {
+        candMode = "feed-content"; reqFlag = "cleanFeedAds";
+      } else if (/\/+luna\/commerce\/v2\/upsell/.test(url)) {
+        /* 只绑 v2：真机样本只有 v2 的 upsell_map{}，handleUpsell() 也只认它。
+         * v1 (/luna/commerce/upsells) 没有抓包证据，挂上去只会「路由命中、
+         * 处理器空转」，属于假覆盖——不放进声明，也不绑脚本。
+         * 真机证伪：抓到 v1 响应且含广告弹窗实体时，再按样本字段补处理器。 */
+        candMode = "upsell"; reqFlag = "cleanUpsell";
+      } else if (/\/+luna\/growth\/music_festival\/performance_details/.test(url)) {
+        candMode = "music-festival"; reqFlag = "cleanUpsell";
+      }
+    } else if (/\/luckycat\/activity\/settings\//.test(url)) {
+      candMode = "activity"; reqFlag = "cleanActivity";
+    }
+    if (candMode === null) {
       return $done({});
     }
 
     const args = pargs(["cleanFeedAds", "killRewardAds", "cleanUpsell", "cleanActivity", "debugLog", "blockSplashAd"]);
-    const debugOn = pflag(args, "debugLog", false);
-
-    /* 决定这次请求归哪个开关管：没开的开关一律放行 */
-    let mode = null;
-    if (/\/+luna\/advert\/incentive\/(?:config|retrieve)/.test(url)) {
-      if (pflag(args, "killRewardAds", false)) mode = "incentive";
-    } else if (/\/+luna\/advert\/splash\/brand\/retrieve/.test(url)) {
-      if (pflag(args, "blockSplashAd", false)) mode = "splash-brand";
-    } else if (/\/+luna\/advert\/fallback\/done\/info(?:\/|\?|$)/.test(url)) {
-      if (pflag(args, "cleanFeedAds", false)) mode = "fallback-done";
-    } else if (/\/+luna\/ads\/(?:config|retrieve|dsp\/retrieve)/.test(url)) {
-      if (pflag(args, "cleanFeedAds", false)) mode = "feed-ads";
-    } else if (FEED_CONTENT_PATH.test(url)) {
-      if (pflag(args, "cleanFeedAds", false)) mode = "feed-content";
-    } else if (/\/+luna\/commerce\/v2\/upsell/.test(url)) {
-      /* 只绑 v2：真机样本只有 v2 的 upsell_map{}，handleUpsell() 也只认它。
-       * v1 (/luna/commerce/upsells) 没有抓包证据，挂上去只会「路由命中、
-       * 处理器空转」，属于假覆盖——不放进声明，也不绑脚本。
-       * 真机证伪：抓到 v1 响应且含广告弹窗实体时，再按样本字段补处理器。 */
-      if (pflag(args, "cleanUpsell", false)) mode = "upsell";
-    } else if (/\/+luna\/growth\/music_festival\/performance_details/.test(url)) {
-      if (pflag(args, "cleanUpsell", false)) mode = "music-festival";
-    } else if (/\/luckycat\/activity\/settings\//.test(url)) {
-      if (pflag(args, "cleanActivity", false)) mode = "activity";
-    } else {
-      return $done({});
-    }
-    if (mode === null) {
+    if (!pflag(args, reqFlag, false)) {
       console.log("[douyin-clean] switch off, passthrough: " + url);
       return $done({ headers: markHeaders("douyin-clean;skip=switch-off") });
     }
+    const mode = candMode;
 
     const raw = readBody($response);
     if (typeof raw !== "string" || raw.length === 0) {
@@ -651,7 +710,7 @@ function recordBlock(type, item) {
         !/ad|splash|feed|reward|search|commercial|interstitial|popup|banner|shake|twist|motion|interaction|audio|midroll|pause|recommend|sponsor|promot|preview|priority|video_track_mix|block[_-]?type|enable/i.test(raw)) {
       return $done({ headers: markHeaders("douyin-clean;noop=no-marker") });
     }
-    const head = raw.trimStart().slice(0, 1);
+    const head = firstNonWsChar(raw);
     if (head !== "{" && head !== "[") {
       return $done({ headers: markHeaders("douyin-clean;skip=not-json" + ceTag($response)) });
     }
@@ -667,7 +726,7 @@ function recordBlock(type, item) {
     const log = [];
 
     if (mode === "incentive") {
-      if (/\/+luna\/advert\/incentive\/config/.test(url)) {
+      if (url.indexOf("/incentive/config") !== -1 && /\/+luna\/advert\/incentive\/config/.test(url)) {
         killContainers(obj, KILL_CONTAINERS["incentive-config"], log, "$", 0);
       } else {
         killContainers(obj, KILL_CONTAINERS["incentive-retrieve"], log, "$", 0);
@@ -696,7 +755,7 @@ function recordBlock(type, item) {
 
     recordBlock("clean", mode);
     console.log("[douyin-clean] " + log.length + " change(s)\n  " + log.join("\n  "));
-    if (debugOn) {
+    if (pflag(args, "debugLog", false)) {
       console.log("[douyin-AdBlock] 🧹 响应净化(" + mode + "): 裁切 " + log.length + " 项广告配置 | " + url);
     }
     $done({ body: JSON.stringify(obj), headers: markHeaders("douyin-clean;changed=" + log.length, true) });

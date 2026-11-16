@@ -4,7 +4,7 @@
 #!version=1.3.4
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/meituan/README.md
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/cc/1f/5d/cc1f5dcb-92b6-0e0b-6f08-7a40e16e49d0/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/c1/16/65/c1166517-71bb-d29d-d36e-516765f8a537/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-09
 #!tag=去广告,美团,点评
@@ -51,6 +51,23 @@ AND,((DOMAIN-SUFFIX,mt-personalcenter.meituan.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,p0.meituan.net),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,p1.meituan.net),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,wmapi.meituan.com),(PROTOCOL,QUIC)),REJECT
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN-SUFFIX,admate.cn,REJECT
+DOMAIN-SUFFIX,admatex.cn,REJECT
+DOMAIN-SUFFIX,admatex.com,REJECT
+DOMAIN-SUFFIX,sigmob.cn,REJECT
+DOMAIN-SUFFIX,sigmob.com,REJECT
+DOMAIN-SUFFIX,tobidad.cn,REJECT
+DOMAIN-SUFFIX,tobidad.com,REJECT
+DOMAIN,httpdns.meituan.com,REJECT
+DOMAIN,httpdnsvip.meituan.com,REJECT
+DOMAIN,impdsp.meituan.com,REJECT
+DOMAIN,mads.meituan.com,REJECT
+DOMAIN,pd0-cdn-mcdn.m.meituan.net,REJECT
+DOMAIN,s3plus-pre.51ping.com,REJECT
 
 [Host]
 

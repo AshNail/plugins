@@ -1,12 +1,12 @@
-#!name=网易云音乐 · 净化（规则层） v1.1.1
-#!desc=网易云音乐纯规则层净化：广告素材与HTTPDNS黑洞拦截，首页、发现、评论区广告字段原生 jq 剥离；零第三方脚本。
-#!author=AshNail（规则整理；来源 ios151/NeteasemusicAd）
-#!version=1.1.1
+#!name=网易云音乐 · 净化（规则层） v1.2.0
+#!desc=网易云音乐规则层与原生复写净化：广告素材与HTTPDNS双栈pre-DNS/Host拦截，开屏/弹窗/推荐广告接口短路，首页/发现/评论区广告字段原生 jq 剥离；零第三方脚本。
+#!author=AshNail（规则整理；来源 ios151/NeteasemusicAd、可莉 NeteaseCloudMusic_remove_ads）
+#!version=1.2.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/netease/README.md
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/28/7b/a9/287ba9e3-751c-3994-cf3a-04a9ae2cbcac/appIconNew-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/34/2b/2e/342b2e2d-15fc-cc3b-5f14-c8f9792bb411/appIconNew-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,macOS
-#!date=2026-11-09
+#!date=2026-11-16
 #!tag=网易云音乐,去广告,规则层
 #!type=normal
 
@@ -37,6 +37,17 @@ iad.g.163.com = 127.0.0.1
 [Rule]
 # MITM 配套的 QUIC 回退（覆盖 music.163.com 及 interface*/ipv4/ipv6 子域，拒 HTTP/3 回落 TCP）。
 AND,((DOMAIN-SUFFIX,music.163.com),(PROTOCOL,QUIC)),REJECT
+# pre-DNS 双栈防旁路（同步覆盖上方 10 个专属广告素材与 HTTPDNS 黑洞域，独立安装亦防 IPv6/AAAA 旁路）
+DOMAIN,httpdns.music.163.com,REJECT
+DOMAIN,music.httpdns.c.163.com,REJECT
+DOMAIN,httpdns.n.netease.com,REJECT
+DOMAIN,httpdns-sdk.n.netease.com,REJECT
+DOMAIN,iadmat.nosdn.127.net,REJECT
+DOMAIN,iadmatapk.nosdn.127.net,REJECT
+DOMAIN,iadmusicmat.nosdn.127.net,REJECT
+DOMAIN,iadmusicmat.music.126.net,REJECT
+DOMAIN,iadmusicmatvideo.music.126.net,REJECT
+DOMAIN,iad.g.163.com,REJECT
 
 [Rewrite]
 # 1) 广告与商业推广端点（cleanAds 控制，默认开启）
@@ -44,13 +55,13 @@ AND,((DOMAIN-SUFFIX,music.163.com),(PROTOCOL,QUIC)),REJECT
 # 已剔除上游误伤正常功能的 user/sub/artist（我的收藏歌手）与 ios/version（版本更新检查）。
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/x?e?api\/ad(?:\/|\?|$)/i then reject_dict(200)
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/w?e?api\/(?:delivery\/(?:batch-deliver|deliver)|moment\/tab\/info\/get)/i then reject_dict(200)
-request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/x?eapi\/(?:resource\/comments?\/musiciansaid|community\/friends\/fans-group\/artist\/group\/get|music\/songshare\/text\/recommend\/get|resniche\/position\/play\/new\/get)/i then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/x?eapi\/(?:resource\/comments?\/musiciansaid|community\/friends\/fans-group\/artist\/group\/get|music\/songshare\/text\/recommend\/get|resniche\/(?:position\/play\/new\/get|tspopup\/show))/i then reject_dict(200)
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/w?e?api\/search\/default/i then reject_dict(200)
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/w?e?api\/(?:search\/(?:chart|rcmd\/keyword|specialkeyword)|resource-exposure\/|activity\/bonus\/playpage\/time\/query)/i then reject_dict(200)
 request if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/x?eapi\/(?:mlivestream\/entrance\/playpage|link\/(?:position\/show\/strategy|scene\/show)|v\d\/content\/exposure\/comment\/banner)/i then reject_dict(200)
 
 # 2) 侧边栏/云贝/商城/红点精简（slimUI 控制，默认关闭，按需开启）
-request if ${slimUI} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/w?e?api\/(?:side-bar\/mini-program\/music-service\/account|yunbei\/account\/entrance\/get)/i then reject_dict(200)
+request if ${slimUI} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/w?e?api\/(?:side-bar\/mini-program\/music-service\/account|yunbei\/account\/entrance\/get|my\/podcast\/tab\/recommend)/i then reject_dict(200)
 request if ${slimUI} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/x?eapi\/mine\/applet\/redpoint/i then reject_dict(200)
 request if ${slimUI} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/store\/x?e?api\/(?:webconfig|entryconfig)/i then reject_dict(200)
 
@@ -66,6 +77,7 @@ response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interf
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/user\/follow\/users\/mixed\/get/i then response.json.jq("walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/v2\/banner\/get/i then response.json.jq("(if (type == \"object\" and (.banners | type) == \"array\") then .banners |= map(select(type != \"object\" or (.adid == null and .adurl == null and .adSource == null))) else . end) | walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 
+# 覆盖网易云音乐双栈与多接口分片（interface.music.163.com / interface?.music.163.com / ipv4.music.163.com / ipv6.music.163.com），配合上方 [Rewrite] 正则净化
 [MITM]
 hostname = music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com
 h2 = true

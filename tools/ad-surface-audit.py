@@ -140,6 +140,11 @@ SURFACES = [
             ("plugins/soda/soda.plugin", r"advert\\?/splash", False),
             ("plugins/soda/soda.plugin", r"splash-ad\.min\.js", False),
             ("plugins/douyin/douyin.plugin", r"splash-ad\.min\.js", False),
+            ("plugins/amap/amap.plugin", r"alimama\\?/splash_screen", False),
+            ("plugins/meituan/meituan.plugin", r"openscreen|startpicture", False),
+            ("plugins/xianyu/xianyu.plugin", r"splash\\?\.ads", False),
+            ("plugins/taobao/taobao.plugin", r"tao_splash", False),
+            ("plugins/qidian/qidian.plugin", r"getsplashscreen", False),
         ],
         limits="上次启动预拉的素材会缓存展示一次；摇一摇/扭一扭是传感器事件，"
                "Loon 碰不到；无广告时部分 App 仍占 3 秒「跳过」按钮。",
@@ -163,12 +168,17 @@ SURFACES = [
             ("plugins/bilibili/bilibili.plugin", r"x\\?/v2\\?/feed\\?/index", False),
             ("plugins/zhihu/zhihu.plugin", r"topstory\\?/recommend", False),
             ("plugins/qqnews/qqnews.plugin", r"getQQNewsUnreadList", False),
+            ("plugins/amap/amap.plugin", r"ai_rec", False),
+            ("plugins/xianyu/xianyu.plugin", r"idleadv", False),
+            ("plugins/taobao/taobao.plugin", r"getadv", False),
+            ("plugins/qidian/qidian.plugin", r"getadvlistbatch", False),
+            ("plugins/netease/netease.plugin", r"homepage\\?/block", False),
         ],
         limits="字段名每个 App 不同；删多了会破分页游标（`cursor`/`has_more` 与广告数耦合）；"
                "广告与推荐混在同一 `cards` 数组时，删除会导致索引错位。"
                "本仓库已用 `check_pagination_integrity` 门禁 + `test_pagination_integrity.js` "
                "双向断言挡住「游标被清」与「为保游标连广告也不摘」两种坏修法。",
-        next="文档不再承诺「抽公共模块就能提档」：soda/douyin 的规则表都已到各自端点上限，再提档只能加第三个 App（要抓包读它的 JSON）。没有代码可写。",
+        next="已通过 `[Script]`（soda/douyin）与 Loon 原生 `[Rewrite]` v2 / `jq`（bilibili/zhihu/qqnews/amap/xianyu/taobao/qidian/netease）多点覆盖；再提档仍需逐 App 抓包读取响应结构。",
         blocked="结构性：私有 JSON 字段名逐 App 不同，提档 = 多适配一个 App，不是多写一段代码。",
     ),
     dict(
@@ -227,8 +237,10 @@ SURFACES = [
         ceiling="full", achieved="strong", next_to="strong",
         probes=[
             # bannerads.* 通配已降为默认注释层（需 3.5.3），不计入正式版生效证据；
-            # banner 的 strong 由常开 [Host]（googlesyndication 等联盟素材/投放域）承担。
+            # banner 的 strong 由常开 [Host]（googlesyndication 等联盟素材/投放域）与 MITM 复写协同承担。
             ("plugins/ads/ads.plugin", r"googlesyndication", False),
+            ("plugins/meituan/meituan.plugin", r"wmbanner", False),
+            ("plugins/netease/netease.plugin", r"v2\\?/banner\\?/get", False),
         ],
         limits="广告容器仍占高度，会出现空白条；WebView 渲染的 banner 需要额外拦联盟 JS 域。",
         next="与激励/插屏共用联盟域；WebView 渲染的 banner 另算（见 H5，那一类到 partial 就是顶）。",
@@ -276,10 +288,11 @@ SURFACES = [
             ("plugins/zhihu/zhihu.plugin", r"search\\?/preset_words", False),
             ("plugins/xianyu/xianyu.plugin", r"search\\?\.shade", False),
             ("plugins/meituan/meituan.plugin", r"searchpage\\?/defaultword", False),
+            ("plugins/netease/netease.plugin", r"search\\?/default", False),
         ],
         limits="与自然结果同构，字段随版本变；剥错会丢搜索结果；"
                "「品牌专区」是整块 UI，删数据会留空白。",
-        next="soda 的 search/track、search-block、search-categories 已在 sanitize 的 URL 表里，字段剥离与 feed 共用同一套；再提档同样只能加 App。",
+        next="已在 soda/bilibili/zhihu/xianyu/meituan/netease 覆盖搜索热词与广告词剥离；再提档同样只能按 App 逐一抓包适配。",
         blocked="结构性：搜索结果是同构混排，删哪一条要靠 App 自己的角标字段，无法通用。",
     ),
     dict(
@@ -315,12 +328,12 @@ SURFACES = [
             # douyin 只绑 v2（v1 无抓包证据，不挂空转路由）；探针跟着真实绑定走，
             # 不能拿 soda 的 v1 命中替 douyin 顶数。
             ("plugins/douyin/douyin.plugin", r"commerce\\/v2\\/upsell", False),
+            ("plugins/qidian/qidian.plugin", r"popup\\?/batchget", False),
+            ("plugins/netease/netease.plugin", r"vipactivity", False),
         ],
         limits="与会员状态、支付流程同域同接口，剥错会让会员页空白；部分 App 用 WebView 渲染，"
                "弹窗内容在页面里；「限时优惠」倒计时是端上逻辑，删网络改不了。",
-        next="soda 的 /commerce/upsells 与 /commerce/v2/upsell 已覆盖，douyin 的 cleanUpsell 只覆盖 v2 的 upsell_map。"
-             "douyin v1（/commerce/upsells）无真机样本，刻意不绑：绑了也是「路由命中、处理器空转」的假覆盖；"
-             "抓到 v1 响应且含广告弹窗实体再按样本补处理器。两边都到各自端点上限，再提档只能加 App。",
+        next="soda/douyin 已到各自端点上限，同时 qidian/netease 通过原生 [Rewrite] v2 覆写了推广弹窗与 VIP 活动端点；douyin v1（/commerce/upsells）无真机样本，刻意不绑，再提档只能按 App 逐一抓包验证。",
         blocked="结构性：弹窗配置与会员状态、支付流程同域同接口，每加一个 App 都要重新确认哪些键安全。",
     ),
 
@@ -412,6 +425,8 @@ SURFACES = [
         ceiling="full", achieved="strong", next_to="strong",
         probes=[
             ("plugins/soda/soda.plugin", r"luna\\?/ads\\?/", False),
+            ("plugins/qidian/qidian.plugin", r"client\\?/getconf", False),
+            ("plugins/taobao/taobao.plugin", r"alimama\\?\.etao\\?\.config\\?\.query", False),
         ],
         limits="返回空后 SDK 可能按固定间隔重拉（要有节奏地返回空，而不是断开）；"
                "部分 App 把 config 与会员状态耦合，清空会误判。",
@@ -433,6 +448,9 @@ SURFACES = [
         probes=[
             ("plugins/ads/ads.plugin", r"REJECT-DICT", False),
             ("plugins/soda/soda.plugin", r"reject_dict\(200\)", False),
+            ("plugins/amap/amap.plugin", r"ads_attribution", False),
+            ("plugins/xianyu/xianyu.plugin", r"idle\\?\.ad\\?\.expose", False),
+            ("plugins/youtube/youtube.plugin", r"api\\?/stats\\?/", False),
         ],
         limits="拦上报不改变已展示的广告；价值在省电/省流量/降重试，不在「少看广告」；"
                "误拦业务埋点会让 App 统计异常。",
@@ -491,6 +509,10 @@ SURFACES = [
         ceiling="full", achieved="full", next_to="full",
         probes=[
             ("plugins/douyin/douyin.plugin", r"PROTOCOL\s*,\s*QUIC", False),
+            ("plugins/soda/soda.plugin", r"PROTOCOL\s*,\s*QUIC", False),
+            ("plugins/amap/amap.plugin", r"PROTOCOL\s*,\s*QUIC", False),
+            ("plugins/netease/netease.plugin", r"PROTOCOL\s*,\s*QUIC", False),
+            ("plugins/youtube/youtube.plugin", r"PROTOCOL\s*,\s*QUIC", False),
         ],
         limits="回退增加首屏 RTT；部分 App 在 QUIC 失败后会短暂重试，产生额外请求。",
         next="",
@@ -812,8 +834,15 @@ def render_md(rows):
     d1 = sum(WEIGHT[r["ceiling"]] for r in l1_only)
     L.append("| L1 域名层 | 不需要 | %d 类（纯独立域：联盟展示位 + 绕路面） | %.0f%%（%d/%d） | 零；HTTPS/QUIC 通吃 |"
              % (len(l1_only), 100.0 * n1 / d1 if d1 else 0, n1, d1))
-    L.append("| L2 内容层 | 需要 MITM | %d 类（含同域 JSON 或需改内容） | 只有 2 个 App 做了定制 | 证书 + 逐 App 适配 + 压缩/包络处理 |"
-             % len(l2))
+    mitm_app_count = 0
+    for p in sorted(glob.glob(os.path.join(ROOT, "plugins", "*", "*.plugin"))):
+        if os.path.basename(os.path.dirname(p)) == "ads":
+            continue
+        with open(p, encoding="utf-8") as fh:
+            if "[MITM]" in fh.read():
+                mitm_app_count += 1
+    L.append("| L2 内容层 | 需要 MITM | %d 类（含同域 JSON 或需改内容） | 已适配 %d 个高频 App（`[Rewrite]` v2 / `[Script]`） | 证书 + 逐 App 适配 + 压缩/包络处理 |"
+             % (len(l2), mitm_app_count))
     L.append("| L3 端上 | 不需要 | Push、传感器、端上缓存、悬浮窗 | 不可达 | 只能靠系统设置或 App 内开关 |")
     L.append("")
     L.append("两层可叠加（一类广告常常同时用 `[Host]` 拦素材、用 `[Script]` 剥列表），"

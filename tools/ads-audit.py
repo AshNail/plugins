@@ -154,15 +154,35 @@ SOURCES: dict[str, dict] = {
         "type": "adblock",
         "note": "AWAvenue",
     },
-    "1hosts-pro": {
-        "url": "https://raw.githubusercontent.com/badmojr/1Hosts/master/Pro/hosts.txt",
+    "1hosts-lite": {
+        "url": "https://raw.githubusercontent.com/badmojr/1Hosts/master/Lite/hosts.txt",
         "type": "hosts",
-        "note": "1Hosts Pro",
+        "note": "1Hosts Lite（原 1Hosts Pro 已退役）",
     },
     "1hosts-xtra": {
         "url": "https://raw.githubusercontent.com/badmojr/1Hosts/master/Xtra/hosts.txt",
         "type": "hosts",
         "note": "1Hosts Xtra（大，可选）",
+    },
+    "oisd-small": {
+        "url": "https://small.oisd.nl/domainswild",
+        "type": "domains",
+        "note": "OISD Small（低误杀精选域名库，可选）",
+    },
+    "hagezi-popup": {
+        "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/popupads.txt",
+        "type": "domains",
+        "note": "HaGeZi Pop-Up Ads（弹窗/Popunder 专项，可选）",
+    },
+    "yhosts": {
+        "url": "https://raw.githubusercontent.com/VeleSila/yhosts/master/hosts",
+        "type": "hosts",
+        "note": "yhosts（国内移动应用与视频 hosts，可选）",
+    },
+    "adblockfilters": {
+        "url": "https://raw.githubusercontent.com/217heidai/adblockfilters/main/rules/adblockdomain.txt",
+        "type": "domains",
+        "note": "217heidai AdBlockFilters（含 jiekouAD/xinggsf/CJX，可选）",
     },
 }
 
@@ -357,6 +377,14 @@ def compile_globs(patterns: set[str]) -> tuple[re.Pattern[str], ...]:
         return "".join(parts) + r"\Z"
 
     return tuple(re.compile(translate(pattern)) for pattern in sorted(patterns))
+
+
+def combine_globs(globs: tuple[re.Pattern[str], ...]) -> tuple[re.Pattern[str], ...]:
+    """Merge many fullmatch glob patterns into a single alternation regex for fast scanning."""
+    if len(globs) <= 1:
+        return globs
+    body = "|".join(f"(?:{regex.pattern[:-2]})" for regex in globs)
+    return (re.compile(rf"(?:{body})\Z"),)
 
 
 def parse_plugin_rules(
@@ -588,18 +616,30 @@ def main() -> int:
     # Per-source coverage. Report active rules and the combined view including
     # the default-commented optional groups; the latter does not imply those
     # rules are installed, it just answers "would enabling them help?".
+    active_globs_fast = combine_globs(active_globs)
+    combined_globs_fast = combine_globs(combined_globs)
+    all_domains: set[str] = set()
+    for domains in source_domains.values():
+        all_domains.update(domains)
+
+    active_hits = {
+        domain
+        for domain in all_domains
+        if rule_matches(domain, active_exact, active_wildcard, active_globs_fast)
+    }
+    combined_hits = {
+        domain
+        for domain in all_domains
+        if domain in active_hits
+        or rule_matches(domain, combined_exact, combined_wildcard, combined_globs_fast)
+    }
+    selected_hits = combined_hits if args.include_disabled else active_hits
+
     coverage = {}
     uncovered_counter: collections.Counter[str] = collections.Counter()
-    all_domains: set[str] = set()
     for name, domains in source_domains.items():
-        active_covered = sum(
-            1 for domain in domains if rule_matches(domain, exact, wildcard, globs)
-        )
-        combined_covered = sum(
-            1
-            for domain in domains
-            if rule_matches(domain, combined_exact, combined_wildcard, combined_globs)
-        )
+        active_covered = len(domains & selected_hits)
+        combined_covered = len(domains & combined_hits)
         coverage[name] = {
             "domains": len(domains),
             "covered": active_covered,
@@ -609,21 +649,11 @@ def main() -> int:
             if domains
             else 0.0,
         }
-        for domain in domains:
-            all_domains.add(domain)
-            if not rule_matches(domain, exact, wildcard, globs):
-                uncovered_counter[domain] += 1
+        for domain in domains - selected_hits:
+            uncovered_counter[domain] += 1
 
-    active_covered_total = sum(
-        1
-        for domain in all_domains
-        if rule_matches(domain, active_exact, active_wildcard, active_globs)
-    )
-    combined_covered_total = sum(
-        1
-        for domain in all_domains
-        if rule_matches(domain, combined_exact, combined_wildcard, combined_globs)
-    )
+    active_covered_total = len(active_hits)
+    combined_covered_total = len(combined_hits)
     selected_covered = combined_covered_total if args.include_disabled else active_covered_total
     overall = {
         "domains": len(all_domains),
@@ -676,11 +706,17 @@ def main() -> int:
 
     # Rules not observed in the selected upstreams. This is informational:
     # platform domains can be missing from consumer lists.
+    all_suffixes: set[str] = set()
+    for domain in all_domains:
+        labels = domain.split(".")
+        for index in range(len(labels) - 1):
+            all_suffixes.add(".".join(labels[index:]))
+
     unobserved_exact = sorted(
         domain for domain in exact if domain not in wildcard and domain not in all_domains
     )
     unobserved_wildcard = sorted(
-        domain for domain in wildcard if not any(d == domain or d.endswith("." + domain) for d in all_domains)
+        domain for domain in wildcard if domain not in all_suffixes
     )
 
     protected_violations = []

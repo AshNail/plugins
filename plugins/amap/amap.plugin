@@ -1,18 +1,18 @@
-#!name=高德地图 · 去广告与精简 v1.2.1
-#!desc=高德地图开屏与同域商业化广告原生复写清理，遥测及日志域黑洞拦截；核心定位导航零接触。
+#!name=高德地图 · 去广告与精简 v1.3.0
+#!desc=高德地图开屏、首页活动与打车推广原生复写清理，遥测及日志域黑洞/双栈拦截；核心定位导航零接触。
 #!author=edy
-#!version=1.2.1
+#!version=1.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/amap/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/47/36/74/4736744e-e536-3313-1981-d3879684d2a9/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-07
+#!date=2026-11-16
 #!tag=去广告,高德地图
 #!type=normal
 #!source=2b664257016a6f56dc3961969c16985dee806e03b4be65f73ab9121be37bddde
 
 # ========================================================================
-# 高德地图 · 去广告与精简 v1.2.1
+# 高德地图 · 去广告与精简 v1.3.0
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：restapi.amap.com 核心路线规划、地点搜索与地理编码网关 / ts.amap.com 猎鹰轨迹服务与定位上报核心 API / sns.amap.com 账号与安全服务 / apsrgeo.amap.com 逆地理编码服务，经纬度转换道路门牌地址依赖 / cgicol.amap.com 与 dualstack-cgicol.amap.com 基站定位服务，室内与隧道定位依赖。
 # 高德地图业务共享根域 *.amap.com，禁止整域通配。
@@ -42,6 +42,18 @@ AND,((DOMAIN-SUFFIX,ai.amap.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,center.amap.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,m5-zb.amap.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,m5.amap.com),(PROTOCOL,QUIC)),REJECT
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN,adashx.ut.amap.com,REJECT
+DOMAIN,amap-aos-info-nogw.amap.com,REJECT
+DOMAIN,dualstack-logs.amap.com,REJECT
+DOMAIN,h-adashx.ut.amap.com,REJECT
+DOMAIN,logs.amap.com,REJECT
+DOMAIN,optimus-ads-ykx.amap.com,REJECT
+DOMAIN,optimus-ads.amap.com,REJECT
+DOMAIN,v6-adashx.ut.amap.com,REJECT
 
 [Host]
 
@@ -84,8 +96,9 @@ hostname = m5.amap.com, m5-zb.amap.com, center.amap.com, ai.amap.com
 # ========================================================================
 # 净化层主力：Loon 原生复写（enhance.rewrite 生成，lint 逐行对账）
 # ------------------------------------------------------------------------
-# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_dict/reject_img 在
-# 出网前就地返回合法空载荷，请求不再发出；本层不含响应体改写。
+# 由 Loon [Rewrite] v2 引擎直接执行：request 阶段 reject_* 在出网前就地返回
+# 合法空载荷；response 阶段 reject_* 与 response.json.* 在回包后由引擎完成解压
+# 与字段级改写（不依赖脚本层 $utils.ungzip）。
 # 探针纪律：若存在标了 probe=true 的同 URL [Script] 绑定，复写命中时按官方口径
 # 会静默抑制同阶段脚本，可据此在主日志里验证复写是否真实命中。
 # ========================================================================
@@ -118,3 +131,30 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.
 
 # kill-msgbox-pull: 消息中心营销推送与活动横幅拉取直接返回 200 + 空字典（来源 https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:m5|m5-zb|center|ai)\.amap\.com\/ws\/msgbox\/pull(\?|$)/ then reject_dict(200)
+
+# kill-main-page-assets: 导航首页活动资源与 AI 推广问答卡片直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/m5\.amap\.com\/ws\/faas\/amap-navigation\/main-page-(?:assets|aiqs)(\?|$)/ then reject_dict(200)
+
+# kill-promotion-web: 出行促销 Web 资源与运营配置接口直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/m5-zb\.amap\.com\/ws\/promotion-web\/resource(?:\/home)?(\?|$)/ then reject_dict(200)
+
+# kill-ranking-card: 排行榜商业推广卡片直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/m5\.amap\.com\/ws\/info_bff\/rankingCard(\?|$)/ then reject_dict(200)
+
+# kill-search-marketing: 搜索商业化结构化营销运营接口直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/m5\.amap\.com\/ws\/shield\/search_business\/process\/marketingOperationStructured(\?|$)/ then reject_dict(200)
+
+# ------------------------------------------------------------
+# 响应字段级净化（response.json.delete）：剥离云控广告与弹窗字段
+# ------------------------------------------------------------
+# clean-updatable-ads: AOCS 云控配置响应删除开屏/广告开关/弹窗/推广活动键（保留优惠券与钱包功能键）（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/m5\.amap\.com\/ws\/shield\/frogserver\/aocs\/updatable\/1(\?|$)/ then response.json.delete(["data.adStatementConfig", "data.adCustomerRetainArchitecture", "data.adImEntryConfig", "data.adVenueConfig", "data.adPerfSwitch", "data.EndNaviC3AdCard", "data.infoCpcReport", "data.hotsaleConfig", "data.marketing_resource_config", "data.giftEntryConfig", "data.splashscreen", "data.SplashScreenControl", "data.splashview_config", "data.feedback_banner", "data.TrainOrderBanner", "data.nearby_business_popup", "data.shortcut_popup_frequency", "data.tel_retention_popup", "data.hotel_activity", "data.taxi_activity", "data.hotel_privilege", "data.sportsActivityConfig", "data.activity_qingke_contry_control", "data.custom_consultdata.widget_guide", "data.free_ride", "data.homepage_resource_config", "data.home_message_guide", "data.hotel_tipsicon", "data.sur_bar", "data.nearby_map_entry_guide", "data.small_biz_index", "data.small_biz_fun", "data.setpagesearch"])
+
+# clean-car-order-promo: 打车订单页响应删除鲁班皮肤、气泡与营销弹窗字段（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/m5-zb\.amap\.com\/ws\/boss\/car\/order\/content_info(\?|$)/ then response.json.delete(["data.lubanData.skin", "data.lubanData.kingToolBoxBubble", "data.lubanData.popup"])
+
+# clean-hitch-banner: 顺风车乘客页响应删除顶部运营 Banner（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/m5-zb\.amap\.com\/ws\/amap\/hitch\/passenger\/content_info(\?|$)/ then response.json.delete("data.lubanData.banner")
+
+# clean-near-recommend-activity: 附近推荐页响应删除运营活动浮层字段（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/m5\.amap\.com\/ws\/smartui\/near_recommend(\?|$)/ then response.json.delete("data.operation_activity")

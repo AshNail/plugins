@@ -17,7 +17,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mba-dashi/mba-das
 | 组 | 置信 | 状态 | 说明 |
 |---|---|---|---|
 | 穿山甲 / Pangle（字节跳动）（引用组） | A | 启用 | 看「激励视频/任务」的 App 慎用本组：断它 = 奖励类任务拿不到奖。 共 61 域 / 0 规则。 |
-| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 27 域 / 0 规则。 |
+| 腾讯广告 / 优量汇（GDT）（引用组） | A | 启用 | 域名真源见 ads 组/SDK 库 共 25 域 / 0 规则。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 67 条。 |
 
 ## 红线与天花板（如实）
 
@@ -31,4 +32,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/mba-dashi/mba-das
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/mba-dashi.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 88 条，[Rule] 0 条。
+统计：精确/通配黑洞 86 条，[Rule] 67 条。

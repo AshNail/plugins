@@ -1,12 +1,12 @@
-# 知乎 · 去广告与精简 v1.2.2
+# 知乎 · 去广告与精简 v1.3.0
 
-> 知乎自建遥测黑洞，开屏、商业推广、推荐流与关注流广告卡片原生复写过滤；问答文章核心功能零接触。
+> 知乎自建遥测黑洞/双栈拦截，开屏、商业推广、问答挂件与信息流广告卡片原生复写过滤；问答文章核心功能零接触。
 
-版本 **1.2.2** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 zhihu.plugin](https://img.shields.io/badge/Loon-导入%E7%9F%A5%E4%B9%8E%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.2.2-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fzhihu%2Fzhihu.plugin)
+[![一键导入 zhihu.plugin](https://img.shields.io/badge/Loon-导入%E7%9F%A5%E4%B9%8E%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.3.0-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fzhihu%2Fzhihu.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugin
@@ -18,6 +18,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 |---|---|---|---|
 | 知乎自建遥测 / 崩溃分析 / 商业化追踪与广告素材 | A | 启用 | zhihu-web-analytics.zhihu.com（9源，知乎官方 Web/移动端分析）、udd1i5.zhihu.com（5源，商业化追踪与素材 CDN）、sugar.zhihu.com（4源，崩溃上报与监控平台）、crash2.zhihu.com（3源，崩溃分析日志端点）、adstatic.zhihu.com（知乎商业广告专用静态资产域）。均非业务数据流，DNS 映射 127.0.0.1 阻断。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 3 条。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 5 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
@@ -43,7 +44,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 | `kill-preset-words` | request | `reject_dict` | `cleanAds` | 搜索框预置推广词直接返回 200 + 空字典 |
 | `kill-related-queries` | request | `reject_dict` | `cleanAds` | 问题页相关搜索词推广直接返回 200 + 空字典 |
 | `kill-zhida-guidance` | request | `reject_dict` | `cleanAds` | 知乎直答 AI 引导卡片直接返回 200 + 空字典 |
-| `kill-bubble-show` | request | `reject_dict` | `cleanAds` | 内容分发气泡提示直接返回 200 + 空字典 |
+| `kill-bubble-show` | request | `reject_dict` | `cleanAds` | 内容分发气泡展示与配置接口直接返回 200 + 空字典 |
+| `kill-fringe-ad` | request | `reject_dict` | `cleanAds` | 知乎边缘悬浮广告请求直接返回 200 + 空字典 |
 | `kill-homepage-card` | request | `reject_dict` | `cleanAds` | 个人主页推广卡片直接返回 200 + 空字典 |
 | `kill-www-commercial` | request | `reject_dict` | `cleanAds` | www.zhihu.com 网页/混合容器商业化广告接口整族直接返回 200 + 空字典 |
 | `kill-homepage-entry` | request | `reject_dict` | `cleanAds` | 个人中心推广入口模块直接返回 200 + 空字典 |
@@ -52,6 +54,11 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 | `kill-related-search` | request | `reject_dict` | `cleanAds` | 问题页底部「大家都在搜」推广搜索词直接返回 200 + 空字典 |
 | `clean-topstory-recommend` | response | `response.json.jq` | `cleanAds` | 首页推荐信息流：剔除 feed_advert、target.type=advert 及携带 adjson/promotion_extra 的商业推广卡片 |
 | `clean-moments-feed` | response | `response.json.jq` | `cleanAds` | 关注动态信息流：剔除穿插的商业推广与内联广告卡片 |
+| `clean-question-feeds-ad` | response | `response.json.delete` | `cleanAds` | 问题流响应删除 ad_info 商业广告节点 |
+| `clean-podcasts-banners` | response | `response.json.delete` | `cleanAds` | 知乎播客频道删除推广 banners |
+| `clean-search-pendant` | response | `response.json.delete` | `cleanAds` | 搜索页删除浮动商业推广挂件 pendant |
+| `clean-comment-atmosphere` | response | `response.json.delete` | `cleanAds` | 评论区移除评论氛围满意度调查弹窗配置 |
+| `clean-article-answer-promo` | response | `response.json.delete` | `cleanAds` | 文章/回答/想法详情页移除第三方商业化挂件与圈子推广字段 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
 
@@ -81,4 +88,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/zhihu/zhihu.plugi
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/zhihu.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 5 条，[Rule] 3 条。
+统计：精确/通配黑洞 5 条，[Rule] 8 条。

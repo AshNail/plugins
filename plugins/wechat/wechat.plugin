@@ -24,11 +24,51 @@
 # 本文件由 tools/build-apps.py 从 src/apps/wechat.json 生成，不要手改生成物。
 # ========================================================================
 
+[Rule]
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN-SUFFIX,e.qq.com,REJECT
+DOMAIN-SUFFIX,gdt.qq.com,REJECT
+DOMAIN-SUFFIX,gdtimg.com,REJECT
+DOMAIN-SUFFIX,l.qq.com,REJECT
+DOMAIN-SUFFIX,tencentmind.com,REJECT
+DOMAIN-SUFFIX,ugdtimg.com,REJECT
+DOMAIN-SUFFIX,ugdturner.com,REJECT
+DOMAIN-SUFFIX,wit.qq.com,REJECT
+DOMAIN,adsfile.qq.com,REJECT
+DOMAIN,adslvfile.qq.com,REJECT
+DOMAIN,adsmind.apdcdn.tc.qq.com,REJECT
+DOMAIN,adsmind.gdtimg.com.tcdn.qq.com,REJECT
+DOMAIN,adsmind.ugdtimg.com.tcdn.qq.com,REJECT
+DOMAIN,aedns.weixin.qq.com,REJECT
+DOMAIN,app-support.qq.com,REJECT
+DOMAIN,app-tj.adinall.com,REJECT
+DOMAIN,btrace.qq.com,REJECT
+DOMAIN,dmplog.qq.com,REJECT
+DOMAIN,mdevstat.qqlive.qq.com,REJECT
+DOMAIN,mtrace.qq.com,REJECT
+DOMAIN,pgdt.gtimg.cn,REJECT
+DOMAIN,pgdt.gtimg.com,REJECT
+DOMAIN,pingtcss.qq.com,REJECT
+DOMAIN,qzs.qq.com,REJECT
+DOMAIN,snowflake.qq.com,REJECT
+DOMAIN,wapx.adinall.com,REJECT
+DOMAIN,wxa.wxs.qq.com,REJECT
+DOMAIN,wximg.wxs.qq.com,REJECT
+DOMAIN,wxsmw.wxs.qq.com,REJECT
+DOMAIN,wxsnsad.tc.qq.com,REJECT
+DOMAIN,wxsnsdy.tc.qq.com,REJECT
+DOMAIN,wxsnsdy.video.qq.com,REJECT
+DOMAIN,wxsnsdy.wxs.qq.com,REJECT
+DOMAIN,wxsnsdythumb.wxs.qq.com,REJECT
+DOMAIN,xn--8rtx55n.cn,REJECT
+
 [Host]
 
 # ------------------------------------------------------------
 # 腾讯广告 / 优量汇（GDT）（置信 A）
-*.adnet.qq.com = 127.0.0.1
 *.e.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
 *.gdtimg.com = 127.0.0.1
@@ -37,7 +77,6 @@
 *.ugdtimg.com = 127.0.0.1
 *.ugdturner.com = 127.0.0.1
 *.wit.qq.com = 127.0.0.1
-adnet.qq.com = 127.0.0.1
 adsfile.qq.com = 127.0.0.1
 adslvfile.qq.com = 127.0.0.1
 adsmind.apdcdn.tc.qq.com = 127.0.0.1

@@ -26,7 +26,7 @@
 - [x] **STUN 放行（2026-11-01 实测）**：Mac 私有配置曾有 `DOMAIN-KEYWORD,stun,REJECT` 排在具体 STUN 放行规则之前，已删除；进一步移除 `PROTOCOL,STUN,REJECT` 与 `DEST-PORT,3478,REJECT` 后，Google STUN 收到真实响应（WhatsApp 3478 仍受网络/节点限制）。已对齐 Loon UI 的「允许 STUN」，公开与私有配置都放行 STUN，保留 DoT/DoQ 端口阻断和 `udp-fallback-mode=REJECT` 防直连泄漏；需要更严格 WebRTC 隐私时再加回这两条，代价是语音/视频通话。
 
 - [ ] **⚪ `#!version` / `#!openUrl` 取证（第二十轮登记的两个未文档化头字段）**：官方 Plugin 页把插件信息字段列成一张明确的表，共 11 个（`name` `desc` `author` `homepage` `icon` `system` `system_version` `loon_version` `date` `tag` `type`），**没有 `#!version`，也没有 `#!openUrl`**（`openUrl` 只是 `$notification.post(..., attach)` 的字段）。我们 16 个插件都带着这两行，取证两条：
-      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.24`、`soda=3.3.3`、`douyin=0.9.2`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
+      ① 看 Loon 插件卡片/详情页是否显示 `#!version` 的值（本仓库当前 `ads=2.8.32`、`soda=3.3.3`、`douyin=0.9.3`，与 `#!date` 不同，一眼可辨）——显示＝Loon 认它，把 `tools/loon-coverage.py` 的 `m-version` 升回 `used`；不显示＝纯社区惯例，可以删（不影响任何拦截行为，但按纪律先登记再动手）；
       ② 在插件列表点该插件的「打开/详情」入口，看是否跳到 `#!openUrl` 指向的 README——跳转成立则 `m-open-url` 升回 `used` 并保留；不成立则删掉该行（`#!homepage` 已指向仓库主页，功能不缺失）。
       两处结论都拿到后，同步改 `tools/loon-token-audit.py` 的 `UNDOCUMENTED` 例外表与 `tools/loon-coverage.py` 的期望档；只改文档不改工具会被 `--check` 拦下。
 
@@ -162,23 +162,8 @@ v2.8.0 / v0.8.0 起插件自带常开 QUIC 回退（见插件 `[Rule]` 段），
       ②若要确证，临时给 ads.plugin 加 `[MITM] hostname = *`，对比加之前/之后的命中数。
       **从 0 变为 >0 即证明默认配置下不生效**，届时删除或把 UA 特征并入域名层。
       验证前不要因为「写了就以为生效」——它们目前只是成本为零的兜底。
-- [ ] **IPv6 / AAAA 旁路（第九轮发现的唯一「有手段未落地」项）**：`[Host]` 里全部生效黑洞
-      **全部只映射 IPv4**（127.0.0.1）。要确认两件事，顺序不能反：
-      ① **多行共存**：临时加两条
-      `probe.example = 127.0.0.1` 和 `probe.example = ip-mode:v4-only`，
-      看 `probe.example` 的 A 记录**是否仍是 127.0.0.1**。
-      ——如果变成真实 IP，说明 Loon 一个域名只认最后一条，**补 ip-mode 会把黑洞覆盖掉**，
-      那样这条旁路只能靠主配置 `ipv6-vif = off`，且必须保持不补。
-      ② **旁路是否真存在**：只写 `probe.example = 127.0.0.1` 一条，查它的 AAAA。
-      返回空 → 没有旁路，什么都不用做；返回真实 IPv6 → 旁路成立，
-      且在①通过的前提下才批量补 `ip-mode:v4-only`。
-      ③ **若①失败（一个域名只认最后一条）**：不再碰 `[Host]`，改给同一域名补一条
-      `DOMAIN-SUFFIX,probe.example,REJECT`，看 v4/v6 是否都拒。域名规则在解析前命中、
-      不看地址族，这是唯一不依赖未知语义就能落地的封法。
-      **取证前提（第十八轮更正）**：官方 `ip-mode` 取值只有 `v4-only`/`dual`/`prefer-v4`/
-      `prefer-v6`/`v6-only`；本仓库旧版写的 `ipv4-only`/`ipv4-preferred`/`ipv6-preferred` 是错的，
-      非法行会被 Loon 直接忽略——照旧写法测出的「A 记录仍生效」属**假阳性**，
-      会让人误判成「多行不共存」。已在 `docs/loon-native-first.md` §15.2 与 `tools/bypass-audit.py` 更正。
+- [ ] **IPv6 / AAAA 旁路复验（v2.8.32 已补全 pre-DNS `[Rule]` `DOMAIN-SUFFIX`/`DOMAIN` 双栈阻断，`bypass-audit.py` 记为 `sealed`）**：
+      按 Loon 官方 `Rule/`「目标地址为域名时先匹配域名规则（先于 DNS 解析、不区分 IPv4/IPv6）」实现双栈封口，同时保留 `[Host] = 127.0.0.1` 应对直接 IPv4 DNS 查询。真机访问同时带 A 与 AAAA 记录的测试广告域，确认请求直接命中 `DOMAIN`/`DOMAIN-SUFFIX,REJECT` 且无 IPv6 外连；若仍要测试实验性的 `[Host]` 同名多行 `ip-mode:v4-only`，须按官方值表 `v4-only`/`dual`/`prefer-v4`/`prefer-v6`/`v6-only` 验证。
 - [ ] **DoQ（UDP 853）是否真的被 `DEST-PORT,853,REJECT` 挡住**：官方 `Rule/port_rule` 页
       没有写 TCP/UDP 限定。判读：找一个能指定 DoQ 的 App/系统「加密 DNS」入口，
       指向 `dns.quad9.net`，看是否解析失败。若仍能解析，

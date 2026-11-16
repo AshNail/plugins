@@ -128,8 +128,17 @@ const PROGRESS_FIELDS = [
 
 const SENSITIVE_KEY = /^(?:access[_-]?token|refresh[_-]?token|token|authorization|cookie|set-cookie|session|session[_-]?id|user[_-]?id|uid|device[_-]?id|sign|signature|secret|secret[_-]?key|api[_-]?key)$/i;
 
+const KEY_CACHE = Object.create(null);
+
 function normalizeKey(k) {
-  return String(k).toLowerCase().replace(/[_-]/g, "");
+  const s = String(k);
+  let n = KEY_CACHE[s];
+  if (n !== undefined) return n;
+  n = s.indexOf("_") === -1 && s.indexOf("-") === -1
+    ? s.toLowerCase()
+    : s.toLowerCase().replace(/[_-]/g, "");
+  KEY_CACHE[s] = n;
+  return n;
 }
 
 function isObject(v) {
@@ -158,9 +167,13 @@ function safeText(v) {
 
 function keysOf(v, limit) {
   if (!isObject(v)) return [];
-  return Object.keys(v)
-    .filter(function (k) { return !SENSITIVE_KEY.test(k); })
-    .slice(0, limit || 20);
+  const lim = limit || 20;
+  const out = [];
+  const keys = Object.keys(v);
+  for (let i = 0; i < keys.length && out.length < lim; i++) {
+    if (!SENSITIVE_KEY.test(keys[i])) out.push(keys[i]);
+  }
+  return out;
 }
 
 function addField(out, obj, names, label) {
@@ -435,10 +448,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -453,13 +474,22 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const dec = getUtf8Decoder();
+  if (dec) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return dec.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -605,8 +635,6 @@ let LOG_TASK_TITLES = false;
   try {
     const url = ($request && $request.url) || "";
     if (url.indexOf("/luna/") === -1) return $done({});
-    const args = pargs(["logTaskTitles"]);
-    LOG_TASK_TITLES = pflag(args, "logTaskTitles", false);
 
     let rule = null;
     for (let i = 0; i < RULES.length; i++) {
@@ -617,7 +645,13 @@ let LOG_TASK_TITLES = false;
     }
     if (!rule) return $done({});
 
-    const path = url.replace(/^https?:\/\/[^/]+/, "").split("?")[0];
+    const args = pargs(["logTaskTitles"]);
+    LOG_TASK_TITLES = pflag(args, "logTaskTitles", false);
+
+    const scheme = url.indexOf("://");
+    const pStart = scheme !== -1 ? url.indexOf("/", scheme + 3) : 0;
+    const q = pStart !== -1 ? url.indexOf("?", pStart) : -1;
+    const path = pStart === -1 ? "" : (q === -1 ? url.slice(pStart) : url.slice(pStart, q));
     let raw = readBody($response);
 
     if (/\/advert\/incentive\/retrieve/.test(url)) rememberAdStart();
@@ -632,7 +666,11 @@ let LOG_TASK_TITLES = false;
       return $done({});
     }
 
-    const head = raw.trimStart().slice(0, 1);
+    let head = "";
+    for (let i = 0; i < raw.length; i++) {
+      const c = raw.charCodeAt(i);
+      if (c > 32 && c !== 0xa0 && c !== 0xfeff) { head = raw.charAt(i); break; }
+    }
     if (head !== "{" && head !== "[") {
       console.log(PREFIX + " " + rule.id + " non-JSON len=" + raw.length + ceTag($response));
       return $done({});

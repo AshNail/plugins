@@ -1,18 +1,18 @@
-#!name=哔哩哔哩 · 去广告与精简 v1.2.1
-#!desc=哔哩哔哩开屏、推荐流、视频页推广与搜索广场广告原生复写过滤，遥测及HTTPDNS黑洞；核心播放直播零接触。
+#!name=哔哩哔哩 · 去广告与精简 v1.3.0
+#!desc=哔哩哔哩开屏、推荐流、竖屏 Story 广告、视频页与VIP物料推广原生复写过滤，遥测及HTTPDNS双栈拦截；核心播放直播零接触。
 #!author=edy
-#!version=1.2.1
+#!version=1.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/bilibili/README.md
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b7/70/99/b7709979-0703-0722-b561-c97b2bf5b644/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ef/28/7a/ef287aee-8a59-c8d2-d45b-9310fb31346d/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-09
+#!date=2026-11-16
 #!tag=去广告,哔哩哔哩
 #!type=normal
 #!source=0394746db7fe06e32132ea8620f5275d3e5ee6db655ba5fa8835f207c1313b90
 
 # ========================================================================
-# 哔哩哔哩 · 去广告与精简 v1.2.1
+# 哔哩哔哩 · 去广告与精简 v1.3.0
 # ------------------------------------------------------------------------
 # 红线（绝不进任何拦截组）：passport.bilibili.com 账号与安全登录网关 / api.bilibili.com 核心业务 API，视频/播放/稿件接口 / app.bilibili.com 移动端核心业务接口，启动/信息流/导航 / live.bilibili.com 直播核心业务 / message.bilibili.com 私信与消息通知长连接通道。
 # 哔哩哔哩主站业务共享根域 *.bilibili.com，禁止整域通配。
@@ -43,6 +43,16 @@ slimNav = switch,true,tag=导航栏精简（默认开）,desc=过滤底部导航
 # QUIC 回退（增强层配套 · 拒的是 HTTP/3 协议，回落 TCP 后正文不受影响）
 # MITM 只解密 TCP；App 走 HTTP/3 时下面这些主机的响应脚本会静默收不到。本组只对 PROTOCOL,QUIC 生效，同一主机的 TCP 请求（正文/书架/章节）零影响。
 AND,((DOMAIN-SUFFIX,app.bilibili.com),(PROTOCOL,QUIC)),REJECT
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN,ali-web-player-tracker.biliapi.net,REJECT
+DOMAIN,data.bilibili.com,REJECT
+DOMAIN,dataflow.biliapi.com,REJECT
+DOMAIN,httpdns.bilivideo.com,REJECT
+DOMAIN,hw-v2-web-player-tracker.biliapi.net,REJECT
+DOMAIN,tracker.chat.bilibili.com,REJECT
 
 [Host]
 
@@ -92,8 +102,11 @@ hostname = app.bilibili.com
 # kill-splash: 开屏广告列表、展示及品牌/活动开屏接口直接返回 200 + 空字典（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/(?:list|show|brand\/list|event\/list2)(\?|$)/ then reject_dict(200)
 
-# kill-top-activity: 首页右上角活动推广挂件直接返回 200 + 空字典（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
-request if ${slimNav} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/resource\/top\/activity(\?|$)/ then reject_dict(200)
+# kill-top-activity: 首页右上角活动推广挂件与 Tab 活动换肤直接返回 200 + 空字典（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
+request if ${slimNav} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/resource\/(?:top\/activity|patch\/tab(?:\/v2)?)(\?|$)/ then reject_dict(200)
+
+# kill-vip-ads-materials: 会员商业广告物料预拉取接口直接返回 200 + 空字典（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Bilibili_remove_ads.lpx）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/vip\/ads\/materials(\?|$)/ then reject_dict(200)
 
 # ------------------------------------------------------------
 # 响应字段级净化（response.json.jq）：保留业务数据流，只剥广告卡片与冗余入口
@@ -101,8 +114,8 @@ request if ${slimNav} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/re
 # clean-feed-index: 推荐信息流：按前缀通杀商业广告卡片（cm_*/ad_*）、ad_info 节点、推广游戏与横幅广告（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
 response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.items | type) == \"array\" then .data.items |= map(select(type != \"object\" or (.ad_info == null and ((.card_goto | if type == \"string\" then startswith(\"ad_\") else false end) | not) and ((.card_type | if type == \"string\" then (startswith(\"cm_\") or startswith(\"ad_\")) else false end) | not) and .card_goto != \"game\" and ((.banner_item | type) != \"array\" or (.banner_item | all(type != \"object\" or .type != \"ad\")))))) else . end")
 
-# clean-feed-story: 竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* 广告视频（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
-response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index\/story(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.items | type) == \"array\" then .data.items |= map(select(type != \"object\" or (.ad_info == null and ((.card_goto | if type == \"string\" then startswith(\"ad_\") else false end) | not)))) else . end")
+# clean-feed-story: 竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* / vertical_ad_* 广告视频（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Bilibili_remove_ads.lpx）
+response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index\/story(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" and (.data.items | type) == \"array\" then .data.items |= map(select(type != \"object\" or (.ad_info == null and ((.card_goto | if type == \"string\" then (startswith(\"ad_\") or startswith(\"vertical_ad_\")) else false end) | not)))) else . end")
 
 # clean-view-relates: 视频详情页：剔除播放下方商业推广配置（cm_config/cms/cm_ipad）及关联推荐中的广告卡片（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
 response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/v2\/view(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data |= (del(.cm_config, .cms, .cm_ipad) | if (.relates | type) == \"array\" then .relates |= map(select(type != \"object\" or (.is_ad_loc != true and .ad_info == null))) else . end) else . end")
@@ -112,3 +125,6 @@ response if ${cleanAds} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/
 
 # clean-nav-tab: 导航栏精简：过滤底栏会员购/发布与顶栏游戏中心（来源 https://github.com/app2smile/rules/blob/master/plugin/bilibili.plugin）
 response if ${slimNav} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/resource\/show\/tab\/v[0-9]+(\?|$)/ then response.json.jq("if type == \"object\" and (.data | type) == \"object\" then .data |= ((if (.bottom | type) == \"array\" then .bottom |= map(select(type != \"object\" or (.name != \"会员购\" and .tab_id != \"会员购Bottom\" and .name != \"发布\"))) else . end) | (if (.top | type) == \"array\" then .top |= map(select(type != \"object\" or .name != \"游戏中心\")) else . end)) else . end")
+
+# clean-skin-equip: 精简首页主题皮肤装扮推广模块（来源 https://github.com/fkingikelee/fkikelee/blob/main/lpx/Bilibili_remove_ads.lpx）
+response if ${slimNav} == true && ${url} ~= /^https:\/\/app\.bilibili\.com\/x\/resource\/show\/skin(\?|$)/ then response.json.delete("data.common_equip")

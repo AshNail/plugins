@@ -37,7 +37,7 @@ const DOUYIN_IDS = [
   "douyin_music", "douyin_tab"
 ];
 
-const NON_MUSIC_IDS = DOUYIN_IDS.concat([
+const EXTRA_NON_MUSIC_IDS = [
   /* 直播 */
   "live", "live_tab", "live_tab_play", "livelist", "live_room",
   /* 视频（非纯听歌） */
@@ -55,7 +55,7 @@ const NON_MUSIC_IDS = DOUYIN_IDS.concat([
   /* 娱乐 / 演出 / 明星 / 长内容 */
   "entertainment", "entertainment_tab", "show", "star", "movie", "tv", "concert",
   "novel", "book", "comic", "cartoon", "podcast", "radio", "game", "game_tab"
-]);
+];
 
 /* schema 里出现这些片段视为非听歌 Tab */
 const BLOCK_SCHEMA_PARTS = [
@@ -78,26 +78,42 @@ const DOUYIN_TITLE_RE = /听抖音/i;
 /* 奖励保护：命中这些词的条目永不删除 */
 const KEEP_REWARD_RE = /奖励|金币|领奖|提现|reward|incentive|coin|treasure/i;
 
-/* 可能承载 Tab 列表的字段（归一化后匹配） */
-const TAB_CONTAINER_FIELDS = new Set([
-  "bottomtabdata", "bottomtab", "bottomtabs", "homepagetabs", "hometabs",
-  "tablist", "tabdata", "tabinfo", "tabinfos", "tabconfig", "tabs",
-  "maintabs", "maintab", "mainpage", "tabbar", "tabbarconfig",
-  "topttabs", "toptab", "toptabs", "lefttabs", "xtab", "xtabs"
-]);
+/* 快速预检与容器字段延迟构建：非匹配请求零 Set 分配 */
+const FAST_TAB_CHECK_RE = /(?:"[a-z_-]*tab[a-z_-]*"\s*:)|listen[-_]douyin|listen[-_]video[-_]tab/i;
 
-function normalize(v) {
-  return String(v).toLowerCase().replace(/[_\-.\s]/g, "");
+let TAB_CONTAINER_FIELDS = null;
+function getTabContainerFields() {
+  if (TAB_CONTAINER_FIELDS === null) {
+    TAB_CONTAINER_FIELDS = new Set([
+      "bottomtabdata", "bottomtab", "bottomtabs", "homepagetabs", "hometabs",
+      "tablist", "tabdata", "tabinfo", "tabinfos", "tabconfig", "tabs",
+      "maintabs", "maintab", "mainpage", "tabbar", "tabbarconfig",
+      "topttabs", "toptab", "toptabs", "lefttabs", "xtab", "xtabs"
+    ]);
+  }
+  return TAB_CONTAINER_FIELDS;
 }
 
-function normSet(list) {
+const NORM_CACHE = Object.create(null);
+
+function normalize(v) {
+  const s = String(v);
+  const cached = NORM_CACHE[s];
+  if (cached !== undefined) return cached;
+  const norm = s.toLowerCase().replace(/[_\-.\s]/g, "");
+  NORM_CACHE[s] = norm;
+  return norm;
+}
+
+function normSet(list, extra) {
   const s = new Set();
   for (const x of list) s.add(normalize(x));
+  if (extra) for (const x of extra) s.add(normalize(x));
   return s;
 }
 
-const DOUYIN_SET = normSet(DOUYIN_IDS);
-const NON_MUSIC_SET = normSet(NON_MUSIC_IDS);
+let DOUYIN_SET = null;
+let NON_MUSIC_SET = null;
 
 /* ---------------- 工具 ---------------- */
 function textOf(v) {
@@ -165,7 +181,9 @@ function isBlockedTab(item, listenOnly) {
   if (!item || typeof item !== "object" || Array.isArray(item)) return false;
   if (hasReward(item)) return false; // 奖励条目永久保护
 
-  const idSet = listenOnly ? NON_MUSIC_SET : DOUYIN_SET;
+  const idSet = listenOnly
+    ? (NON_MUSIC_SET || (NON_MUSIC_SET = normSet(DOUYIN_IDS, EXTRA_NON_MUSIC_IDS)))
+    : (DOUYIN_SET || (DOUYIN_SET = normSet(DOUYIN_IDS)));
 
   for (const id of tabIds(item)) {
     if (idSet.has(normalize(id))) return true;
@@ -221,11 +239,12 @@ function walk(node, listenOnly, log, path, depth) {
   }
   if (typeof node !== "object") return;
 
+  const containerFields = getTabContainerFields();
   for (const key of Object.keys(node)) {
     const nk = normalize(key);
     const v = node[key];
 
-    if (TAB_CONTAINER_FIELDS.has(nk) && Array.isArray(v)) {
+    if (containerFields.has(nk) && Array.isArray(v)) {
       filterTabsArray(v, listenOnly, log, path + "." + key);
     }
 
@@ -249,10 +268,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -267,12 +294,21 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const decoder = getUtf8Decoder();
+  if (decoder) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return decoder.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -348,6 +384,14 @@ function markHeaders(reason, bodyChanged) {
   }
 }
 
+function firstNonWsChar(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c > 32 && c !== 0xa0 && c !== 0xfeff) return s.charAt(i);
+  }
+  return "";
+}
+
 /* ---------------- 主逻辑 ---------------- */
 (function main() {
   const url = ($request && $request.url) || "";
@@ -359,13 +403,13 @@ function markHeaders(reason, bodyChanged) {
   const args = pargs(["hideDouyinTab", "listenOnly", "debugLog"]);
   const hideDouyin = pflag(args, "hideDouyinTab", false);
   const listenOnly = pflag(args, "listenOnly", false);
-  const debugOn = pflag(args, "debugLog", false);
 
   if (!ENABLED || (!hideDouyin && !listenOnly)) {
     $done({});
     return;
   }
 
+  const debugOn = pflag(args, "debugLog", false);
   const raw = readBody($response);
 
   if (debugOn) {
@@ -379,15 +423,14 @@ function markHeaders(reason, bodyChanged) {
     return;
   }
 
-  const head = raw.trimStart().slice(0, 1);
+  const head = firstNonWsChar(raw);
   if (head !== "{" && head !== "[") {
     $done({ headers: markHeaders("soda-homepage-tabs;skip=not-json" + ceTag($response)) });
     return;
   }
 
   // 快速预检：没有 Tab 相关字样直接放行，避免无谓 JSON.parse
-  const fastCheck = /(?:"[a-z_-]*tab[a-z_-]*"\s*:)|listen[-_]douyin|listen[-_]video[-_]tab/i;
-  if (!fastCheck.test(raw)) {
+  if (!FAST_TAB_CHECK_RE.test(raw)) {
     if (VERBOSE) console.log("[soda] homepage-tabs: no tab config, passthrough: " + url);
     $done({ headers: markHeaders("soda-homepage-tabs;noop=no-marker") });
     return;

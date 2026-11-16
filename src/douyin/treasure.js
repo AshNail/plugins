@@ -33,8 +33,10 @@
 
 const KEEP_SECTIONS = ["duration_task_section"];
 const KEEP_TASKS = ["luna_rewards_ads"];
-const KEEP_SECTIONS_SET = new Set(KEEP_SECTIONS);
-const KEEP_TASKS_SET = new Set(KEEP_TASKS);
+/** @type {Set<string> | null} */
+let keepSectionsSet = null;
+/** @type {Set<string> | null} */
+let keepTasksSet = null;
 
 function isPlainObject(v) {
   return !!v && typeof v === "object" && !Array.isArray(v);
@@ -115,10 +117,13 @@ function pruneTreasure(obj, log) {
   const sections = data.sections;
   if (!Array.isArray(sections)) return false;
 
+  const keptSections = keepSectionsSet || (keepSectionsSet = new Set(KEEP_SECTIONS));
+  const keptTasks = keepTasksSet || (keepTasksSet = new Set(KEEP_TASKS));
+
   const kept = [];
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
-    if (!isPlainObject(section) || !KEEP_SECTIONS_SET.has(section.key)) {
+    if (!isPlainObject(section) || !keptSections.has(section.key)) {
       log.push("drop section " + (section && section.key));
       continue;
     }
@@ -128,7 +133,7 @@ function pruneTreasure(obj, log) {
       let tasks = null;
       for (let j = 0; j < origTasks.length; j++) {
         const task = origTasks[j];
-        if (!isPlainObject(task) || !KEEP_TASKS_SET.has(task.key)) {
+        if (!isPlainObject(task) || !keptTasks.has(task.key)) {
           if (tasks === null) tasks = origTasks.slice(0, j);
         } else if (tasks !== null) {
           tasks.push(task);
@@ -168,10 +173,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -186,13 +199,22 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const dec = getUtf8Decoder();
+  if (dec) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return dec.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -293,6 +315,14 @@ function markHeaders(reason, bodyChanged) {
   }
 }
 
+function firstNonWsChar(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c > 32 && c !== 0xa0 && c !== 0xfeff) return s.charAt(i);
+  }
+  return "";
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -308,7 +338,7 @@ function markHeaders(reason, bodyChanged) {
     if (typeof raw !== "string" || raw.length === 0) {
       return $done({ headers: markHeaders("douyin-treasure;skip=no-body") });
     }
-    const head = raw.trimStart().slice(0, 1);
+    const head = firstNonWsChar(raw);
     if (head !== "{" && head !== "[") {
       return $done({ headers: markHeaders("douyin-treasure;skip=not-json" + ceTag($response)) });
     }

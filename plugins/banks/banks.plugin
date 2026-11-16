@@ -1,18 +1,18 @@
-#!name=银行 App 聚合 · 遥测瘦身 v1.3.0
+#!name=银行 App 聚合 · 遥测瘦身 v1.3.1
 #!desc=覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:全面拦截银行自建广告专域与营销推送；登录支付绝对放行，零证书零MITM。
 #!author=edy
-#!version=1.3.0
+#!version=1.3.1
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/banks/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f1/6a/4e/f16a4eb9-1de3-833f-0f56-df39c3df6d09/AppIcon-0-1x_U007ephone-0-1-0-sRGB-85-220-0.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06
+#!date=2026-11-16
 #!tag=隐私,银行,遥测
 #!type=normal
 #!source=89193a15f5d07258f3e0b273c805de2475505942577ad53af7c4a6b6eeadd2d4
 
 # ========================================================================
-# 银行 App 聚合 · 遥测瘦身 v1.3.0
+# 银行 App 聚合 · 遥测瘦身 v1.3.1
 # ------------------------------------------------------------------------
 # 域名映射纠错（防后续维护者凭品牌名加规则,均为 A 级官方验证）：掌上生活=招商信用卡,域在 cmbchina.com/cmbimg.com——cmbc.com.cn 是民生银行!;买单吧=交通信用卡,域在 bankcomm.com——spdbccc.com.cn 是浦发信用卡中心(浦大喜奔)!;adspdbl.com 是 Triplelift 系停放域、iabchina.cn 是 IAB 行业组织,都与浦发/农行无关。
 # 红线（绝不出现）：各银行主域整族（*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作）/ wap.cmpassport.com+e.189.cn+ms.zzx9.cn(一键登录) / getui+gepush(买单吧与中行的唯一自建推送,杀了=交易提醒消失) / wallet.95516.com+mobilepaybeta.95516.com(付款码/HCE) / cfca.com.cn(数字证书扫码付) / cmbc.maam.cc(招行行内嵌优量汇测试域,黑洞会触发招行侧异常)。
@@ -38,6 +38,18 @@ DOMAIN-SUFFIX,ads.cup.com.cn,REJECT
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 DOMAIN-SUFFIX,alliance.com.corpqueue.net,REJECT
 
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN,ad.bankcomm.com,REJECT
+DOMAIN,ad.boc.cn,REJECT
+DOMAIN,ad.icbc.com.cn,REJECT
+DOMAIN,ad.psbc.com,REJECT
+DOMAIN,adv.ccb.com,REJECT
+DOMAIN,marketing.ccbtechnology.com,REJECT
+DOMAIN,marketing.unionpayintl.com,REJECT
+DOMAIN,mbads.paas.cmbchina.com,REJECT
+
 [Host]
 
 # ------------------------------------------------------------
@@ -50,7 +62,6 @@ ad.bankcomm.com = 127.0.0.1
 ad.boc.cn = 127.0.0.1
 ad.icbc.com.cn = 127.0.0.1
 ad.psbc.com = 127.0.0.1
-adcdn.pingan.com = 127.0.0.1
 adv.ccb.com = 127.0.0.1
 marketing.ccbtechnology.com = 127.0.0.1
 marketing.unionpayintl.com = 127.0.0.1
@@ -66,8 +77,9 @@ mbads.paas.cmbchina.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 银行日志上报单源候选（默认关）（置信 B）
-# log.cmbchina.com=招行日志上报(hagezi-pro 单源);jf365.boc.cn 同在清单但那是中行积分商城(拦了=用户权益受损,拒收示范)——本组只列 log 域,且等真机日志证实再开。
+# log.cmbchina.com=招行日志上报(hagezi-pro 单源);sdc.pingan.com=平安埋点采集(上游 AdGuard-CN/EasyList-CN 带 @@$~image 例外);adcdn.pingan.com=2026-11-16 降级(4 份权威上游 AdGuard-DNS/CN/EasyList-CN/AdRules 均有无条件 @@||adcdn.pingan.com^ 放行，DNS 黑洞会伤平安 App 静态资源);jf365.boc.cn 同在清单但那是中行积分商城(拦了=用户权益受损,拒收示范)——本组默认关。
 # 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
 # （默认关闭的组：整组注释，取消注释即启用）
+# adcdn.pingan.com = 127.0.0.1
 # log.cmbchina.com = 127.0.0.1
 # sdc.pingan.com = 127.0.0.1

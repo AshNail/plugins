@@ -42,10 +42,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -94,22 +102,23 @@ function recordBlock(type, item) {
   try {
     const url = ($request && $request.url) || "";
     /* 快速前缀短路：非目标域名或非开屏路径零开销放行 */
-    if (url.indexOf("zijieapi.com") === -1 || url.indexOf("splash") === -1) {
+    if (url.indexOf("zijieapi.com") === -1 ||
+        url.indexOf("/api/ad/") === -1 ||
+        url.indexOf("splash") === -1) {
       return $done({});
     }
 
     const args = pargs(["blockSplashAd", "debugLog"]);
-    const debugOn = pflag(args, "debugLog", false);
     if (!pflag(args, "blockSplashAd", false)) {
       return $done({});
     }
+    const debugOn = pflag(args, "debugLog", false);
     if (debugOn) {
       console.log("[@@LOG_TAG@@-trace] REQ splash-ad url=" + url);
     }
 
     const isSplash =
-      /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/splash\//i.test(url) ||
-      /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/v[0-9]+\/(?:ack\/)?splash\//i.test(url);
+      /(^|\/\/)[a-z0-9.-]*zijieapi\.com\/api\/ad\/(?:splash\/|v[0-9]+\/(?:ack\/)?splash\/)/i.test(url);
     if (!isSplash) {
       return $done({});
     }

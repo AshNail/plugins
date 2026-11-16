@@ -1,9 +1,9 @@
 {
   "slug": "amap",
-  "name": "高德地图 · 去广告与精简 v1.2.1",
-  "desc": "高德地图开屏与同域商业化广告原生复写清理，遥测及日志域黑洞拦截；核心定位导航零接触。",
-  "version": "1.2.1",
-  "date": "2026-11-07",
+  "name": "高德地图 · 去广告与精简 v1.3.0",
+  "desc": "高德地图开屏、首页活动与打车推广原生复写清理，遥测及日志域黑洞/双栈拦截；核心定位导航零接触。",
+  "version": "1.3.0",
+  "date": "2026-11-16",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,高德地图",
   "comment": [
@@ -226,6 +226,94 @@
         "action": "reject_dict(200)",
         "note": "消息中心营销推送与活动横幅拉取直接返回 200 + 空字典",
         "source": "https://github.com/ddgksf2013/Rewrite/blob/master/AdBlock/Amap.conf"
+      },
+      {
+        "id": "kill-main-page-assets",
+        "group": "请求阶段直接终止（reject_dict(200)）：同域开屏与推广卡片路径",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "ws/faas/amap-navigation/main-page-",
+        "url": "^https://m5\\.amap\\.com/ws/faas/amap-navigation/main-page-(?:assets|aiqs)(\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "导航首页活动资源与 AI 推广问答卡片直接返回 200 + 空字典",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
+      },
+      {
+        "id": "kill-promotion-web",
+        "group": "请求阶段直接终止（reject_dict(200)）：同域开屏与推广卡片路径",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "ws/promotion-web/resource",
+        "url": "^https://m5-zb\\.amap\\.com/ws/promotion-web/resource(?:/home)?(\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "出行促销 Web 资源与运营配置接口直接返回 200 + 空字典",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
+      },
+      {
+        "id": "kill-ranking-card",
+        "group": "请求阶段直接终止（reject_dict(200)）：同域开屏与推广卡片路径",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "ws/info_bff/rankingCard",
+        "url": "^https://m5\\.amap\\.com/ws/info_bff/rankingCard(\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "排行榜商业推广卡片直接返回 200 + 空字典",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
+      },
+      {
+        "id": "kill-search-marketing",
+        "group": "请求阶段直接终止（reject_dict(200)）：同域开屏与推广卡片路径",
+        "stage": "request",
+        "gate": "cleanAds",
+        "endpoint": "ws/shield/search_business/process/marketingOperationStructured",
+        "url": "^https://m5\\.amap\\.com/ws/shield/search_business/process/marketingOperationStructured(\\?|$)",
+        "action": "reject_dict(200)",
+        "note": "搜索商业化结构化营销运营接口直接返回 200 + 空字典",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
+      },
+      {
+        "id": "clean-updatable-ads",
+        "group": "响应字段级净化（response.json.delete）：剥离云控广告与弹窗字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "ws/shield/frogserver/aocs/updatable/1",
+        "url": "^https://m5\\.amap\\.com/ws/shield/frogserver/aocs/updatable/1(\\?|$)",
+        "action": "response.json.delete([\"data.adStatementConfig\", \"data.adCustomerRetainArchitecture\", \"data.adImEntryConfig\", \"data.adVenueConfig\", \"data.adPerfSwitch\", \"data.EndNaviC3AdCard\", \"data.infoCpcReport\", \"data.hotsaleConfig\", \"data.marketing_resource_config\", \"data.giftEntryConfig\", \"data.splashscreen\", \"data.SplashScreenControl\", \"data.splashview_config\", \"data.feedback_banner\", \"data.TrainOrderBanner\", \"data.nearby_business_popup\", \"data.shortcut_popup_frequency\", \"data.tel_retention_popup\", \"data.hotel_activity\", \"data.taxi_activity\", \"data.hotel_privilege\", \"data.sportsActivityConfig\", \"data.activity_qingke_contry_control\", \"data.custom_consultdata.widget_guide\", \"data.free_ride\", \"data.homepage_resource_config\", \"data.home_message_guide\", \"data.hotel_tipsicon\", \"data.sur_bar\", \"data.nearby_map_entry_guide\", \"data.small_biz_index\", \"data.small_biz_fun\", \"data.setpagesearch\"])",
+        "note": "AOCS 云控配置响应删除开屏/广告开关/弹窗/推广活动键（保留优惠券与钱包功能键）",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
+      },
+      {
+        "id": "clean-car-order-promo",
+        "group": "响应字段级净化（response.json.delete）：剥离云控广告与弹窗字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "ws/boss/car/order/content_info",
+        "url": "^https://m5-zb\\.amap\\.com/ws/boss/car/order/content_info(\\?|$)",
+        "action": "response.json.delete([\"data.lubanData.skin\", \"data.lubanData.kingToolBoxBubble\", \"data.lubanData.popup\"])",
+        "note": "打车订单页响应删除鲁班皮肤、气泡与营销弹窗字段",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
+      },
+      {
+        "id": "clean-hitch-banner",
+        "group": "响应字段级净化（response.json.delete）：剥离云控广告与弹窗字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "ws/amap/hitch/passenger/content_info",
+        "url": "^https://m5-zb\\.amap\\.com/ws/amap/hitch/passenger/content_info(\\?|$)",
+        "action": "response.json.delete(\"data.lubanData.banner\")",
+        "note": "顺风车乘客页响应删除顶部运营 Banner",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
+      },
+      {
+        "id": "clean-near-recommend-activity",
+        "group": "响应字段级净化（response.json.delete）：剥离云控广告与弹窗字段",
+        "stage": "response",
+        "gate": "cleanAds",
+        "endpoint": "ws/smartui/near_recommend",
+        "url": "^https://m5\\.amap\\.com/ws/smartui/near_recommend(\\?|$)",
+        "action": "response.json.delete(\"data.operation_activity\")",
+        "note": "附近推荐页响应删除运营活动浮层字段",
+        "source": "https://github.com/fkingikelee/fkikelee/blob/main/lpx/Amap_remove_ads.lpx"
       }
     ]
   },

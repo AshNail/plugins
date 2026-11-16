@@ -61,6 +61,63 @@ class AuditTests(unittest.TestCase):
         self.assertIsNone(audit.parse_adblock_line('@@||example.com^'))
         self.assertIsNone(audit.parse_adblock_line('||*.example.com^'))
 
+    def test_dual_stack_rule_derivation_ads_and_apps(self):
+        import json
+        import subprocess
+        import sys
+
+        tools_dir = str(ROOT / 'tools')
+        sys.path.insert(0, tools_dir)
+        try:
+            spec_ads = importlib.util.spec_from_file_location('build_ads', ROOT / 'tools/build-ads.py')
+            build_ads = importlib.util.module_from_spec(spec_ads)
+            spec_ads.loader.exec_module(build_ads)
+
+            spec_apps = importlib.util.spec_from_file_location('build_apps', ROOT / 'tools/build-apps.py')
+            build_apps = importlib.util.module_from_spec(spec_apps)
+            spec_apps.loader.exec_module(build_apps)
+        finally:
+            if sys.path and sys.path[0] == tools_dir:
+                sys.path.pop(0)
+
+        plugin = {
+            'file': 'test.plugin',
+            'rules': ['DOMAIN,already.example,REJECT', 'DOMAIN-KEYWORD,httpdns,REJECT-DROP'],
+            'groups': [
+                {'id': 'a', 'title': 'Active', 'rules': ['=adnet.example', 'sub.adnet.example', 'exact.example']},
+                {'id': 'b', 'title': 'Disabled', 'disabled': True, 'rules': ['=opt.example', 'opt2.example']},
+            ],
+        }
+        records, dual = build_ads.collect_host_groups(plugin, set(), [], {})
+        self.assertEqual(len(records), 2)
+        self.assertEqual(dual, ['DOMAIN-SUFFIX,adnet.example,REJECT', 'DOMAIN,exact.example,REJECT'])
+
+        app_dual = build_apps.derive_dual_stack_rules(
+            {'a.example', '*.a.example', 'b.example', 'dup.example'},
+            {'a.example'},
+            ['DOMAIN, dup.example, REJECT'],
+        )
+        self.assertEqual(app_dual, ['DOMAIN-SUFFIX,a.example,REJECT', 'DOMAIN,b.example,REJECT'])
+
+        bili = json.loads((ROOT / 'src/apps/bilibili.json').read_text(encoding='utf-8'))
+        story = next(r for r in bili['enhance']['rewrite'] if r['id'] == 'clean-feed-story')
+        expr = story['action'].split('response.json.jq("', 1)[1][:-2].replace('\\"', '"')
+        sample = {
+            'data': {
+                'items': [
+                    {'card_goto': 'av'},
+                    {'card_goto': 'ad_web_s'},
+                    {'card_goto': 'vertical_ad_av'},
+                    {'card_goto': 'vertical_ad_live'},
+                    {'card_goto': 'vertical_ad_picture'},
+                    {'card_goto': 9},
+                ]
+            }
+        }
+        res = subprocess.run(['jq', '-c', expr], input=json.dumps(sample), capture_output=True, text=True, check=True)
+        out = json.loads(res.stdout)
+        self.assertEqual([it['card_goto'] for it in out['data']['items']], ['av', 9])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -234,20 +234,31 @@ const RULES = [
  * 手写正则很容易漏键（例如 upsell 的 upsells/show 被漏掉），
  * 这里从规则表派生，新增规则时自动同步。
  */
-function escapeRe(s) {
-  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function markerForKeys(keys) {
   const parts = [];
-  for (const key of keys) {
-    const tokens = String(key)
-      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter(Boolean);
-    if (tokens.length === 0) continue;
-    parts.push('"' + tokens.map(escapeRe).join("[_-]?") + '"\\s*:');
+  for (let i = 0; i < keys.length; i++) {
+    const s = String(keys[i]);
+    let joined = "";
+    let prevAlnum = false;
+    let needSep = false;
+    for (let j = 0; j < s.length; j++) {
+      const c = s.charCodeAt(j);
+      if (c >= 97 && c <= 122 || c >= 48 && c <= 57) {
+        if (needSep && joined) joined += "[_-]?";
+        joined += s.charAt(j);
+        prevAlnum = true;
+        needSep = false;
+      } else if (c >= 65 && c <= 90) {
+        if (joined && (needSep || prevAlnum)) joined += "[_-]?";
+        joined += String.fromCharCode(c + 32);
+        prevAlnum = false;
+        needSep = false;
+      } else if (joined) {
+        prevAlnum = false;
+        needSep = true;
+      }
+    }
+    if (joined) parts.push('"' + joined + '"\\s*:');
   }
   return parts;
 }
@@ -256,7 +267,8 @@ function markerForKeys(keys) {
 const AD_ITEM_MARKER =
   '"(?:is[_-]?(?:ad|advert|advertisement|ad[_-]?item|promoted|sponsored|commercial)|ad[_-]?(?:flag|item))"\\s*:\\s*(?:true|1|"1"|"true")';
 
-for (const rule of RULES) {
+function compileRule(rule) {
+  if (rule._kill) return rule;
   const keys = (rule.kill || []).concat(rule.falsy || []);
   for (const p of rule.prune || []) keys.push(p.key);
 
@@ -273,13 +285,23 @@ for (const rule of RULES) {
   rule._prune = (rule.prune || []).map(function (p) {
     return { key: normalizeKey(p.key), match: p.match };
   });
+  return rule;
 }
 
 /* ------------------------------------------------------------------ */
 /* 工具                                                               */
 /* ------------------------------------------------------------------ */
+const KEY_CACHE = Object.create(null);
+
 function normalizeKey(k) {
-  return String(k).toLowerCase().replace(/[_-]/g, "");
+  const s = String(k);
+  const cached = KEY_CACHE[s];
+  if (cached !== undefined) return cached;
+  const norm = s.indexOf("_") === -1 && s.indexOf("-") === -1
+    ? s.toLowerCase()
+    : s.toLowerCase().replace(/[_-]/g, "");
+  KEY_CACHE[s] = norm;
+  return norm;
 }
 
 function isPlainObject(v) {
@@ -294,7 +316,12 @@ function emptyLike(v) {
 
 function isAlreadyEmpty(v) {
   if (Array.isArray(v)) return v.length === 0;
-  if (v && typeof v === "object") return Object.keys(v).length === 0;
+  if (v && typeof v === "object") {
+    for (const k in v) {
+      if (Object.prototype.hasOwnProperty.call(v, k)) return false;
+    }
+    return true;
+  }
   return v === null || v === undefined;
 }
 
@@ -355,18 +382,20 @@ function dropDouyinItems(node, log, path, depth) {
   if (depth > 14 || node === null || node === undefined) return;
 
   if (Array.isArray(node)) {
-    const kept = [];
-    let dropped = 0;
-    for (const item of node) {
+    let kept = null;
+    const len = node.length;
+    for (let i = 0; i < len; i++) {
+      const item = node[i];
       if (isDouyinEntry(item)) {
-        dropped++;
-        continue;
+        if (kept === null) kept = node.slice(0, i);
+      } else if (kept !== null) {
+        kept.push(item);
       }
-      kept.push(item);
     }
-    if (dropped > 0) {
+    if (kept !== null) {
+      const dropped = len - kept.length;
       node.length = 0;
-      for (const item of kept) node.push(item);
+      for (let i = 0; i < kept.length; i++) node.push(kept[i]);
       log.push(path + " : dropped " + dropped + " 抖音 item(s)");
     }
     for (let i = 0; i < node.length; i++) {
@@ -418,21 +447,34 @@ function douyinOnly(raw, url) {
  *   3. card / ad_info 等嵌套对象里带 is_ad=true，且外层没有媒体载荷
  * 保守策略：正常内容即使带 ad_info，只要还有媒体字段就不删。
  */
-const AD_FLAGS_SET = new Set([
-  "isad", "isadvert", "isadvertisement", "isaditem", "aditem", "adflag",
-  "ispromoted", "promoted", "issponsored", "sponsored", "iscommercial", "commercialad"
-]);
-const AD_DATA_SET = new Set(["adinfo", "addata", "adextra", "commercialdata", "promoteddata"]);
-const MEDIA_DATA_SET = new Set([
-  "video", "liveroom", "media", "track", "song", "aweme", "roomdata", "audio", "music", "artist", "album"
-]);
-const NESTED_AD_CONTAINERS = new Set(["card", "adinfo", "adsinfo", "addata", "adsdata", "adblock", "adsblock"]);
+/** @type {Set<string> | null} */
+let AD_FLAGS_SET = null;
+/** @type {Set<string> | null} */
+let AD_DATA_SET = null;
+/** @type {Set<string> | null} */
+let MEDIA_DATA_SET = null;
+/** @type {Set<string> | null} */
+let NESTED_AD_CONTAINERS = null;
+
+function ensureAdItemSets() {
+  if (AD_FLAGS_SET !== null) return;
+  AD_FLAGS_SET = new Set([
+    "isad", "isadvert", "isadvertisement", "isaditem", "aditem", "adflag",
+    "ispromoted", "promoted", "issponsored", "sponsored", "iscommercial", "commercialad"
+  ]);
+  AD_DATA_SET = new Set(["adinfo", "addata", "adextra", "commercialdata", "promoteddata"]);
+  MEDIA_DATA_SET = new Set([
+    "video", "liveroom", "media", "track", "song", "aweme", "roomdata", "audio", "music", "artist", "album"
+  ]);
+  NESTED_AD_CONTAINERS = new Set(["card", "adinfo", "adsinfo", "addata", "adsdata", "adblock", "adsblock"]);
+}
 
 function isAdFlag(v) {
   return v === true || v === 1 || v === "1" || v === "true";
 }
 
 function hasNestedAdFlag(o) {
+  ensureAdItemSets();
   for (const k of Object.keys(o)) {
     const nk = normalizeKey(k);
     if (!NESTED_AD_CONTAINERS.has(nk)) {
@@ -451,6 +493,7 @@ function hasNestedAdFlag(o) {
 }
 
 function isAdItem(o) {
+  ensureAdItemSets();
   let hasAd = false;
   let hasMedia = false;
 
@@ -484,7 +527,8 @@ function isAdItem(o) {
  *   3) task 标题（view.title.plain_text / title）命中广告关键词。
  * 领奖/发奖字段零接触；luna_rewards_ads（攒时长）仍在保留名单。
  */
-const AD_TASK_KEYS = new Set(["music_incentive_ad"]);
+/** @type {Set<string> | null} */
+let AD_TASK_KEYS = null;
 const AD_TASK_TYPE = /incentive[_-]?ad/i;
 const AD_TASK_TITLE = /看广告|看视频|广告/i;
 /* 仅判别 key/task_key 标识串（绝不 stringify 任务体——防 extra.ad_token 误杀）。
@@ -506,8 +550,10 @@ function isAdTaskEntry(item) {
   if (!item || typeof item !== "object" || Array.isArray(item)) return false;
   var key = (typeof item.key === "string" && item.key) ||
     (typeof item.task_key === "string" && item.task_key) || "";
-  if (key && AD_TASK_KEYS.has(key)) return true;
-  if (key && AD_TASK_KEY_RE.test(key)) return true;
+  if (key) {
+    if (!AD_TASK_KEYS) AD_TASK_KEYS = new Set(["music_incentive_ad"]);
+    if (AD_TASK_KEYS.has(key) || AD_TASK_KEY_RE.test(key)) return true;
+  }
   if (typeof item.type === "string" && AD_TASK_TYPE.test(item.type)) return true;
   return AD_TASK_TITLE.test(taskTitleOf(item));
 }
@@ -867,10 +913,18 @@ function pargs(keys) {
     return o;
   }
   if (typeof r === "string") {
-    var p = r.split(/[&;,]/);
-    for (var j = 0; j < p.length; j++) {
-      var kv = p[j].split("=");
-      if (kv.length >= 2) o[kv[0].trim()] = kv.slice(1).join("=");
+    var len = r.length, idx = 0;
+    while (idx < len) {
+      var sep = len;
+      for (var s = idx; s < len; s++) {
+        var ch = r.charCodeAt(s);
+        if (ch === 38 || ch === 59 || ch === 44) { sep = s; break; }
+      }
+      var eq = r.indexOf("=", idx);
+      if (eq !== -1 && eq < sep) {
+        o[r.slice(idx, eq).trim()] = r.slice(eq + 1, sep);
+      }
+      idx = sep + 1;
     }
     return o;
   }
@@ -885,13 +939,22 @@ function pflag(args, name, fallback) {
   return fallback;
 }
 
-const UTF8_DECODER = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+/** @type {TextDecoder | null | undefined} */
+let utf8Decoder;
+
+function getUtf8Decoder() {
+  if (utf8Decoder === undefined) {
+    utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null;
+  }
+  return utf8Decoder;
+}
 
 /* Uint8Array -> UTF-8 字符串（优先原生 TextDecoder，优雅降级到位运算解析） */
 function utf8(bytes) {
-  if (UTF8_DECODER) {
+  const dec = getUtf8Decoder();
+  if (dec) {
     try {
-      return UTF8_DECODER.decode(bytes);
+      return dec.decode(bytes);
     } catch (_) {}
   }
   var out = "", i = 0, n = bytes.length;
@@ -1022,6 +1085,14 @@ function recordBlock(type, item) {
   } catch (e) {}
 }
 
+function firstNonWsChar(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c > 32 && c !== 0xa0 && c !== 0xfeff) return s.charAt(i);
+  }
+  return "";
+}
+
 (function main() {
   try {
     const url = ($request && $request.url) || "";
@@ -1029,8 +1100,6 @@ function recordBlock(type, item) {
     if (url.indexOf("/luna/") === -1) {
       return $done({});
     }
-
-    const raw = readBody($response);
 
     /*
      * 统一插件开关：保奖励模式优先。
@@ -1048,12 +1117,36 @@ function recordBlock(type, item) {
     const hideDouyin = pflag(pluginArgs, "hideDouyinTab", false);
     const cleanAds = pflag(pluginArgs, "cleanAds", false);
     const debugOn = pflag(pluginArgs, "debugLog", false);
-    const isSplash = /\/luna\/advert\/splash\/brand\/retrieve/.test(url);
-    const isTreasure = /\/luna\/(?:treasure|growth)\//.test(url);
+    const isSplash = url.indexOf("/luna/advert/splash/brand/retrieve") !== -1;
+    const isTreasure = url.indexOf("/luna/treasure/") !== -1 || url.indexOf("/luna/growth/") !== -1;
+
+    if (rewardSafe && !killReward && !isSplash && !(hideDouyin && isTreasure) && !debugOn) {
+      console.log("[soda] rewardSafe=on, non-splash passthrough: " + url);
+      return $done({ headers: markHeaders("soda-sanitize;skip=reward-safe") });
+    }
+
+    let rule = null;
+    for (let i = 0; i < RULES.length; i++) {
+      if (RULES[i].match.test(url)) {
+        rule = RULES[i];
+        break;
+      }
+    }
+
+    if (!debugOn && !(hideDouyin && isTreasure)) {
+      if (!rule) return $done({ headers: markHeaders("soda-sanitize;skip=no-rule") });
+      if ((rule.id === "incentive-config" || rule.id === "incentive-retrieve") &&
+          pluginArgs && !killReward) {
+        return $done({ headers: markHeaders("soda-sanitize;skip=reward-ads-kept") });
+      }
+    }
+
+    const raw = readBody($response);
 
     if (debugOn) {
       console.log("[soda-trace] RESP sanitize url=" + url +
         " len=" + (raw && raw.length) + ceTag($response));
+      console.log("[soda-trace] rule=" + (rule ? rule.id : "none"));
     }
 
     if (rewardSafe && !killReward && !isSplash) {
@@ -1074,14 +1167,12 @@ function recordBlock(type, item) {
       return $done({ headers: markHeaders("soda-sanitize;skip=no-body") });
     }
 
-    const head = raw.trimStart().slice(0, 1);
+    const head = firstNonWsChar(raw);
     if (head !== "{" && head !== "[") {
       // 非 JSON（protobuf / 压缩体 / 空体），不动
       return $done({ headers: markHeaders("soda-sanitize;skip=not-json" + ceTag($response)) });
     }
 
-    const rule = RULES.find(function (r) { return r.match.test(url); });
-    if (debugOn) console.log("[soda-trace] rule=" + (rule ? rule.id : "none"));
     if (!rule) return $done({ headers: markHeaders("soda-sanitize;skip=no-rule") });
 
     /*
@@ -1093,6 +1184,8 @@ function recordBlock(type, item) {
         pluginArgs && !killReward) {
       return $done({ headers: markHeaders("soda-sanitize;skip=reward-ads-kept") });
     }
+
+    compileRule(rule);
 
     /* 大响应预检：没有广告标记就直接放行，避免无谓 JSON.parse */
     if (rule.fastReject && !rule.fastReject.test(raw)) {
@@ -1109,7 +1202,6 @@ function recordBlock(type, item) {
     }
 
     const log = [];
-    const before = JSON.stringify(obj);
     rewrite(obj, rule, "$", log, 0, Date.now());
     if (rule.id === "upsell-v2") cleanUpsellMap(obj, log);
     if (rule.id === "task-page") pruneTaskAdPreload(obj, log);
@@ -1125,7 +1217,7 @@ function recordBlock(type, item) {
     recordBlock("clean", rule.id);
     console.log(
       "[soda] " + rule.id + " | " + log.length + " change(s) | " +
-      (DRY_RUN ? "DRY_RUN" : (before.length - out.length) + "B smaller") + "\n  " +
+      (DRY_RUN ? "DRY_RUN" : (raw.length - out.length) + "B smaller") + "\n  " +
       log.join("\n  ")
     );
     if (debugOn) {

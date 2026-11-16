@@ -26,6 +26,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 | ToBid 聚合（北京创致 / Sigmob 系）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 在跑的聚合 SDK；n.tobidad.com 为静态端点，同补 tobidad.cn 变体（ads mobile_sdks 同源）。证据：fe-config.meituan.com SDK 目录 + anti-AD/hagezi。 共 4 域 / 0 规则。 |
 | 美数 AdMate（北京美数信息）（引用组） | A | 启用 | 美团官方 SDK 目录实证 iOS 第三方变现 SDK；anti-AD 收录。 共 6 域 / 0 规则。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 10 条。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 13 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
@@ -95,4 +96,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/meituan/meituan.p
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/meituan.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 45 条，[Rule] 10 条。
+统计：精确/通配黑洞 45 条，[Rule] 23 条。

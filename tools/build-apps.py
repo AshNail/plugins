@@ -393,6 +393,32 @@ def render_crons(app: dict) -> list[str]:
     return lines
 
 
+def derive_dual_stack_rules(
+    active_hosts: set[str] | dict[str, str],
+    active_wildcards: set[str] | dict[str, str],
+    existing_rules: list[str],
+) -> list[str]:
+    """Derive exact pre-DNS `DOMAIN-SUFFIX`/`DOMAIN` REJECT lines for active `[Host]` entries."""
+    explicit_targets: set[tuple[str, str]] = set()
+    for existing in existing_rules:
+        parts = [p.strip() for p in existing.split(",")]
+        if len(parts) >= 2 and parts[0] in ("DOMAIN", "DOMAIN-SUFFIX"):
+            explicit_targets.add((parts[0], parts[1].lower()))
+    wild_bases = sorted(active_wildcards)
+    out: list[str] = []
+    for base in wild_bases:
+        if ("DOMAIN-SUFFIX", base) not in explicit_targets:
+            out.append(f"DOMAIN-SUFFIX,{base},REJECT")
+    for hl in sorted(active_hosts):
+        if hl.startswith("*.") or hl in active_wildcards:
+            continue
+        if any(hl.endswith("." + base) for base in wild_bases):
+            continue
+        if ("DOMAIN", hl) not in explicit_targets:
+            out.append(f"DOMAIN,{hl},REJECT")
+    return out
+
+
 def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     slug = app["slug"]
     where = f"src/apps/{slug}.json"
@@ -443,6 +469,24 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
                 raise BuildError(
                     f"{where}:{gid}: 生效 [Host] {hl!r} 已被 {wgid!r} 的 '*.{base}' 通配覆盖（冗余规则）"
                 )
+    if active_hosts_seen:
+        dual_rules = derive_dual_stack_rules(active_hosts_seen, active_wildcards_seen, rules)
+        if dual_rules:
+            dual_group = {
+                "id": "dual-stack-ipv6",
+                "ordered": True,
+                "disabled": False,
+                "hosts": [],
+                "title": "pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）",
+                "note": "由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。",
+                "sources": [],
+                "rules": dual_rules,
+            }
+            for r in dual_rules:
+                validate_rule(r, f"{where}:dual-stack-ipv6", roots)
+                check_rule_redline(r, f"{where}:dual-stack-ipv6", all_redlines)
+            groups.append(dual_group)
+            rules += dual_rules
     if active_enh:
         for mh in enh.get("mitm_hosts", []):
             mhl = mh.lower()

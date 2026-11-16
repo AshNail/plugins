@@ -18,6 +18,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/youtube/youtube.p
 |---|---|---|---|
 | YouTube 精确广告子域（DNS 黑洞） | A | 启用 | ad.youtube.com / ads.youtube.com=YouTube 广告投放与营销专用子域（anti-AD / AdGuard / HaGeZi 多源收录），精确黑洞不触碰播放与主站红线。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 2 条。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 2 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
@@ -65,4 +66,4 @@ YouTube 的广告元数据与正文共用 youtubei.googleapis.com / www.youtube.
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/youtube.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 2 条，[Rule] 2 条。
+统计：精确/通配黑洞 2 条，[Rule] 4 条。

@@ -1,9 +1,9 @@
 {
   "slug": "banks",
-  "name": "银行 App 聚合 · 遥测瘦身 v1.3.0",
+  "name": "银行 App 聚合 · 遥测瘦身 v1.3.1",
   "desc": "覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:全面拦截银行自建广告专域与营销推送；登录支付绝对放行，零证书零MITM。",
-  "version": "1.3.0",
-  "date": "2026-11-06",
+  "version": "1.3.1",
+  "date": "2026-11-16",
   "loonVersion": "3.5.1(983)",
   "tag": "隐私,银行,遥测",
   "comment": [
@@ -161,8 +161,7 @@
         "ad.boc.cn",
         "ad.bankcomm.com",
         "ad.psbc.com",
-        "marketing.unionpayintl.com",
-        "adcdn.pingan.com"
+        "marketing.unionpayintl.com"
       ],
       "rules": [
         "DOMAIN-SUFFIX,ads.cup.com.cn,REJECT"
@@ -199,13 +198,14 @@
       "title": "银行日志上报单源候选（默认关）",
       "tier": "B",
       "disabled": true,
-      "note": "log.cmbchina.com=招行日志上报(hagezi-pro 单源);jf365.boc.cn 同在清单但那是中行积分商城(拦了=用户权益受损,拒收示范)——本组只列 log 域,且等真机日志证实再开。",
+      "note": "log.cmbchina.com=招行日志上报(hagezi-pro 单源);sdc.pingan.com=平安埋点采集(上游 AdGuard-CN/EasyList-CN 带 @@$~image 例外);adcdn.pingan.com=2026-11-16 降级(4 份权威上游 AdGuard-DNS/CN/EasyList-CN/AdRules 均有无条件 @@||adcdn.pingan.com^ 放行，DNS 黑洞会伤平安 App 静态资源);jf365.boc.cn 同在清单但那是中行积分商城(拦了=用户权益受损,拒收示范)——本组默认关。",
       "sources": [
         "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
       ],
       "hosts": [
         "log.cmbchina.com",
-        "sdc.pingan.com"
+        "sdc.pingan.com",
+        "adcdn.pingan.com"
       ]
     }
   ],

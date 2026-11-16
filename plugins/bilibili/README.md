@@ -1,12 +1,12 @@
-# 哔哩哔哩 · 去广告与精简 v1.2.1
+# 哔哩哔哩 · 去广告与精简 v1.3.0
 
-> 哔哩哔哩开屏、推荐流、视频页推广与搜索广场广告原生复写过滤，遥测及HTTPDNS黑洞；核心播放直播零接触。
+> 哔哩哔哩开屏、推荐流、竖屏 Story 广告、视频页与VIP物料推广原生复写过滤，遥测及HTTPDNS双栈拦截；核心播放直播零接触。
 
-版本 **1.2.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 bilibili.plugin](https://img.shields.io/badge/Loon-导入%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.2.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbilibili%2Fbilibili.plugin)
+[![一键导入 bilibili.plugin](https://img.shields.io/badge/Loon-导入%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.3.0-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbilibili%2Fbilibili.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili.plugin
@@ -18,6 +18,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 |---|---|---|---|
 | 哔哩哔哩自建遥测 / 播放器埋点 / HTTPDNS 接口 | A | 启用 | dataflow.biliapi.com（4源，官方移动端数据流/遥测）、httpdns.bilivideo.com（3源，HTTPDNS 解析端点）、data.bilibili.com（2源，数据埋点上报）、tracker.chat.bilibili.com（1源，聊天/直播埋点）、ali-web-player-tracker.biliapi.net（1源，阿里播放器埋点）、hw-v2-web-player-tracker.biliapi.net（1源，华为播放器埋点）。DNS 映射 127.0.0.1 阻断。 |
 | QUIC 回退（增强层配套） | A | 启用 | 只对 `PROTOCOL,QUIC` 生效：拒的是 HTTP/3 这条通道、不是这台主机，同一主机的 TCP 正文/书架零影响。共 1 条。 |
+| pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 6 条。 |
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
@@ -38,12 +39,14 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 | 规则 | 阶段 | 动作 | 开关 | 行为 |
 |---|---|---|---|---|
 | `kill-splash` | request | `reject_dict` | `cleanAds` | 开屏广告列表、展示及品牌/活动开屏接口直接返回 200 + 空字典 |
-| `kill-top-activity` | request | `reject_dict` | `slimNav` | 首页右上角活动推广挂件直接返回 200 + 空字典 |
+| `kill-top-activity` | request | `reject_dict` | `slimNav` | 首页右上角活动推广挂件与 Tab 活动换肤直接返回 200 + 空字典 |
+| `kill-vip-ads-materials` | request | `reject_dict` | `cleanAds` | 会员商业广告物料预拉取接口直接返回 200 + 空字典 |
 | `clean-feed-index` | response | `response.json.jq` | `cleanAds` | 推荐信息流：按前缀通杀商业广告卡片（cm_*/ad_*）、ad_info 节点、推广游戏与横幅广告 |
-| `clean-feed-story` | response | `response.json.jq` | `cleanAds` | 竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* 广告视频 |
+| `clean-feed-story` | response | `response.json.jq` | `cleanAds` | 竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* / vertical_ad_* 广告视频 |
 | `clean-view-relates` | response | `response.json.jq` | `cleanAds` | 视频详情页：剔除播放下方商业推广配置（cm_config/cms/cm_ipad）及关联推荐中的广告卡片 |
 | `clean-search-square` | response | `response.json.jq` | `cleanAds` | 搜索广场：过滤热搜词中的游戏与广告推广 |
 | `clean-nav-tab` | response | `response.json.jq` | `slimNav` | 导航栏精简：过滤底栏会员购/发布与顶栏游戏中心 |
+| `clean-skin-equip` | response | `response.json.delete` | `slimNav` | 精简首页主题皮肤装扮推广模块 |
 
 > 净化主力放在引擎侧：`reject_*` 与 `response.json.*` 由 Loon 自己解压 `Content-Encoding: gzip`，脚本链不碰压缩体。脚本读响应体必须先 ungzip，而 `$utils.ungzip` 只有 Build ≥ 988 才有——低版本就是静默 passthrough，这正是「净化不生效」的那条链。
 
@@ -76,4 +79,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/bilibili.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 6 条，[Rule] 1 条。
+统计：精确/通配黑洞 6 条，[Rule] 7 条。

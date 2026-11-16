@@ -77,6 +77,8 @@ for _rel in (
     "plugins/ads/ads.plugin",
     "plugins/soda/soda.plugin",
     "plugins/douyin/douyin.plugin",
+    "plugins/soda/README.md",
+    "plugins/douyin/README.md",
     "src/ads/domains.json",
     "src/common/status.js",
     "src/common/block-domains.js",
@@ -201,32 +203,18 @@ BYPASSES = [
         id="ipv6-aaaa",
         name="IPv6 / AAAA 旁路",
         how=f"`[Host]` 里 {HOST_BLACKHOLES} 条生效黑洞（另有 {HOST_BLACKHOLES_OPT} 条默认注释）"
-            "**全部只映射 IPv4**（127.0.0.1）。"
-            "若 Loon 对命中域名仍放行真实 AAAA 记录，App 走 IPv6 直连就绕过了整个黑洞。",
-        loon="两条不依赖多行语义的路线：①`[Host]` 的 `ip-mode:` 右值——官方 `DNS/hostmap` 与"
-             "「通用配置」都给出值表 `v4-only`/`dual`/`prefer-v4`/`prefer-v6`/`v6-only`"
-             "（`v4-only` 明写「不查询 AAAA，并拒绝 IPv6 连接」）；②把同一域名同时写进 `[Rule]` 的"
-             " `DOMAIN-SUFFIX,…,REJECT`——域名规则在解析前就命中，**不看地址族**，AAAA 一样被拒。"
-             "主配置侧还有 `ip-mode = v4-only`（全设备）与 `ipv6-vif = off`（插件可声明但需 Build 1007+，"
-             "且关的是整个 TUN 的 IPv6），两者都不该由插件替用户决定。",
-        expect="open",
-        evidence=[],
-        blocked="**有手段但刻意不落地**。官方 `DNS/hostmap` 只给 `域名 = ip-mode:v4-only` "
-                "**单独使用**的示例，没有给同一域名同时写 `= 127.0.0.1` 与 `= ip-mode:v4-only` "
-                "的多行语义。若 Loon 一个域名只认最后一条，补 ip-mode 会**把黑洞覆盖掉**——"
-                "比不补更糟（广告全回来且排查方向完全错）。"
-                f"在确认「多行共存」之前，不拿 {HOST_BLACKHOLES} 条生效规则"
-                f"（含默认注释共 {HOST_BLACKHOLES + HOST_BLACKHOLES_OPT} 条）去赌。"
-                "注：第十八轮按官方文档更正了本页此条的值名——原文写的 `ipv4-only`/`ipv4-preferred`/"
-                "`ipv6-preferred` 不是 Loon 的取值（那是别的实现的命名），照旧文档做真机探针，"
-                "Loon 会直接忽略非法行，A 记录「看起来仍生效」纯属假阳性。",
-        verify="① 先用一条无关域名验证共存：`probe.example = 127.0.0.1` 与 "
-               "`probe.example = ip-mode:v4-only` 各写一行，看 A 记录是否仍是 127.0.0.1；"
-               "② 再单独确认 `probe.example` 的 AAAA 查询返回空还是真实地址——"
-               "**返回真实地址才说明旁路真的存在**，才值得补。"
-               "③ 若①失败（多行不共存），改走规则层：给同一条域名补 `DOMAIN-SUFFIX,probe.example,REJECT`，"
-               "确认 v4/v6 都拒——这条不需要多行语义，是唯一可以直接落地的封法。"
-               "三步结论都拿到后，再批量生成并接进 lint。",
+            "只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。",
+        loon="官方 `Rule/` 明确「目标地址为域名时，先匹配域名规则（先于 DNS 解析，不区分地址族；20 万条以内 "
+             "< 1 ms + LRU 缓存）」：`DOMAIN` / `DOMAIN-SUFFIX` 同步拒绝 IPv4 与 IPv6/AAAA 连接。"
+             "同时 `[Host]` 继续保留 `127.0.0.1` 应对直接 IPv4 查询；比实验性质的 `[Host]` 多行 `ip-mode:v4-only` 零风险。",
+        expect="sealed",
+        evidence=[
+            ("plugins/ads/ads.plugin", r"(?m)^\S+ = 127\.0\.0\.1$", 1000),
+            ("plugins/ads/ads.plugin", r"(?m)^(?:DOMAIN|DOMAIN-SUFFIX),[^,]+,REJECT$", 1500),
+        ],
+        verify="在 Loon 请求日志访问双栈测试广告域（同时存在 A 与 AAAA 记录），应先于 DNS 解析直接命中 "
+               "`DOMAIN`/`DOMAIN-SUFFIX,REJECT`（IPv4/IPv6 均无外连），纯 IPv4 预解析查询走 `[Host] 127.0.0.1`；"
+               "若发现原始 IP 字面量直连则属另一条旁路（见下一条 hardcoded-ip-sni）。",
     ),
     dict(
         id="hardcoded-ip-sni",
@@ -387,6 +375,11 @@ def probe(evidence):
         path, rx, minimum = item
         text = CORPUS.get(path)
         if text is None:
+            full = os.path.join(ROOT, path)
+            if os.path.isfile(full):
+                text = read(full)
+                CORPUS[path] = text
+        if text is None:
             missing.append((path, rx, 0, minimum))
             continue
         n = len(re.findall(rx, text))
@@ -429,6 +422,9 @@ def drift(rows):
             out.append("%s（%s）：有手段却没落地，必须写 blocked 说明理由" % (name, sid))
         if status == "na" and not r["blocked"]:
             out.append("%s（%s）：判为无解，必须写 blocked 说明为什么" % (name, sid))
+        if status == "na" and r.get("evidence") and r["missing"]:
+            out.append("%s（%s）：声明了探针证据但未命中（%d 项未命中）"
+                       % (name, sid, len(r["missing"])))
         if status == "open" and r["evidenced"]:
             out.append("%s（%s）：标为「未落地」却在仓库里探到了证据——状态写错了" % (name, sid))
     return out

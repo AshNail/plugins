@@ -156,8 +156,8 @@ CAPABILITIES = [
          probe=r'request\.header\.set\(\s*"Accept-Encoding"\s*,\s*"(?:gzip|identity)"\s*\)',
          href=DOC + "/Rewrite/rewrite_v2",
          why="脚本层只有 ungzip；br/zstd 解不开就是静默跳过。gzip 把体压进 ungzip 的能力圈"
-             "（soda/douyin，保带宽）；identity 曾用于 qidian v3.5.7，v4.0.0 移植 config 后已撤下——"
-             "config 的净化由 response 复写或脚本绑定承担，不再改 Accept-Encoding"),
+             "（soda/douyin，保带宽）；identity 则用于 qidian 的 `force-identity` 规则"
+             "（直接请求未压缩 JSON，避开脚本层解压限制）"),
     dict(layer="传输层", key="h2", name="`h2 = true`（官方查不到该键）", expect="undocumented",
          token="MITM.h2",
          probe=r"(?m)^\s*h2\s*=\s*true\s*$",
@@ -170,9 +170,9 @@ CAPABILITIES = [
          probe=r'request\.header\.(del|replace)\(\s*"Accept-Encoding"',
          href=DOC + "/Rewrite/rewrite_v2",
          why="`del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 "
-             "183~191 KB，膨胀 5~10 倍不可控。历史形态 v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 "
-             "`set(..., \"identity\")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游；"
-             "v4.0.0 移植 config 后起点已撤下这条"),
+             "183~191 KB，膨胀 5~10 倍不可控。若某几个小接口确实需要「不压缩」，应像 "
+             "qidian `force-identity` 那样走上一条里显式的 `set(..., \"identity\")`——"
+             "声明写死、体积是确定成本，而不是删头赌上游"),
 
     # ---------------- 规则层 ----------------
     dict(layer="规则层", key="r-domain", name="`DOMAIN`", expect="used",
@@ -298,7 +298,7 @@ CAPABILITIES = [
              "「不查询 AAAA，并拒绝 IPv6 连接」——它唯一的广告相关收益是给黑洞域名补一条 v6 封口，"
              "正对 `docs/bypass-audit.md` 第 11 条 AAAA 旁路。但官方只给了 `ip-mode:` 单独使用的示例，"
              "同一域名多行（`= 127.0.0.1` + `= ip-mode:v4-only`）是否共存未文档化，"
-             "因此与那条一起停在「未落地」，先做真机三步验证，不拿 1499 条生效黑洞去赌"),
+             "因此与那条一起停在「未落地」，先做真机三步验证，不拿 3080 条生效黑洞去赌"),
     dict(layer="Host 层", key="h-ssid", name="`ssid:名称 = ...`", expect="reject",
          probe=r"(?m)^ssid\s*:", href=DOC + "/DNS/hostmap",
          why="「只在某个 Wi-Fi 下改解析」不是去广告需求"),
@@ -362,8 +362,8 @@ CAPABILITIES = [
          why="同上，视频素材域名不进 MITM"),
     dict(layer="复写层", key="w-req-header", name="`request.header.add/set/del/replace`", expect="used",
          probe=r"then\s+request\.header\.(add|set|del|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin），防止 br/zstd 压缩响应穿透脚本层；"
-             "qidian v4.0.0 移植 config 后已不用这条"),
+         why="用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian force-identity），"
+             "防止 br/zstd 压缩响应穿透脚本层"),
     dict(layer="复写层", key="w-res-header", name="`response.header.add/set/del/replace`", expect="open",
          probe=r"then\s+response\.header\.(add|set|del|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖"),
@@ -720,7 +720,7 @@ CAPABILITIES = [
          expect="na", probe=r"(?m)^\s*(?:loon://|https://www\.nsloon\.com/openloon/)", href=DOC + "/Scheme/",
          why="导入入口（插件/规则/解析器/图标集），不是插件段落能力：URL 写在 README 徽章与安装链接里，"
              "自定义 Scheme 在网页里打不开时用 `https://www.nsloon.com/openloon/` 等价替换。"
-             "本仓 16 个插件各自都用上了（38 条链接，其中 25 条安装链接），但探测语料只有插件文件与脚本源码，"
+             "本仓 23 个插件各自都用上了（各插件 README 共 26 条插件安装链接），但探测语料只有插件文件与脚本源码，"
              "README 里的链接不属于「插件段落能力」，所以仍记 na；**生效与否由 lint 的 "
              "`check_scheme_links()` 按官方 Scheme 页语法逐条校验**（资源键 7 种、地址必须 URL 编码、"
              "`<slug>/<slug>.plugin` 自证、指向的插件文件必须存在）"),
@@ -741,7 +741,7 @@ CAPABILITIES = [
          why="官方 Plugin 页把插件信息字段列成一张表：`#!name`/`#!desc`/`#!author`/`#!homepage`/`#!icon`/"
              "`#!system`/`#!system_version`/`#!loon_version`/`#!date`/`#!tag`/`#!type` 共 11 个，**没有 `#!version`**；"
              "整站 grep 也只有 `system_version` / `loon_version`。它是社区插件的通行写法，Loon 大概率原样忽略"
-             "（插件面板显示的版本来自 `#!date` 的「按原样显示」语义）。16 个插件都带着它：删掉最多丢一个"
+             "（插件面板显示的版本来自 `#!date` 的「按原样显示」语义）。23 个插件都带着它：删掉最多丢一个"
              "可能根本不存在的显示项，留着也不影响解析——但它不是能力，不进利用率。取证见 `docs/device-checklist.md`"),
     dict(layer="元数据", key="m-homepage", name="`#!homepage`", expect="used", probe=r"(?m)^#!homepage\s*=", href=DOC + "/Plugin/"),
     dict(layer="元数据", key="m-open-url", name="`#!openUrl`（官方查不到该键）", expect="undocumented",

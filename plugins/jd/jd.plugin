@@ -4,7 +4,7 @@
 #!version=1.0.3
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/jd/README.md
-#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e9/e4/54/e9e454a9-8e0c-7559-d595-f19c7e4ab744/AppIcon-0-0-1x_U007epad-0-1-0-0-85-220.png/512x512bb.jpg
+#!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ba/ae/95/baae952e-c408-d213-b249-fb4755687ac4/AppIcon-0-0-1x_U007epad-0-1-0-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-06
 #!tag=去广告,京东,JD
@@ -24,6 +24,17 @@
 # 本插件 [Host]/[Rule] 全设备生效（Loon 无法按 App 限定）：同一广告/埋点域跨 App 共享黑洞，'按 App 插件'只是分组开关；与全局 ads 插件配合使用。
 # 本文件由 tools/build-apps.py 从 src/apps/jd.json 生成，不要手改生成物。
 # ========================================================================
+
+[Rule]
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN,addata.jd.com,REJECT
+DOMAIN,ads-union.jd.com,REJECT
+DOMAIN,ccc-x.jd.com,REJECT
+DOMAIN,dsp-x.jd.com,REJECT
+DOMAIN,skdisplay.jd.com,REJECT
 
 [Host]
 

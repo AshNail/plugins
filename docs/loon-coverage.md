@@ -39,9 +39,9 @@
 | `hostname = %APPEND% …`（官方查不到该 token，真机已证伪） | ❌ 判死 | 官方 MitM 页参数表只有 hostname / ca-p12 / ca-passphrase，官方整站查不到 %APPEND%。真机取证（commit 623b87c）已实锤：Loon 3.5.1+ 设备上该标记会被当做首个域名的一部分，直接导致首个域名 MitM 静默失效。现已彻底禁止并从所有插件中清除。 |
 | `ca-p12` / `ca-passphrase` | ❌ 判死 | 自带 CA 私钥意味着把私钥塞进公开插件，安全与可移植性双输；统一用 Loon 内置 CA |
 | QUIC→TCP 回退（`PROTOCOL,QUIC`） | ✅ 已用 | 已落地 |
-| 压缩协商降到脚本能解的形状（gzip / identity） | ✅ 已用 | 脚本层只有 ungzip；br/zstd 解不开就是静默跳过。gzip 把体压进 ungzip 的能力圈（soda/douyin，保带宽）；identity 曾用于 qidian v3.5.7，v4.0.0 移植 config 后已撤下——config 的净化由 response 复写或脚本绑定承担，不再改 Accept-Encoding |
+| 压缩协商降到脚本能解的形状（gzip / identity） | ✅ 已用 | 脚本层只有 ungzip；br/zstd 解不开就是静默跳过。gzip 把体压进 ungzip 的能力圈（soda/douyin，保带宽）；identity 则用于 qidian 的 `force-identity` 规则（直接请求未压缩 JSON，避开脚本层解压限制） |
 | `h2 = true`（官方查不到该键） | ⚪ 未文档化 | 同 `%APPEND%`：官方 MitM 参数表没有 `h2`，而官方产品页把「解密 HTTPS 与 HTTP/2」写成内置默认行为、没有开关。社区插件通行写 `h2 = true`，我们保留它当作「未知键被忽略」时的零成本保险——但保险不是能力，所以不进利用率；写成 `h2 = false` 才是真错（lint 锁死）。旧文档里那句「不计入能力点」在本轮才真正落地：此前它一直挂在「已用」上 |
-| 免压缩（删 `Accept-Encoding`） | ❌ 判死 | `del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 183~191 KB，膨胀 5~10 倍不可控。历史形态 v3.5.7 的起点确实选了「不压缩」，但走的是上一条里显式 `set(..., "identity")` 那一形——声明写死、体积是这几个小接口的确定成本，不是赌上游；v4.0.0 移植 config 后起点已撤下这条 |
+| 免压缩（删 `Accept-Encoding`） | ❌ 判死 | `del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 183~191 KB，膨胀 5~10 倍不可控。若某几个小接口确实需要「不压缩」，应像 qidian `force-identity` 那样走上一条里显式的 `set(..., "identity")`——声明写死、体积是确定成本，而不是删头赌上游 |
 
 ## 规则层
 
@@ -85,7 +85,7 @@
 | `*.域名 = 固定 IP` | ✅ 已用 | 已落地 |
 | `域名 = 域名别名` | 🟡 可用未用 | 别名只能换解析目标，拦不住广告；拦截要的是黑洞 IP |
 | `域名 = server:8.8.8.4` | 🟡 可用未用 | 按域指定 DNS 服务器；本插件用全局 `dns-server` + `doh-server` 解决，按域再拆没有必要 |
-| `域名 = ip-mode:...` | 🟡 可用未用 | 官方取值是 `v4-only`/`dual`/`prefer-v4`/`prefer-v6`/`v6-only`，其中 `v4-only` 明写「不查询 AAAA，并拒绝 IPv6 连接」——它唯一的广告相关收益是给黑洞域名补一条 v6 封口，正对 `docs/bypass-audit.md` 第 11 条 AAAA 旁路。但官方只给了 `ip-mode:` 单独使用的示例，同一域名多行（`= 127.0.0.1` + `= ip-mode:v4-only`）是否共存未文档化，因此与那条一起停在「未落地」，先做真机三步验证，不拿 1499 条生效黑洞去赌 |
+| `域名 = ip-mode:...` | 🟡 可用未用 | 官方取值是 `v4-only`/`dual`/`prefer-v4`/`prefer-v6`/`v6-only`，其中 `v4-only` 明写「不查询 AAAA，并拒绝 IPv6 连接」——它唯一的广告相关收益是给黑洞域名补一条 v6 封口，正对 `docs/bypass-audit.md` 第 11 条 AAAA 旁路。但官方只给了 `ip-mode:` 单独使用的示例，同一域名多行（`= 127.0.0.1` + `= ip-mode:v4-only`）是否共存未文档化，因此与那条一起停在「未落地」，先做真机三步验证，不拿 3080 条生效黑洞去赌 |
 | `ssid:名称 = ...` | ❌ 判死 | 「只在某个 Wi-Fi 下改解析」不是去广告需求 |
 | `IP = IP` 映射 | ❌ 判死 | 官方示例是 `198.51.100.10 = 192.0.2.20` 这类固定改址；广告侧 IP 由 CDN 随时轮换，按 IP 映射等于把我们已判死的「静态 IP 枚举」换个写法再来一遍 |
 | `域名 = IP, use-in-proxy=true` | 🟡 可用未用 | 官方只写「代理内继续使用映射」，没展开映射后的 IP 是给客户端还是给节点连接用；我们的黑洞域名都落在 REJECT / DIRECT 上，不经过节点，因此既无收益也无从验证——不猜测语义 |
@@ -107,7 +107,7 @@
 | `reject_img(status)` | ✅ 已用 | 共享图床（meituan p[0-9]/flowplus/img.meituan.net、taobao gw.alicdn.com）下的广告目录路径在 request 阶段返回 200 + 1px GIF，避免图片加载器进入破损图重试分支，并支持 `${cleanAds} == true` 开关控制 |
 | `reject_array(status)` | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` 全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条：样本 + enhance.url_regex 白名单 + 来源登记 |
 | `reject_video(status)` | ❌ 判死 | 同上，视频素材域名不进 MITM |
-| `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin），防止 br/zstd 压缩响应穿透脚本层；qidian v4.0.0 移植 config 后已不用这条 |
+| `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian force-identity），防止 br/zstd 压缩响应穿透脚本层 |
 | `response.header.add/set/del/replace` | 🟡 可用未用 | 响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖 |
 | `request.body.replace` | ❌ 判死 | 正文级正则对 JSON 不安全（可能命中字符串内部的同名字段） |
 | `response.body.replace` | ❌ 判死 | 同上；且命中后同阶段脚本不再执行，等于用正则换掉全部 JSON 逻辑 |
@@ -242,7 +242,7 @@
 
 | 能力 | 状态 | 说明 |
 |---|---|---|
-| `loon://import?…` 与 `nsloon.com/openloon/` 通用链接 | — 不适用 | 导入入口（插件/规则/解析器/图标集），不是插件段落能力：URL 写在 README 徽章与安装链接里，自定义 Scheme 在网页里打不开时用 `https://www.nsloon.com/openloon/` 等价替换。本仓 16 个插件各自都用上了（38 条链接，其中 25 条安装链接），但探测语料只有插件文件与脚本源码，README 里的链接不属于「插件段落能力」，所以仍记 na；**生效与否由 lint 的 `check_scheme_links()` 按官方 Scheme 页语法逐条校验**（资源键 7 种、地址必须 URL 编码、`<slug>/<slug>.plugin` 自证、指向的插件文件必须存在） |
+| `loon://import?…` 与 `nsloon.com/openloon/` 通用链接 | — 不适用 | 导入入口（插件/规则/解析器/图标集），不是插件段落能力：URL 写在 README 徽章与安装链接里，自定义 Scheme 在网页里打不开时用 `https://www.nsloon.com/openloon/` 等价替换。本仓 23 个插件各自都用上了（各插件 README 共 26 条插件安装链接），但探测语料只有插件文件与脚本源码，README 里的链接不属于「插件段落能力」，所以仍记 na；**生效与否由 lint 的 `check_scheme_links()` 按官方 Scheme 页语法逐条校验**（资源键 7 种、地址必须 URL 编码、`<slug>/<slug>.plugin` 自证、指向的插件文件必须存在） |
 | `loon://on|off|flowmodel=|proxymode=|update?sub=all` | — 不适用 | 给快捷指令/其它 App 控制 Loon 的外部接口，插件内声明不了；脚本侧的同类能力（`$config.setRunningModel`、通知 `attach.openUrl`）已各自判死。文档里写到的 `on/off/editconfig/flowmodel=/proxymode=/update?sub=all` 六种操作同样受 `check_scheme_links()` 的官方取值表白名单约束——自造取值（如 `flowmodel=fast`）直接报错 |
 
 ## 元数据
@@ -252,7 +252,7 @@
 | `#!name` | ✅ 已用 | 已落地 |
 | `#!desc` | ✅ 已用 | 已落地 |
 | `#!author` | ✅ 已用 | 已落地 |
-| `#!version`（官方查不到该键） | ⚪ 未文档化 | 官方 Plugin 页把插件信息字段列成一张表：`#!name`/`#!desc`/`#!author`/`#!homepage`/`#!icon`/`#!system`/`#!system_version`/`#!loon_version`/`#!date`/`#!tag`/`#!type` 共 11 个，**没有 `#!version`**；整站 grep 也只有 `system_version` / `loon_version`。它是社区插件的通行写法，Loon 大概率原样忽略（插件面板显示的版本来自 `#!date` 的「按原样显示」语义）。16 个插件都带着它：删掉最多丢一个可能根本不存在的显示项，留着也不影响解析——但它不是能力，不进利用率。取证见 `docs/device-checklist.md` |
+| `#!version`（官方查不到该键） | ⚪ 未文档化 | 官方 Plugin 页把插件信息字段列成一张表：`#!name`/`#!desc`/`#!author`/`#!homepage`/`#!icon`/`#!system`/`#!system_version`/`#!loon_version`/`#!date`/`#!tag`/`#!type` 共 11 个，**没有 `#!version`**；整站 grep 也只有 `system_version` / `loon_version`。它是社区插件的通行写法，Loon 大概率原样忽略（插件面板显示的版本来自 `#!date` 的「按原样显示」语义）。23 个插件都带着它：删掉最多丢一个可能根本不存在的显示项，留着也不影响解析——但它不是能力，不进利用率。取证见 `docs/device-checklist.md` |
 | `#!homepage` | ✅ 已用 | 已落地 |
 | `#!openUrl`（官方查不到该键） | ⚪ 未文档化 | 同上，官方 11 个 `#!` 字段里没有 `#!openUrl`；`openUrl` 只出现在 Script API 的 `$notification.post(..., attach)` 里，是另一个语法位。我们用它把插件 README 变成用户可点的入口，属于「社区约定 + 可能真的生效」——真机确认插件卡片是否会跳到该 URL，生效则升回 used，不生效则删除该行（`#!homepage` 已经在指仓库主页，功能不缺失） |
 | `#!icon` | ✅ 已用 | 已落地 |

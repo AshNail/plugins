@@ -1,18 +1,18 @@
-#!name=淘宝 · 去广告（原生复写层） v1.2.4
-#!desc=淘宝阿里妈妈/Tanx/Simba等独立广告域黑洞，开屏、推荐与活动广告原生复写清理；交易支付风控零接触。
+#!name=淘宝 · 去广告（原生复写层） v1.3.0
+#!desc=淘宝阿里妈妈/Tanx/Simba等独立广告域双栈与黑洞拦截，开屏、推荐与活动广告原生复写清理；交易支付风控零接触。
 #!author=edy
-#!version=1.2.4
+#!version=1.3.0
 #!homepage=https://github.com/AshNail/plugins
 #!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/taobao/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/59/ef/48/59ef4826-1909-6c34-542d-9a55aae79c6c/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-09
+#!date=2026-11-16
 #!tag=去广告,淘宝,阿里
 #!type=normal
 #!source=26ab20116fd2b962e163db806fa62bd9d0ede8c622b1e0282f3388258610e63e
 
 # ========================================================================
-# 淘宝 · 去广告（原生复写层） v1.2.4
+# 淘宝 · 去广告（原生复写层） v1.3.0
 # ------------------------------------------------------------------------
 # 红线：*.taobao.com / *.tmall.com / *.alicdn.com 整族承载登录、订单、购物车、商品图与播放；本插件只做精确广告子域和广告路径，绝不做 DOMAIN-SUFFIX 整域。
 # acs.m.taobao.com 与 guide-acs.m.taobao.com 是 mtop 主网关，交易与广告同域；DNS 层不黑洞它们，只在 MITM + [Rewrite] v2 层按 10 条广告 API 路径返回 200 空字典。
@@ -42,6 +42,31 @@ AND,((DOMAIN-SUFFIX,acs.m.taobao.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,guide-acs.m.taobao.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,gw.alicdn.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN-SUFFIX,heic.alicdn.com),(PROTOCOL,QUIC)),REJECT
+
+# ------------------------------------------------------------
+# pre-DNS 双栈防旁路（DOMAIN-SUFFIX / DOMAIN 同步阻断 IPv4 与 IPv6/AAAA）
+# 由生效 [Host] 精确派生：Loon 在域名规则阶段先于 DNS 解析生效且不区分地址族，单装本插件亦同步封死 AAAA 旁路。
+DOMAIN-SUFFIX,alimama.cn,REJECT
+DOMAIN-SUFFIX,alimama.com,REJECT
+DOMAIN-SUFFIX,mmstat.com,REJECT
+DOMAIN-SUFFIX,tanx.com,REJECT
+DOMAIN,adash-emas.cn-hangzhou.aliyuncs.com,REJECT
+DOMAIN,adashx.m.taobao.com,REJECT
+DOMAIN,adashx4yt.m.taobao.com,REJECT
+DOMAIN,alimama.alicdn.com,REJECT
+DOMAIN,atanx.alicdn.com,REJECT
+DOMAIN,audid-api.taobao.com,REJECT
+DOMAIN,dsp.simba.taobao.com,REJECT
+DOMAIN,h-adashx.ut.taobao.com,REJECT
+DOMAIN,hudong.alicdn.com,REJECT
+DOMAIN,ossgw.alicdn.com,REJECT
+DOMAIN,poplayer.template.alibaba.com,REJECT
+DOMAIN,rtb.julang.taobao.com,REJECT
+DOMAIN,srd.simba.taobao.com,REJECT
+DOMAIN,stat.simba.taobao.com,REJECT
+DOMAIN,tmatch.simba.taobao.com,REJECT
+DOMAIN,tns.simba.taobao.com,REJECT
+DOMAIN,wcp.taobao.com,REJECT
 
 [Host]
 
@@ -175,6 +200,12 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taoba
 
 # kill-guide-secondfloor: 首页二楼活动配置与开屏引导拉取（来源 https://kelee.one/）
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.taobao\.(?:volvo\.secondfloor\.getconfig|wireless\.home\.newface\.awesome\.get)/ then reject_dict(200)
+
+# kill-damai-popup: 淘系内大麦演出商业推广弹窗拉取接口（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.damai\.mec\.popup\.get(\?|$)/ then reject_dict(200)
+
+# kill-homepage-launch: 首页商业启动营销拉取接口（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.mos\.app\.homepage\.launch(\?|$)/ then reject_dict(200)
 
 # ------------------------------------------------------------
 # 请求阶段透明图替换（reject_img(200)）：共享图床开屏大图路径

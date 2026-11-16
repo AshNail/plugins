@@ -1,9 +1,9 @@
 {
   "slug": "mijia",
-  "name": "米家 · 去广告（小米广告平台层） v1.1.4",
+  "name": "米家 · 去广告（小米广告平台层） v1.1.5",
   "desc": "米家接入的小米统一广告平台及有品商业化推荐域 DNS 黑洞拦截；设备控制与账号推送绝对放行。零证书。",
-  "version": "1.1.4",
-  "date": "2026-11-09",
+  "version": "1.1.5",
+  "date": "2026-11-16",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,米家,小米",
   "comment": [
@@ -159,7 +159,8 @@
         "admob.xiaomi.com",
         "api.admob.xiaomi.com",
         "o2o.api.xiaomi.com",
-        "ad.mi.com"
+        "ad.mi.com",
+        "ads.mi.com"
       ]
     },
     {
@@ -167,7 +168,7 @@
       "title": "MIUI/澎湃系统广告与分析面（默认关，仅小米 Android 设备有感知）",
       "tier": "A",
       "disabled": true,
-      "note": "覆盖率审计（tools/app-coverage-audit.py）从 hagezi-xiaomi/anti-ad/AdGuard 反查出的小米系统面缺口：adv.sec=安全中心推荐位、activity/hot.browser=浏览器运营/热榜广告位、stat.youpin=有品推荐、stat.pandora=应用商店推荐、tracking.intl/rus=国际版遥测、inf/apm-rum/api.collect/cc/ccc/metok/geofence.sys=系统分析与定位采集、xiaomi-dtv.m.cn.miaozhen=秒针广告测量。对 iPhone/iPad 米家用户零效果；小米手机用户试开。安全组件（auth.be/api.sec/mazu/notify/logupdate 族）刻意不列——防诈与推送通道不许碰。第十二轮补入 adx.tv.mi.com（电视端广告交易）与 adv.l7.34.sec.miui.com（安全中心广告位置）两条 B 级候选（2 源），仍为默认关。第十三轮补入 5 条广告基础设施（均 2 源）：global-ad-extranet-pri-azams/azpn.alb.xiaomi.com、global-ad-intl-pri-alisgp.alb.xiaomi.com（跨国广告投放 ALB）、wtradv.market.xiaomi.com（应用商店推广位）、xadx.file.market.xiaomi.com（小米 ADX 素材），仍为默认关。",
+      "note": "覆盖率审计（tools/app-coverage-audit.py）从 hagezi-xiaomi/anti-ad/AdGuard 反查出的小米系统面缺口：adv.sec=安全中心推荐位、activity/hot.browser=浏览器运营/热榜广告位、stat.youpin=有品推荐、stat.pandora=应用商店推荐、tracking.intl/rus=国际版遥测、inf/apm-rum/api.collect/cc/ccc/metok/geofence.sys=系统分析与定位采集、xiaomi-dtv.m.cn.miaozhen=秒针广告测量。对 iPhone/iPad 米家用户零效果；小米手机用户试开。安全组件（auth.be/api.sec/mazu/notify/logupdate 族）刻意不列——防诈与推送通道不许碰。第十二轮补入 adx.tv.mi.com（电视端广告交易）与 adv.l7.34.sec.miui.com（安全中心广告位置）两条 B 级候选（2 源），仍为默认关。第十三轮补入 5 条广告基础设施（均 2 源）：global-ad-extranet-pri-azams/azpn.alb.xiaomi.com、global-ad-intl-pri-alisgp.alb.xiaomi.com（跨国广告投放 ALB）、wtradv.market.xiaomi.com（应用商店推广位）、xadx.file.market.xiaomi.com（小米 ADX 素材），仍为默认关。2026-11-16 补入同族跨国广告 ALB 节点 global-ad-pri-alisgp.alb.xiaomi.com（2 源，默认关）。",
       "sources": [
         "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/native.xiaomi.txt",
         "https://github.com/privacy-protection-tools/anti-AD",
@@ -204,6 +205,7 @@
         "global-ad-extranet-pri-azams.alb.xiaomi.com",
         "global-ad-extranet-pri-azpn.alb.xiaomi.com",
         "global-ad-intl-pri-alisgp.alb.xiaomi.com",
+        "global-ad-pri-alisgp.alb.xiaomi.com",
         "wtradv.market.xiaomi.com",
         "xadx.file.market.xiaomi.com"
       ]
@@ -338,9 +340,10 @@
         "fb.xk.miui.com",
         "gtglobal.intl.miui.com",
         "preload.xiaomi.com",
-        "*.sms.miui.com"
+        "*.sms.miui.com",
+        "huangye.miui.com"
       ]
     }
   ],
-  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e8/a5/cc/e8a5cc32-b075-3ac1-47c8-47025d5e42ac/AppIcon-0-0-1x_U007emarketing-0-8-0-sRGB-0-85-220.png/512x512bb.jpg"
+  "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/a8/28/31/a82831af-e7f4-28da-d8c4-781ce53db8f6/AppIcon-0-0-1x_U007emarketing-0-8-0-sRGB-0-85-220.png/512x512bb.jpg"
 }
