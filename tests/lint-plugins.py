@@ -106,6 +106,7 @@ FAMILY_CHECKS = {
 # 生成物由 tools/build-ads.py --check 做逐字节比对，这里只做结构与安全边界检查，
 # 避免每次加域名都要同步改 lint 的精确计数。
 ADS_PLUGIN = "plugins/ads/ads.plugin"
+ADS_NEXT_PLUGIN = "plugins/ads-next/ads-next.plugin"
 ADS_RETIRED = (
     "plugins/ads/ads-httpdns.plugin",
     "plugins/ads/ads-measurement.plugin",
@@ -119,9 +120,7 @@ ADS_META_KEYS = (
     "name",
     "desc",
     "author",
-    "version",
     "homepage",
-    "openUrl",
     "icon",
     "system",
     "date",
@@ -954,17 +953,12 @@ def check_static_layer(fp, family, data, mitm_text):
                 )
 
     # 官方 MitM 文档只列 hostname / ca-p12 / ca-passphrase，没有 h2；
-    # 官方产品页把「解密 HTTPS 和 HTTP/2」写成默认能力、无开关。社区插件通行写
-    # h2 = true，保留它是「未知键被忽略」的零成本保险——但不能对外当成能力点宣称
-    # （统计口径已剔除，见 docs/loon-native-first.md §9.3）。写成 false 才是真错。
-    if "h2 = true" not in mitm_text:
-        if re.search(r"^\s*h2\s*=\s*false\s*$", mitm_text, re.M):
-            errors.append(f"{fp}: [MITM] h2 = false 会主动关掉 HTTP/2 解密")
-        else:
-            errors.append(
-                f"{fp}: [MITM] 缺少 h2 = true（未文档化键，作零成本保险保留；"
-                "见 docs/loon-native-first.md §9.3）"
-            )
+    # 官方产品页把「解密 HTTPS 和 HTTP/2」写成内置默认能力、无开关。
+    # 全仓已清除 h2 = true，不允许任何 h2 = 键出现在 [MITM]。
+    if re.search(r"^\s*h2\s*=", mitm_text, re.M):
+        errors.append(
+            f"{fp}: [MITM] 不允许未文档化键 h2（官方 MitM 文档无此键，HTTP/2 为内置默认能力）"
+        )
 
     hostname_line = next(
         (line for line in mitm_text.splitlines() if line.startswith("hostname")), "")
@@ -1061,17 +1055,16 @@ def parse_argument_line(line):
 
 
 def check_argument_schema():
-    """[Argument] 只能出现官方文档定义的控件与类型。
+    """[Argument] 只能出现官方文档定义的控件与显式类型。
 
     官方只定义 3 种控件（input / select / switch）和 3 种类型
     （string / number / boolean），并且明确 `integer` / `float` / `bool`
     这类别名**不能解析**——写错不会报错，只会让整个参数失效。
+    全仓所有插件的每条 [Argument] 均须显式声明 type=。
     """
     total = 0
-    for fp, _s, _r, _w, _sc, _f in PLUGINS:
-        path = ROOT / fp
-        if not path.exists():
-            continue
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        fp = str(path.relative_to(ROOT))
         data, _ = parse_plugin(path)
         seen = set()
         for line in data.get("Argument", []):
@@ -1091,28 +1084,42 @@ def check_argument_schema():
                 )
                 continue
             declared = meta.get("type")
-            if declared is not None and declared not in ARG_TYPES:
+            if not declared or declared not in ARG_TYPES:
                 errors.append(
-                    f"{fp}: [Argument] {name} uses unsupported type {declared!r} "
-                    f"(only {sorted(ARG_TYPES)}; aliases are rejected by Loon)"
+                    f"{fp}: [Argument] {name} must explicitly declare type= in {sorted(ARG_TYPES)} "
+                    f"(got {declared!r}; aliases are rejected by Loon)"
                 )
-            kind = declared or "string"
+                continue
+            kind = declared
             if control == "switch":
+                if kind != "boolean":
+                    errors.append(
+                        f"{fp}: [Argument] {name} switch must declare type=boolean, got {kind!r}"
+                    )
                 if len(values) != 1 or values[0].lower() not in {"true", "false"}:
                     errors.append(
                         f"{fp}: [Argument] {name} switch default must be true/false, "
                         f"got {values}"
                     )
             elif control == "select":
+                if kind not in {"string", "number"}:
+                    errors.append(
+                        f"{fp}: [Argument] {name} select must declare type=string/number, got {kind!r}"
+                    )
                 if len(values) < 2:
                     errors.append(
                         f"{fp}: [Argument] {name} select needs at least 2 options, "
                         f"got {values}"
                     )
-            elif len(values) > 1:
-                errors.append(
-                    f"{fp}: [Argument] {name} input takes at most 1 default, got {values}"
-                )
+            else:
+                if kind not in {"string", "number"}:
+                    errors.append(
+                        f"{fp}: [Argument] {name} input must declare type=string/number, got {kind!r}"
+                    )
+                if len(values) > 1:
+                    errors.append(
+                        f"{fp}: [Argument] {name} input takes at most 1 default, got {values}"
+                    )
             if kind == "number":
                 for v in values:
                     try:
@@ -1127,7 +1134,7 @@ def check_argument_schema():
                         errors.append(
                             f"{fp}: [Argument] {name} type=boolean but value {v!r} is not a boolean"
                         )
-    print(f"argument schema: {total} declarations use documented controls/types")
+    print(f"argument schema: {total} declarations use documented controls and explicit types")
 
 
 def check_quic_count():
@@ -1247,6 +1254,15 @@ def parse_meta(path):
     return meta
 
 
+def parse_comment_tag(path, key):
+    rx = re.compile(rf"^#\s*{re.escape(key)}\s*=\s*(.+)$")
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = rx.match(line.strip())
+        if m:
+            return m.group(1).strip()
+    return None
+
+
 def binding_entry(line):
     stage = "request" if line.startswith("request if") else "response"
     rx_text = regex_literal(line)
@@ -1318,10 +1334,15 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
     path = ROOT / fp
     data, sections = parse_plugin(path)
     family_meta = parse_meta(path)
-    # 插件元数据下限：#!date 让 Loon 卡片显示更新时间，与 ads 插件对齐。
-    for key in ("name", "desc", "author", "version", "date"):
+    # 插件元数据下限：#!date 让 Loon 卡片显示更新时间，与 ads 插件对齐；禁止未文档化 #!version / #!openUrl。
+    for key in ("name", "desc", "author", "date"):
         if key not in family_meta:
             errors.append(f"{fp}: missing #!{key} metadata")
+    for bad_key in ("version", "openUrl"):
+        if bad_key in family_meta:
+            errors.append(f"{fp}: undocumented #!{bad_key} metadata is forbidden")
+    if not parse_comment_tag(path, "version"):
+        errors.append(f"{fp}: missing `# version=...` comment")
 
     rules = [l for l in data.get("Rule", []) if l.startswith("DOMAIN,")]
     rewrites = [
@@ -1425,14 +1446,18 @@ for fp, want_sections, want_rules, want_rewrites, want_scripts, family in PLUGIN
     spec = FAMILY_CHECKS[family]
 
     meta = parse_meta(path)
-    for key in ("name", "desc", "author", "version", "homepage", "openUrl", "icon"):
+    for key in ("name", "desc", "author", "homepage", "icon"):
         if key not in meta:
             errors.append(f"{fp}: missing #!{key} metadata")
     if "icon" in meta and not meta["icon"].startswith("https://"):
         errors.append(f"{fp}: #!icon must be an https URL, got {meta['icon'][:60]}")
-    if "openUrl" in meta and not meta["openUrl"].startswith("https://"):
-        errors.append(f"{fp}: #!openUrl must be an https URL, got {meta['openUrl'][:60]}")
-    print(f"  meta: {meta.get('name', '?')} v{meta.get('version', '?')} icon={meta.get('icon', '-')[:60]}")
+    ver_comment = parse_comment_tag(path, "version")
+    docs_comment = parse_comment_tag(path, "docs")
+    if not ver_comment:
+        errors.append(f"{fp}: missing `# version=...` comment")
+    if not docs_comment or not docs_comment.startswith("https://"):
+        errors.append(f"{fp}: `# docs=` must be an https URL, got {(docs_comment or '')[:60]}")
+    print(f"  meta: {meta.get('name', '?')} v{ver_comment or '?'} icon={meta.get('icon', '-')[:60]}")
 
     schema = load_args_schema(family)
     arg_names = [item["name"] for item in schema["switches"]] if schema else []
@@ -1802,19 +1827,11 @@ def check_bypass_dns_guard():
     )
 
 
-def check_ads_family():
-    """Validate the single DNS-first ads plugin and its optional layers."""
-    protected_path = ROOT / "src/ads/protected-roots.json"
-    try:
-        # 与两个构建器同一个口径：手写表 ∪ 由 App 红线派生的根。
-        protected = REDLINES_MODULE.protected_roots()
-    except (OSError, KeyError, json.JSONDecodeError, ValueError) as exc:
-        errors.append(f"ads: cannot read {protected_path}: {exc}")
-        protected = set()
-
-    path = ROOT / ADS_PLUGIN
+def _check_ads_plugin_variant(rel_path: str, is_next: bool, protected: set[str]):
+    """Check one ads-family plugin (`ads.plugin` 3.5.2+ or `ads-next.plugin` 3.5.3+)."""
+    path = ROOT / rel_path
     if not path.exists():
-        errors.append(f"{ADS_PLUGIN}: missing plugin")
+        errors.append(f"{rel_path}: missing plugin")
         return
     data, sections = parse_plugin(path)
     meta = parse_meta(path)
@@ -1822,24 +1839,41 @@ def check_ads_family():
 
     for key in ADS_META_KEYS:
         if key not in meta:
-            errors.append(f"{ADS_PLUGIN}: missing #!{key} metadata")
-    if meta.get("system") != "iOS,iPadOS,tvOS,macOS":
+            errors.append(f"{rel_path}: missing #!{key} metadata")
+    for bad_key in ("version", "openUrl"):
+        if bad_key in meta:
+            errors.append(f"{rel_path}: undocumented #!{bad_key} metadata is forbidden")
+    if not parse_comment_tag(path, "version"):
+        errors.append(f"{rel_path}: missing `# version=...` comment")
+    docs_url = parse_comment_tag(path, "docs")
+    if not docs_url or not docs_url.startswith("https://"):
+        errors.append(f"{rel_path}: `# docs=` must be an https URL")
+    expected_system = "iOS,iPadOS,tvOS" if is_next else "iOS,iPadOS,tvOS,macOS"
+    if meta.get("system") != expected_system:
         errors.append(
-            f"{ADS_PLUGIN}: #!system must be iOS,iPadOS,tvOS,macOS, "
+            f"{rel_path}: #!system must be {expected_system}, "
             f"got {meta.get('system')!r}"
         )
-    if "icon" in meta and not meta["icon"].startswith("https://"):
-        errors.append(f"{ADS_PLUGIN}: #!icon must be an https URL")
-    if "openUrl" in meta and not meta["openUrl"].startswith("https://"):
-        errors.append(f"{ADS_PLUGIN}: #!openUrl must be an https URL")
-    if sections not in (["General", "Rule", "Host"], ["General", "Rule", "IP Rewrite", "Host"]):
+    if is_next and meta.get("loon_version") != "3.5.3(1008)":
         errors.append(
-            f"{ADS_PLUGIN}: sections {sections}, expected "
-            "['General', 'Rule', 'Host'] or ['General', 'Rule', 'IP Rewrite', 'Host']"
+            f"{rel_path}: #!loon_version must be 3.5.3(1008), "
+            f"got {meta.get('loon_version')!r}"
+        )
+    if "icon" in meta and not meta["icon"].startswith("https://"):
+        errors.append(f"{rel_path}: #!icon must be an https URL")
+    expected_sections = (
+        [["General", "Rule", "IP Rewrite", "Host"]]
+        if is_next
+        else [["General", "Rule", "Host"], ["General", "Rule", "IP Rewrite", "Host"]]
+    )
+    if sections not in expected_sections:
+        errors.append(
+            f"{rel_path}: sections {sections}, expected {expected_sections}"
         )
 
-    if not (ROOT / "plugins/ads/README.md").exists():
-        errors.append("ads: missing plugins/ads/README.md")
+    readme_rel = "plugins/ads-next/README.md" if is_next else "plugins/ads/README.md"
+    if not (ROOT / readme_rel).exists():
+        errors.append(f"{rel_path}: missing {readme_rel}")
 
     for retired in ADS_RETIRED:
         if (ROOT / retired).exists():
@@ -1847,43 +1881,40 @@ def check_ads_family():
     for retired in ADS_RETIRED:
         basename = retired.rsplit("/", 1)[-1]
         if basename in raw:
-            errors.append(f"{ADS_PLUGIN}: must not reference retired {basename}")
+            errors.append(f"{rel_path}: must not reference retired {basename}")
 
-    # [General] is limited to Loon's plugin whitelist. The ads plugin may only
-    # append DNS/DoH servers; it must not look like it can set hijack/reject
-    # modes that Loon ignores in plugins.
+    # [General] is limited to Loon's plugin whitelist.
     general = data.get("General", [])
     general_map = {}
     for line in general:
         if "=" not in line:
-            errors.append(f"{ADS_PLUGIN}: malformed [General] line: {line[:100]}")
+            errors.append(f"{rel_path}: malformed [General] line: {line[:100]}")
             continue
         key, value = (part.strip() for part in line.split("=", 1))
         general_map[key] = value
         if key not in ADS_GENERAL_KEYS:
-            errors.append(f"{ADS_PLUGIN}: unsupported plugin [General] key: {key}")
+            errors.append(f"{rel_path}: unsupported plugin [General] key: {key}")
     for key in ("hijack-dns", "domain-reject-mode", "dns-reject-mode", "disable-stun"):
         if key in general_map:
-            errors.append(f"{ADS_PLUGIN}: plugin [General] cannot set {key}")
+            errors.append(f"{rel_path}: plugin [General] cannot set {key}")
     if "dns-server" not in general_map:
-        errors.append(f"{ADS_PLUGIN}: [General] missing dns-server")
+        errors.append(f"{rel_path}: [General] missing dns-server")
     else:
         dns_values = [v.strip().lower() for v in general_map["dns-server"].split(",")]
         if "system" in dns_values:
-            errors.append(f"{ADS_PLUGIN}: dns-server must not contain system")
+            errors.append(f"{rel_path}: dns-server must not contain system")
     if "doh-server" not in general_map:
-        errors.append(f"{ADS_PLUGIN}: [General] missing doh-server")
+        errors.append(f"{rel_path}: [General] missing doh-server")
     else:
         for url in [v.strip() for v in general_map["doh-server"].split(",")]:
             if not re.match(r"^https://\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?/", url):
-                errors.append(f"{ADS_PLUGIN}: doh-server must use an IP literal: {url}")
+                errors.append(f"{rel_path}: doh-server must use an IP literal: {url}")
     if "doh3-server" in general_map:
         for url in [v.strip() for v in general_map["doh3-server"].split(",")]:
             if not re.match(r"^h3://\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?/", url):
-                errors.append(f"{ADS_PLUGIN}: doh3-server must use an IP literal: {url}")
+                errors.append(f"{rel_path}: doh3-server must use an IP literal: {url}")
 
-    # [Rule] is the HTTPDNS fallback. It must only block and must not smuggle
-    # in an unsupported policy/parameter.
+    # [Rule] checks
     rules = data.get("Rule", [])
     required_rules = (
         "DOMAIN-KEYWORD,httpdns,REJECT-DROP",
@@ -1893,38 +1924,35 @@ def check_ads_family():
     )
     for required in required_rules:
         if required not in rules:
-            errors.append(f"{ADS_PLUGIN}: [Rule] missing {required}")
+            errors.append(f"{rel_path}: [Rule] missing {required}")
     url_regexes = []
     for line in rules:
         parts = [part.strip() for part in line.split(",")]
         if len(parts) < 3:
-            errors.append(f"{ADS_PLUGIN}: malformed [Rule] line: {line[:100]}")
+            errors.append(f"{rel_path}: malformed [Rule] line: {line[:100]}")
             continue
         if parts[0] == "FINAL":
-            errors.append(f"{ADS_PLUGIN}: FINAL is not allowed in the ads plugin")
+            errors.append(f"{rel_path}: FINAL is not allowed in the ads plugin")
         elif parts[0] not in ADS_RULE_TYPES:
-            errors.append(f"{ADS_PLUGIN}: unsupported [Rule] type: {parts[0]}")
+            errors.append(f"{rel_path}: unsupported [Rule] type: {parts[0]}")
         if not parts[2].startswith("REJECT"):
-            errors.append(f"{ADS_PLUGIN}: [Rule] must reject: {line[:100]}")
+            errors.append(f"{rel_path}: [Rule] must reject: {line[:100]}")
         if parts[0] == "PROTOCOL" and parts[1] not in PROTOCOL_VALUES:
-            errors.append(f"{ADS_PLUGIN}: unsupported PROTOCOL value: {parts[1]}")
+            errors.append(f"{rel_path}: unsupported PROTOCOL value: {parts[1]}")
         for param in parts[3:]:
             if param in SURGE_ONLY_RULE_PARAMS:
                 errors.append(
-                    f"{ADS_PLUGIN}: [Rule] uses the Surge-only parameter {param!r}; "
+                    f"{rel_path}: [Rule] uses the Surge-only parameter {param!r}; "
                     "Loon has no such option (see docs/loon-native-first.md §10)"
                 )
             elif param not in ADS_RULE_PARAMS:
-                errors.append(f"{ADS_PLUGIN}: unsupported [Rule] parameter: {param}")
+                errors.append(f"{rel_path}: unsupported [Rule] parameter: {param}")
         if parts[0] == "URL-REGEX":
             try:
                 url_regexes.append(re.compile(parts[1]))
             except re.error as exc:
-                errors.append(f"{ADS_PLUGIN}: URL-REGEX compile failed: {exc}")
+                errors.append(f"{rel_path}: URL-REGEX compile failed: {exc}")
 
-    # Exercise the IP-literal HTTPDNS fallback. This catches the common
-    # Baidu/Tencent shapes (`/d?`, `/ss?`, `/vN/...`, `sign_...`) without
-    # requiring network access or a Loon client.
     httpdns_url_samples = (
         "http://180.76.76.200/d?",
         "http://180.76.76.200/ss?",
@@ -1938,45 +1966,58 @@ def check_ads_family():
     )
     for sample in httpdns_url_samples:
         if not any(rx.search(sample) for rx in url_regexes):
-            errors.append(f"{ADS_PLUGIN}: HTTPDNS URL-REGEX misses {sample}")
+            errors.append(f"{rel_path}: HTTPDNS URL-REGEX misses {sample}")
     for sample in ("http://180.76.76.200/foo", "http://example.com/d?"):
         if any(rx.search(sample) for rx in url_regexes):
-            errors.append(f"{ADS_PLUGIN}: HTTPDNS URL-REGEX overmatches {sample}")
+            errors.append(f"{rel_path}: HTTPDNS URL-REGEX overmatches {sample}")
 
-    # DOMAIN-WILDCARD 两层（广告子域 + 数字分片家族）：语法仅 Loon 3.5.3(1008)+
-    # 提供，而当前 App Store 正式版是 3.5.2(996)，低版本遇到未知规则类型的行为
-    # 官方未文档化。因此两层必须以注释行存在：活动 [Rule] 里出现 DOMAIN-WILDCARD
-    # 会把正式版用户置于「整段不可用」风险，永久禁止。
-    # glob 语义校验（'*' 跨点、正/负样本、保护名单）照常跑在注释层上。
-    active_wildcards = [
-        [part.strip() for part in line.split(",")]
+    active_globs = [
+        line.split(",", 2)[1].strip()
         for line in rules
         if line.split(",", 1)[0].strip() == "DOMAIN-WILDCARD"
     ]
-    if active_wildcards:
-        errors.append(
-            f"{ADS_PLUGIN}: DOMAIN-WILDCARD rules must stay commented — "
-            "App Store 3.5.2(996) 不能解析该规则类型"
-        )
     commented_globs = [
         m.group(1)
         for m in re.finditer(r"(?m)^# DOMAIN-WILDCARD,([^,]+),REJECT[ \t]*$", raw)
     ]
-    wildcard_patterns = list(commented_globs)
-    ad_label_globs = wildcard_patterns[: len(ADS_WILDCARDS)]
-    family_globs = wildcard_patterns[len(ADS_WILDCARDS) :]
-    if tuple(ad_label_globs) != ADS_WILDCARDS:
-        errors.append(
-            f"{ADS_PLUGIN}: commented DOMAIN-WILDCARD set {ad_label_globs}, "
-            f"expected {list(ADS_WILDCARDS)}"
-        )
-    if tuple(family_globs) != ADS_FAMILY_WILDCARDS:
-        errors.append(
-            f"{ADS_PLUGIN}: family DOMAIN-WILDCARD set {family_globs}, "
-            f"expected {list(ADS_FAMILY_WILDCARDS)}"
-        )
+    expected_all = ADS_WILDCARDS + ADS_FAMILY_WILDCARDS
+    if is_next:
+        redline_overlap_globs = ("ads.*",)
+        want_active = tuple(p for p in expected_all if p not in redline_overlap_globs)
+        if tuple(active_globs) != want_active:
+            errors.append(
+                f"{rel_path}: active DOMAIN-WILDCARD set len={len(active_globs)}, "
+                f"expected {len(want_active)} (all non-redline globs)"
+            )
+        if tuple(commented_globs) != redline_overlap_globs:
+            errors.append(
+                f"{rel_path}: commented DOMAIN-WILDCARD set {commented_globs}, "
+                f"expected {list(redline_overlap_globs)} (redline exclusion)"
+            )
+        wildcard_patterns = active_globs + commented_globs
+        ad_label_globs = [p for p in ADS_WILDCARDS]
+        family_globs = [p for p in active_globs if "[0-9]" in p]
+    else:
+        if active_globs:
+            errors.append(
+                f"{rel_path}: DOMAIN-WILDCARD rules must stay commented — "
+                "App Store 3.5.2(996) 不能解析该规则类型"
+            )
+        wildcard_patterns = list(commented_globs)
+        ad_label_globs = wildcard_patterns[: len(ADS_WILDCARDS)]
+        family_globs = wildcard_patterns[len(ADS_WILDCARDS) :]
+        if tuple(ad_label_globs) != ADS_WILDCARDS:
+            errors.append(
+                f"{rel_path}: commented DOMAIN-WILDCARD set {ad_label_globs}, "
+                f"expected {list(ADS_WILDCARDS)}"
+            )
+        if tuple(family_globs) != ADS_FAMILY_WILDCARDS:
+            errors.append(
+                f"{rel_path}: family DOMAIN-WILDCARD set {family_globs}, "
+                f"expected {list(ADS_FAMILY_WILDCARDS)}"
+            )
     if len(set(wildcard_patterns)) != len(wildcard_patterns):
-        errors.append(f"{ADS_PLUGIN}: duplicate DOMAIN-WILDCARD rule")
+        errors.append(f"{rel_path}: duplicate DOMAIN-WILDCARD rule")
     glob_regexes = {
         pattern: ads_glob_regex(pattern) for pattern in set(wildcard_patterns)
     }
@@ -1984,74 +2025,66 @@ def check_ads_family():
         for sample in ADS_WILDCARD_HITS.get(pattern, ()):
             if not regex.fullmatch(sample):
                 errors.append(
-                    f"{ADS_PLUGIN}: DOMAIN-WILDCARD {pattern} misses {sample}"
+                    f"{rel_path}: DOMAIN-WILDCARD {pattern} misses {sample}"
                 )
         for root in protected:
             if regex.fullmatch(root):
                 errors.append(
-                    f"{ADS_PLUGIN}: DOMAIN-WILDCARD {pattern} matches protected root {root}"
+                    f"{rel_path}: DOMAIN-WILDCARD {pattern} matches protected root {root}"
                 )
     for sample in ADS_WILDCARD_MUST_MISS:
         for pattern, regex in glob_regexes.items():
             if regex.fullmatch(sample):
                 errors.append(
-                    f"{ADS_PLUGIN}: DOMAIN-WILDCARD {pattern} overmatches {sample}"
+                    f"{rel_path}: DOMAIN-WILDCARD {pattern} overmatches {sample}"
                 )
 
-    # 数字分片家族层：每条 glob 必须真的覆盖它声明的主机，类只允许 [0-9]，
-    # 且不能与上一层 glob 重复或越界命中。
     for pattern in family_globs:
         if "[0-9]" not in pattern:
             errors.append(
-                f"{ADS_PLUGIN}: family glob {pattern} must contain a [0-9] class"
+                f"{rel_path}: family glob {pattern} must contain a [0-9] class"
             )
         for body in re.findall(r"\[([^\]]*)\]", pattern):
             if body != "0-9":
                 errors.append(
-                    f"{ADS_PLUGIN}: family glob {pattern} uses [{body}]; only [0-9] is allowed"
+                    f"{rel_path}: family glob {pattern} uses [{body}]; only [0-9] is allowed"
                 )
         if pattern in ADS_WILDCARDS:
-            errors.append(f"{ADS_PLUGIN}: family glob {pattern} duplicates ad-label layer")
+            errors.append(f"{rel_path}: family glob {pattern} duplicates ad-label layer")
         regex = ads_glob_regex(pattern)
         for host in ADS_FAMILY_COVERS.get(pattern, ()):
             if not regex.fullmatch(host):
                 errors.append(
-                    f"{ADS_PLUGIN}: family glob {pattern} misses enumerated host {host}"
+                    f"{rel_path}: family glob {pattern} misses enumerated host {host}"
                 )
         for root in protected:
             if regex.fullmatch(root):
                 errors.append(
-                    f"{ADS_PLUGIN}: family glob {pattern} matches protected root {root}"
+                    f"{rel_path}: family glob {pattern} matches protected root {root}"
                 )
         for sample in ADS_FAMILY_MUST_MISS:
             if regex.fullmatch(sample):
                 errors.append(
-                    f"{ADS_PLUGIN}: family glob {pattern} overmatches {sample}"
+                    f"{rel_path}: family glob {pattern} overmatches {sample}"
                 )
     if len(set(family_globs)) != len(family_globs):
-        errors.append(f"{ADS_PLUGIN}: duplicate family DOMAIN-WILDCARD rule")
+        errors.append(f"{rel_path}: duplicate family DOMAIN-WILDCARD rule")
 
     if "# IP-CIDR,203.107.1.0/24,REJECT,no-resolve" not in raw:
-        errors.append(f"{ADS_PLUGIN}: optional HTTPDNS IP block must stay commented")
-    # 2026 全网取证补的网关 IP 也必须保持默认注释（可选层纪律）。
+        errors.append(f"{rel_path}: optional HTTPDNS IP block must stay commented")
     for marker in (
         "# IP-CIDR,203.119.238.240/32,REJECT,no-resolve",
         "# IP-CIDR,43.132.43.43/32,REJECT,no-resolve",
         "# IP-CIDR6,2401:b180:7001::31d/128,REJECT,no-resolve",
     ):
         if marker not in raw:
-            errors.append(f"{ADS_PLUGIN}: optional HTTPDNS IP block missing: {marker}")
-    # 186.76.76.200 不存在于任何官方文档（百度 VIP 只有 180.76.76.200），
-    # 曾经是笔误，永久锁掉。只禁规则形态；注释里的说明文字允许。
+            errors.append(f"{rel_path}: optional HTTPDNS IP block missing: {marker}")
     if re.search(r"#?\s*IP-CIDR,\s*186\.76\.76\.200", raw):
-        errors.append(f"{ADS_PLUGIN}: typo IP 186.76.76.200 must stay removed")
-    # 119.29.29.29 是公共普通 DNS，同时是本插件自己的 dns-server，绝不能拦。
-    if "119.29.29.29/32" in raw or "119.29.29.29 = 127.0.0.1" in raw:
+        errors.append(f"{rel_path}: typo IP 186.76.76.200 must stay removed")
+    if "119.29.29.29/32" in raw or "119.29.29.29 = 127.0.0.1" in raw or "119.29.29.29 = drop" in raw:
         errors.append(
-            f"{ADS_PLUGIN}: must not block 119.29.29.29 (public resolver AND own dns-server)"
+            f"{rel_path}: must not block 119.29.29.29 (public resolver AND own dns-server)"
         )
-    # PROTOCOL,STUN,REJECT 是可选层唯一非 IP 规则（Loon 3.1.7+ 协议规则），
-    # README 与全功能清单按 28 条引用它；必须存在、恰好一行注释态、绝不能激活。
     stun_lines = [
         line
         for line in raw.splitlines()
@@ -2059,31 +2092,37 @@ def check_ads_family():
     ]
     if stun_lines != ["# PROTOCOL,STUN,REJECT"]:
         errors.append(
-            f"{ADS_PLUGIN}: optional PROTOCOL STUN block must exist exactly once and stay commented"
+            f"{rel_path}: optional PROTOCOL STUN block must exist exactly once and stay commented"
         )
 
-    # Build 1007+ [IP Rewrite] 可选块守卫：单 IPv4、drop 动作、不包含自身 119.29.29.29
-    if "# 可选：[IP Rewrite]（Loon Build 1007+ 插件专属，TUN 阶段最快拦截）" not in raw:
-        errors.append(f"{ADS_PLUGIN}: optional [IP Rewrite] block missing header")
-    for ip_marker in (
-        "# 203.119.238.240 = drop",
-        "# 43.132.43.43 = drop",
-        "# 180.76.76.200 = drop",
-    ):
-        if ip_marker not in raw:
-            errors.append(f"{ADS_PLUGIN}: optional [IP Rewrite] marker missing: {ip_marker}")
+    if is_next:
+        ipr = data.get("IP Rewrite", [])
+        if len(ipr) < 16:
+            errors.append(f"{rel_path}: expected >=16 active [IP Rewrite] lines, got {len(ipr)}")
+        for ip_marker in ("203.119.238.240 = drop", "43.132.43.43 = drop", "180.76.76.200 = drop"):
+            if ip_marker not in ipr:
+                errors.append(f"{rel_path}: active [IP Rewrite] marker missing: {ip_marker}")
+    else:
+        if "# 可选：[IP Rewrite]（Loon Build 1007+ 插件专属，TUN 阶段最快拦截）" not in raw:
+            errors.append(f"{rel_path}: optional [IP Rewrite] block missing header")
+        for ip_marker in (
+            "# 203.119.238.240 = drop",
+            "# 43.132.43.43 = drop",
+            "# 180.76.76.200 = drop",
+        ):
+            if ip_marker not in raw:
+                errors.append(f"{rel_path}: optional [IP Rewrite] marker missing: {ip_marker}")
 
-    # [Host] is the core DNS layer.
     host_lines = data.get("Host", [])
     if len(host_lines) < 1100:
         errors.append(
-            f"{ADS_PLUGIN}: only {len(host_lines)} active Host rules, expected >= 1100"
+            f"{rel_path}: only {len(host_lines)} active Host rules, expected >= 1100"
         )
     exact = set()
     wildcard = set()
     for line in host_lines:
         if not ADS_HOST_RE.match(line):
-            errors.append(f"{ADS_PLUGIN}: malformed Host rule: {line[:100]}")
+            errors.append(f"{rel_path}: malformed Host rule: {line[:100]}")
             continue
         left = line.split(" = ", 1)[0]
         if left.startswith("*."):
@@ -2091,24 +2130,23 @@ def check_ads_family():
             wildcard.add(base)
             if base in protected:
                 errors.append(
-                    f"{ADS_PLUGIN}: wildcard on protected shared root: {left} "
+                    f"{rel_path}: wildcard on protected shared root: {left} "
                     "(use an exact ad subdomain)"
                 )
         else:
             exact.add(left)
             if left in protected:
                 errors.append(
-                    f"{ADS_PLUGIN}: blocked protected shared apex: {left} "
+                    f"{rel_path}: blocked protected shared apex: {left} "
                     "(use an exact ad subdomain)"
                 )
 
     for domain in ("ads.youtube.com", "gdt.qq.com"):
         if domain not in exact and domain not in wildcard:
-            errors.append(f"{ADS_PLUGIN}: core sample missing: {domain}")
+            errors.append(f"{rel_path}: core sample missing: {domain}")
     for domain in ("doubleclick.net", "applovin.com", "pangle.io", "gdtimg.com"):
         if domain not in wildcard:
-            errors.append(f"{ADS_PLUGIN}: core wildcard missing: *.{domain}")
-    # 2026-10-27 审计补的高置信广告/测量域，防止后续整理时被误删。
+            errors.append(f"{rel_path}: core wildcard missing: *.{domain}")
     for domain in (
         "advertnative.com",
         "ntvk1.ru",
@@ -2120,8 +2158,7 @@ def check_ads_family():
         "events.brightline.tv",
     ):
         if domain not in exact and domain not in wildcard:
-            errors.append(f"{ADS_PLUGIN}: audited ad domain missing: {domain}")
-    # 公共加密 DNS 防绕过入口（含 DoT 域名兜底）。
+            errors.append(f"{rel_path}: audited ad domain missing: {domain}")
     for domain in (
         "doh.applied-privacy.net",
         "doh.libredns.gr",
@@ -2133,8 +2170,7 @@ def check_ads_family():
         "dot.mullvad.net",
     ):
         if domain not in exact and domain not in wildcard:
-            errors.append(f"{ADS_PLUGIN}: public encrypted-DNS entry missing: {domain}")
-    # 默认注释的统计组也要有这几条真实补漏（保持 disabled，不能激活）。
+            errors.append(f"{rel_path}: public encrypted-DNS entry missing: {domain}")
     for marker in (
         "# cetrk.com = 127.0.0.1",
         "# wizaly.com = 127.0.0.1",
@@ -2144,7 +2180,7 @@ def check_ads_family():
         "# nr-data.net = 127.0.0.1",
     ):
         if marker not in raw:
-            errors.append(f"{ADS_PLUGIN}: optional analytics marker missing: {marker}")
+            errors.append(f"{rel_path}: optional analytics marker missing: {marker}")
     for domain in (
         "httpdns.aliyuncs.com",
         "httpdns.qq.com",
@@ -2152,10 +2188,7 @@ def check_ads_family():
         "httpdns.baidu.com",
     ):
         if domain not in exact:
-            errors.append(f"{ADS_PLUGIN}: HTTPDNS sample missing: {domain}")
-    # 红线冲突候选永久锁定：这几条只能以注释形态存在于 ads，绝不允许激活。
-    # resolver.msg.xiaomi.net 曾经默认生效——它不在 mijia 那句 comment 红线里，而在同一文件的
-    # triage_exclude 台账（推送/云红线 resolver.msg.*）里，第 27 轮只读 comment 的门禁看不见它。
+            errors.append(f"{rel_path}: HTTPDNS sample missing: {domain}")
     for marker in (
         "# resolver.msg.xiaomi.net = 127.0.0.1",
         "# dns.jd.com = 127.0.0.1",
@@ -2163,14 +2196,13 @@ def check_ads_family():
         "# *.union.jd.com = 127.0.0.1",
     ):
         if marker not in raw:
-            errors.append(f"{ADS_PLUGIN}: app-redline overlap entry missing: {marker}")
+            errors.append(f"{rel_path}: app-redline overlap entry missing: {marker}")
     for domain in ("resolver.msg.xiaomi.net", "dns.jd.com", "union.jd.com"):
         if domain in exact:
-            errors.append(f"{ADS_PLUGIN}: 按 App 插件的红线被 ads 激活: {domain}")
+            errors.append(f"{rel_path}: 按 App 插件的红线被 ads 激活: {domain}")
         if any(base != domain and domain.endswith("." + base) for base in wildcard):
-            errors.append(f"{ADS_PLUGIN}: 某条通配把红线 {domain} 捞进生效组")
-    # 公共 DoH 断言要感知通配覆盖——`=adguard-dns.com` 形态下
-    # family/unfiltered 变体不在 exact 里，但被 *.'d 基域覆盖即算命中。
+            errors.append(f"{rel_path}: 某条通配把红线 {domain} 捞进生效组")
+
     def covered(domain: str) -> bool:
         if domain in exact:
             return True
@@ -2188,13 +2220,8 @@ def check_ads_family():
         "doh.dns.sb",
     ):
         if not covered(domain):
-            errors.append(f"{ADS_PLUGIN}: public DoH sample missing: {domain}")
+            errors.append(f"{rel_path}: public DoH sample missing: {domain}")
 
-    # 国内公共 DoH 默认不得生效。Loon 主配置在国内常用域名形式 doh/doq，
-    # [Host] 会把 Loon 自己的加密 DNS 一起打到 127.0.0.1：2026-10-29 的 23 小时
-    # 真机日志里 dns.alidns.com 17,073 + doh.pub 11,239 = 28,312 次 Host Map，
-    # 连带 5,236 次 DoQ 连接尝试与 10,389 次 DoH 连接失败。插件读不到主配置，
-    # 无法只在 App 流量上生效，因此这 9 条只能留在 doh_public_cn 默认注释组。
     ads_doh_self_harm = (
         "dns.alidns.com",
         "doh.aliyun.com",
@@ -2209,48 +2236,43 @@ def check_ads_family():
     for domain in ads_doh_self_harm:
         if domain in exact or any(domain.endswith("." + base) for base in wildcard):
             errors.append(
-                f"{ADS_PLUGIN}: 国内公共 DoH 默认生效会打死 Loon 自己的解析链: {domain}"
+                f"{rel_path}: 国内公共 DoH 默认生效会打死 Loon 自己的解析链: {domain}"
             )
         if f"# {domain} = 127.0.0.1" not in raw:
             errors.append(
-                f"{ADS_PLUGIN}: 国内公共 DoH 必须以默认注释形态保留: {domain}"
+                f"{rel_path}: 国内公共 DoH 必须以默认注释形态保留: {domain}"
             )
-    try:
-        ads_source = json.loads(
-            pathlib.Path("src/ads/domains.json").read_text(encoding="utf-8")
-        )["plugins"]["ads"]["groups"]
-        cn_group = next((g for g in ads_source if g.get("id") == "doh_public_cn"), None)
-        if not cn_group or not cn_group.get("disabled"):
-            errors.append("ads: src/ads/domains.json 缺少默认注释组 doh_public_cn")
-        elif set(cn_group.get("rules") or []) != set(ads_doh_self_harm):
-            errors.append(
-                "ads: doh_public_cn 必须恰好包含 9 条国内公共 DoH，"
-                "新增/删除都要同步 lint 的自伤名单"
-            )
-    except (OSError, ValueError, KeyError) as exc:
-        errors.append(f"ads: cannot read doh_public_cn from src/ads/domains.json: {exc}")
+    if not is_next:
+        try:
+            ads_source = json.loads(
+                pathlib.Path("src/ads/domains.json").read_text(encoding="utf-8")
+            )["plugins"]["ads"]["groups"]
+            cn_group = next((g for g in ads_source if g.get("id") == "doh_public_cn"), None)
+            if not cn_group or not cn_group.get("disabled"):
+                errors.append("ads: src/ads/domains.json 缺少默认注释组 doh_public_cn")
+            elif set(cn_group.get("rules") or []) != set(ads_doh_self_harm):
+                errors.append(
+                    "ads: doh_public_cn 必须恰好包含 9 条国内公共 DoH，"
+                    "新增/删除都要同步 lint 的自伤名单"
+                )
+        except (OSError, ValueError, KeyError) as exc:
+            errors.append(f"ads: cannot read doh_public_cn from src/ads/domains.json: {exc}")
 
-    # Attribution/analytics are intentionally opt-in comments. They must not
-    # leak into the active Host set, or installing the core plugin would break
-    # install attribution and app analytics by default.
     for domain in ("appsflyer.com", "google-analytics.com", "umeng.com"):
         if domain in exact or domain in wildcard:
-            errors.append(f"{ADS_PLUGIN}: optional measurement domain is active: {domain}")
+            errors.append(f"{rel_path}: optional measurement domain is active: {domain}")
     for marker in (
         "# appsflyer.com = 127.0.0.1",
         "# google-analytics.com = 127.0.0.1",
         "# umeng.com = 127.0.0.1",
     ):
         if marker not in raw:
-            errors.append(f"{ADS_PLUGIN}: optional measurement block missing: {marker}")
+            errors.append(f"{rel_path}: optional measurement block missing: {marker}")
 
-    # Explicitly excluded shared hosts must never become active by accident.
-    # ad.abchina.com 经 EasyList China / AdRules 实证承载农行认证/核心脚本，绝不能拦截。
     for domain in ("is.snssdk.com", "graph.facebook.com", "branch.io", "ad.abchina.com"):
         if domain in exact or domain in wildcard:
-            errors.append(f"{ADS_PLUGIN}: excluded shared host is active: {domain}")
+            errors.append(f"{rel_path}: excluded shared host is active: {domain}")
 
-    # 银行精准广告专域守卫；jf365.boc.cn 是中行积分商城，不得加入。
     for domain in (
         "adv.ccb.com",
         "ad.icbc.com.cn",
@@ -2259,14 +2281,28 @@ def check_ads_family():
         "ad.psbc.com",
     ):
         if domain not in exact:
-            errors.append(f"{ADS_PLUGIN}: bank ad domain missing: {domain}")
+            errors.append(f"{rel_path}: bank ad domain missing: {domain}")
 
     print(
-        f"{ADS_PLUGIN}: host_rules={len(host_lines)} "
+        f"{rel_path}: host_rules={len(host_lines)} "
         f"exact={len(exact)} wildcard={len(wildcard)} "
         f"general={len(general)} rules={len(rules)} "
+        f"domain_wildcards_active={len(active_globs)} "
         f"domain_wildcards_commented={len(commented_globs)}"
     )
+
+
+def check_ads_family():
+    """Validate the DNS-first ads plugin (3.5.2+) and ads-next (3.5.3+)."""
+    protected_path = ROOT / "src/ads/protected-roots.json"
+    try:
+        protected = REDLINES_MODULE.protected_roots()
+    except (OSError, KeyError, json.JSONDecodeError, ValueError) as exc:
+        errors.append(f"ads: cannot read {protected_path}: {exc}")
+        protected = set()
+
+    for rel_path, is_next in ((ADS_PLUGIN, False), (ADS_NEXT_PLUGIN, True)):
+        _check_ads_plugin_variant(rel_path, is_next, protected)
 
     build = subprocess.run(
         [sys.executable, str(ROOT / "tools/build-ads.py"), "--check"],
@@ -2764,10 +2800,10 @@ def check_root_readme_numbers():
             if not path.exists():
                 errors.append(f"{DEVICE_DOC}: 引用了不存在的 {slug}.plugin")
                 continue
-            actual = parse_meta(path).get("version")
+            actual = parse_comment_tag(path, "version")
             if actual != claimed:
                 errors.append(
-                    f"{DEVICE_DOC}: 「{m.group(0)}」声明 {claimed}，#!version={actual}"
+                    f"{DEVICE_DOC}: 「{m.group(0)}」声明 {claimed}，# version={actual}"
                 )
             else:
                 checked += 1
@@ -2938,15 +2974,23 @@ def check_app_plugins():
             errors.append(f"apps/{slug}: generated plugin missing: {plugin.relative_to(ROOT)} (run npm run build:apps)")
             continue
         meta = parse_meta(plugin)
-        for key in ("name", "desc", "version", "date", "tag", "type"):
+        for key in ("name", "desc", "date", "tag", "type"):
             if not meta.get(key):
-                errors.append(f"apps/{slug}: header missing #{key} in {plugin.relative_to(ROOT)}")
+                errors.append(f"apps/{slug}: header missing #!{key} in {plugin.relative_to(ROOT)}")
+        for bad_key in ("version", "openUrl"):
+            if bad_key in meta:
+                errors.append(f"apps/{slug}: undocumented #!{bad_key} is forbidden in {plugin.relative_to(ROOT)}")
+        if parse_comment_tag(plugin, "version") != data.get("version"):
+            errors.append(f"apps/{slug}: `# version=` does not match src/apps/{slug}.json")
+        docs_url = parse_comment_tag(plugin, "docs")
+        if not docs_url or not docs_url.startswith("https://"):
+            errors.append(f"apps/{slug}: `# docs=` must be https: {docs_url}")
         if meta.get("type") != "normal":
             errors.append(f"apps/{slug}: #!type must be normal, got {meta.get('type')!r}")
-        for key in ("homepage", "openUrl", "icon"):
+        for key in ("homepage", "icon"):
             val = meta.get(key, "")
             if val and not val.startswith("https://"):
-                errors.append(f"apps/{slug}: #{key} must be https: {val}")
+                errors.append(f"apps/{slug}: #!{key} must be https: {val}")
         parsed, sections = parse_plugin(plugin)
         enh = data.get("enhance")
         active_enh = bool((enh or {}).get("active"))
@@ -3216,22 +3260,9 @@ def check_app_plugins():
                         f"apps/{slug}: active 层的 [MITM] 必须是唯一一行 {want_hostname!r}，"
                         f"实际 {parsed.get('MITM', [])}"
                     )
-                want_args = []
-                for a in enh.get("arguments", []):
-                    if a.get("type") == "input":
-                        default = str(a.get("default"))
-                        if "," in default or re.search(r"[\s*?()\[\]{}]", default):
-                            default = f'"{default}"'
-                        meta = ",type=number" if a.get("number") else ""
-                        want_args.append(
-                            f'{a.get("name")} = input,{default}{meta},'
-                            f'tag={a.get("tag")},desc={a.get("desc")}'
-                        )
-                    else:
-                        want_args.append(
-                            f'{a.get("name")} = switch,{a.get("default")},'
-                            f'tag={a.get("tag")},desc={a.get("desc")}'
-                        )
+                want_args = [
+                    BUILD_APPS.render_argument_line(a) for a in enh.get("arguments", [])
+                ]
                 if parsed.get("Argument", []) != want_args:
                     errors.append(
                         f"apps/{slug}: [Argument] 与 enhance.arguments 不一致（rebuild to resync）\n"
@@ -3449,8 +3480,26 @@ def check_ip_mode_values():
 # ca-p12 / ca-passphrase 虽然是官方键，但等于把 CA 私钥塞进公开插件，永久禁止。
 MITM_OFFICIAL_KEYS = ("hostname", "ca-p12", "ca-passphrase")
 MITM_FORBIDDEN_KEYS = ("ca-p12", "ca-passphrase")
-MITM_TOLERATED_LINES = ("h2 = true",)          # 未文档化，作「未知键被忽略」的零成本保险
+MITM_TOLERATED_LINES = ()                      # 全仓已清零 h2 = true，不允许任何未文档化 MITM 键
 MITM_TOLERATED_PREFIXES = ("%APPEND%",)        # 未文档化，Surge 的「追加而非覆盖」行首前缀
+
+
+def check_no_undocumented_meta():
+    """全仓 .plugin 禁止未文档化 #! 键（#!version / #!openUrl），统一走注释形态。"""
+    checked = 0
+    for path in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        checked += 1
+        rel = path.relative_to(ROOT)
+        meta = parse_meta(path)
+        for bad_key in ("version", "openUrl"):
+            if bad_key in meta:
+                errors.append(f"{rel}: 禁止未文档化 #!{bad_key}（改用 `# version=` / `# docs=` 注释）")
+        if not parse_comment_tag(path, "version"):
+            errors.append(f"{rel}: 缺少 `# version=...` 注释")
+        docs_url = parse_comment_tag(path, "docs")
+        if not docs_url or not docs_url.startswith("https://"):
+            errors.append(f"{rel}: `# docs=` 注释必须是 https URL")
+    print(f"metadata surface: {checked} plugin(s) use official #! keys only (0 #!version / 0 #!openUrl)")
 
 
 def check_mitm_surface():
@@ -4355,44 +4404,133 @@ def check_round3_guards():
                 )
                 problems += 1
 
-    # ④ jq 字段级访问必须有类型守卫
+    # ④ jq 字段级访问必须有类型守卫（覆盖 src/apps/*.json + 独立 .plugin 原生复写）
     jq_count = 0
+
+    def check_jq_action(label, action):
+        nonlocal jq_count, problems
+        m = re.search(r'response\.json\.jq\("(.*)"\)$', action)
+        if not m:
+            return
+        jq_count += 1
+        expr = m.group(1).replace('\\"', '"')
+        # config 原文的 `json.jq(".Data.X = []")` 是顶层对象字段赋值；
+        # 起点凭据链（Plugin/qidian.plugin）逐字使用该形态。除此之外仍要求类型守卫。
+        simple_data_reset = re.fullmatch(
+            r"\.(?:Data)(?:\.(?:[A-Za-z_][A-Za-z0-9_]*))+ = \[\]", expr
+        )
+        if 'if type == "object"' not in expr and not simple_data_reset:
+            errors.append(
+                f"{label}: jq 缺少顶层对象类型守卫"
+            )
+            problems += 1
+        if ".target.type //" in expr:
+            errors.append(
+                f"{label}: `.target.type // ...` 会在 "
+                "target 为字符串/数组时让整次净化失败；改用 "
+                "(.target | if type == \"object\" then ... else ... end)"
+            )
+            problems += 1
+        if '// "") | startswith' in expr:
+            errors.append(
+                f"{label}: `(x // \"\") | startswith` "
+                "在 x 为数字/数组时会报错；改用 "
+                "(x | if type == \"string\" then startswith(...) else false end)"
+            )
+            problems += 1
+
+    app_slugs = {cfg.stem for cfg in (ROOT / "src/apps").glob("*.json")}
     for cfg in sorted((ROOT / "src/apps").glob("*.json")):
         data = json.loads(cfg.read_text(encoding="utf-8"))
         for rule in (data.get("enhance") or {}).get("rewrite") or []:
-            action = rule.get("action", "")
-            m = re.search(r'response\.json\.jq\("(.*)"\)', action)
-            if not m:
+            check_jq_action(f"{cfg.name}:{rule.get('id')}", rule.get("action", ""))
+
+    for plugin in sorted((ROOT / "plugins").glob("*/*.plugin")):
+        slug = plugin.parent.name
+        if slug in app_slugs or slug == "ads":
+            continue
+        for lineno, line in enumerate(plugin.read_text(encoding="utf-8").splitlines(), 1):
+            s = line.strip()
+            if not s or s.startswith(("#", ";")):
                 continue
-            jq_count += 1
-            expr = m.group(1).replace('\\"', '"')
-            # config 原文的 `json.jq(".Data.X = []")` 是顶层对象字段赋值；
-            # 起点凭据链（Plugin/qidian.plugin）逐字使用该形态。除此之外仍要求类型守卫。
-            simple_data_reset = re.fullmatch(
-                r"\.(?:Data)(?:\.(?:[A-Za-z_][A-Za-z0-9_]*))+ = \[\]", expr
-            )
-            if 'if type == "object"' not in expr and not simple_data_reset:
-                errors.append(
-                    f"{cfg.name}:{rule.get('id')}: jq 缺少顶层对象类型守卫"
-                )
-                problems += 1
-            if ".target.type //" in expr:
-                errors.append(
-                    f"{cfg.name}:{rule.get('id')}: `.target.type // ...` 会在 "
-                    "target 为字符串/数组时让整次净化失败；改用 "
-                    "(.target | if type == \"object\" then ... else ... end)"
-                )
-                problems += 1
-            if '// "") | startswith' in expr:
-                errors.append(
-                    f"{cfg.name}:{rule.get('id')}: `(x // \"\") | startswith` "
-                    "在 x 为数字/数组时会报错；改用 "
-                    "(x | if type == \"string\" then startswith(...) else false end)"
-                )
-                problems += 1
+            check_jq_action(f"{plugin.relative_to(ROOT)}:{lineno}", s)
+
     print(
         f"round3 guards: {checked} purify script(s), {jq_count} jq expression(s) "
         f"checked, {problems} problem(s)"
+    )
+
+
+def check_netease_plugin():
+    """手工维护的 netease.plugin 自洽性守卫（无构建器生成，由 lint 锁死契约）。"""
+    path = ROOT / "plugins/netease/netease.plugin"
+    if not path.exists():
+        errors.append("plugins/netease/netease.plugin: missing")
+        return
+    parsed, sections = parse_plugin(path)
+    args = set()
+    for line in parsed.get("Argument", []):
+        if "=" in line:
+            args.add(line.split("=", 1)[0].strip())
+
+    host_domains = []
+    for line in parsed.get("Host", []):
+        if "=" in line:
+            host = line.split("=", 1)[0].strip().lower()
+            rhs = line.split("=", 1)[1].strip()
+            if host and rhs == "127.0.0.1":
+                host_domains.append(host)
+
+    rule_domains = []
+    quic_suffixes = []
+    quic_exacts = set()
+    for line in parsed.get("Rule", []):
+        m = re.match(r"^DOMAIN,([^,]+),REJECT$", line)
+        if m:
+            rule_domains.append(m.group(1).strip().lower())
+            continue
+        qm = re.match(r"^AND,\(\((DOMAIN(?:-SUFFIX)?),([^)]+)\),\(PROTOCOL,QUIC\)\),REJECT$", line)
+        if qm:
+            kind, target = qm.group(1), qm.group(2).strip().lower()
+            if kind == "DOMAIN-SUFFIX":
+                quic_suffixes.append(target)
+            else:
+                quic_exacts.add(target)
+
+    host_set = set(host_domains)
+    rule_set = set(rule_domains)
+    if host_set != rule_set:
+        missing = sorted(host_set - rule_set)
+        extra = sorted(rule_set - host_set)
+        if missing:
+            errors.append(
+                f"plugins/netease/netease.plugin: [Host] 与 [Rule] pre-DNS 双栈失配，缺少 DOMAIN 规则: {missing}"
+            )
+        if extra:
+            errors.append(
+                f"plugins/netease/netease.plugin: [Rule] 多出未在 [Host] 声明的 DOMAIN 规则: {extra}"
+            )
+
+    mitm_hosts = [item.lower() for commented, item in mitm_hostname_entries(path) if not commented]
+    if "MITM" in sections and not mitm_hosts:
+        errors.append("plugins/netease/netease.plugin: [MITM] hostname 为空")
+    for host in mitm_hosts:
+        clean = host.lstrip("*.").rstrip(".")
+        if not (clean in quic_exacts or any(clean == s or clean.endswith("." + s) for s in quic_suffixes)):
+            errors.append(
+                f"plugins/netease/netease.plugin: [MITM] 主机 {host!r} 缺少 [Rule] QUIC 回退规则"
+            )
+
+    for lineno, line in enumerate(parsed.get("Rewrite", []), 1):
+        for var in re.findall(r"\$\{([A-Za-z0-9_]+)\}", line):
+            if var != "url" and var not in args:
+                errors.append(
+                    f"plugins/netease/netease.plugin: [Rewrite] #{lineno} 引用了未在 [Argument] 声明的变量 ${{{var}}}"
+                )
+
+    print(
+        f"netease parity: {len(host_domains)} host<->pre-DNS pairs, "
+        f"{len(mitm_hosts)} MITM host(s) QUIC-guarded, {len(args)} argument(s)"
     )
 
 
@@ -4492,7 +4630,9 @@ check_encoding_guard()
 check_script_safety()
 check_pagination_integrity()
 check_source_hash()
+check_no_undocumented_meta()
 check_round3_guards()
+check_netease_plugin()
 check_qidian_har_guards()
 check_bypass_dns_guard()
 check_no_legacy_syntax()

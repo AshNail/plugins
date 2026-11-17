@@ -69,7 +69,7 @@ DOMAIN_RE = re.compile(r"^(?:\*\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]
 WILDCARD_GLOB_RE = re.compile(r"^[a-z0-9*?\[\]!.-]+$")
 RULE_KINDS = {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "AND"}
 ACTIONS = {"REJECT", "REJECT-DROP", "DIRECT"}
-KEY_ORDER = ("name", "desc", "author", "version", "homepage", "openUrl", "icon",
+KEY_ORDER = ("name", "desc", "author", "homepage", "icon",
              "system", "date", "tag", "type")
 
 
@@ -530,6 +530,10 @@ def render(app: dict, sdklib: dict, roots: set[str]) -> str:
     # 哈希一律现算——手抄的 64 位十六进制会与地址脱钩，而「地址变了哈希没变」是个**假的**校验，
     # 比不写更危险。口径见 tools/source_hash.py（唯一出口），lint 的 check_source_hash() 反向复算。
     lines.append(f"#!source={source_value(slug)}")
+    # 官方 Plugin 文档只列 11 个 `#!` 元数据键 + `#!source`，不包含 `#!version` / `#!openUrl`；
+    # 版本与说明地址作为普通注释保留，供人读与远端校验脚本解析。
+    lines.append(f"# version={meta['version']}")
+    lines.append(f"# docs={meta['openUrl']}")
     lines.append("")
     lines.append("# " + "=" * 72)
     lines.append(f"# {meta['name']}")
@@ -921,15 +925,14 @@ def render_binding_legacy(b: dict) -> str:
 
 
 def render_argument_line(a: dict) -> str:
-    """[Argument] 的一行。switch 形态沿用仓库惯例（不引号 value）；input 形态对
-    含空白/特殊值加双引号（config 形状：CRONEXP=input,"11 2 * * *"，TIMEOUT=input,420,type=number）。"""
+    """[Argument] 的一行。全部控件按官方 Plugin 页显式声明 type=（switch→boolean，input→string/number）。"""
     if a.get("type") == "input":
         default = str(a["default"])
         if "," in default or re.search(r"[\s*?()\[\]{}]", default):
             default = f'"{default}"'
-        meta = ",type=number" if a.get("number") else ""
+        meta = f",type={'number' if a.get('number') else 'string'}"
         return f'{a["name"]} = input,{default}{meta},tag={a["tag"]},desc={a["desc"]}'
-    return f'{a["name"]} = switch,{a["default"]},tag={a["tag"]},desc={a["desc"]}'
+    return f'{a["name"]} = switch,{a["default"]},type=boolean,tag={a["tag"]},desc={a["desc"]}'
 
 
 def split_action_args(text: str) -> list[str]:

@@ -1,18 +1,18 @@
-#!name=广告平台拦截器 · All-in-One v2.8.32
+#!name=广告平台拦截器 · All-in-One v2.8.33
 #!desc=单插件 All-in-One：DNS/pre-DNS 双栈广告拦截（同步阻断 IPv4 与 IPv6/AAAA）+ HTTPDNS 防绕过 + 公共 DoH/DoT 防泄漏，零证书默认全量生效。
 #!author=edy
-#!version=2.8.32
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-16 20:10
+#!date=2026-11-17 17:20
 #!tag=广告拦截,DNS,HTTPDNS,防泄漏,去广告
 #!type=normal
 #!source=9201d3d3f45c80d27754fcb9a4ea489fb4d364f8d278e30141e661f1dc34f201
+# version=2.8.33
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/ads/README.md
 
 # ============================================================================
-# 广告平台拦截器 · All-in-One v2.8.32
+# 广告平台拦截器 · All-in-One v2.8.33
 # ----------------------------------------------------------------------------
 # 工作机制：单插件 = [Host] DNS 广告拦截 + [Rule] HTTPDNS/DoT 兜底 + [General] IP 形式 DoH 加密解析。
 # 核心 [Host] 把广告专域、HTTPDNS/私有 DoH、公网 DoH 入口映射到 127.0.0.1；DNS 阶段生效，HTTP/3 同样拦截。
@@ -121,6 +121,7 @@ DOMAIN-SUFFIX,ad-vortex.com,REJECT
 DOMAIN-SUFFIX,ad-x.co.uk,REJECT
 DOMAIN-SUFFIX,ad.12306.cn,REJECT
 DOMAIN-SUFFIX,ad.12306.cn.wscdns.com,REJECT
+DOMAIN-SUFFIX,ad.auditude.com,REJECT
 DOMAIN-SUFFIX,ad.daum.net,REJECT
 DOMAIN-SUFFIX,ad.dev.360.cn,REJECT
 DOMAIN-SUFFIX,ad.eu.xiaomi.com,REJECT
@@ -141,6 +142,7 @@ DOMAIN-SUFFIX,ad.tencentmusic.com,REJECT
 DOMAIN-SUFFIX,ad.xiaomi.com,REJECT
 DOMAIN-SUFFIX,ad.youku.com,REJECT
 DOMAIN-SUFFIX,ad.zhangyue.com,REJECT
+DOMAIN-SUFFIX,ad4.com.cn,REJECT
 DOMAIN-SUFFIX,ad4game.com,REJECT
 DOMAIN-SUFFIX,ad6media.fr,REJECT
 DOMAIN-SUFFIX,adactive.cz,REJECT
@@ -476,6 +478,7 @@ DOMAIN-SUFFIX,bidgear.com,REJECT
 DOMAIN-SUFFIX,bidmachine.io,REJECT
 DOMAIN-SUFFIX,bidr.io,REJECT
 DOMAIN-SUFFIX,bidswitch.net,REJECT
+DOMAIN-SUFFIX,bigmobileads.com,REJECT
 DOMAIN-SUFFIX,bigoads.com,REJECT
 DOMAIN-SUFFIX,bit-ad.com,REJECT
 DOMAIN-SUFFIX,bizible.com,REJECT
@@ -1325,6 +1328,10 @@ DOMAIN,ads-img-qc.xhscdn.com,REJECT
 DOMAIN,ads-marketing-vivofs.vivo.com.cn,REJECT
 DOMAIN,ads-resources.waze.com,REJECT
 DOMAIN,ads-router-noneu.truecaller.com,REJECT
+DOMAIN,ads-sdk.mattel163.com,REJECT
+DOMAIN,ads-setu-proxy-eu.amazon.com,REJECT
+DOMAIN,ads-setu-proxy-fe.amazon.com,REJECT
+DOMAIN,ads-setu-proxy.amazon.com,REJECT
 DOMAIN,ads-sg.tiktok.com,REJECT
 DOMAIN,ads-shopping.shouqianba.com,REJECT
 DOMAIN,ads-ttp2.us.tiktok.com,REJECT
@@ -1336,7 +1343,9 @@ DOMAIN,ads.cup.com.cn,REJECT
 DOMAIN,ads.dataeye.com,REJECT
 DOMAIN,ads.ebay.com,REJECT
 DOMAIN,ads.eu.msn.com,REJECT
+DOMAIN,ads.gmodules.com,REJECT
 DOMAIN,ads.google.com,REJECT
+DOMAIN,ads.ign.com,REJECT
 DOMAIN,ads.ishansong.com,REJECT
 DOMAIN,ads.mi.com,REJECT
 DOMAIN,ads.mobilityware.com,REJECT
@@ -1475,6 +1484,7 @@ DOMAIN,api-marketing.zhinengxiyifang.cn,REJECT
 DOMAIN,api.admob.xiaomi.com,REJECT
 DOMAIN,api.cupid.qiyi.com,REJECT
 DOMAIN,api.mobula.sdk.duapps.com,REJECT
+DOMAIN,api.myadsget.com,REJECT
 DOMAIN,apidns-js.kwd.inkuai.com,REJECT
 DOMAIN,apidns.kwd.inkuai.com,REJECT
 DOMAIN,apilog-web.acfun.cn,REJECT
@@ -1603,6 +1613,7 @@ DOMAIN,dns.controld.com,REJECT
 DOMAIN,dns.digitale-gesellschaft.ch,REJECT
 DOMAIN,dns.google,REJECT
 DOMAIN,dns.iqiyi.com,REJECT
+DOMAIN,dns.m.sm.cn,REJECT
 DOMAIN,dns.mullvad.net,REJECT
 DOMAIN,dns.nextdns.io,REJECT
 DOMAIN,dns.qiyipic.iqiyi.com,REJECT
@@ -1610,6 +1621,7 @@ DOMAIN,dns.quad9.net,REJECT
 DOMAIN,dns.weibo.cn,REJECT
 DOMAIN,dns.weixin.qq.com,REJECT
 DOMAIN,dns.weixin.qq.com.cn,REJECT
+DOMAIN,dns.ximalaya.com,REJECT
 DOMAIN,dns1.nextdns.io,REJECT
 DOMAIN,dns10.quad9.net,REJECT
 DOMAIN,dns11.quad9.net,REJECT
@@ -1815,6 +1827,7 @@ DOMAIN,m.aty.sohu.com,REJECT
 DOMAIN,m1.ad.10010.com,REJECT
 DOMAIN,ma-adx.ctrip.com,REJECT
 DOMAIN,madcpms.com,REJECT
+DOMAIN,mads-eu.amazon.com,REJECT
 DOMAIN,mads-fe.amazon.com,REJECT
 DOMAIN,mads.amazon.com,REJECT
 DOMAIN,mail-ads.google.com,REJECT
@@ -1844,6 +1857,7 @@ DOMAIN,moa-upload-online.coloros.com,REJECT
 DOMAIN,moatads.com.edgekey.net,REJECT
 DOMAIN,mobads-logs.baidu.com,REJECT
 DOMAIN,mobads-pre-config.cdn.bcebos.com,REJECT
+DOMAIN,mobaliyun.res.mgtv.com,REJECT
 DOMAIN,mobile.da.mgtv.com,REJECT
 DOMAIN,mobile2.da.mgtv.com,REJECT
 DOMAIN,mobileads.google.com,REJECT
@@ -1878,6 +1892,7 @@ DOMAIN,ott3.da.mgtv.com,REJECT
 DOMAIN,ounion.openadx.com,REJECT
 DOMAIN,outlookads.live.com,REJECT
 DOMAIN,p.aty.sohu.com,REJECT
+DOMAIN,p.ssp.qq.com,REJECT
 DOMAIN,p16-ad.byteoversea.com,REJECT
 DOMAIN,p3-ad-aweme.byteimg.com,REJECT
 DOMAIN,p3-ad-sign.byteimg.com,REJECT
@@ -1967,10 +1982,30 @@ DOMAIN,spcode.baidu.com,REJECT
 DOMAIN,speee-ad.akamaized.net,REJECT
 DOMAIN,splash-ads.cdn.unity.cn,REJECT
 DOMAIN,splashimgbssdl.yun.kugou.com,REJECT
+DOMAIN,sponsored-ads-eu.amazon.ae,REJECT
+DOMAIN,sponsored-ads-eu.amazon.com.tr,REJECT
+DOMAIN,sponsored-ads-eu.amazon.de,REJECT
+DOMAIN,sponsored-ads-eu.amazon.ie,REJECT
+DOMAIN,sponsored-ads-eu.amazon.nl,REJECT
+DOMAIN,sponsored-ads-eu.amazon.sa,REJECT
+DOMAIN,sponsored-ads.amazon.ca,REJECT
+DOMAIN,sponsored-ads.amazon.co.jp,REJECT
+DOMAIN,sponsored-ads.amazon.co.uk,REJECT
+DOMAIN,sponsored-ads.amazon.com,REJECT
+DOMAIN,sponsored-ads.amazon.com.au,REJECT
+DOMAIN,sponsored-ads.amazon.com.br,REJECT
+DOMAIN,sponsored-ads.amazon.com.mx,REJECT
+DOMAIN,sponsored-ads.amazon.es,REJECT
+DOMAIN,sponsored-ads.amazon.fr,REJECT
+DOMAIN,sponsored-ads.amazon.in,REJECT
+DOMAIN,sponsored-ads.amazon.it,REJECT
 DOMAIN,srtb.msn.com,REJECT
 DOMAIN,ssp.21ic.com,REJECT
 DOMAIN,ssp.api.tappx.com,REJECT
+DOMAIN,ssp.hinet.net,REJECT
 DOMAIN,ssp.kdnet.net,REJECT
+DOMAIN,ssp.moeli.net,REJECT
+DOMAIN,ssp.zf313.com,REJECT
 DOMAIN,st-ads-jssdk.vivo.com.cn,REJECT
 DOMAIN,stadig.ifeng.com,REJECT
 DOMAIN,staging-adx.tv.mi.com,REJECT
@@ -2054,6 +2089,7 @@ DOMAIN,xdcs-collector.ximalaya.com,REJECT
 DOMAIN,xs.houyi.baofeng.net,REJECT
 DOMAIN,y.da.mgtv.com,REJECT
 DOMAIN,yabs.yandex.ru,REJECT
+DOMAIN,yads.yahoo.co.jp,REJECT
 DOMAIN,yaolu.mh.163.com,REJECT
 DOMAIN,yaolu.yuedu.163.com,REJECT
 DOMAIN,yieldads.com,REJECT
@@ -2079,7 +2115,7 @@ DOMAIN,zx.docin.com,REJECT
 DOMAIN,zxid-api.mobileservice.cn,REJECT
 
 # ============================================================================
-# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+，当前仅 TestFlight）
+# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+）
 # ----------------------------------------------------------------------------
 # 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，
 # 不命中 a.com、ad.example.com 或 adsl.example.com。
@@ -2089,7 +2125,7 @@ DOMAIN,zxid-api.mobileservice.cn,REJECT
 # 开启本层前，请先删除命中的那条 glob，或接受上面写明的后果。
 # 默认保持注释：App Store 正式版仍是 3.5.2(996)，低版本遇到未知规则类型
 # 的行为官方未文档化（可能跳过、也可能整段失效），不拿 [Rule] 核心层冒险。
-# 已装 3.5.3+（TF build 1008-1011）的用户：逐行去掉行首 '# ' 即启用本层。
+# 已装 3.5.3+（TF / ads-next）的用户：使用 ads-next.plugin 或逐行去掉 '# '。
 # ============================================================================
 # DOMAIN-WILDCARD,ads.*,REJECT
 # DOMAIN-WILDCARD,ads-*,REJECT
@@ -2123,7 +2159,7 @@ DOMAIN,zxid-api.mobileservice.cn,REJECT
 # DOMAIN-WILDCARD,ad-exchange.*,REJECT
 
 # ============================================================================
-# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+，仅 TF）
+# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+）
 # ----------------------------------------------------------------------------
 # 上一层的 glob 只能表达「左标签锚定」，覆盖不到 ads1/ads3/ads5 这类
 # 编号分片。字符类是 Loon 3.5.3(1008) 起支持的第三类通配符：
@@ -2397,7 +2433,7 @@ ad.toutiao.com = 127.0.0.1
 # ============================================================================
 # 腾讯广告 / 优量汇（GDT）
 # ----------------------------------------------------------------------------
-# 优量汇投放与竞价、GDT 素材 CDN、腾讯广告点击追踪、腾讯智慧营销 MIND 系统。qq.com 是共享域，只放 gdt/e/l 三个广告专用子域。
+# 优量汇投放与竞价、GDT 素材 CDN、腾讯广告点击追踪、腾讯智慧营销 MIND 系统。qq.com 是共享域，只放 gdt/e/l 三个广告专用子域。 2026-11-17 补 p.ssp.qq.com（腾讯 SSP 广告请求位，1hosts-lite/anti-AD/yhosts 三源 0 @@ 例外，精确主机不碰共享域与 news.ssp.qq.com）。
 # ============================================================================
 gdt.qq.com = 127.0.0.1
 *.gdt.qq.com = 127.0.0.1
@@ -2424,6 +2460,7 @@ mdevstat.qqlive.qq.com = 127.0.0.1
 wit.qq.com = 127.0.0.1
 *.wit.qq.com = 127.0.0.1
 dmplog.qq.com = 127.0.0.1
+p.ssp.qq.com = 127.0.0.1
 
 # ============================================================================
 # 快手联盟 / 快手广告
@@ -2543,7 +2580,7 @@ rtb.julang.taobao.com = 127.0.0.1
 # ============================================================================
 # 中国广告联盟 / 媒体广告位 / 广告监测
 # ----------------------------------------------------------------------------
-# AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。2026-10-30 频道补充：ems.youku.com（优酷广告端点，4 源）、adapi.izuiyou.com（皮皮搞笑广告 API，5 源）、ubixioe.com（第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue #33），均精确域或整域广告专域。2026-10-30 公开仓库补充：sdkapp.uve.weibo.com / adimg.uve.weibo.com / biz.weibo.com / alitui.weibo.com（微博 SDK 广告配置、广告图床、开屏广告与阿里妈妈推广位，分别 3/3/3/3+ 源）；均为精确主机，刻意不写 =uve.weibo.com——RuCu6 微博插件对该域显式 DIRECT，整域会误伤正常接口。同日再补 ad.maoyan.com（猫眼广告专域，AWAvenue 精确 + hagezi 通配 + fmz200/blackmatrix7 主机规则）与 ads-shopping.shouqianba.com（收钱吧小程序广告域，anti-AD + AWAvenue + hagezi），两者均为广告专用子域。2026-10-30 第十一轮按精确域比对五份公开清单，再补 16 个 ≥3 源国内媒体/工具广告专域：腾讯音乐 adcdn/adclick/adexpo（音频广告素材、点击、曝光）、腾讯视频 adstextview（广告文本位）、喜马拉雅 adse/adse.wsa（音频广告服务）、酷狗 adsfile.bssdlbig/ads.service（广告文件与投放服务）、小红书 ads-img-qc/ads-video-qc/ads-video-al（广告图/视频 CDN）、新浪 adbox（广告位）、搜狐 go（广告跳转）、中华网 union（广告联盟）、高德 optimus-ads（地图广告引擎）、蜻蜓 ad-cdn（音频广告 CDN）。全部精确主机；媒体主域仍不整域封禁。2026-11 第十三轮全网覆盖探索补入：vlion.cn（瑞狮网络，移动广告投放与SSP平台，5 源）、zhangyuyidong.cn（章鱼移动，移动应用广告聚合与变现平台，5 源）、scupio.com（Scupio酷比，移动原生与信息流广告SDK，4 源）、geecradv.com（极策广告GeeCR，移动广告网络，4 源）、bdad.123pan.cn（123网盘广告展示分发端点，5 源）、bu1.duba.com（金山毒霸弹窗与推广位分发端点，7 源）。 2026-11-16 协同全网开源清单补 14 个 ≥3 源精确广告专域（0 @@ 例外、不碰主域）：网易有道广告 SDK 与 DSP（ad-sdk-config.youdao.com / adpublish.ydstatic.com / dsp.youdao.com）、网易精确广告子域（adgeo.163.com / g1.163.com / yt-adv.bn.netease.com / yaolu.mh.163.com / yaolu.yuedu.163.com）、乐播投屏开屏与贴片广告域（ad/adc/adcdn/adeng.hpplay.cn，保留 hpplay.cn 投屏发现/控制主域）、点冠/趣头条广告 SDK CDN（cdn.aiclk.com）及阿里云 OSS 广告素材桶（cdn-ads.oss-cn-shanghai.aliyuncs.com）。
+# AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。2026-10-30 频道补充：ems.youku.com（优酷广告端点，4 源）、adapi.izuiyou.com（皮皮搞笑广告 API，5 源）、ubixioe.com（第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue #33），均精确域或整域广告专域。2026-10-30 公开仓库补充：sdkapp.uve.weibo.com / adimg.uve.weibo.com / biz.weibo.com / alitui.weibo.com（微博 SDK 广告配置、广告图床、开屏广告与阿里妈妈推广位，分别 3/3/3/3+ 源）；均为精确主机，刻意不写 =uve.weibo.com——RuCu6 微博插件对该域显式 DIRECT，整域会误伤正常接口。同日再补 ad.maoyan.com（猫眼广告专域，AWAvenue 精确 + hagezi 通配 + fmz200/blackmatrix7 主机规则）与 ads-shopping.shouqianba.com（收钱吧小程序广告域，anti-AD + AWAvenue + hagezi），两者均为广告专用子域。2026-10-30 第十一轮按精确域比对五份公开清单，再补 16 个 ≥3 源国内媒体/工具广告专域：腾讯音乐 adcdn/adclick/adexpo（音频广告素材、点击、曝光）、腾讯视频 adstextview（广告文本位）、喜马拉雅 adse/adse.wsa（音频广告服务）、酷狗 adsfile.bssdlbig/ads.service（广告文件与投放服务）、小红书 ads-img-qc/ads-video-qc/ads-video-al（广告图/视频 CDN）、新浪 adbox（广告位）、搜狐 go（广告跳转）、中华网 union（广告联盟）、高德 optimus-ads（地图广告引擎）、蜻蜓 ad-cdn（音频广告 CDN）。全部精确主机；媒体主域仍不整域封禁。2026-11 第十三轮全网覆盖探索补入：vlion.cn（瑞狮网络，移动广告投放与SSP平台，5 源）、zhangyuyidong.cn（章鱼移动，移动应用广告聚合与变现平台，5 源）、scupio.com（Scupio酷比，移动原生与信息流广告SDK，4 源）、geecradv.com（极策广告GeeCR，移动广告网络，4 源）、bdad.123pan.cn（123网盘广告展示分发端点，5 源）、bu1.duba.com（金山毒霸弹窗与推广位分发端点，7 源）。 2026-11-16 协同全网开源清单补 14 个 ≥3 源精确广告专域（0 @@ 例外、不碰主域）：网易有道广告 SDK 与 DSP（ad-sdk-config.youdao.com / adpublish.ydstatic.com / dsp.youdao.com）、网易精确广告子域（adgeo.163.com / g1.163.com / yt-adv.bn.netease.com / yaolu.mh.163.com / yaolu.yuedu.163.com）、乐播投屏开屏与贴片广告域（ad/adc/adcdn/adeng.hpplay.cn，保留 hpplay.cn 投屏发现/控制主域）、点冠/趣头条广告 SDK CDN（cdn.aiclk.com）及阿里云 OSS 广告素材桶（cdn-ads.oss-cn-shanghai.aliyuncs.com）。 2026-11-17 全网 25 源零例外深挖补 5 域：mobaliyun.res.mgtv.com（芒果TV 移动端广告资源 CDN，7 源）、ssp.moeli.net（广告自助投放 SSP，8 源）、ssp.zf313.com（8 源 SSP）、=ad4.com.cn（6 源国内广告网络）与 ssp.hinet.net（中华电信 HiNet SSP 精确主机，9 源，保留 hinet.net 主域）。
 # ============================================================================
 adview.cn = 127.0.0.1
 *.adview.cn = 127.0.0.1
@@ -3086,6 +3123,12 @@ kpshx.douguo.com = 127.0.0.1
 abc.douguo.com = 127.0.0.1
 xc.macd.cn = 127.0.0.1
 ucads.ucweb.com = 127.0.0.1
+mobaliyun.res.mgtv.com = 127.0.0.1
+ssp.moeli.net = 127.0.0.1
+ssp.zf313.com = 127.0.0.1
+ad4.com.cn = 127.0.0.1
+*.ad4.com.cn = 127.0.0.1
+ssp.hinet.net = 127.0.0.1
 
 # ============================================================================
 # 微博 B 级广告候选（默认关）
@@ -3415,7 +3458,7 @@ moa-upload-online.coloros.com = 127.0.0.1
 # ============================================================================
 # 全球移动广告 SDK / 聚合平台
 # ----------------------------------------------------------------------------
-# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。2026-11-07 升级 applvn.com / tapjoyads.com / iads.unity3d.com / mediation.unity3d.com / mobfox.com / mobclix.com 为整域通配（覆盖 d/ms/rt.applvn.com、ws.tapjoyads.com、o-sdk.mediation.unity3d.com 等活跃子域分片），并补充 socdm / amobee / apptornado / leadboltads / adsbynimbus / intowow / mobilecore / playhaven / inner-active / admate 等多源移动广告 SDK 域。 2026-11-09 补 Yeahmobi（=yeahmobi.com）：移动广告变现 SDK / 程序化投放平台（eClick 旗下，官方自述 Data Driven Mobile Advertising，Kochava Media Index 收录为 Mobile Display Platform，Requires SDK Integration=Yes），AdGuard-DNS 与 HaGeZi PRO 两份上游清单均收录其主域；未整族通配（只精确主域 + 一层子域），不在 protected-roots 名单内。 2026-11-16 补 DU Ad Platform（ad.duapps.com / pasta.esfile.duapps.com，4/6 源）与 Hotmob 移动广告投放端（ad.hot-mob.com，5 源，保留 hot-mob.com 官网）。
+# AppLovin/MAX、Unity Ads、ironSource/LevelPlay、Mintegral、Vungle、AdColony、Chartboost、InMobi、Tapjoy、HyprMX、Smaato、PubNative、Moloco、Liftoff、Start.io、Digital Turbine/Fyber、adjoe、BIGO Ads、Appodeal。 2026-10 补充倍孜（beizi.biz / adn-plus.com.cn），国内第三方聚合 SDK。 2026-10 补 Mintegral 的真实请求域（rayjump.com / mtgglobals.com / mintegral.net）：此前只有品牌域 mintegral.com，而 SDK 的广告请求与统计走 rayjump 系，等于没拦。**不补 AdTiming / Smaato / Ogury 的「主域」**——它们的 SDK 请求走 adtiming 的私有端点、smaato.net、ogury.io，按品牌名补 .com 只会拦到官网，不命中广告请求。2026-10 再补 youmi.net / fiksu.com / mydas.mobi / nend.net / i2ad.jp（均 7 源移动广告网络）。2026-11-07 升级 applvn.com / tapjoyads.com / iads.unity3d.com / mediation.unity3d.com / mobfox.com / mobclix.com 为整域通配（覆盖 d/ms/rt.applvn.com、ws.tapjoyads.com、o-sdk.mediation.unity3d.com 等活跃子域分片），并补充 socdm / amobee / apptornado / leadboltads / adsbynimbus / intowow / mobilecore / playhaven / inner-active / admate 等多源移动广告 SDK 域。 2026-11-09 补 Yeahmobi（=yeahmobi.com）：移动广告变现 SDK / 程序化投放平台（eClick 旗下，官方自述 Data Driven Mobile Advertising，Kochava Media Index 收录为 Mobile Display Platform，Requires SDK Integration=Yes），AdGuard-DNS 与 HaGeZi PRO 两份上游清单均收录其主域；未整族通配（只精确主域 + 一层子域），不在 protected-roots 名单内。 2026-11-16 补 DU Ad Platform（ad.duapps.com / pasta.esfile.duapps.com，4/6 源）与 Hotmob 移动广告投放端（ad.hot-mob.com，5 源，保留 hot-mob.com 官网）。 2026-11-17 补 3 个高共识零例外移动广告 SDK 域：api.myadsget.com（9 源）、=bigmobileads.com（10 源）与 ads-sdk.mattel163.com（Mattel163/网易手游广告 SDK，7 源）。
 # ============================================================================
 applovin.com = 127.0.0.1
 *.applovin.com = 127.0.0.1
@@ -3721,11 +3764,15 @@ ad.deepthought.industries = 127.0.0.1
 ad.inston.ltd = 127.0.0.1
 ad.intools.dev = 127.0.0.1
 ad.zankhana.ltd = 127.0.0.1
+api.myadsget.com = 127.0.0.1
+bigmobileads.com = 127.0.0.1
+*.bigmobileads.com = 127.0.0.1
+ads-sdk.mattel163.com = 127.0.0.1
 
 # ============================================================================
 # 全球广告交易 / SSP / DSP / 验证 / 数据
 # ----------------------------------------------------------------------------
-# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。2026-10 再补 27 个 6 源交易/网络与共享根精确主机：vidcpm、knorex、m32.media、hueadsxml、media6degrees、tribalfusion、simpli.fi、fastclick、ncaudienceexchange、lucidmedia、jumptap、tradeadexchange、industrybrains、pointroll、vdopia、venturead、creativecdn（RTB House）、blogherads、webads.co.nz、pushnami、retagro、h-bid，以及 bat.bing.net（Bing Ads UET）、pix.revjet.com、beap-bc/ganon/3p-udc.yahoo.com（Yahoo 广告交换/数据）；跳过 ns1p.net（无语义）、adlog.com.com（无上下文）与 gmads.net（带 sat1.de 白名单例外）。2026-10 再补 13 个 4–7 源广告专域：TenMax 台湾 RTB/原生广告（tenmax.io）、Bid Run 程序化平台（bid.run）、Geniee SSP 五域（genieessp/genieesspv/gsspat/gsspcln/gssprt）、Speee 广告投放（speee-ad.jp）、EuroAds 丹麦联盟（euroads.dk）、WebAds 欧洲媒体网络（webads.eu）、SelectMedia 视频 SSP（selectmedia.asia）、Seznam SSP（ssp.seznam.cz）、TargetADS 广告验证（targetads.io）；跳过 hottraffic.nl / mediatraffic.com.ua / pabidding.io（公开身份未能核实）与 pebfvv.icu（随机域，生命周期不确定）。2026-11 第十二轮审计根据多源交叉核对（6 源）补 7 个程序化与展示广告专域：360yield（Improve Digital / Azerion 旗下 SSP/RTB 交易平台）、aaxads（AAX 广告交换平台）、acuityplatform（AcuityAds/illumin 程序化平台）、adexchangeprediction（程序化广告预测）、adoptum（Adoptum 移动广告网络）、altitude-arena（游戏内广告投放网络）与 3p-geo.yahoo.com（Yahoo 广告定向/地理数据精确主机）。2026-11 第十三轮全网覆盖探索补入 11 个全球移动程序化/DSP/SSP/转化追踪专域（均 ≥6 源）：vm5apis.com（威朋 Vpon Mobile Ads，亚洲移动广告SDK核心API，7 源）、aralego.com（Aralego 移动程序化广告SSP/DSP，6 源）、umbel.com（Umbel 移动受众定向与广告数据平台，7 源）、clickyab.com（Clickyab 数字广告与移动变现网络，6 源）、clicktracks.com（ClickTracks 广告点击与归因系统，6 源）、bizible.com（Bizible/Adobe 广告转化与多触点归因追踪，6 源）、eulerian.net（Eulerian Technologies 欧洲跨渠道广告归因DMP，6 源）、hsadspixel.net（HubSpot Ads Pixel 广告定向追踪像素，6 源）、kissmetrics.com（Kissmetrics 移动与广告转化追踪，6 源）、leadinfo.net（Leadinfo 访客识别与广告重定向，6 源）、shareasale.com（ShareASale/Awin 联盟广告与营销网关，6 源）。 2026-11-09 补 LiveRamp 广告投放端点（=atsod.launch.liveramp.com）：LiveRamp 是程序化广告的数据与投放侧基础设施，atsod.launch 子域是其广告服务（ATS）投放主机，AdGuard-DNS 与 HaGeZi PRO 两源收录；只封该投放主机，不碰 liveramp.com 主域（数据/受众业务共用）。 同批补 Confiant 广告验证域（=confiant-integrations.net）：官方自述为 Ad Security & Quality Platform，其 integrations 主机承载广告创意扫描/验证 JS 与预检 API，7 份上游清单收录；**只封 confiant-integrations.net 自有域，不封 confiant-integrations.global.ssl.fastly.net**（Fastly 共享基础设施，封它等于封共享 CDN）。
+# Xandr、Trade Desk、Criteo、Taboola、Outbrain、PubMatic、Magnite、OpenX、Index Exchange、Amazon Ads、Verizon/Yahoo 广告、广告验证（IAS/DoubleVerify/Moat）、DMP/身份图谱；2026-10 审计补充 AdRoll、Adzerk、Index Exchange（indexww）、Ad Alliance、Ad4Game、Admedo、Adcovery、E-Planning、AdScore、Innity、Zucks、AdvertNative、NTVK1、LentaInform、ValueClickMedia、MedleyAds、BlueCava、VoiceFive 等广告专用域。 2026-10 补充 FreeWheel（fwmrm.net / stickyadstv.com，Comcast 旗下，CTV 与长视频贴片的 VAST 服务器）与 Sizmek（serving-sys.com，Amazon Ads）。2026-10 补 ad.daum.net（Kakao/Daum 广告平台，6 源）。2026-10 再补 23 个 ≥7 源广告专域：kiosked、sitemaji、begun、tubemogul、nanigans、inner-active、i-mobile、celtra、brealtime、exponential、iqzone、adhood、adtimaserver、httpool、infolinks、buysellads、presage、disqusads、blogads、biddingx、mixadvert、rotaban、speee-ad（akamaized 精确主机）。2026-10 再补 33 个 6 源广告专域：Dable、Zemanta/Outbrain、Carbon Ads、PageFair、Clickbooth、Demandbase（company-target）、Adviva、Harren Media、ClickRev、TrafficShop、TwitTad、Connatix（ck 精确主机）、Retargeter、JuiceADV、EqAds、PostRelease、Adoric（-om 投放域）、MSN RTB（srtb 精确主机）、The Moneytizer、Fout、Speakol、MicroAd、Greystripe、Optimix、Geniee SSP（gmossp-sp）、StackAdapt、SmartyAds、Dianomi、TripleLift（3lift）、ValueClick、District M、BidGear、AdButler（servedbyadbutler）。2026-10 再补 27 个 6 源交易/网络与共享根精确主机：vidcpm、knorex、m32.media、hueadsxml、media6degrees、tribalfusion、simpli.fi、fastclick、ncaudienceexchange、lucidmedia、jumptap、tradeadexchange、industrybrains、pointroll、vdopia、venturead、creativecdn（RTB House）、blogherads、webads.co.nz、pushnami、retagro、h-bid，以及 bat.bing.net（Bing Ads UET）、pix.revjet.com、beap-bc/ganon/3p-udc.yahoo.com（Yahoo 广告交换/数据）；跳过 ns1p.net（无语义）、adlog.com.com（无上下文）与 gmads.net（带 sat1.de 白名单例外）。2026-10 再补 13 个 4–7 源广告专域：TenMax 台湾 RTB/原生广告（tenmax.io）、Bid Run 程序化平台（bid.run）、Geniee SSP 五域（genieessp/genieesspv/gsspat/gsspcln/gssprt）、Speee 广告投放（speee-ad.jp）、EuroAds 丹麦联盟（euroads.dk）、WebAds 欧洲媒体网络（webads.eu）、SelectMedia 视频 SSP（selectmedia.asia）、Seznam SSP（ssp.seznam.cz）、TargetADS 广告验证（targetads.io）；跳过 hottraffic.nl / mediatraffic.com.ua / pabidding.io（公开身份未能核实）与 pebfvv.icu（随机域，生命周期不确定）。2026-11 第十二轮审计根据多源交叉核对（6 源）补 7 个程序化与展示广告专域：360yield（Improve Digital / Azerion 旗下 SSP/RTB 交易平台）、aaxads（AAX 广告交换平台）、acuityplatform（AcuityAds/illumin 程序化平台）、adexchangeprediction（程序化广告预测）、adoptum（Adoptum 移动广告网络）、altitude-arena（游戏内广告投放网络）与 3p-geo.yahoo.com（Yahoo 广告定向/地理数据精确主机）。2026-11 第十三轮全网覆盖探索补入 11 个全球移动程序化/DSP/SSP/转化追踪专域（均 ≥6 源）：vm5apis.com（威朋 Vpon Mobile Ads，亚洲移动广告SDK核心API，7 源）、aralego.com（Aralego 移动程序化广告SSP/DSP，6 源）、umbel.com（Umbel 移动受众定向与广告数据平台，7 源）、clickyab.com（Clickyab 数字广告与移动变现网络，6 源）、clicktracks.com（ClickTracks 广告点击与归因系统，6 源）、bizible.com（Bizible/Adobe 广告转化与多触点归因追踪，6 源）、eulerian.net（Eulerian Technologies 欧洲跨渠道广告归因DMP，6 源）、hsadspixel.net（HubSpot Ads Pixel 广告定向追踪像素，6 源）、kissmetrics.com（Kissmetrics 移动与广告转化追踪，6 源）、leadinfo.net（Leadinfo 访客识别与广告重定向，6 源）、shareasale.com（ShareASale/Awin 联盟广告与营销网关，6 源）。 2026-11-09 补 LiveRamp 广告投放端点（=atsod.launch.liveramp.com）：LiveRamp 是程序化广告的数据与投放侧基础设施，atsod.launch 子域是其广告服务（ATS）投放主机，AdGuard-DNS 与 HaGeZi PRO 两源收录；只封该投放主机，不碰 liveramp.com 主域（数据/受众业务共用）。 同批补 Confiant 广告验证域（=confiant-integrations.net）：官方自述为 Ad Security & Quality Platform，其 integrations 主机承载广告创意扫描/验证 JS 与预检 API，7 份上游清单收录；**只封 confiant-integrations.net 自有域，不封 confiant-integrations.global.ssl.fastly.net**（Fastly 共享基础设施，封它等于封共享 CDN）。 2026-11-17 补 Adobe Auditude 视频广告服务器 =ad.auditude.com（6 源）与 Google Gadgets 精确广告主机 ads.gmodules.com（8 源）。
 # ============================================================================
 adnxs.com = 127.0.0.1
 *.adnxs.com = 127.0.0.1
@@ -5060,11 +5107,14 @@ masque-ads.b-cdn.net = 127.0.0.1
 ad-serve.b-cdn.net = 127.0.0.1
 ahoy-internal-ads-hv.b-cdn.net = 127.0.0.1
 bbm-ad-stack-production.up.railway.app = 127.0.0.1
+ad.auditude.com = 127.0.0.1
+*.ad.auditude.com = 127.0.0.1
+ads.gmodules.com = 127.0.0.1
 
 # ============================================================================
 # 零售媒体 / CTV / 音频 / 社交平台广告
 # ----------------------------------------------------------------------------
-# Amazon/eBay/Uber/Walmart/Roundel/Kroger/Instacart 零售媒体，Samsung/LG/Roku/DOOH，Brightline CTV 事件，Spotify/SoundCloud/Triton/AdsWizz 音频广告，Snap/Pinterest/Reddit/LinkedIn/X/Yahoo/Microsoft/Apple/Yandex 广告域。共享主域只列广告子域。2026-11 补 ad.nettvservices.com（Net TV Services / 智能电视 CTV 广告服务器，6 源）。2026-11-16 协同 hagezi-amazon 与 14 份清单交叉审计，补入 7 项 Amazon 纯广告域与视频广告端点（mads/mads-fe/advertising.amazon.de/advertising-api-eu.amazon.com/=advertising.amazon.dev/video-ads.a2z.com/paa-reporting-advertising.amazon），故意跳过 aan.amazon.com 以防影响 Amazon 购物首页加载。 2026-11-16 v2.8.31 双向 @@ 精修与 25 源扩容：将 =targetspot.com（adguard-dns 无条件放行 @@||radiofrance.targetspot.com^|）收窄为 targetspot.com / cdn.targetspot.com / nodeny.targetspot.com；补入 Amazon Publishers/Associates（避开带 @@ 的 assoc-amazon.com）与 Prime Video 贴片 s3-iad-ww.cf.videorolls.row.aiv-cdn.net、Hisense SmartTV 广告引擎 5 域、=smartnews-ads.com 及音频/CTV RTB。
+# Amazon/eBay/Uber/Walmart/Roundel/Kroger/Instacart 零售媒体，Samsung/LG/Roku/DOOH，Brightline CTV 事件，Spotify/SoundCloud/Triton/AdsWizz 音频广告，Snap/Pinterest/Reddit/LinkedIn/X/Yahoo/Microsoft/Apple/Yandex 广告域。共享主域只列广告子域。2026-11 补 ad.nettvservices.com（Net TV Services / 智能电视 CTV 广告服务器，6 源）。2026-11-16 协同 hagezi-amazon 与 14 份清单交叉审计，补入 7 项 Amazon 纯广告域与视频广告端点（mads/mads-fe/advertising.amazon.de/advertising-api-eu.amazon.com/=advertising.amazon.dev/video-ads.a2z.com/paa-reporting-advertising.amazon），故意跳过 aan.amazon.com 以防影响 Amazon 购物首页加载。 2026-11-16 v2.8.31 双向 @@ 精修与 25 源扩容：将 =targetspot.com（adguard-dns 无条件放行 @@||radiofrance.targetspot.com^|）收窄为 targetspot.com / cdn.targetspot.com / nodeny.targetspot.com；补入 Amazon Publishers/Associates（避开带 @@ 的 assoc-amazon.com）与 Prime Video 贴片 s3-iad-ww.cf.videorolls.row.aiv-cdn.net、Hisense SmartTV 广告引擎 5 域、=smartnews-ads.com 及音频/CTV RTB。 2026-11-17 协同 hagezi-amazon/hagezi-pro/1hosts-lite/anti-AD 补入 23 项 0 @@ 例外精确广告专域：Yahoo! JAPAN 广告位 yads.yahoo.co.jp（8 源）、IGN 广告主机 ads.ign.com（9 源），以及 Amazon Sponsored Ads 多区端点 sponsored-ads.amazon.* / sponsored-ads-eu.amazon.*、ads-setu-proxy*.amazon.com、mads-eu.amazon.com（全部精确主机，amazon.com/yahoo.co.jp/ign.com 根域均不触碰）。
 # ============================================================================
 ebayadservices.com = 127.0.0.1
 *.ebayadservices.com = 127.0.0.1
@@ -5234,6 +5284,29 @@ ad-bls-tracking.lemino.docomo.ne.jp = 127.0.0.1
 ad.mediaprimaplus.com.my = 127.0.0.1
 ad.mox.tv = 127.0.0.1
 prod-sponsoredads.mkt.zappos.com = 127.0.0.1
+yads.yahoo.co.jp = 127.0.0.1
+ads.ign.com = 127.0.0.1
+mads-eu.amazon.com = 127.0.0.1
+ads-setu-proxy.amazon.com = 127.0.0.1
+ads-setu-proxy-eu.amazon.com = 127.0.0.1
+ads-setu-proxy-fe.amazon.com = 127.0.0.1
+sponsored-ads.amazon.com = 127.0.0.1
+sponsored-ads.amazon.co.jp = 127.0.0.1
+sponsored-ads.amazon.co.uk = 127.0.0.1
+sponsored-ads.amazon.ca = 127.0.0.1
+sponsored-ads.amazon.com.au = 127.0.0.1
+sponsored-ads.amazon.com.br = 127.0.0.1
+sponsored-ads.amazon.com.mx = 127.0.0.1
+sponsored-ads.amazon.es = 127.0.0.1
+sponsored-ads.amazon.fr = 127.0.0.1
+sponsored-ads.amazon.in = 127.0.0.1
+sponsored-ads.amazon.it = 127.0.0.1
+sponsored-ads-eu.amazon.ae = 127.0.0.1
+sponsored-ads-eu.amazon.com.tr = 127.0.0.1
+sponsored-ads-eu.amazon.de = 127.0.0.1
+sponsored-ads-eu.amazon.ie = 127.0.0.1
+sponsored-ads-eu.amazon.nl = 127.0.0.1
+sponsored-ads-eu.amazon.sa = 127.0.0.1
 
 # ============================================================================
 # 弹窗 / Popunder / 成人广告网络
@@ -5416,7 +5489,7 @@ ad.sexplex.com = 127.0.0.1
 # ============================================================================
 # HTTPDNS / 私有 DoH 端点（防绕过）
 # ----------------------------------------------------------------------------
-# 覆盖阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。 2026-11-06 补 httpdns-sdk.n.netease.com、httpdns.music.163.com 两条网易 HTTPDNS（anti-AD、hagezi-pro、fmz200 HTTPDNS 插件三源）；q2cdn 仍单源不收录。
+# 覆盖阿里云、腾讯、百度、字节、快手、B站、美团、华为、小米、OPPO、vivo、荣耀、三星、YY、讯飞、微博、微信、爱奇艺等 App 的 HTTPDNS/私有 DoH 端点。拦截后 App 通常会回退到系统 DNS（Loon），从而让广告域 Host 映射生效；本组不含任何按 App 插件声明的红线域（dns.jd.com、resolver.msg.xiaomi.net 已移入「与按 App 插件红线冲突的候选」默认注释组）；极少数没有回退的 App 可能断网，删除对应行即可恢复。2026-10-30 对照 fmz200 HTTPDNS 插件补 dig.bdurl.net（百度）与 dig.zjurl.cn（字节）两个不含 httpdns 关键词的解析端点，分别有 2/3 家清单收录；dns.jd.com、resolver.msg.xiaomi.net 仍留默认注释组，paydns.wechatpay.cn 因属支付域不收录，q2cdn 单源不收录。 2026-11-06 补 httpdns-sdk.n.netease.com、httpdns.music.163.com 两条网易 HTTPDNS（anti-AD、hagezi-pro、fmz200 HTTPDNS 插件三源）；q2cdn 仍单源不收录。 2026-11-17 补 dns.ximalaya.com（喜马拉雅 HTTPDNS，adwars/anti-AD，0 @@ 例外，回退系统 DNS 生效后广告专域可被接管）与 dns.m.sm.cn（神马搜索 HTTPDNS，adwars/anti-AD，0 @@ 例外）。
 # ============================================================================
 httpdns-api.aliyuncs.com = 127.0.0.1
 httpdns.qq.com = 127.0.0.1
@@ -5493,6 +5566,8 @@ dnspod.meituan.httpdns.qcloud.com = 127.0.0.1
 dnspod.meituan.httpdns.start.qcloud.com = 127.0.0.1
 httpdns.aliyuncs.com = 127.0.0.1
 *.httpdns.aliyuncs.com = 127.0.0.1
+dns.ximalaya.com = 127.0.0.1
+dns.m.sm.cn = 127.0.0.1
 
 # ============================================================================
 # 公共 DoH 解析器（DNS 防泄漏）

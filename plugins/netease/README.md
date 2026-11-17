@@ -31,4 +31,4 @@
 - `https://interface.music.163.com/eapi/ad` → 200 `{}`
 - `/wapi/search/default`、`/xeapi/mlivestream/entrance/playpage` → 200 `{}`
 - 对照路径与 `music.163.com` 正常。
-- 9 条 jq 已用合成响应验证；真机启用后确认首页/发现/评论无广告字段且业务 JSON 合法。
+- 10 条 jq 已用真实 jq 引擎与合成响应验证；真机启用后确认首页/发现/评论无广告字段且业务 JSON 合法。

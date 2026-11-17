@@ -47,7 +47,6 @@ from source_hash import source_value
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "src/ads/domains.json"
 PROTECTED = ROOT / "src/ads/protected-roots.json"
-OUT_DIR = ROOT / "plugins/ads"
 TARGET = "127.0.0.1"
 # DOMAIN-WILDCARD 自 3.5.3(1008)（当前仅 TestFlight）起提供，低版本对未知规则类型
 # 是「跳过还是整段报错」官方文档未详述——因此两层通配默认注释输出，
@@ -671,16 +670,16 @@ def render_plugin(
     protected = load_protected(redlines)
     if seen is None:
         seen = {}
+    slug = plugin.get("source_slug") or "ads"
     lines: list[str] = []
     lines.append(f"#!name={plugin['name']}")
     lines.append(f"#!desc={plugin['desc']}")
     lines.append(f"#!author={plugin['author']}")
-    lines.append(f"#!version={plugin['version']}")
     lines.append(f"#!homepage={plugin['homepage']}")
-    if plugin.get("openUrl"):
-        lines.append(f"#!openUrl={plugin['openUrl']}")
     lines.append(f"#!icon={plugin['icon']}")
     lines.append(f"#!system={plugin['system']}")
+    if plugin.get("loon_version"):
+        lines.append(f"#!loon_version={plugin['loon_version']}")
     lines.append(f"#!date={meta['updated']}")
     lines.append(f"#!tag={plugin['tag']}")
     lines.append("#!type=normal")
@@ -688,7 +687,12 @@ def render_plugin(
     # Loon 首次联网安装时对用户实际填写的完整 URL 算哈希并比对（多值逗号分隔，任一匹配即通过）。
     # 哈希一律现算（口径见 tools/source_hash.py，唯一出口）——手抄的哈希会与地址脱钩，
     # 而「地址变了哈希没变」是个**假的**校验，比不写更危险。
-    lines.append(f"#!source={source_value('ads')}")
+    lines.append(f"#!source={source_value(slug)}")
+    # 官方 Plugin 文档只列 11 个 `#!` 元数据键 + `#!source`，不包含 `#!version` / `#!openUrl`；
+    # 版本与说明地址改为普通注释保留，供人读与远端校验脚本解析。
+    lines.append(f"# version={plugin['version']}")
+    if plugin.get("openUrl"):
+        lines.append(f"# docs={plugin['openUrl']}")
     lines.append("")
     lines.append("# " + "=" * 76)
     lines.append(f"# {plugin['name']}")
@@ -703,6 +707,7 @@ def render_plugin(
         "rules_dual_stack": 0,
         "wildcards": 0,
         "family_wildcards": 0,
+        "wildcards_active": 0,
         "rules_disabled": 0,
         "ip_rewrite": 0,
         "ip_rewrite_disabled": 0,
@@ -733,12 +738,22 @@ def render_plugin(
                 counts["general"] += 1
             lines.append(raw.strip())
 
+    activate_wildcards = bool(plugin.get("activate_wildcards"))
+    activate_ip_rewrite = bool(plugin.get("activate_ip_rewrite"))
     group_records, dual_stack_rules = collect_host_groups(plugin, protected, redlines, seen)
     rules = plugin.get("rules") or []
-    counts["rule_match_items"] = check_rule_vectors(plugin, rules + dual_stack_rules, redlines)
     wildcards = validate_domain_wildcards(plugin, protected)
     families = validate_family_wildcards(plugin, protected, enumerated_hosts(plugin))
     overlaps = validate_redline_overlap(plugin, wildcards + families, redlines)
+    overlap_globs = {row["glob"] for row in overlaps}
+    active_wc_rules = (
+        [f"DOMAIN-WILDCARD,{p},REJECT" for p in wildcards + families if p not in overlap_globs]
+        if activate_wildcards
+        else []
+    )
+    counts["rule_match_items"] = check_rule_vectors(
+        plugin, rules + dual_stack_rules + active_wc_rules, redlines
+    )
     counts["redline_overlap"] = len(overlaps)
     if rules or dual_stack_rules or wildcards or families:
         lines.append("")
@@ -774,7 +789,7 @@ def render_plugin(
     if wildcards:
         lines.append("")
         lines.append("# " + "=" * 76)
-        lines.append("# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+，当前仅 TestFlight）")
+        lines.append("# 广告子域通配层：DOMAIN-WILDCARD（Loon 3.5.3(1008)+）")
         lines.append("# " + "-" * 76)
         lines.append("# 只锚定广告专用前缀；'*' 跨点匹配，命中 ads.com / ads.a.com / ads.a.b.com，")
         lines.append("# 不命中 a.com、ad.example.com 或 adsl.example.com。")
@@ -789,18 +804,24 @@ def render_plugin(
                     f"（{row['app']} 红线）：{row['why']}"
                 )
             lines.append("# 开启本层前，请先删除命中的那条 glob，或接受上面写明的后果。")
-        lines.append("# 默认保持注释：App Store 正式版仍是 3.5.2(996)，低版本遇到未知规则类型")
-        lines.append("# 的行为官方未文档化（可能跳过、也可能整段失效），不拿 [Rule] 核心层冒险。")
-        lines.append("# 已装 3.5.3+（TF build 1008-1011）的用户：逐行去掉行首 '# ' 即启用本层。")
+        if activate_wildcards:
+            lines.append("# 已按 Loon 3.5.3(1008)+ 全开：无红线冲突的 glob 直接生效，红线重叠条目保持注释。")
+        else:
+            lines.append("# 默认保持注释：App Store 正式版仍是 3.5.2(996)，低版本遇到未知规则类型")
+            lines.append("# 的行为官方未文档化（可能跳过、也可能整段失效），不拿 [Rule] 核心层冒险。")
+            lines.append("# 已装 3.5.3+（TF / ads-next）的用户：使用 ads-next.plugin 或逐行去掉 '# '。")
         lines.append("# " + "=" * 76)
         for pattern in wildcards:
-            lines.append(f"# DOMAIN-WILDCARD,{pattern},REJECT")
+            is_active = activate_wildcards and pattern not in overlap_globs
+            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT" if is_active else f"# DOMAIN-WILDCARD,{pattern},REJECT")
             counts["wildcards"] += 1
+            if is_active:
+                counts["wildcards_active"] += 1
 
     if families:
         lines.append("")
         lines.append("# " + "=" * 76)
-        lines.append("# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+，仅 TF）")
+        lines.append("# 数字分片家族层：DOMAIN-WILDCARD + [0-9] 字符类（Loon 3.5.3(1008)+）")
         lines.append("# " + "-" * 76)
         lines.append("# 上一层的 glob 只能表达「左标签锚定」，覆盖不到 ads1/ads3/ads5 这类")
         lines.append("# 编号分片。字符类是 Loon 3.5.3(1008) 起支持的第三类通配符：")
@@ -811,8 +832,11 @@ def render_plugin(
         lines.append("# 因此这里只会出现「已经在用、但只列了一个分片」的真实家族。")
         lines.append("# " + "=" * 76)
         for pattern in families:
-            lines.append(f"# DOMAIN-WILDCARD,{pattern},REJECT")
+            is_active = activate_wildcards and pattern not in overlap_globs
+            lines.append(f"DOMAIN-WILDCARD,{pattern},REJECT" if is_active else f"# DOMAIN-WILDCARD,{pattern},REJECT")
             counts["family_wildcards"] += 1
+            if is_active:
+                counts["wildcards_active"] += 1
 
     rules_disabled = plugin.get("rules_disabled") or []
     if rules_disabled:
@@ -861,27 +885,17 @@ def render_plugin(
     ip_rewrite_disabled = plugin.get("ip_rewrite_disabled") or []
     ip_seen: set[str] = set()
 
-    if ip_rewrite:
+    if activate_ip_rewrite and ip_rewrite_disabled:
         lines.append("")
         lines.append("")
         lines.append("[IP Rewrite]")
+        lines.append("# Loon Build 1007+ 插件专属 [IP Rewrite]（TUN 阶段最快拦截，仅单 IPv4）")
         for raw in ip_rewrite:
             if not isinstance(raw, str) or not raw.strip():
                 raise BuildError(f"plugin {plugin['file']}: empty ip_rewrite line")
             validate_ip_rewrite_line(raw, f"plugin {plugin['file']}, [IP Rewrite]", ip_seen)
             lines.append(raw.strip())
             counts["ip_rewrite"] += 1
-
-    if ip_rewrite_disabled:
-        lines.append("")
-        lines.append("# " + "=" * 76)
-        lines.append("# 可选：[IP Rewrite]（Loon Build 1007+ 插件专属，TUN 阶段最快拦截）")
-        lines.append("# " + "-" * 76)
-        lines.append("# 语法：单 IPv4 = reflect|reject|drop。只收单 IPv4（不收 CIDR/域名/IPv6/参数）。")
-        lines.append("# 在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底。")
-        lines.append("# 同一 IP 重复声明按插件内首条生效；非法条目或重复的 [IP Rewrite] 段才会让整段失效。")
-        lines.append("# 逐行取消行首的 '# ' 后生效。")
-        lines.append("# ============================================================================ ")
         for raw in ip_rewrite_disabled:
             if not isinstance(raw, str) or not raw.strip():
                 raise BuildError(f"plugin {plugin['file']}: empty ip_rewrite_disabled line")
@@ -889,9 +903,41 @@ def render_plugin(
             if raw.startswith("#"):
                 lines.append(raw)
             else:
-                validate_ip_rewrite_line(raw, f"plugin {plugin['file']}, [IP Rewrite] optional", ip_seen)
-                lines.append("# " + raw)
-                counts["ip_rewrite_disabled"] += 1
+                validate_ip_rewrite_line(raw, f"plugin {plugin['file']}, [IP Rewrite]", ip_seen)
+                lines.append(raw)
+                counts["ip_rewrite"] += 1
+    else:
+        if ip_rewrite:
+            lines.append("")
+            lines.append("")
+            lines.append("[IP Rewrite]")
+            for raw in ip_rewrite:
+                if not isinstance(raw, str) or not raw.strip():
+                    raise BuildError(f"plugin {plugin['file']}: empty ip_rewrite line")
+                validate_ip_rewrite_line(raw, f"plugin {plugin['file']}, [IP Rewrite]", ip_seen)
+                lines.append(raw.strip())
+                counts["ip_rewrite"] += 1
+
+        if ip_rewrite_disabled:
+            lines.append("")
+            lines.append("# " + "=" * 76)
+            lines.append("# 可选：[IP Rewrite]（Loon Build 1007+ 插件专属，TUN 阶段最快拦截）")
+            lines.append("# " + "-" * 76)
+            lines.append("# 语法：单 IPv4 = reflect|reject|drop。只收单 IPv4（不收 CIDR/域名/IPv6/参数）。")
+            lines.append("# 在 [Rule]/Rewrite/脚本之前（TUN 阶段）生效=最快最彻底。")
+            lines.append("# 同一 IP 重复声明按插件内首条生效；非法条目或重复的 [IP Rewrite] 段才会让整段失效。")
+            lines.append("# 逐行取消行首的 '# ' 后生效。")
+            lines.append("# ============================================================================ ")
+            for raw in ip_rewrite_disabled:
+                if not isinstance(raw, str) or not raw.strip():
+                    raise BuildError(f"plugin {plugin['file']}: empty ip_rewrite_disabled line")
+                raw = raw.strip()
+                if raw.startswith("#"):
+                    lines.append(raw)
+                else:
+                    validate_ip_rewrite_line(raw, f"plugin {plugin['file']}, [IP Rewrite] optional", ip_seen)
+                    lines.append("# " + raw)
+                    counts["ip_rewrite_disabled"] += 1
 
     lines.append("")
     lines.append("")
@@ -937,6 +983,34 @@ def render_plugin(
     return text, counts
 
 
+def derive_ads_next(plugin: dict) -> dict:
+    """从 ads 单真源派生 Loon 3.5.3(1008)+ 全开版（零重复域表）。"""
+    next_plugin = dict(plugin)
+    next_plugin.update(
+        file="ads-next.plugin",
+        source_slug="ads-next",
+        name=f"广告平台拦截器 · 3.5.3+ 全开版 v{plugin['version']}",
+        desc=(
+            "Loon 3.5.3(1008)+ 全开版：激活无红线冲突 DOMAIN-WILDCARD 广告子域/数字分片通配"
+            "与 [IP Rewrite] HTTPDNS TUN 阶段拦截，叠加 pre-DNS 双栈与 [Host]；零证书全量生效。"
+        ),
+        system="iOS,iPadOS,tvOS",
+        loon_version="3.5.3(1008)",
+        tag="广告拦截,DNS,HTTPDNS,DOMAIN-WILDCARD,IP Rewrite,3.5.3+",
+        openUrl="https://github.com/AshNail/plugins/blob/main/plugins/ads-next/README.md",
+        activate_wildcards=True,
+        activate_ip_rewrite=True,
+    )
+    next_intro = list(plugin.get("intro") or [])
+    if len(next_intro) >= 7:
+        next_intro[6] = (
+            "本版为 Loon 3.5.3(1008)+（iOS/iPadOS/tvOS）全开版：无红线冲突的 DOMAIN-WILDCARD 通配与 "
+            "16 条 [IP Rewrite] 默认已激活；命中微信红线 ads.privacy.qq.com 的 ads.* 仍保持注释。App Store 正式版或 macOS 请改用 plugins/ads/ads.plugin。"
+        )
+    next_plugin["intro"] = next_intro
+    return next_plugin
+
+
 def expected_outputs() -> tuple[dict[str, str], dict[str, dict]]:
     source = load_json(SOURCE)
     meta = {
@@ -958,8 +1032,6 @@ def expected_outputs() -> tuple[dict[str, str], dict[str, dict]]:
     seen: dict[str, str] = {}
     for name, plugin in plugins.items():
         plugin = dict(plugin)
-        # Inherit top-level metadata so a new plugin file only carries the
-        # fields that differ.
         for key in ("author", "homepage", "icon", "openUrl"):
             plugin.setdefault(key, meta[key])
         file_name = plugin.get("file")
@@ -969,26 +1041,32 @@ def expected_outputs() -> tuple[dict[str, str], dict[str, dict]]:
             raise BuildError(
                 f"plugin {name}: only ads.plugin is allowed after the single-plugin merge"
             )
-        if file_name in outputs:
-            raise BuildError(f"duplicate output file: {file_name}")
+        rel_path = f"plugins/ads/{file_name}"
+        if rel_path in outputs:
+            raise BuildError(f"duplicate output file: {rel_path}")
         text, counts = render_plugin(plugin, meta, seen)
-        outputs[file_name] = text
+        outputs[rel_path] = text
         stats[name] = counts
+
+        next_plugin = derive_ads_next(plugin)
+        next_text, next_counts = render_plugin(next_plugin, meta, {})
+        outputs["plugins/ads-next/ads-next.plugin"] = next_text
+        stats["ads-next"] = next_counts
     return outputs, stats
 
 
 def write_outputs(outputs: dict[str, str]) -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for file_name, text in outputs.items():
-        path = OUT_DIR / file_name
+    for rel_path, text in outputs.items():
+        path = ROOT / rel_path
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
         print(f"wrote {path.relative_to(ROOT)}")
 
 
 def check_outputs(outputs: dict[str, str]) -> int:
     failed = False
-    for file_name, text in outputs.items():
-        path = OUT_DIR / file_name
+    for rel_path, text in outputs.items():
+        path = ROOT / rel_path
         if not path.exists():
             print(f"MISSING {path.relative_to(ROOT)}", file=sys.stderr)
             failed = True

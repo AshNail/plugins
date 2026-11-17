@@ -4,7 +4,8 @@
   "_country": "CN",
   "_size": "512x512bb.jpg",
   "_exceptions": {
-    "ads": "全站拦截器不针对任何一款 App，国区没有对应条目；保留 AdGuard 品牌 CDN 图。门禁是 tests/lint-plugins.py 的 check_icon_cdn()，例外表就是本键——加一条必须写理由"
+    "ads": "全站拦截器不针对任何一款 App，国区没有对应条目；保留 AdGuard 品牌 CDN 图。门禁是 tests/lint-plugins.py 的 check_icon_cdn()，例外表就是本键——加一条必须写理由",
+    "ads-next": "ads.plugin 的 Loon 3.5.3+ 全开衍生版，共用 AdGuard 品牌 CDN 图，不对应单一 App Store 应用"
   },
   "plugins": {
     "qidian": {

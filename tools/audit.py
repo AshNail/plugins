@@ -120,10 +120,10 @@ def semver_tuple(s):
 
 
 def check_versions():
-    header("\n【2】版本一致性（#!version ↔ 插件 README）")
+    header("\n【2】版本一致性（# version ↔ 插件 README）")
     vers = {}
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
-        m = re.search(r"^#!version=(.*)$", plugin.read_text(), re.M)
+        m = re.search(r"^(?:#!|#\s*)version\s*=\s*(.*)$", plugin.read_text(), re.M)
         vers[plugin.name] = (plugin.parent.name, m.group(1).strip() if m else "?")
     for name, (family, v) in vers.items():
         ok(f"{name}: v{v}")
@@ -209,10 +209,10 @@ def check_leaks():
 def check_mitm():
     header("\n【5】[MITM] 覆盖与目的对账")
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
-        if plugin.name == "ads.plugin":
-            # 单 ads 插件是零证书设计：lint 明确要求只有
-            # [General] + [Rule] + [Host]，因此这里不应有 [MITM]。
-            ok("ads.plugin: 零证书设计，无 [MITM]（预期）")
+        if plugin.name in ("ads.plugin", "ads-next.plugin"):
+            # ads / ads-next 是零证书设计：lint 明确要求只有
+            # [General] + [Rule] + ([IP Rewrite]) + [Host]，因此这里不应有 [MITM]。
+            ok(f"{plugin.name}: 零证书设计，无 [MITM]（预期）")
             continue
         text = plugin.read_text()
         m = re.search(r"\[MITM\]\s*\n?\s*hostname\s*=\s*([^\n]+)", text)

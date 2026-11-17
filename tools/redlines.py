@@ -254,6 +254,7 @@ DOMAIN_MATCH_TYPES = {
     "DOMAIN": "精确主机",
     "DOMAIN-SUFFIX": "后缀吞整族",
     "DOMAIN-KEYWORD": "关键词命中主机名任意位置",
+    "DOMAIN-WILDCARD": "通配 glob 匹配域名（* / ? / [...]）",
 }
 NON_DOMAIN_MATCH_TYPES = {
     "URL-REGEX": "按 URL（含路径）匹配，不黑洞主机",
@@ -308,8 +309,30 @@ def rule_type_tokens(rule: str) -> set[str]:
     return {token for token in _TYPE_RE.findall(rule)}
 
 
+def _wildcard_glob_regex(pattern: str) -> re.Pattern:
+    """编译 Loon DOMAIN-WILDCARD 模式为正则（* 跨点、? 单字符、[...] 字符类）。"""
+    parts = []
+    i = 0
+    while i < len(pattern):
+        ch = pattern[i]
+        if ch == "[":
+            end = pattern.find("]", i + 1)
+            if end != -1:
+                parts.append(pattern[i : end + 1])
+                i = end + 1
+                continue
+        if ch == "*":
+            parts.append(".*")
+        elif ch == "?":
+            parts.append(".")
+        else:
+            parts.append(re.escape(ch))
+        i += 1
+    return re.compile("^" + "".join(parts) + "$")
+
+
 def match_item_hit(kind: str, target: str, entry: dict) -> bool:
-    """域名类匹配项是否覆盖某条红线域。三种类型的语义各不相同，判定也必须不同。"""
+    """域名类匹配项是否覆盖某条红线域。四种类型的语义各不相同，判定也必须不同。"""
     domain = entry["domain"]
     if kind == "DOMAIN":
         return domain == target
@@ -317,6 +340,8 @@ def match_item_hit(kind: str, target: str, entry: dict) -> bool:
         return domain == target or domain.endswith("." + target)
     if kind == "DOMAIN-KEYWORD":
         return target in domain
+    if kind == "DOMAIN-WILDCARD":
+        return bool(_wildcard_glob_regex(target).fullmatch(domain))
     raise ValueError(f"未知域名类匹配项 {kind!r}")
 
 

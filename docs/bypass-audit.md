@@ -42,14 +42,14 @@
 | 1 | 公网 DoH 走域名 | App 自带 DoH（`https://dns.google/dns-query`），在 443 上把域名解析做掉，系统 DNS 与 `[Host]` 都碰不到。 | `[Host]` 把已知 DoH 入口域名映射到 127.0.0.1（DNS 阶段生效，不需要解密，QUIC 也一样拦）。 | 已封死 |
 | 2 | DoT / DoQ 853 端口 | App 自带 DoT（TCP 853）或 DoQ（UDP 853），绕过 Loon 的 DNS。 | `DEST-PORT,853,REJECT`——端口在连接层可见，不需要域名也不需要解密。 | 已封死 |
 | 3 | HTTPDNS 走域名 | SDK 请求 `xxxhttpdns.xxx.com` 换回广告域的真实 IP，再用 IP 直连，绕开系统 DNS 与 `[Host]` 黑洞。 | `[Host]` 黑洞已知域名 + `DOMAIN-KEYWORD,httpdns,REJECT-DROP` 吃未知域名 + `USER-AGENT` UA 特征兜底。 | 已封死 |
-| 4 | IPv6 / AAAA 旁路 | `[Host]` 里 3084 条生效黑洞（另有 218 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。 | 官方 `Rule/` 明确「目标地址为域名时，先匹配域名规则（先于 DNS 解析，不区分地址族；20 万条以内 < 1 ms + LRU 缓存）」：`DOMAIN` / `DOMAIN-SUFFIX` 同步拒绝 IPv4 与 IPv6/AAAA 连接。同时 `[Host]` 继续保留 `127.0.0.1` 应对直接 IPv4 查询；比实验性质的 `[Host]` 多行 `ip-mode:v4-only` 零风险。 | 已封死 |
+| 4 | IPv6 / AAAA 旁路 | `[Host]` 里 3123 条生效黑洞（另有 218 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。 | 官方 `Rule/` 明确「目标地址为域名时，先匹配域名规则（先于 DNS 解析，不区分地址族；20 万条以内 < 1 ms + LRU 缓存）」：`DOMAIN` / `DOMAIN-SUFFIX` 同步拒绝 IPv4 与 IPv6/AAAA 连接。同时 `[Host]` 继续保留 `127.0.0.1` 应对直接 IPv4 查询；比实验性质的 `[Host]` 多行 `ip-mode:v4-only` 零风险。 | 已封死 |
 | 5 | 长连接 / 私有协议下发广告配置 | 广告配置通过长连接或私有 TCP 协议下发，不走 HTTP，`[MITM]` 与脚本都看不到内容。 | `[Host]` 域名黑洞：连都连不上，长连接也建立不起来——**DNS 层对协议形态免疫**。 | 已封死 |
 | 6 | QUIC / HTTP3 绕过解密 | 广告请求走 UDP 443，`[MITM]` 只处理 TCP，脚本根本不执行。 | 按域 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT` 逼回 TCP+TLS；**不做**全局 `PROTOCOL,QUIC,REJECT`。 | 已封死 |
 | 7 | Loon 跑在直连模式 | `running_model = 0` 时 Loon 不走规则、不进 MITM、不跑脚本，插件完全不生效，而界面上只显示「直连」两个字。 | `$config.getConfig()` 读 `running_model`，状态页点名告警并给处置建议。 | 已封死 |
 | 8 | HTTPDNS 走 IP 直连 | SDK 硬编码接入点 IP（如 `203.107.1.x`）直连换成 IP，连接层**没有域名**，`[Host]` / `DOMAIN-KEYWORD` / `URL-REGEX` 全部失效。 | `IP-CIDR`（规则层）与 `[IP Rewrite]`（TUN 阶段，最快）——两者都是可选、默认关闭。 | 部分封死 |
 | 9 | 明文 HTTP 广告与上报 | 少量广告/上报端点仍是明文 `http://`。 | `URL-REGEX,^http://…`，不需要解密就能匹配完整 URL。 | 部分封死 |
 | 10 | 公共解析器 IP 直连（53/443/853 全端口） | App 不请求 DoH 域名，直接连 `8.8.8.8:443` 或 `1.1.1.1:853`。此时**域名根本不存在**：`[Host]` 黑洞、`DOMAIN-KEYWORD`、`URL-REGEX` 全废，`DEST-PORT,853` 也只挡端口、挡不住 443 上的 DoH。 | `IP-CIDR` / `IP-CIDR6`——连接层只看 IP，是这条旁路**唯一**能在插件里生效的手段。 | 部分封死 |
-| 11 | 广告接口与业务同域（靠路径区分） | 广告配置走业务域名下的某个路径，只靠域名拦会连业务一起打死。 | `[MITM]` + response 脚本按 URL 正则与字段裁剪（soda/douyin 已落地）。 | 部分封死 |
+| 11 | 广告接口与业务同域（靠路径区分） | 广告配置走业务域名下的某个路径，只靠域名拦会连业务一起打死。 | `[MITM]` + 原生 `[Rewrite]` v2 或 response 脚本按 URL 正则与字段裁剪（soda/douyin/netease 及 9 个原生增强 App 插件已落地）。 | 部分封死 |
 | 12 | App 被主配置 bypass-tun 排除 | App 被排除在 TUN 之外，流量完全不进 Loon，规则/MITM/脚本一律不执行。 | 无（`bypass-tun` 只在主配置声明；插件声明它就是全局生效，与「只拦广告」无关）。 | 无解 |
 | 13 | 证书固定导致解密失败 | App 校验证书链，`[MITM]` 握手失败 → response 脚本不执行，响应体净化整条链路失效。2026-11-05 真机日志补了一层症状：握手失败即**整条请求失败**，所以固定证书主机上的「拦截」实际是我们把连接掐断了，不是静默不生效。 | 无。官方 MitM 页只列 `hostname` / `ca-p12` / `ca-passphrase`，没有 `skip-server-cert-verify` 之类的键。 | 无解 |
 | 14 | 接管前的 DNS 缓存残留 | App 在 Loon 接管之前已解析并缓存了广告域的真实 IP。 | 无。插件清不掉 App 进程内的缓存。 | 无解 |
@@ -85,7 +85,7 @@
 
 ### 4. IPv6 / AAAA 旁路 · 已封死
 
-**怎么绕**　`[Host]` 里 3084 条生效黑洞（另有 218 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。
+**怎么绕**　`[Host]` 里 3123 条生效黑洞（另有 218 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。
 
 **Loon 的手段**　官方 `Rule/` 明确「目标地址为域名时，先匹配域名规则（先于 DNS 解析，不区分地址族；20 万条以内 < 1 ms + LRU 缓存）」：`DOMAIN` / `DOMAIN-SUFFIX` 同步拒绝 IPv4 与 IPv6/AAAA 连接。同时 `[Host]` 继续保留 `127.0.0.1` 应对直接 IPv4 查询；比实验性质的 `[Host]` 多行 `ip-mode:v4-only` 零风险。
 
@@ -97,7 +97,7 @@
 
 **Loon 的手段**　`[Host]` 域名黑洞：连都连不上，长连接也建立不起来——**DNS 层对协议形态免疫**。
 
-**怎么证伪**　这条「已封死」依赖的是 DNS 层主力（3084 条生效黑洞）而不是解密层；若某天把主力改成规则层或脚本层，这条会立刻降级为 partial。
+**怎么证伪**　这条「已封死」依赖的是 DNS 层主力（3123 条生效黑洞）而不是解密层；若某天把主力改成规则层或脚本层，这条会立刻降级为 partial。
 
 ### 6. QUIC / HTTP3 绕过解密 · 已封死
 
@@ -105,7 +105,7 @@
 
 **Loon 的手段**　按域 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT` 逼回 TCP+TLS；**不做**全局 `PROTOCOL,QUIC,REJECT`。
 
-**怎么证伪**　ads 是零证书 DNS 层，`[Host]` 在 DNS 阶段生效，不受 QUIC 影响；只有带 `[MITM]` 的 soda/douyin 需要回退。真机看请求日志里广告域是否出现 HTTP/3。
+**怎么证伪**　ads 是零证书 DNS 层，`[Host]` 在 DNS 阶段生效，不受 QUIC 影响；所有启用 `[MITM]` 的插件（soda/douyin/netease 与 9 个原生增强 App 插件）均在 `[Rule]` 声明对应域的 QUIC 回退。真机看请求日志里广告域是否出现 HTTP/3。
 
 ### 7. Loon 跑在直连模式 · 已封死
 
@@ -149,9 +149,9 @@
 
 **怎么绕**　广告配置走业务域名下的某个路径，只靠域名拦会连业务一起打死。
 
-**Loon 的手段**　`[MITM]` + response 脚本按 URL 正则与字段裁剪（soda/douyin 已落地）。
+**Loon 的手段**　`[MITM]` + 原生 `[Rewrite]` v2 或 response 脚本按 URL 正则与字段裁剪（soda/douyin/netease 及 9 个原生增强 App 插件已落地）。
 
-**为什么没封死**　ads 是零证书 DNS 层，看不到路径，只能整域拦——而整域拦会打死业务。soda/douyin 这类带 `[MITM]` 的插件能按路径处理，但**每多适配一个 App 就要重新抓包确认哪些键安全**（见 `docs/ad-type-strategy.md` 的 blocked 说明）。
+**为什么没封死**　ads 是零证书 DNS 层，看不到路径，只能整域拦——而整域拦会打死业务。soda/douyin/netease 及 9 个启用 `[MITM]` 的 App 插件能按路径与字段裁剪，但**每多适配一个 App 就要重新抓包确认哪些键安全**（见 `docs/ad-type-strategy.md` 的 blocked 说明）。
 
 **怎么证伪**　新增 App 时先抓包确认广告配置端点与业务端点是否同域；同域才值得加到 `[MITM]`。
 

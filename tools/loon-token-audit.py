@@ -73,10 +73,7 @@ SECTION_PAGES = {
 # 显式登记的「官方查不到、我们仍在带」的 token，key = 段名。
 # 每一条都必须同时在 tools/loon-coverage.py 里有 expect="undocumented" 的行与理由，
 # 并且有 docs/device-checklist.md 的真机取证步骤——三处对不上就按未登记处理。
-UNDOCUMENTED = {
-    "MITM": {"h2"},                      # %APPEND% 出现在 hostname 值里，由 lint 的键面门禁管
-    "METADATA": {"version", "openurl"},
-}
+UNDOCUMENTED = {}
 
 DOMAINISH = re.compile(r"^(\*\.)?[a-z0-9][a-z0-9.*_-]*\.[a-z]{2,}$|^\d+$")
 

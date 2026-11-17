@@ -1,15 +1,15 @@
 #!name=智慧房东 · 去广告 v1.0.2
 #!desc=智慧房东穿山甲、优量汇、快手联盟及倍孜开屏与插屏广告黑洞拦截；门锁控制与房租管理零接触。零证书。
 #!author=edy
-#!version=1.0.2
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/zhihuifangdong/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/88/5c/ca/885ccaf8-28b2-a53b-01be-00fda322ce95/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-07
 #!tag=去广告,智慧房东,租房
 #!type=normal
 #!source=f9a25f07fb44d84ea9e8699fb75657a51fbad46464c378af9a4947a6ec9bff3c
+# version=1.0.2
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/zhihuifangdong/README.md
 
 # ========================================================================
 # 智慧房东 · 去广告 v1.0.2
@@ -131,6 +131,7 @@ DOMAIN,mobads-pre-config.cdn.bcebos.com,REJECT
 DOMAIN,mtrace.qq.com,REJECT
 DOMAIN,nadvideo2.baidu.com,REJECT
 DOMAIN,open.isnssdk.com,REJECT
+DOMAIN,p.ssp.qq.com,REJECT
 DOMAIN,p3-ad-aweme.byteimg.com,REJECT
 DOMAIN,p3-ad-sign.byteimg.com,REJECT
 DOMAIN,p6-ad-sign.byteimg.com,REJECT
@@ -251,6 +252,7 @@ gdtimg.com = 127.0.0.1
 l.qq.com = 127.0.0.1
 mdevstat.qqlive.qq.com = 127.0.0.1
 mtrace.qq.com = 127.0.0.1
+p.ssp.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
 snowflake.qq.com = 127.0.0.1
 tencentmind.com = 127.0.0.1

@@ -85,7 +85,7 @@
 - `基础设施红线` ← `dns.*`, `blackhole*`, `h5speed.*`, `gia.*`, `gias.*`, `dgstatic.*`, `wl.jd.com`, `policy.*`, `kepler.*`, `union.jd.com`, `cps.*`, `jrclick.*`
 - `C 级单源不收` ← `u.x.jd.com`, `bdsp.x.jd.com`, `du.jd.com`, `nfa.jd.com`, `c-nfa.jd.com`, `firevent.jd.com`, `stat.m.jd.com`, `ads.union.jd.com`, `jzt.jd.com`
 
-## `mba-dashi` — 生效黑洞 67 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `mba-dashi` — 生效黑洞 68 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -205,7 +205,7 @@
 - `腾讯共享 SSP 根域与运营后台（news.ssp 父域，仅做路径级复写）` ← `ssp.qq.com`, `op.ssp.qq.com`
 - `遥测/日志（隐私面，非广告）` ← `uplog.inews.qq.com`
 
-## `ruankao-tong` — 生效黑洞 67 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `ruankao-tong` — 生效黑洞 68 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 
@@ -230,7 +230,7 @@
 裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
 - `业务·直通车收藏与卖家移动后台` ← `fav.simba.taobao.com`, `m.simba.taobao.com`
 
-## `wechat` — 生效黑洞 35 域；缺口候选 A:0 B:0 C:1（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `wechat` — 生效黑洞 36 域；缺口候选 A:0 B:0 C:1（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|
@@ -258,7 +258,7 @@
 
 无 A/B 级缺口候选。
 
-## `zhihuifangdong` — 生效黑洞 136 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `zhihuifangdong` — 生效黑洞 137 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 

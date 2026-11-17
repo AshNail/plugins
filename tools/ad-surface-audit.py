@@ -330,10 +330,11 @@ SURFACES = [
             ("plugins/douyin/douyin.plugin", r"commerce\\/v2\\/upsell", False),
             ("plugins/qidian/qidian.plugin", r"popup\\?/batchget", False),
             ("plugins/netease/netease.plugin", r"vipactivity", False),
+            ("plugins/bilibili/bilibili.plugin", r"x\\?/v2\\?/account\\?/mine", False),
         ],
         limits="与会员状态、支付流程同域同接口，剥错会让会员页空白；部分 App 用 WebView 渲染，"
                "弹窗内容在页面里；「限时优惠」倒计时是端上逻辑，删网络改不了。",
-        next="soda/douyin 已到各自端点上限，同时 qidian/netease 通过原生 [Rewrite] v2 覆写了推广弹窗与 VIP 活动端点；douyin v1（/commerce/upsells）无真机样本，刻意不绑，再提档只能按 App 逐一抓包验证。",
+        next="soda/douyin 已到各自端点上限，同时 qidian/netease/bilibili 通过原生 [Rewrite] v2 覆写了推广弹窗、VIP 活动与个人中心大会员促销区；douyin v1（/commerce/upsells）无真机样本，刻意不绑，再提档只能按 App 逐一抓包验证。",
         blocked="结构性：弹窗配置与会员状态、支付流程同域同接口，每加一个 App 都要重新确认哪些键安全。",
     ),
 

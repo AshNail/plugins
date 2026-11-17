@@ -205,9 +205,9 @@ function loadSchemas() {
 function argumentLine(item) {
   let head;
   if (item.type === "switch") {
-    head = `${item.name} = switch,${item.default}`;
+    head = `${item.name} = switch,${item.default},type=boolean`;
   } else if (item.type === "input") {
-    head = `${item.name} = input,"${item.default}"`;
+    head = `${item.name} = input,"${item.default}",type=${item.valueType || "string"}`;
   } else {
     const values = [item.default].concat(item.values.filter((v) => v !== item.default));
     head =

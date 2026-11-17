@@ -1,15 +1,15 @@
 #!name=京东 · 去广告（自建广告交易层） v1.0.3
 #!desc=京东自建广告交易、京媒联盟与点击监测域 DNS 黑洞拦截；交易支付与风控绝对放行。零证书。
 #!author=edy
-#!version=1.0.3
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/jd/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ba/ae/95/baae952e-c408-d213-b249-fb4755687ac4/AppIcon-0-0-1x_U007epad-0-1-0-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-06
 #!tag=去广告,京东,JD
 #!type=normal
 #!source=6c374cf0b06364a78850470299fe36d35bd5fb7a02b611804318511ea2ce1226
+# version=1.0.3
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/jd/README.md
 
 # ========================================================================
 # 京东 · 去广告（自建广告交易层） v1.0.3

@@ -1,9 +1,7 @@
 #!name=抖音 · 净化与福利 v0.9.3
 #!desc=抖音福利页精简（攒时长听歌不中断）、信息流及搜索广告清理、商业化弹窗过滤与开屏净化；支持 [Argument] 自定义开关。
 #!author=edy
-#!version=0.9.3
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/douyin/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/17/e6/90/17e690fe-f519-2fb8-5128-37a11d12c54b/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-85-220.png/512x512bb.jpg
 #!system=iOS
 #!loon_version=3.5.1(983)
@@ -17,6 +15,8 @@
 # 所以只能是这条直链。哈希由 tools/source_hash.py 现算，不要手抄——
 # lint 的 check_source_hash() 会反向复算核对，手抄的哈希迟早与地址脱钩。
 #!source=fe8fe76e0869af91c416bad9702b21921dc3049c24c3f3d8c46e71181522a82f
+# version=0.9.3
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/douyin/README.md
 
 # ============================================================================
 # douyin.plugin 说明（一个 App 一个插件）
@@ -78,14 +78,14 @@
 
 # >>> GENERATED ARGUMENTS from src/args/douyin.json -- do not edit (npm run build:args)
 [Argument]
-treasureMinimal = switch,true,tag=福利页精简,desc=福利页只保留【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱等入口全部移除。
-cleanFeedAds = switch,false,tag=信息流/搜索广告清理,desc=清掉信息流/搜索/广告位响应里的广告容器与明确广告条目（is_ad/is_promoted 等）；保留正常媒体、系统公告与激励奖励。
-killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。
-cleanUpsell = switch,false,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
-cleanActivity = switch,false,tag=活动入口清理,desc=目标：把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。真机取证（2026-11-05 20:25:48）：polaris.zijieapi.com 固定证书——26 SNI / 26 Match / 26 次握手失败，这台主机的连接被掐断，绑定已注册但当前不生效。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。
-blockSplashAd = switch,true,tag=开屏请求与品牌响应清理,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族），并清理开屏品牌响应（advert/splash/brand/retrieve）的素材、缓存、预加载与摇一摇/扭一扭配置；不影响激励广告与奖励。
-debugLog = switch,false,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
+treasureMinimal = switch,true,type=boolean,tag=福利页精简,desc=福利页只保留【攒时长 听歌不中断】；我的资产/签到/商城/看广告/翻卡/红包雨/开宝箱等入口全部移除。
+cleanFeedAds = switch,false,type=boolean,tag=信息流/搜索广告清理,desc=清掉信息流/搜索/广告位响应里的广告容器与明确广告条目（is_ad/is_promoted 等）；保留正常媒体、系统公告与激励奖励。
+killRewardAds = switch,false,type=boolean,tag=断掉激励广告,desc=清空 incentive/config 与 incentive/retrieve 的广告源、素材和预拉取列表。等于“广告完全不发”，攒时长/看广告赚金币随之失效，请谨慎。
+cleanUpsell = switch,false,type=boolean,tag=商业化弹窗/商城/演出清理,desc=删除 upsell 里的广告类弹窗与逛商城弹窗，并清空汽水音乐节（演出）列表。
+cleanActivity = switch,false,type=boolean,tag=活动入口清理,desc=目标：把 polaris 活动配置里的汽水音乐节（演出）与抖音运营活动（选游戏/选作者/开学季/创作者抽奖）置为不展示；不影响签到/翻卡/红包雨等任务。真机取证（2026-11-05 20:25:48）：polaris.zijieapi.com 固定证书——26 SNI / 26 Match / 26 次握手失败，这台主机的连接被掐断，绑定已注册但当前不生效。
+blockAdDomains = switch,false,type=boolean,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）。会同时断掉激励广告。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。
+blockSplashAd = switch,true,type=boolean,tag=开屏请求与品牌响应清理,desc=拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族），并清理开屏品牌响应（advert/splash/brand/retrieve）的素材、缓存、预加载与摇一摇/扭一扭配置；不影响激励广告与奖励。
+debugLog = switch,false,type=boolean,tag=只读日志,desc=记录福利页分区/任务、广告时长与素材、商业化弹窗、发奖结果；不修改响应。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
 # <<< GENERATED ARGUMENTS
 
@@ -271,4 +271,3 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${treasureMinimal
 [MITM]
 
 hostname = beta-luna.douyin.com, polaris.zijieapi.com, ad.zijieapi.com, lianmengapi.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn
-h2 = true

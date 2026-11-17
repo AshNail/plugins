@@ -1,9 +1,7 @@
 #!name=汽水音乐 · 全能助手 v3.3.3
 #!desc=汽水音乐去广告与福利自动化：信息流广告过滤、弹窗清理、音质解锁与激励任务增强；支持 [Argument] 自定义开关。
 #!author=edy
-#!version=3.3.3
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/8a/00/10/8a00101e-bb2c-0b3f-78c9-bf779f6b5687/AppIcon-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS
 #!loon_version=3.5.1(983)
@@ -17,6 +15,8 @@
 # 所以只能是这条直链。哈希由 tools/source_hash.py 现算，不要手抄——
 # lint 的 check_source_hash() 会反向复算核对，手抄的哈希迟早与地址脱钩。
 #!source=840b1a5d8a90009e6126be4385427219ff728bcc7b663d2e05d33071b4968dd9
+# version=3.3.3
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/soda/README.md
 
 # ============================================================================
 # soda.plugin · 聚合开关版（一个 App 一个插件）
@@ -93,22 +93,22 @@
 
 # >>> GENERATED ARGUMENTS from src/args/soda.json -- do not edit (npm run build:args)
 [Argument]
-rewardSafe = switch,true,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
-cleanAds = switch,true,tag=去广告脚本,desc=默认开启：清理广告位、信息流和福利页广告任务；不动激励广告素材。
-killRewardAds = switch,false,tag=断掉激励广告,desc=清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于广告完全不发，领奖会变成 amount=-1，请谨慎。
-blockAdDomains = switch,false,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。
-settingsClean = switch,true,tag=设置层净化,desc=默认开启：清空 conf.qishui.com 的广告配置。
-skipUpdateCheck = switch,true,tag=版本检查静音,desc=默认开启：把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。
-hideDouyinEntry = switch,true,tag=隐藏【听抖音】入口,desc=默认开启：把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现。
-listenOnly = switch,false,tag=纯听歌模式,desc=移除底部 Tab 栏里所有与听歌无关的模块（听抖音/直播/视频/朋友/社区/创作/AI 聊天/消息/一起听/娱乐），只保留推荐、发现、我的；激励奖励链路完全保留。
-blockSplashAd = switch,true,tag=拦截开屏广告请求,desc=默认开启：拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
-debugLog = switch,false,tag=只读日志,desc=记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。
-logTaskTitles = switch,true,tag=日志带任务标题,desc=默认开启：只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口。
-splashClean = switch,true,tag=清开屏品牌广告,desc=默认开启：清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
-hideDouyinTab = switch,true,tag=隐藏【听抖音】,desc=默认开启：删除福利页里带抖音的 tab/任务条目。
+rewardSafe = switch,true,type=boolean,tag=保奖励模式,desc=默认开启：保留激励广告、奖励任务和发奖链路，只清开屏品牌广告。
+cleanAds = switch,true,type=boolean,tag=去广告脚本,desc=默认开启：清理广告位、信息流和福利页广告任务；不动激励广告素材。
+killRewardAds = switch,false,type=boolean,tag=断掉激励广告,desc=清空 incentive/config、incentive/retrieve 的广告源、素材与预拉取列表。等于广告完全不发，领奖会变成 amount=-1，请谨慎。
+blockAdDomains = switch,false,type=boolean,tag=广告域名拦截,desc=拦截 ad.zijieapi.com 等广告/归因域名（需 MITM，QUIC 已强制回退到 TCP）；保奖励模式下自动放行。真机取证（2026-11-05 20:25:48）：ads 分片与 zlink.ugsdk.cn 固定证书（ads5-normal-gl2 5/5/5、zlink 6/6/6）——这几台的连接是被掐断的、不等同于拦截成功；ads.plugin 的 DNS 层不受影响。
+settingsClean = switch,true,type=boolean,tag=设置层净化,desc=默认开启：清空 conf.qishui.com 的广告配置。
+skipUpdateCheck = switch,true,type=boolean,tag=版本检查静音,desc=默认开启：把 `luna/check-update` 响应里的 `has_update` 置 false：静音「发现新版本」提示。
+hideDouyinEntry = switch,true,type=boolean,tag=隐藏【听抖音】入口,desc=默认开启：把设置层的 anchor_luna_to_douyin / _mv 关掉，汽水里的【听抖音】入口不再出现。
+listenOnly = switch,false,type=boolean,tag=纯听歌模式,desc=移除底部 Tab 栏里所有与听歌无关的模块（听抖音/直播/视频/朋友/社区/创作/AI 聊天/消息/一起听/娱乐），只保留推荐、发现、我的；激励奖励链路完全保留。
+blockSplashAd = switch,true,type=boolean,tag=拦截开屏广告请求,desc=默认开启：拦掉穿山甲开屏广告请求（splash/ 与 vN/(ack/)splash/ 全家族）；不影响激励广告与奖励。
+debugLog = switch,false,type=boolean,tag=只读日志,desc=记录激励/任务/入口响应，不修改内容；可与保奖励模式一起用。
+logTaskTitles = switch,true,type=boolean,tag=日志带任务标题,desc=默认开启：只读日志里额外打印任务标题（如【听抖音】），用于定位福利页入口。
+splashClean = switch,true,type=boolean,tag=清开屏品牌广告,desc=默认开启：清理开屏品牌广告响应；保奖励和去广告模式都建议开启。
+hideDouyinTab = switch,true,type=boolean,tag=隐藏【听抖音】,desc=默认开启：删除福利页里带抖音的 tab/任务条目。
 statusNotify = select,"notification","silent",type=string,tag=自检通知,desc=点击「插件状态自检」后是否弹 Loon 通知：notification 弹通知并可一键跳转 App；silent 只写日志和结果页。结果页始终显示当前开关摘要与冲突提醒。
-autoTask = switch,true,tag=激励任务自动化v2,desc=已注册四条腿：Pangle 广告伪造 + incentive/done 增强 + 签到注入 + 风控检测。诚实话：响应改写只改本机显示、不等于后端入账；2026-11-05 真机日志里这些主机零流量或被固定证书掐断——端到端效果未经确认。
-autoSignIn = switch,true,tag=自动签到v2,desc=已注册：命中 sign_in_done 时由本机返回成功响应（绕过设备异常 210021）+ 每天 9 点 cron。真机取证：aweme.snssdk.com 固定证书 8 SNI / 8 Match / 8 握手失败——那条腿结构性失效；qishui 与 luna 两条腿本窗口零流量、既不算生效也不算失效。
+autoTask = switch,true,type=boolean,tag=激励任务自动化v2,desc=已注册四条腿：Pangle 广告伪造 + incentive/done 增强 + 签到注入 + 风控检测。诚实话：响应改写只改本机显示、不等于后端入账；2026-11-05 真机日志里这些主机零流量或被固定证书掐断——端到端效果未经确认。
+autoSignIn = switch,true,type=boolean,tag=自动签到v2,desc=已注册：命中 sign_in_done 时由本机返回成功响应（绕过设备异常 210021）+ 每天 9 点 cron。真机取证：aweme.snssdk.com 固定证书 8 SNI / 8 Match / 8 握手失败——那条腿结构性失效；qishui 与 luna 两条腿本窗口零流量、既不算生效也不算失效。
 # <<< GENERATED ARGUMENTS
 
 
@@ -402,4 +402,3 @@ generic then script("scripts/status.min.js", {${statusNotify}, ${rewardSafe}, ${
 [MITM]
 
 hostname = api.qishui.com, conf.qishui.com, ad.zijieapi.com, lianmengapi.snssdk.com, aweme.snssdk.com, ads?-normal*.zijieapi.com, zlink.ugsdk.cn, praisewindow.ugsdk.cn, beta-luna.douyin.com
-h2 = true

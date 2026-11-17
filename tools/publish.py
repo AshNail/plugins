@@ -124,13 +124,24 @@ def local_files():
 
 def plugin_deploy_files():
     """插件 + 插件引用到的脚本（Loon 真正需要的部分）。"""
+    re_mod = __import__("re")
+    raw_prefix = "https://raw.githubusercontent.com/AshNail/plugins/main/"
     files = []
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         text = "\n".join(l for l in plugin.read_text().splitlines()
                          if not l.strip().startswith("#"))
-        for name in sorted(set(__import__("re").findall(r'script\("([^"]+)"', text))):
+        for name in sorted(set(re_mod.findall(r'script\("([^"]+)"', text))):
             if name.endswith(".min.js"):
                 files.append(plugin.parent / name)
+        for sp in sorted(set(re_mod.findall(r"script-path\s*=\s*([^\s,]+)", text))):
+            ref = sp.strip("\"'")
+            target = (
+                ROOT / ref[len(raw_prefix):]
+                if ref.startswith(raw_prefix)
+                else plugin.parent / ref
+            )
+            if target.is_file():
+                files.append(target)
         files.append(plugin)
     uniq, seen = [], set()
     for f in files:

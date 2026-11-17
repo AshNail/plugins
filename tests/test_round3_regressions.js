@@ -262,13 +262,13 @@ console.log("\n== 8. douyin · v1 upsell 不挂空转路由（假覆盖）==");
 }
 
 /* ---------------------------------------------------------------- */
-console.log("\n== 9. Bilibili / Zhihu · jq 类型收窄（真实 jq 引擎）==");
+console.log("\n== 9. 全仓 response.json.jq · 类型守卫与真实 jq 引擎回归 ==");
 {
   function exprs(rel) {
     const d = JSON.parse(fs.readFileSync(path.join(ROOT, rel), "utf8"));
     const out = {};
     for (const r of (d.enhance && d.enhance.rewrite) || []) {
-      const m = /response\.json\.jq\("(.*)"\)/.exec(r.action || "");
+      const m = /response\.json\.jq\("(.*)"\)$/.exec(r.action || "");
       if (m) out[r.id] = m[1].replace(/\\"/g, '"');
     }
     return out;
@@ -326,6 +326,96 @@ console.log("\n== 9. Bilibili / Zhihu · jq 类型收窄（真实 jq 引擎）==
       r.ok && leftCount(id, r.data) === want,
       r.ok ? leftCount(id, r.data) : r.err);
   }
+
+  /* bilibili x/v2/view 新增 cm_under_player 与 card_goto ad_/cm_ 过滤 */
+  {
+    const vr = jqRun(E["clean-view-relates"], {
+      data: {
+        aid: 1001,
+        cm_config: { ads: 1 },
+        cm_under_player: { banner: 1 },
+        relates: [
+          { aid: 1, card_goto: "av" },
+          { aid: 2, card_goto: "ad_web_s" },
+          { aid: 3, card_goto: "cm_double_v9" },
+          { aid: 4, is_ad_loc: true },
+          { aid: 5, card_goto: 99 }
+        ]
+      }
+    });
+    check("bili view relates 过滤成功", vr.ok, vr.err);
+    check("bili view 删 cm_config 与 cm_under_player",
+      vr.ok && vr.data.data.cm_config === undefined && vr.data.data.cm_under_player === undefined,
+      vr.data);
+    check("bili view 仅留正常与非对象/数字异常项",
+      vr.ok && vr.data.data.relates.length === 2 && vr.data.data.relates[0].aid === 1,
+      vr.data);
+  }
+
+  /* 全仓库所有激活 response.json.jq 对畸形响应不崩（apps/*.json + 独立 .plugin） */
+  const allExprs = [];
+  const appsDir = path.join(ROOT, "src/apps");
+  const appSlugs = new Set();
+  for (const fn of fs.readdirSync(appsDir).filter((f) => f.endsWith(".json")).sort()) {
+    appSlugs.add(fn.replace(/\.json$/, ""));
+    const d = JSON.parse(fs.readFileSync(path.join(appsDir, fn), "utf8"));
+    for (const r of (d.enhance && d.enhance.rewrite) || []) {
+      const m = /response\.json\.jq\("(.*)"\)$/.exec(r.action || "");
+      if (m) allExprs.push([fn + ":" + r.id, m[1].replace(/\\"/g, '"')]);
+    }
+  }
+  const pluginsDir = path.join(ROOT, "plugins");
+  let neteaseBannerExpr = null;
+  for (const slug of fs.readdirSync(pluginsDir).sort()) {
+    if (appSlugs.has(slug) || slug === "ads") continue;
+    const pf = path.join(pluginsDir, slug, slug + ".plugin");
+    if (!fs.existsSync(pf)) continue;
+    const lines = fs.readFileSync(pf, "utf8").split("\n");
+    for (let idx = 0; idx < lines.length; idx++) {
+      const s = lines[idx].trim();
+      if (!s || s.startsWith("#")) continue;
+      const m = /response\.json\.jq\("(.*)"\)$/.exec(s);
+      if (m) {
+        const expr = m[1].replace(/\\"/g, '"');
+        allExprs.push([slug + ".plugin:" + (idx + 1), expr]);
+        if (slug === "netease" && s.includes("banner\\/get")) neteaseBannerExpr = expr;
+      }
+    }
+  }
+  check("netease banner jq 表达式存在", !!neteaseBannerExpr);
+  if (neteaseBannerExpr) {
+    const nb = jqRun(neteaseBannerExpr, {
+      banners: [
+        { bannerId: "1", typeTitle: "新歌首发", monitorImpress: "x" },
+        { bannerId: "2", adid: "ad1", monitorClick: "y" },
+        { bannerId: "3", adSource: "dsp" }
+      ],
+      extMonitor: "top"
+    });
+    check("netease banner 净化成功", nb.ok, nb.err);
+    check("netease banner 删广告帧并保留正常轮播、剥离监控字段",
+      nb.ok && nb.data.banners.length === 1 && nb.data.banners[0].bannerId === "1" &&
+      nb.data.banners[0].monitorImpress === undefined && nb.data.extMonitor === undefined,
+      nb.data);
+  }
+  const malformedPayloads = [
+    null, [], "oops", 123, true, {},
+    { data: null }, { data: [] }, { data: "bad" },
+    { data: { items: "bad", relates: "bad", sections: [null, 1], widget_list: "bad" } },
+    { banners: "bad", ext: "bad" }
+  ];
+  let matrixBad = 0;
+  for (const [label, expr] of allExprs) {
+    for (const pld of malformedPayloads) {
+      const r = jqRun(expr, pld);
+      if (!r.ok) {
+        matrixBad++;
+        check(label + " 畸形负载崩溃: " + JSON.stringify(pld), false, r.err);
+      }
+    }
+  }
+  check("全仓 " + allExprs.length + " 条 response.json.jq x " + malformedPayloads.length + " 畸形输入全数 rc=0",
+    matrixBad === 0, matrixBad);
 }
 
 console.log("\n" + (fail === 0 ? "ALL PASS" : "FAILURES") +

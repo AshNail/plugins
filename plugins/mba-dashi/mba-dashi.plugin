@@ -1,15 +1,15 @@
 #!name=MBA大师 · 去广告 v1.0.2
 #!desc=MBA大师穿山甲与优量汇开屏、插屏广告黑洞拦截；讲义与题库核心功能零接触。零证书。
 #!author=edy
-#!version=1.0.2
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/mba-dashi/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/86/27/80/86278087-41e3-d092-0c12-ee4ae052aff0/AppIcon-0-0-1x_U007epad-0-11-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-07
 #!tag=去广告,MBA,考研
 #!type=normal
 #!source=2f6c52748aaff690c22246f09aef44b32236a552f90668e7be5122032c41fe51
+# version=1.0.2
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/mba-dashi/README.md
 
 # ========================================================================
 # MBA大师 · 去广告 v1.0.2
@@ -74,6 +74,7 @@ DOMAIN,lianmengapi.snssdk.com,REJECT
 DOMAIN,mdevstat.qqlive.qq.com,REJECT
 DOMAIN,mtrace.qq.com,REJECT
 DOMAIN,open.isnssdk.com,REJECT
+DOMAIN,p.ssp.qq.com,REJECT
 DOMAIN,p3-ad-aweme.byteimg.com,REJECT
 DOMAIN,p3-ad-sign.byteimg.com,REJECT
 DOMAIN,p6-ad-sign.byteimg.com,REJECT
@@ -181,6 +182,7 @@ gdtimg.com = 127.0.0.1
 l.qq.com = 127.0.0.1
 mdevstat.qqlive.qq.com = 127.0.0.1
 mtrace.qq.com = 127.0.0.1
+p.ssp.qq.com = 127.0.0.1
 pingtcss.qq.com = 127.0.0.1
 snowflake.qq.com = 127.0.0.1
 tencentmind.com = 127.0.0.1

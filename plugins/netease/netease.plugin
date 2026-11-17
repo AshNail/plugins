@@ -1,9 +1,7 @@
 #!name=网易云音乐 · 净化（规则层） v1.2.0
 #!desc=网易云音乐规则层与原生复写净化：广告素材与HTTPDNS双栈pre-DNS/Host拦截，开屏/弹窗/推荐广告接口短路，首页/发现/评论区广告字段原生 jq 剥离；零第三方脚本。
 #!author=AshNail（规则整理；来源 ios151/NeteasemusicAd、可莉 NeteaseCloudMusic_remove_ads）
-#!version=1.2.0
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/netease/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/34/2b/2e/342b2e2d-15fc-cc3b-5f14-c8f9792bb411/appIconNew-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,macOS
 #!date=2026-11-16
@@ -16,10 +14,12 @@
 # 所以只能是这条直链。哈希由 tools/source_hash.py 现算，不要手抄——
 # lint 的 check_source_hash() 会反向复算核对，手抄的哈希迟早与地址脱钩。
 #!source=79b308540c28d474c9e911af5fed66e455b3d611c2c7d093d914879d34cdba7e
+# version=1.2.0
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/netease/README.md
 
 [Argument]
-cleanAds = switch, true, tag=去广告与推广净化, desc=默认开启：拦截开屏/信息流/搜索推广词/直播入口等广告接口，并用原生 jq 剥离首页/发现/评论区/收银台/横幅响应中的广告字段。
-slimUI = switch, false, tag=界面与侧边栏精简, desc=默认关闭：额外隐藏侧边栏小程序、云贝入口、商城入口与红点（已剔除上游误伤「我的收藏歌手」与版本检查的规则）。
+cleanAds = switch, true, type=boolean, tag=去广告与推广净化, desc=默认开启：拦截开屏/信息流/搜索推广词/直播入口等广告接口，并用原生 jq 剥离首页/发现/评论区/收银台/横幅响应中的广告字段。
+slimUI = switch, false, type=boolean, tag=界面与侧边栏精简, desc=默认关闭：额外隐藏侧边栏小程序、云贝入口、商城入口与红点（已剔除上游误伤「我的收藏歌手」与版本检查的规则）。
 
 [Host]
 # 网易云音乐专属 HTTPDNS 防绕过与独立广告素材 CDN 黑洞（独立安装本插件即生效，不伤音频流媒体与封面图 CDN）
@@ -75,9 +75,8 @@ response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interf
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/v1\/user\/info/i then response.json.jq("walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/link\/page\/rcmd\/(?:resource\/show|block\/resource\/multi\/refresh)/i then response.json.jq("walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/user\/follow\/users\/mixed\/get/i then response.json.jq("walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
-response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/v2\/banner\/get/i then response.json.jq("(if (type == \"object\" and (.banners | type) == \"array\") then .banners |= map(select(type != \"object\" or (.adid == null and .adurl == null and .adSource == null))) else . end) | walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
+response if ${cleanAds} == true && ${url} ~= /^https?:\/\/(?:(?:ipv4|ipv6|interface\d?)\.)?music\.163\.com\/(?:x?e?api|api)\/v2\/banner\/get/i then response.json.jq("if type == \"object\" and (.banners | type) == \"array\" then (.banners |= map(select(type != \"object\" or (.adid == null and .adurl == null and .adSource == null)))) else . end | walk(if type == \"object\" then del(.adid, .adurl, .adurlV2, .adSource, .adLocation, .adResource, .monitorImpress, .monitorClick, .monitorType, .monitorImpressList, .monitorClickList, .monitorBlackList, .extMonitor, .extMonitorInfo) else . end)")
 
 # 覆盖网易云音乐双栈与多接口分片（interface.music.163.com / interface?.music.163.com / ipv4.music.163.com / ipv6.music.163.com），配合上方 [Rewrite] 正则净化
 [MITM]
 hostname = music.163.com, interface.music.163.com, interface?.music.163.com, ipv4.music.163.com, ipv6.music.163.com
-h2 = true

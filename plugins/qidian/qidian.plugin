@@ -1,15 +1,15 @@
 #!name=起点读书 · 看书激励助手 v4.2.11
 #!desc=起点读书开屏与页面广告原生复写清理，福利中心精简，全自动看书激励、签到与每日任务助手。
 #!author=edy
-#!version=4.2.11
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qidian/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/8e/f8/13/8ef8132f-e3d6-84c2-5157-e85a8d4c75d0/AppIcon-0-0-1x_U007epad-0-1-0-0-sRGB-GLES2_U002c0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-12
 #!tag=起点读书,config,响应净化,福利页精简,自动签到,激励任务,限时激励,纯净阅读
 #!type=normal
 #!source=60a9c1e72b00fe908b80bc3e402450b3b8caa330e7ebcfd4599b0d512e856bdf
+# version=4.2.11
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/qidian/README.md
 
 # ========================================================================
 # 起点读书 · 看书激励助手 v4.2.11
@@ -72,11 +72,11 @@
 
 [Argument]
 
-QDREADER_COOKIE_ENABLE = switch,true,tag=是否捕获Cookie,desc=是否捕获起点读书 Cookie（签到/自动兑换章节卡/福利签到的唯一数据源）。2026-09-30 从 CAPTURE_ENABLE 解耦：原先 Cookie 捕获挂在 CAPTURE_ENABLE 上，而该开关同时决定 [Rewrite]/[Script] 互斥，于是关掉抓包重写让脚本接管广告必然连带签到全废——现已拆开
-CRONEXP = input,"11 2 * * *",tag=CRONEXP,desc=默认每天2点11分执行，建议自行配置。
-QDREADER_DEBUG = switch,false,tag=是否开启调试模式,desc=是否开启调试模式
+QDREADER_COOKIE_ENABLE = switch,true,type=boolean,tag=是否捕获Cookie,desc=是否捕获起点读书 Cookie（签到/自动兑换章节卡/福利签到的唯一数据源）。2026-09-30 从 CAPTURE_ENABLE 解耦：原先 Cookie 捕获挂在 CAPTURE_ENABLE 上，而该开关同时决定 [Rewrite]/[Script] 互斥，于是关掉抓包重写让脚本接管广告必然连带签到全废——现已拆开
+CRONEXP = input,"11 2 * * *",type=string,tag=CRONEXP,desc=默认每天2点11分执行，建议自行配置。
+QDREADER_DEBUG = switch,false,type=boolean,tag=是否开启调试模式,desc=是否开启调试模式
 TIMEOUT = input,420,type=number,tag=脚本执行超时时间,desc=TIMEOUT（默认420秒，高阶任务全量需3-4分钟）
-QDREADER_AUTO_ENABLE = switch,true,tag=自动化任务,desc=开启后执行全部自动化任务（激励/每日/抽奖/兑换/章节卡/荐书）。关闭则 cron 只签到不跑高阶任务
+QDREADER_AUTO_ENABLE = switch,true,type=boolean,tag=自动化任务,desc=开启后执行全部自动化任务（激励/每日/抽奖/兑换/章节卡/荐书）。关闭则 cron 只签到不跑高阶任务
 
 [Rule]
 

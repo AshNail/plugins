@@ -41,6 +41,9 @@ def fetch(url: str):
         return 0, str(exc).encode()
 
 
+RAW_PREFIX = "https://raw.githubusercontent.com/AshNail/plugins/main/"
+
+
 def collect_files():
     """插件引用的脚本 + 插件本身（未引用的脚本不用上传）。"""
     files = []
@@ -52,6 +55,15 @@ def collect_files():
         for name in sorted(set(re.findall(r'script\("([^"]+)"', text))):
             if name.endswith(".min.js"):
                 files.append(plugin.parent / name)
+        for sp in sorted(set(re.findall(r"script-path\s*=\s*([^\s,]+)", text))):
+            ref = sp.strip("\"'")
+            target = (
+                ROOT / ref[len(RAW_PREFIX):]
+                if ref.startswith(RAW_PREFIX)
+                else plugin.parent / ref
+            )
+            if target.is_file():
+                files.append(target)
         files.append(plugin)
     out = []
     for f in files:
@@ -158,8 +170,8 @@ def main():
     for plugin in sorted(ROOT.glob("plugins/*/*.plugin")):
         rel = plugin.relative_to(ROOT)
         status, remote = fetch(base + str(rel).replace("\\", "/"))
-        ver = re.search(rb"^#!version=(.*)$", remote, re.M)
-        local_ver = re.search(r"^#!version=(.*)$", plugin.read_text(), re.M)
+        ver = re.search(rb"^(?:#!|#\s*)version\s*=\s*(.*)$", remote, re.M)
+        local_ver = re.search(r"^(?:#!|#\s*)version\s*=\s*(.*)$", plugin.read_text(), re.M)
         if status != 200:
             print(f"  [缺失] {rel}")
             bad += 1

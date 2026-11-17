@@ -1,15 +1,15 @@
 #!name=腾讯新闻 · 广告字段清理（原生复写） v1.1.2
 #!desc=腾讯新闻开屏、列表及专题广告原生复写清理，保留正文内容与互动功能。
 #!author=edy
-#!version=1.1.2
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/qqnews/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/fe/8f/41/fe8f4166-3e15-37a2-11e7-f411084ba771/AppIconNew-0-0-1x_U007epad-0-9-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-09
 #!tag=去广告,腾讯新闻
 #!type=normal
 #!source=1123633066c7ed18b0e7ba0695c4b733ea751eef94734977d18c2135233287e1
+# version=1.1.2
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/qqnews/README.md
 
 # ========================================================================
 # 腾讯新闻 · 广告字段清理（原生复写） v1.1.2
@@ -29,7 +29,7 @@
 
 [Argument]
 
-cleanAds = switch,true,tag=同域开屏与信息流去广告（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：news.ssp.qq.com/app 开屏配置请求 reject_dict(200) 终止；列表接口 adList 置 null；专题/频道信息流过滤 widget_type 为 ad_list 的广告组件。需已安装并信任 Loon 证书。
+cleanAds = switch,true,type=boolean,tag=同域开屏与信息流去广告（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：news.ssp.qq.com/app 开屏配置请求 reject_dict(200) 终止；列表接口 adList 置 null；专题/频道信息流过滤 widget_type 为 ad_list 的广告组件。需已安装并信任 Loon 证书。
 
 [Rule]
 

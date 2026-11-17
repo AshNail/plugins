@@ -1,15 +1,15 @@
 #!name=美团 · 去广告 v1.3.4
 #!desc=美团及大众点评第三方联盟、开屏、搜索热词与购物车横幅原生复写及黑洞拦截；交易支付调度零接触。
 #!author=edy
-#!version=1.3.4
 #!homepage=https://github.com/AshNail/plugins
-#!openUrl=https://github.com/AshNail/plugins/blob/main/plugins/meituan/README.md
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/c1/16/65/c1166517-71bb-d29d-d36e-516765f8a537/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
 #!date=2026-11-09
 #!tag=去广告,美团,点评
 #!type=normal
 #!source=531dc7bf27640abdc0f98d8629bc5c2a3325f5341d049c865fd5ff7f243ae957
+# version=1.3.4
+# docs=https://github.com/AshNail/plugins/blob/main/plugins/meituan/README.md
 
 # ========================================================================
 # 美团 · 去广告 v1.3.4
@@ -33,8 +33,8 @@
 
 [Argument]
 
-cleanAds = switch,true,tag=开屏与广告图/热词/Banner 净化（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：wmapi 开屏接口 reject_dict(200) 终止；共享图床广告目录路径 reject_img(200) 返回 1px GIF；搜索热词、购物车顶部 Banner 与启动图通过 response.json.jq 置空。需已安装并信任 Loon 证书。
-slimUI = switch,false,tag=底部 Tab 与推荐流精简（默认关）,desc=隐藏底部 video/xiaotuan Tab（只留首页与我的）、清空购物车/个人中心推荐流与 AI 技能配置。默认关，按需开启。
+cleanAds = switch,true,type=boolean,tag=开屏与广告图/热词/Banner 净化（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：wmapi 开屏接口 reject_dict(200) 终止；共享图床广告目录路径 reject_img(200) 返回 1px GIF；搜索热词、购物车顶部 Banner 与启动图通过 response.json.jq 置空。需已安装并信任 Loon 证书。
+slimUI = switch,false,type=boolean,tag=底部 Tab 与推荐流精简（默认关）,desc=隐藏底部 video/xiaotuan Tab（只留首页与我的）、清空购物车/个人中心推荐流与 AI 技能配置。默认关，按需开启。
 
 [Rule]
 

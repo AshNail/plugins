@@ -245,19 +245,22 @@ def has_mitm(text):
 # 存疑规则不删除，但必须登记：为什么保留 + 怎么在真机上证伪。
 # key = (插件, 规则类型)；一旦这类规则消失，waiver 就会变成「失效」而被 --check 抓出。
 
+_ADS_UA_WAIVER = dict(
+    keep="作为 HTTPDNS 的 UA 特征兜底：域名不含 httpdns 但 UA 含的 SDK，"
+         "理论上能被这层抓到。保留成本为零——不解密就不会误伤任何明文流量。",
+    doubt="ads / ads-next 插件**没有 [MITM] 段**（定位是零证书 DNS 层）。"
+          "User-Agent 是 HTTP 请求头，未解密的 HTTPS 里看不到；"
+          "官方 HTTP 规则页只写了「匹配请求 Header 中的 User-Agent」，"
+          "没有写未解密时是否降级。因此这 4 条很可能命中数为 0。",
+    verify="① 日常使用中打开 Loon 请求日志，搜索这 4 条规则的命中记录；"
+           "② 若要确证：临时给 ads.plugin 加 `[MITM] hostname = *`，"
+           "对比加之前/之后的命中数。若从 0 变为 >0，即证明默认配置下它们不生效，"
+           "届时应当删除或改为把 UA 特征并入域名层。",
+)
+
 WAIVERS = {
-    ("ads", "USER-AGENT"): dict(
-        keep="作为 HTTPDNS 的 UA 特征兜底：域名不含 httpdns 但 UA 含的 SDK，"
-             "理论上能被这层抓到。保留成本为零——不解密就不会误伤任何明文流量。",
-        doubt="ads 插件**没有 [MITM] 段**（它的定位是零证书 DNS 层）。"
-              "User-Agent 是 HTTP 请求头，未解密的 HTTPS 里看不到；"
-              "官方 HTTP 规则页只写了「匹配请求 Header 中的 User-Agent」，"
-              "没有写未解密时是否降级。因此这 4 条很可能命中数为 0。",
-        verify="① 日常使用中打开 Loon 请求日志，搜索这 4 条规则的命中记录；"
-               "② 若要确证：临时给 ads.plugin 加 `[MITM] hostname = *`，"
-               "对比加之前/之后的命中数。若从 0 变为 >0，即证明默认配置下它们不生效，"
-               "届时应当删除或改为把 UA 特征并入域名层。",
-    ),
+    ("ads", "USER-AGENT"): _ADS_UA_WAIVER,
+    ("ads-next", "USER-AGENT"): _ADS_UA_WAIVER,
 }
 
 

@@ -192,12 +192,14 @@ BYPASSES = [
              "**不做**全局 `PROTOCOL,QUIC,REJECT`。",
         expect="sealed",
         evidence=[
-            ("plugins/soda/soda.plugin", r"(?m)^AND,\(\(DOMAIN-SUFFIX,[^)]*\),\(PROTOCOL,QUIC\)\),REJECT$", 1),
-            ("plugins/douyin/douyin.plugin", r"(?m)^AND,\(\(DOMAIN-SUFFIX,[^)]*\),\(PROTOCOL,QUIC\)\),REJECT$", 1),
+            ("plugins/soda/soda.plugin", r"(?m)^AND,\(\(DOMAIN(?:-SUFFIX)?,[^)]*\),\(PROTOCOL,QUIC\)\),REJECT$", 1),
+            ("plugins/douyin/douyin.plugin", r"(?m)^AND,\(\(DOMAIN(?:-SUFFIX)?,[^)]*\),\(PROTOCOL,QUIC\)\),REJECT$", 1),
+            ("plugins/netease/netease.plugin", r"(?m)^AND,\(\(DOMAIN(?:-SUFFIX)?,[^)]*\),\(PROTOCOL,QUIC\)\),REJECT$", 1),
+            ("plugins/bilibili/bilibili.plugin", r"(?m)^AND,\(\(DOMAIN(?:-SUFFIX)?,[^)]*\),\(PROTOCOL,QUIC\)\),REJECT$", 1),
         ],
         verify="ads 是零证书 DNS 层，`[Host]` 在 DNS 阶段生效，不受 QUIC 影响；"
-               "只有带 `[MITM]` 的 soda/douyin 需要回退。真机看请求日志里"
-               "广告域是否出现 HTTP/3。",
+               "所有启用 `[MITM]` 的插件（soda/douyin/netease 与 9 个原生增强 App 插件）"
+               "均在 `[Rule]` 声明对应域的 QUIC 回退。真机看请求日志里广告域是否出现 HTTP/3。",
     ),
     dict(
         id="ipv6-aaaa",
@@ -311,14 +313,18 @@ BYPASSES = [
         id="same-domain-path",
         name="广告接口与业务同域（靠路径区分）",
         how="广告配置走业务域名下的某个路径，只靠域名拦会连业务一起打死。",
-        loon="`[MITM]` + response 脚本按 URL 正则与字段裁剪（soda/douyin 已落地）。",
+        loon="`[MITM]` + 原生 `[Rewrite]` v2 或 response 脚本按 URL 正则与字段裁剪"
+             "（soda/douyin/netease 及 9 个原生增强 App 插件已落地）。",
         expect="partial",
         evidence=[
             ("plugins/soda/soda.plugin", r"(?m)^\[MITM\]", 1),
             ("plugins/douyin/douyin.plugin", r"(?m)^\[Script\]", 1),
+            ("plugins/netease/netease.plugin", r"(?m)^response .*response\.json\.jq\(", 1),
+            ("plugins/bilibili/bilibili.plugin", r"(?m)^response .*response\.json\.jq\(", 1),
+            ("plugins/zhihu/zhihu.plugin", r"(?m)^response .*response\.json\.jq\(", 1),
         ],
         blocked="ads 是零证书 DNS 层，看不到路径，只能整域拦——而整域拦会打死业务。"
-                "soda/douyin 这类带 `[MITM]` 的插件能按路径处理，"
+                "soda/douyin/netease 及 9 个启用 `[MITM]` 的 App 插件能按路径与字段裁剪，"
                 "但**每多适配一个 App 就要重新抓包确认哪些键安全**（见 "
                 "`docs/ad-type-strategy.md` 的 blocked 说明）。",
         verify="新增 App 时先抓包确认广告配置端点与业务端点是否同域；"

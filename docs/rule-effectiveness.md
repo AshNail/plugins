@@ -9,12 +9,12 @@
 两者都只数**声明**。这一份数**前提**：一条规则写在插件里，
 是否具备它命中所需的条件。
 
-- 共审计 **2732** 条会依赖前提的配置行，分布在 `[Rule]` / `[Script]` / `[Rewrite]`。
-- **前提满足 2722 条**（100%）：连接层可见，或插件已声明 `[MITM]`。
-- **仅明文 6 条**（0%）：正则锚定 `^http://`，不依赖解密，但也只吃明文 HTTP——现代 App 几乎全 HTTPS，实际命中率很低。
-- **存疑 4 条**（0%）：需要 HTTP 报文内容，但插件没有 `[MITM]`。
+- 共审计 **4867** 条会依赖前提的配置行，分布在 `[Rule]` / `[Script]` / `[Rewrite]`。
+- **前提满足 4847 条**（100%）：连接层可见，或插件已声明 `[MITM]`。
+- **仅明文 12 条**（0%）：正则锚定 `^http://`，不依赖解密，但也只吃明文 HTTP——现代 App 几乎全 HTTPS，实际命中率很低。
+- **存疑 8 条**（0%）：需要 HTTP 报文内容，但插件没有 `[MITM]`。
 
-存疑不等于错，但必须登记。当前 4 条存疑全部已登记 waiver（见第 3 节），每条都写了保留理由与**真机证伪方法**。
+存疑不等于错，但必须登记。当前 8 条存疑全部已登记 waiver（见第 3 节），每条都写了保留理由与**真机证伪方法**。
 
 ## 1. 三种前提
 
@@ -36,29 +36,30 @@
 
 | 插件 | `[MITM]` | 审计条数 | 前提满足 | 仅明文 | 存疑 |
 |---|---|---:|---:|---:|---:|
-| `ads.plugin` | **无** | 2018 | 2008 | 6 | 4 |
+| `ads.plugin` | **无** | 2054 | 2044 | 6 | 4 |
+| `ads-next.plugin` | **无** | 2094 | 2084 | 6 | 4 |
 | `amap.plugin` | 有 | 28 | 28 | 0 | 0 |
 | `banks.plugin` | **无** | 10 | 10 | 0 | 0 |
-| `bilibili.plugin` | 有 | 16 | 16 | 0 | 0 |
+| `bilibili.plugin` | 有 | 17 | 17 | 0 | 0 |
 | `bubei-danci.plugin` | **无** | 1 | 1 | 0 | 0 |
 | `douyin.plugin` | 有 | 35 | 35 | 0 | 0 |
 | `instagram.plugin` | **无** | 8 | 8 | 0 | 0 |
 | `jd.plugin` | **无** | 5 | 5 | 0 | 0 |
-| `mba-dashi.plugin` | **无** | 67 | 67 | 0 | 0 |
+| `mba-dashi.plugin` | **无** | 68 | 68 | 0 | 0 |
 | `meituan.plugin` | 有 | 38 | 38 | 0 | 0 |
 | `mijia.plugin` | **无** | 8 | 8 | 0 | 0 |
 | `netease.plugin` | 有 | 30 | 30 | 0 | 0 |
 | `qidian.plugin` | 有 | 32 | 32 | 0 | 0 |
 | `qqnews.plugin` | 有 | 5 | 5 | 0 | 0 |
-| `ruankao-tong.plugin` | **无** | 67 | 67 | 0 | 0 |
+| `ruankao-tong.plugin` | **无** | 68 | 68 | 0 | 0 |
 | `soda.plugin` | 有 | 75 | 75 | 0 | 0 |
 | `taobao.plugin` | 有 | 38 | 38 | 0 | 0 |
-| `wechat.plugin` | **无** | 35 | 35 | 0 | 0 |
+| `wechat.plugin` | **无** | 36 | 36 | 0 | 0 |
 | `x.plugin` | **无** | 4 | 4 | 0 | 0 |
 | `xianyu.plugin` | 有 | 39 | 39 | 0 | 0 |
 | `youtube.plugin` | 有 | 7 | 7 | 0 | 0 |
 | `zhihu.plugin` | 有 | 30 | 30 | 0 | 0 |
-| `zhihuifangdong.plugin` | **无** | 136 | 136 | 0 | 0 |
+| `zhihuifangdong.plugin` | **无** | 137 | 137 | 0 | 0 |
 
 ## 3. 存疑清单与豁免登记
 
@@ -71,7 +72,20 @@
 
 **为什么保留**　作为 HTTPDNS 的 UA 特征兜底：域名不含 httpdns 但 UA 含的 SDK，理论上能被这层抓到。保留成本为零——不解密就不会误伤任何明文流量。
 
-**存疑在哪**　ads 插件**没有 [MITM] 段**（它的定位是零证书 DNS 层）。User-Agent 是 HTTP 请求头，未解密的 HTTPS 里看不到；官方 HTTP 规则页只写了「匹配请求 Header 中的 User-Agent」，没有写未解密时是否降级。因此这 4 条很可能命中数为 0。
+**存疑在哪**　ads / ads-next 插件**没有 [MITM] 段**（定位是零证书 DNS 层）。User-Agent 是 HTTP 请求头，未解密的 HTTPS 里看不到；官方 HTTP 规则页只写了「匹配请求 Header 中的 User-Agent」，没有写未解密时是否降级。因此这 4 条很可能命中数为 0。
+
+**怎么证伪**　① 日常使用中打开 Loon 请求日志，搜索这 4 条规则的命中记录；② 若要确证：临时给 ads.plugin 加 `[MITM] hostname = *`，对比加之前/之后的命中数。若从 0 变为 >0，即证明默认配置下它们不生效，届时应当删除或改为把 UA 特征并入域名层。
+
+### `ads-next.plugin` 的 `USER-AGENT`（4 条）
+
+- `httpdns*`
+- `Httpdns*`
+- `httpsdns*`
+- `Httpsdns*`
+
+**为什么保留**　作为 HTTPDNS 的 UA 特征兜底：域名不含 httpdns 但 UA 含的 SDK，理论上能被这层抓到。保留成本为零——不解密就不会误伤任何明文流量。
+
+**存疑在哪**　ads / ads-next 插件**没有 [MITM] 段**（定位是零证书 DNS 层）。User-Agent 是 HTTP 请求头，未解密的 HTTPS 里看不到；官方 HTTP 规则页只写了「匹配请求 Header 中的 User-Agent」，没有写未解密时是否降级。因此这 4 条很可能命中数为 0。
 
 **怎么证伪**　① 日常使用中打开 Loon 请求日志，搜索这 4 条规则的命中记录；② 若要确证：临时给 ads.plugin 加 `[MITM] hostname = *`，对比加之前/之后的命中数。若从 0 变为 >0，即证明默认配置下它们不生效，届时应当删除或改为把 UA 特征并入域名层。
 
@@ -90,6 +104,12 @@
 | `ads` | [Rule] | `^http:\/\/amdc\.alipay\.com\/s\??query` |
 | `ads` | [Rule] | `^http:\/\/.+\/sa(\.gif)?\?project=` |
 | `ads` | [Rule] | `^http:\/\/.+\/v[0-9]*\/(?:event\|log\|track)\/(?:report\|upload\|batch)` |
+| `ads-next` | [Rule] | `^http:\/\/[0-9]+(\.[0-9]+){3}(:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d\|ss)[46` |
+| `ads-next` | [Rule] | `^http:\/\/\[[0-9a-fA-F:]+\](:[0-9]+)?(?:\/v?[0-9]+)?\/(?:sign_)?(?:(?:d\|ss)[46]?` |
+| `ads-next` | [Rule] | `^http:\/\/api\.weibo\.cn\/[0-9]+\/httpdns\/config` |
+| `ads-next` | [Rule] | `^http:\/\/amdc\.alipay\.com\/s\??query` |
+| `ads-next` | [Rule] | `^http:\/\/.+\/sa(\.gif)?\?project=` |
+| `ads-next` | [Rule] | `^http:\/\/.+\/v[0-9]*\/(?:event\|log\|track)\/(?:report\|upload\|batch)` |
 
 ## 5. 三个数，三个分母
 

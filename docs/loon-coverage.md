@@ -15,19 +15,19 @@
 
 | 层 | 已用 | 可用未用 | 判死 | 不适用 | 未文档化 | 利用率 |
 |---|---:|---:|---:|---:|---:|---:|
-| 传输层 | 4 | 0 | 4 | 0 | 1 | **100%** |
-| 规则层 | 11 | 8 | 9 | 1 | 0 | **58%** |
+| 传输层 | 4 | 0 | 5 | 0 | 0 | **100%** |
+| 规则层 | 12 | 7 | 9 | 1 | 0 | **63%** |
 | Host 层 | 2 | 4 | 2 | 0 | 0 | **33%** |
 | 复写层 | 8 | 6 | 13 | 0 | 0 | **57%** |
 | 脚本层 | 22 | 13 | 12 | 0 | 0 | **63%** |
 | 脚本属性 | 6 | 0 | 1 | 0 | 0 | **100%** |
-| 参数层 | 5 | 1 | 0 | 0 | 0 | **83%** |
-| 插件段落 | 8 | 2 | 3 | 0 | 0 | **80%** |
+| 参数层 | 6 | 0 | 0 | 0 | 0 | **100%** |
+| 插件段落 | 9 | 1 | 3 | 0 | 0 | **90%** |
 | 主配置 | 0 | 0 | 2 | 9 | 0 | **0%** |
 | 旧版语法 | 1 | 0 | 1 | 0 | 0 | **100%** |
 | 分发 | 0 | 0 | 0 | 2 | 0 | **0%** |
-| 元数据 | 11 | 1 | 1 | 0 | 2 | **92%** |
-| **合计** | **78** | **35** | **48** | **12** | **3** | **69%** |
+| 元数据 | 11 | 1 | 3 | 0 | 0 | **92%** |
+| **合计** | **81** | **32** | **51** | **12** | **0** | **72%** |
 
 ## 传输层
 
@@ -40,7 +40,7 @@
 | `ca-p12` / `ca-passphrase` | ❌ 判死 | 自带 CA 私钥意味着把私钥塞进公开插件，安全与可移植性双输；统一用 Loon 内置 CA |
 | QUIC→TCP 回退（`PROTOCOL,QUIC`） | ✅ 已用 | 已落地 |
 | 压缩协商降到脚本能解的形状（gzip / identity） | ✅ 已用 | 脚本层只有 ungzip；br/zstd 解不开就是静默跳过。gzip 把体压进 ungzip 的能力圈（soda/douyin，保带宽）；identity 则用于 qidian 的 `force-identity` 规则（直接请求未压缩 JSON，避开脚本层解压限制） |
-| `h2 = true`（官方查不到该键） | ⚪ 未文档化 | 同 `%APPEND%`：官方 MitM 参数表没有 `h2`，而官方产品页把「解密 HTTPS 与 HTTP/2」写成内置默认行为、没有开关。社区插件通行写 `h2 = true`，我们保留它当作「未知键被忽略」时的零成本保险——但保险不是能力，所以不进利用率；写成 `h2 = false` 才是真错（lint 锁死）。旧文档里那句「不计入能力点」在本轮才真正落地：此前它一直挂在「已用」上 |
+| `h2 = true`（官方查不到该键） | ❌ 判死 | 官方 MitM 参数表只定义 `hostname` / `ca-p12` / `ca-passphrase`，官方文档把「解密 HTTPS 和 HTTP/2」写成内置默认行为、无开关；全仓已清除并由 lint 禁止 `h2 = true/false` 遗留写法 |
 | 免压缩（删 `Accept-Encoding`） | ❌ 判死 | `del`/`replace` 掉 Accept-Encoding 等于把协商交回上游随机，而 upsell 一类响应 gzip 后已 183~191 KB，膨胀 5~10 倍不可控。若某几个小接口确实需要「不压缩」，应像 qidian `force-identity` 那样走上一条里显式的 `set(..., "identity")`——声明写死、体积是确定成本，而不是删头赌上游 |
 
 ## 规则层
@@ -50,7 +50,7 @@
 | `DOMAIN` | ✅ 已用 | qidian v4.0.0 严格移植 config 的 [Rule] 层：10 条精确域 REJECT （publiclog.zhiyan / zhiyan.monitor / galileotelemetry / gatherer.m.qq / dl.tiku.qq / apmplus.volces / mssdk.volces / tobapplog.ctobsnssdk / noahqd.yuewen / ali-stats.jpush）。精确 DOMAIN 只拦单主机，不吞子树 |
 | `DOMAIN-SUFFIX` | ✅ 已用 | ads 通配层与 app 插件（banks/x）整域 REJECT 使用；qidian 的 pangolin 激励白名单用 `DOMAIN-SUFFIX, … , DIRECT`。`[Host]` 的 `*.` 只映射 DNS，SUFFIX 还能表达 REJECT-DROP 等规则动作 |
 | `DOMAIN-KEYWORD` | ✅ 已用 | 已落地 |
-| `DOMAIN-WILDCARD`（含 `[0-9]` 字符类） | 🟡 可用未用 | 语法仅 3.5.3(1008)+ 提供且当前只在 TestFlight；App Store 正式版 3.5.2(996) 对未知规则类型的行为未文档化，ads 插件把 41 条通配/家族 glob 默认注释收录，3.5.3+ 用户取消注释即生效 |
+| `DOMAIN-WILDCARD`（含 `[0-9]` 字符类） | ✅ 已用 | 语法需 Loon 3.5.3(1008)+：`plugins/ads-next/ads-next.plugin` 已默认激活 40 条无红线冲突通配/家族 glob（命中微信红线的 `ads.*` 保留注释），`plugins/ads/ads.plugin` 为兼容 App Store 3.5.2(996) 保持全注释 |
 | `URL-REGEX` | ✅ 已用 | 已写 6 条，**全部锚定 `^http://`**（HTTPDNS 配置与明文上报）。技术上有效、不依赖解密，但只吃明文 HTTP，而现代 App 接口几乎全 HTTPS，实际命中面很窄。见 `docs/rule-effectiveness.md` 第 4 节 |
 | `USER-AGENT` | ✅ 已用 | 已写 4 条（`httpdns*` / `httpsdns*`）。⚠️ **前提未满足**：ads 插件**没有 `[MITM]` 段**，而 UA 是 HTTP 请求头、未解密时看不到——能否命中**未经验证**，已登记 waiver（含真机证伪方法）。见 `docs/rule-effectiveness.md` 第 3 节 |
 | `IP-CIDR` / `IP-CIDR6` | 🟡 可用未用 | HTTPDNS 接入点拦截已写好但默认注释（换 IP 就失效，需要按版本人工核对） |
@@ -195,7 +195,7 @@
 | `input` 控件 | ✅ 已用 | qidian v3.6.0 起用 input 承接 CRONEXP（cron 表达式文本）与 TIMEOUT（超时秒数）两个可编辑参数——config 范式引擎的参数化入口，douyin 的 cron 提醒输入随提醒层撤下 |
 | `type=number` | ✅ 已用 | qidian TIMEOUT=input,420,type=number：数值形态让 Loon 按数字传参（config 有效基线同形） |
 | `type=string` | ✅ 已用 | 已落地 |
-| `type=boolean` | 🟡 可用未用 | 只有 `input` / `select` 需要声明类型，而两者都不接受 boolean；`switch` 本身就返回布尔 |
+| `type=boolean` | ✅ 已用 | 按官方 Plugin 页参数定义，每个 `switch` 控件都显式声明 `type=boolean`（并与 `input` `type=string`/`number`、`select` `type=string` 对齐全量覆盖） |
 
 ## 插件段落
 
@@ -213,7 +213,7 @@
 | `[General]` 的 `bypass-tun` / `skip-proxy` / `real-ip` | ❌ 判死 | 这些是「让流量绕过代理 / 改写解析结果」的全局路由开关，属用户主配置主权；插件替用户改会让别家规则或局域网访问静默失效，且与去广告无关 |
 | `[General]` 的 `include-tun`（Build 1007+） | ❌ 判死 | 仅 Build 1007+ 且同样是全局路由开关；3.5.2(996) 不识别，写进去等于给未来埋雷 |
 | `[General]` 的 `ipv6-vif`（Build 1007+） | ❌ 判死 | 同上：3.5.2 不识别，且改 IPv6 出口接口会影响整个设备的连通性，插件无权替用户决定 |
-| `[IP Rewrite]` | 🟡 可用未用 | 作为广告目标 IP 的拦截手段是死路（IP 随时变）；唯一落地形态是 16 条 HTTPDNS 网关单 IPv4 以注释态收录（Build 1007+，默认关），生效项为 0 |
+| `[IP Rewrite]` | ✅ 已用 | 作为广告目标 IP 的拦截手段是死路（IP 随时变），但 16 条 HTTPDNS 网关单 IPv4 在 TUN 阶段最快拦截：`plugins/ads-next/ads-next.plugin` 已默认启用（Loon 3.5.3/1008+），`plugins/ads/ads.plugin` 默认注释供 3.5.2 兼容 |
 
 ## 主配置
 
@@ -252,9 +252,9 @@
 | `#!name` | ✅ 已用 | 已落地 |
 | `#!desc` | ✅ 已用 | 已落地 |
 | `#!author` | ✅ 已用 | 已落地 |
-| `#!version`（官方查不到该键） | ⚪ 未文档化 | 官方 Plugin 页把插件信息字段列成一张表：`#!name`/`#!desc`/`#!author`/`#!homepage`/`#!icon`/`#!system`/`#!system_version`/`#!loon_version`/`#!date`/`#!tag`/`#!type` 共 11 个，**没有 `#!version`**；整站 grep 也只有 `system_version` / `loon_version`。它是社区插件的通行写法，Loon 大概率原样忽略（插件面板显示的版本来自 `#!date` 的「按原样显示」语义）。23 个插件都带着它：删掉最多丢一个可能根本不存在的显示项，留着也不影响解析——但它不是能力，不进利用率。取证见 `docs/device-checklist.md` |
+| `#!version`（官方查不到该键） | ❌ 判死 | 官方 Plugin 页只列 11 个 `#!` 字段 + `#!source`，不包含 `#!version`；全部插件已改为 `# version=` 普通注释（版本号同时写在 `#!name` 与 `check-remote.py` 可解析注释），全仓禁止 active `#!version=` |
 | `#!homepage` | ✅ 已用 | 已落地 |
-| `#!openUrl`（官方查不到该键） | ⚪ 未文档化 | 同上，官方 11 个 `#!` 字段里没有 `#!openUrl`；`openUrl` 只出现在 Script API 的 `$notification.post(..., attach)` 里，是另一个语法位。我们用它把插件 README 变成用户可点的入口，属于「社区约定 + 可能真的生效」——真机确认插件卡片是否会跳到该 URL，生效则升回 used，不生效则删除该行（`#!homepage` 已经在指仓库主页，功能不缺失） |
+| `#!openUrl`（官方查不到该键） | ❌ 判死 | 同上，官方 11 个 `#!` 字段里没有 `#!openUrl`（`openUrl` 只属 Script API 通知 `attach`）；README 链接已改为 `# docs=` 注释，主页由官方 `#!homepage` 承担，全仓禁止 active `#!openUrl=` |
 | `#!icon` | ✅ 已用 | 已落地 |
 | `#!system` | ✅ 已用 | 已落地 |
 | `#!system_version` | 🟡 可用未用 | 一个值同时约束 `#!system` 里列的**所有**平台：ads 写了 `iOS,iPadOS,tvOS,macOS`，填 15.0 等于要求 macOS 15 / tvOS 15。不填＝全部支持，比填错安全 |

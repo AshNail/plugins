@@ -1,12 +1,12 @@
-# 哔哩哔哩 · 去广告与精简 v1.3.0
+# 哔哩哔哩 · 去广告与精简 v1.3.1
 
 > 哔哩哔哩开屏、推荐流、竖屏 Story 广告、视频页与VIP物料推广原生复写过滤，遥测及HTTPDNS双栈拦截；核心播放直播零接触。
 
-版本 **1.3.0** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
+版本 **1.3.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 净化层默认启用（`[Argument]`+`[MITM]`+`[Script]` 三层已在文件里生效，须已装并信任 Loon 证书）· 拦截面 `[Host]`/`[Rule]`
 
 ## 安装
 
-[![一键导入 bilibili.plugin](https://img.shields.io/badge/Loon-导入%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.3.0-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbilibili%2Fbilibili.plugin)
+[![一键导入 bilibili.plugin](https://img.shields.io/badge/Loon-导入%E5%93%94%E5%93%A9%E5%93%94%E5%93%A9%20%C2%B7%20%E5%8E%BB%E5%B9%BF%E5%91%8A%E4%B8%8E%E7%B2%BE%E7%AE%80%20v1.3.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbilibili%2Fbilibili.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili.plugin
@@ -22,7 +22,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 
 ## 默认启用的 MITM 层（本 App 未做证书固定；必须已装并信任 Loon 证书）
 
-哔哩哔哩 iOS 的开屏广告、导航栏推广、首页推荐流广告卡片、视频详情页下推荐广告位与核心业务 API 共用 app.bilibili.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 与 slimNav 开关控制，零 JS 脚本）：① 开屏接口 x/v2/splash/(list|show|brand/list|event/list2) 在 request 阶段直接 reject_dict(200) 终止；② 首页推荐流过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）与游戏卡片；③ 视频详情页 x/v2/view 剔除播放下方商业组件（cm_config/cms/cm_ipad）及推荐列表广告项；④ 搜索广场过滤热搜中的推广与游戏；⑤ 顶部与底部导航栏过滤会员购/发布与游戏中心。
+哔哩哔哩 iOS 的开屏广告、导航栏推广、首页推荐流广告卡片、视频详情页下推荐广告位与核心业务 API 共用 app.bilibili.com，不可 DNS 黑洞整域。本层默认启用 Loon 原生 [Rewrite] v2 引擎复写（由 cleanAds 与 slimNav 开关控制，零 JS 脚本）：① 开屏接口 x/v2/splash/(list|show|brand/list|event/list2) 在 request 阶段直接 reject_dict(200) 终止；② 首页推荐流过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）与游戏卡片；③ 视频详情页 x/v2/view 剔除播放下方商业组件（cm_config/cms/cm_ipad/cm_under_player）及推荐列表广告与商业卡片（ad_*/cm_*）；④ 搜索广场过滤热搜中的推广与游戏；⑤ 顶部与底部导航栏过滤会员购/发布与游戏中心，并剥离个人中心 x/v2/account/mine 的大会员促销推广区。
 
 - 解密主机（`[MITM] hostname`，1 个，本层已默认生效）：`app.bilibili.com`
 - 配套 QUIC 回退（`AND,((DOMAIN-SUFFIX,<域>),(PROTOCOL,QUIC)),REJECT`，1 条，已生效）：MITM 只解密 TCP，App 走 HTTP/3 时 `URL-REGEX`、`[Rewrite]` 复写与脚本绑定全部静默失效；它拒的是 QUIC 这条通道，同一主机的 TCP 请求零影响。
@@ -31,8 +31,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 
 | 开关 | 默认 | 作用 |
 |---|---|---|
-| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：开屏 splash/(list|show|brand/list|event/list2) 请求直接 reject_dict(200) 终止；推荐信息流过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）与推广游戏；视频详情页剔除播放下方广告组件与相关推荐广告；搜索广场过滤游戏与广告推广。需已安装并信任 Loon 证书。 |
-| `slimNav` | true | 过滤底部导航栏「会员购/发布」与顶部导航栏「游戏中心」。 |
+| `cleanAds` | true | 启用 Loon 原生 [Rewrite] v2 引擎复写：开屏 splash/(list|show|brand/list|event/list2) 请求直接 reject_dict(200) 终止；推荐信息流过滤商业广告卡片（cm_v1/cm_v2/cm_double_v9/ad_av/ad_web_s）与推广游戏；视频详情页剔除播放下方广告组件（cm_config/cms/cm_ipad/cm_under_player）与相关推荐广告；搜索广场过滤游戏与广告推广。需已安装并信任 Loon 证书。 |
+| `slimNav` | true | 过滤底部导航栏「会员购/发布」、顶部导航栏「游戏中心」，并移除「我的」页大会员促销条（vip_section/vip_section_v2/modular_vip_section）。 |
 
 ### 净化复写（`[Rewrite]`）
 
@@ -43,7 +43,8 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/bilibili/bilibili
 | `kill-vip-ads-materials` | request | `reject_dict` | `cleanAds` | 会员商业广告物料预拉取接口直接返回 200 + 空字典 |
 | `clean-feed-index` | response | `response.json.jq` | `cleanAds` | 推荐信息流：按前缀通杀商业广告卡片（cm_*/ad_*）、ad_info 节点、推广游戏与横幅广告 |
 | `clean-feed-story` | response | `response.json.jq` | `cleanAds` | 竖屏 Story 短视频流：剔除穿插的 ad_info / ad_* / vertical_ad_* 广告视频 |
-| `clean-view-relates` | response | `response.json.jq` | `cleanAds` | 视频详情页：剔除播放下方商业推广配置（cm_config/cms/cm_ipad）及关联推荐中的广告卡片 |
+| `clean-view-relates` | response | `response.json.jq` | `cleanAds` | 视频详情页：剔除播放下方商业推广配置（cm_config/cms/cm_ipad/cm_under_player）及关联推荐中的广告与商业卡片（is_ad_loc/ad_info/ad_*/cm_*） |
+| `clean-account-mine` | response | `response.json.delete` | `slimNav` | 个人中心「我的」页：仅删除大会员开通/续费促销推广区（vip_section/vip_section_v2/modular_vip_section），保留会员状态、钱包、收藏与历史记录 |
 | `clean-search-square` | response | `response.json.jq` | `cleanAds` | 搜索广场：过滤热搜词中的游戏与广告推广 |
 | `clean-nav-tab` | response | `response.json.jq` | `slimNav` | 导航栏精简：过滤底栏会员购/发布与顶栏游戏中心 |
 | `clean-skin-equip` | response | `response.json.delete` | `slimNav` | 精简首页主题皮肤装扮推广模块 |

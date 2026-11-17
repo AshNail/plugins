@@ -158,14 +158,11 @@ CAPABILITIES = [
          why="脚本层只有 ungzip；br/zstd 解不开就是静默跳过。gzip 把体压进 ungzip 的能力圈"
              "（soda/douyin，保带宽）；identity 则用于 qidian 的 `force-identity` 规则"
              "（直接请求未压缩 JSON，避开脚本层解压限制）"),
-    dict(layer="传输层", key="h2", name="`h2 = true`（官方查不到该键）", expect="undocumented",
-         token="MITM.h2",
-         probe=r"(?m)^\s*h2\s*=\s*true\s*$",
+    dict(layer="传输层", key="h2", name="`h2 = true`（官方查不到该键）", expect="reject",
+         probe=r"(?m)^\s*h2\s*=\s*(?:true|false)\s*$",
          href=DOC + "/MitM/",
-         why="同 `%APPEND%`：官方 MitM 参数表没有 `h2`，而官方产品页把「解密 HTTPS 与 HTTP/2」写成"
-             "内置默认行为、没有开关。社区插件通行写 `h2 = true`，我们保留它当作「未知键被忽略」时的"
-             "零成本保险——但保险不是能力，所以不进利用率；写成 `h2 = false` 才是真错（lint 锁死）。"
-             "旧文档里那句「不计入能力点」在本轮才真正落地：此前它一直挂在「已用」上"),
+         why="官方 MitM 参数表只定义 `hostname` / `ca-p12` / `ca-passphrase`，官方文档把「解密 HTTPS 和 HTTP/2」写成内置默认行为、无开关；"
+             "全仓已清除并由 lint 禁止 `h2 = true/false` 遗留写法"),
     dict(layer="传输层", key="no-compress", name="免压缩（删 `Accept-Encoding`）", expect="reject",
          probe=r'request\.header\.(del|replace)\(\s*"Accept-Encoding"',
          href=DOC + "/Rewrite/rewrite_v2",
@@ -187,10 +184,10 @@ CAPABILITIES = [
              "`DOMAIN-SUFFIX, … , DIRECT`。`[Host]` 的 `*.` 只映射 DNS，SUFFIX 还能表达 REJECT-DROP 等规则动作"),
     dict(layer="规则层", key="r-keyword", name="`DOMAIN-KEYWORD`", expect="used",
          probe=r"(?m)^DOMAIN-KEYWORD\s*,", href=DOC + "/Rule/domain_rule"),
-    dict(layer="规则层", key="r-wildcard", name="`DOMAIN-WILDCARD`（含 `[0-9]` 字符类）", expect="open",
+    dict(layer="规则层", key="r-wildcard", name="`DOMAIN-WILDCARD`（含 `[0-9]` 字符类）", expect="used",
          probe=r"(?m)^DOMAIN-WILDCARD\s*,", href=DOC + "/Rule/domain_rule",
-         why="语法仅 3.5.3(1008)+ 提供且当前只在 TestFlight；App Store 正式版 3.5.2(996) 对未知规则类型"
-             "的行为未文档化，ads 插件把 41 条通配/家族 glob 默认注释收录，3.5.3+ 用户取消注释即生效"),
+         why="语法需 Loon 3.5.3(1008)+：`plugins/ads-next/ads-next.plugin` 已默认激活 40 条无红线冲突通配/家族 glob"
+             "（命中微信红线的 `ads.*` 保留注释），`plugins/ads/ads.plugin` 为兼容 App Store 3.5.2(996) 保持全注释"),
     dict(layer="规则层", key="r-url-regex", name="`URL-REGEX`", expect="used",
          probe=r"(?m)^URL-REGEX\s*,", href=DOC + "/Rule/http_rule",
          why="已写 6 条，**全部锚定 `^http://`**（HTTPDNS 配置与明文上报）。"
@@ -603,9 +600,9 @@ CAPABILITIES = [
          why="qidian TIMEOUT=input,420,type=number：数值形态让 Loon 按数字传参（config 有效基线同形）"),
     dict(layer="参数层", key="a-type-string", name="`type=string`", expect="used",
          probe=r"type\s*=\s*string\b", href=DOC + "/Plugin/"),
-    dict(layer="参数层", key="a-type-boolean", name="`type=boolean`", expect="open",
+    dict(layer="参数层", key="a-type-boolean", name="`type=boolean`", expect="used",
          probe=r"type\s*=\s*boolean\b", href=DOC + "/Plugin/",
-         why="只有 `input` / `select` 需要声明类型，而两者都不接受 boolean；`switch` 本身就返回布尔"),
+         why="按官方 Plugin 页参数定义，每个 `switch` 控件都显式声明 `type=boolean`（并与 `input` `type=string`/`number`、`select` `type=string` 对齐全量覆盖）"),
 
     # ---------------- 插件段落 ----------------
     dict(layer="插件段落", key="p-general", name="`[General]`", expect="used",
@@ -641,10 +638,10 @@ CAPABILITIES = [
     dict(layer="插件段落", key="p-general-ipv6-vif", name="`[General]` 的 `ipv6-vif`（Build 1007+）",
          expect="reject", probe=r"(?m)^\s*ipv6-vif\s*=", href=DOC + "/Plugin/",
          why="同上：3.5.2 不识别，且改 IPv6 出口接口会影响整个设备的连通性，插件无权替用户决定"),
-    dict(layer="插件段落", key="p-iprewrite", name="`[IP Rewrite]`", expect="open",
+    dict(layer="插件段落", key="p-iprewrite", name="`[IP Rewrite]`", expect="used",
          probe=r"(?m)^\[IP Rewrite\]", href=DOC + "/Plugin/",
-         why="作为广告目标 IP 的拦截手段是死路（IP 随时变）；唯一落地形态是 16 条 HTTPDNS 网关"
-             "单 IPv4 以注释态收录（Build 1007+，默认关），生效项为 0"),
+         why="作为广告目标 IP 的拦截手段是死路（IP 随时变），但 16 条 HTTPDNS 网关单 IPv4 在 TUN 阶段最快拦截："
+             "`plugins/ads-next/ads-next.plugin` 已默认启用（Loon 3.5.3/1008+），`plugins/ads/ads.plugin` 默认注释供 3.5.2 兼容"),
 
     # ---------------- 主配置（[General] 非白名单键 / 节点与策略） ----------------
     dict(layer="主配置", key="m-hijack-dns", name="`[General]` 的 `hijack-dns`（3.2.5+）", expect="na",
@@ -735,22 +732,15 @@ CAPABILITIES = [
     dict(layer="元数据", key="m-name", name="`#!name`", expect="used", probe=r"(?m)^#!name\s*=", href=DOC + "/Plugin/"),
     dict(layer="元数据", key="m-desc", name="`#!desc`", expect="used", probe=r"(?m)^#!desc\s*=", href=DOC + "/Plugin/"),
     dict(layer="元数据", key="m-author", name="`#!author`", expect="used", probe=r"(?m)^#!author\s*=", href=DOC + "/Plugin/"),
-    dict(layer="元数据", key="m-version", name="`#!version`（官方查不到该键）", expect="undocumented",
-         token="METADATA.version",
+    dict(layer="元数据", key="m-version", name="`#!version`（官方查不到该键）", expect="reject",
          probe=r"(?m)^#!version\s*=", href=DOC + "/Plugin/",
-         why="官方 Plugin 页把插件信息字段列成一张表：`#!name`/`#!desc`/`#!author`/`#!homepage`/`#!icon`/"
-             "`#!system`/`#!system_version`/`#!loon_version`/`#!date`/`#!tag`/`#!type` 共 11 个，**没有 `#!version`**；"
-             "整站 grep 也只有 `system_version` / `loon_version`。它是社区插件的通行写法，Loon 大概率原样忽略"
-             "（插件面板显示的版本来自 `#!date` 的「按原样显示」语义）。23 个插件都带着它：删掉最多丢一个"
-             "可能根本不存在的显示项，留着也不影响解析——但它不是能力，不进利用率。取证见 `docs/device-checklist.md`"),
+         why="官方 Plugin 页只列 11 个 `#!` 字段 + `#!source`，不包含 `#!version`；"
+             "全部插件已改为 `# version=` 普通注释（版本号同时写在 `#!name` 与 `check-remote.py` 可解析注释），全仓禁止 active `#!version=`"),
     dict(layer="元数据", key="m-homepage", name="`#!homepage`", expect="used", probe=r"(?m)^#!homepage\s*=", href=DOC + "/Plugin/"),
-    dict(layer="元数据", key="m-open-url", name="`#!openUrl`（官方查不到该键）", expect="undocumented",
-         token="METADATA.openurl",
+    dict(layer="元数据", key="m-open-url", name="`#!openUrl`（官方查不到该键）", expect="reject",
          probe=r"(?m)^#!openUrl\s*=", href=DOC + "/Plugin/",
-         why="同上，官方 11 个 `#!` 字段里没有 `#!openUrl`；`openUrl` 只出现在 Script API 的 "
-             "`$notification.post(..., attach)` 里，是另一个语法位。我们用它把插件 README 变成用户可点的入口，"
-             "属于「社区约定 + 可能真的生效」——真机确认插件卡片是否会跳到该 URL，生效则升回 used，"
-             "不生效则删除该行（`#!homepage` 已经在指仓库主页，功能不缺失）"),
+         why="同上，官方 11 个 `#!` 字段里没有 `#!openUrl`（`openUrl` 只属 Script API 通知 `attach`）；"
+             "README 链接已改为 `# docs=` 注释，主页由官方 `#!homepage` 承担，全仓禁止 active `#!openUrl=`"),
     dict(layer="元数据", key="m-icon", name="`#!icon`", expect="used", probe=r"(?m)^#!icon\s*=", href=DOC + "/Plugin/"),
     dict(layer="元数据", key="m-system", name="`#!system`", expect="used", probe=r"(?m)^#!system\s*=", href=DOC + "/Plugin/"),
     dict(layer="元数据", key="m-system-version", name="`#!system_version`", expect="open",
