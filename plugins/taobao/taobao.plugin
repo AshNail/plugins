@@ -4,11 +4,11 @@
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/59/ef/48/59ef4826-1909-6c34-542d-9a55aae79c6c/AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-16
+#!date=2026-11-18
 #!tag=去广告,淘宝,阿里
 #!type=normal
 #!source=26ab20116fd2b962e163db806fa62bd9d0ede8c622b1e0282f3388258610e63e
-# version=1.3.0
+# version=1.3.6
 # docs=https://github.com/AshNail/plugins/blob/main/plugins/taobao/README.md
 
 # ========================================================================
@@ -19,6 +19,12 @@
 # v1.2.0 启用 Loon 原生 [Rewrite] v2 引擎复写层（enhance.active=true）：通过 [Argument] cleanAds 开关（默认开）驱动 10 条 reject_dict(200) + 1 条 reject_img(200) 规则及 4 台解密主机的 QUIC 回退，解决注释态增强层在订阅插件下无法直接开启的问题。
 # 证据基线：可莉淘宝插件规则事实 + blackmatrix7 Advertising + anti-AD；淘宝 IPA 10.68.10 的 mtop 广告前缀已在公开主配置有独立证据。
 # 红线补充：h5api.m.taobao.com 是 H5 交易/登录接口；login.taobao.com 是淘宝登录入口；passport.taobao.com 是淘宝账号/通行证；sec.taobao.com 是淘宝风控/安全接口；gw.alicdn.com 是图片/素材 CDN；img.alicdn.com 与 heic.alicdn.com 是商品图 CDN。
+# 2026-11-18 深度误杀剔除、UT 分片补齐与 Rewrite 路径加固：① 致命误杀剔除——audid-api.taobao.com 实为阿里设备身份/安全凭证接口（Ali User Device ID），GitHub/StevenBlack 实证拦截后导致「我的订单」加载失败或触发风控，从 ads 阿里妈妈 SDK 组移除并写入本插件红线 audid-api.taobao.com 永不拦截；② 红线与共用渲染域排除——sjarvis.taobao.com（聚安全风控大脑）、cdn.ynuf.aliapp.org（UMID 设备指纹）、tce.alicdn.com（TCE 前端模板引擎，3 份清单设 @@ 白名单）、dorangesource.alicdn.com（Orange 灰度动态配置）、accscdn.m.taobao.com（ACCS 长连接 CDN）、hybrid.miniapp.taobao.com（淘宝小程序混合容器）、asearch.alicdn.com（手淘搜索图与 UI CDN）划入红线；③ 百川套件与初始化依赖排除——mum.alibabachengdun.com / fourier.alibaba.com / fourier.taobao.com / aplus.alibaba.com（拦截报告易致网页白屏或开屏卡顿）、baichuan-sdk.* / nbsdk-baichuan.* / acs4baichuan.m.taobao.com（百川电商跳转与授权套件）进台账排除；④ 纯广告域与埋点补齐——通过 alimama 注入新增 atanx2.alicdn.com / afpmm.alicdn.com / afp.alicdn.com / ilce.alicdn.com / strip.taobaocdn.com / kb-render.alicdn.com；默认关 telemetry 补齐 adash* UT 分片及 retcode.taobao.com / umdc.aliapp.org；默认关 simba_click 补齐 re/ai.taobao.com。⑤ 原生 Rewrite 加固与协议边界——新增 kill-home-splash 拦截 mtop.taobao.wireless.home.splash.awesome.get（手淘首页开屏）；kill-damai-popup 与 kill-homepage-launch 尾锚放宽至 (?:/|\?|$) 兼容 MTOP 版本后缀（/1.0/?）；搜索直通车接口 mtop.taobao.wsearch.appsearch 与自然商品混装数组（暂缺真机响应样本不做猜测性 jq）；amdc.m.taobao.com/amdc/mobileDispatch 下发 Tnet SPDY/XQUIC 策略但拦截易触发重连耗电与卡转圈，故 amdc 保持默认关、先靠 QUIC 回退承接 acs 解密。
+# 2026-11-18 第二轮 CDN 模板误杀拆雷与阿里生态全扫描：① 重要拆雷移出生效组——ossgw.alicdn.com 在 25 源仅 1hosts-lite 单源收录，开源社区明确报告其同时托管手淘/天猫 DinamicX 与 Weex 动态布局模板（tb_shop_recommend / detail_o2o），整域黑洞可致商品详情页与推荐模块白屏，正式移出 ali_ad_hosts 并写入红线 ossgw.alicdn.com；hudong.alicdn.com 在 25 源 0 命中且承载店铺互动/大促活动 H5 静态资源，移出默认生效组转入默认关 ali_optional；② 海外设备凭证红线补齐——audid-api-sg.taobao.com（2 源，audid-api.taobao.com 新加坡/跨境镜像）同列红线永不拦截；③ 高共识 0 @@ 纯广告 CDN 与多源遥测补齐——通过 alimama SDK 组自动注入 gma.alicdn.com（4 源 0 @@）与 aecpm.alicdn.com（3 源 0 @@）；阿里云文档实证 umc.danuoyi.alicdn.com 实为 /multi_dns_resolve 多线 HTTPDNS 调度接口（3 源），并入默认关 amdc 组不误作广告域；默认关 telemetry 补齐 hydra.alibaba.com（5 源 0 @@）、dmtracking/dmtracking2.alibaba.com（3~4 源 0 @@）、stat.alibaba.com（2 源 0 @@）、adash-c.m/ut.taobao.com、ae-alimelog/alimelog.taobao.com 及 h-adashx4yt.ut.taobao.com；默认关 simba_click 补齐 g.click.taobao.com / click.taobao.com / show.re.taobao.com。
+# 2026-11-18 第三轮阿里全生态 CDN/ARMS/CNAME 与误杀红线纵深勘察：① 补入 3 项明确会触发误杀的阿里域入红线与台账排除：sdkinit.taobao.com（SDK 初始化强依赖，拦截易致冷启白屏或转圈）、tbskip.taobao.com（3 家清单设 @@ 例外，拦则订单搜索与淘口令跳转失效）、err.taobao.com（异常路由提示落地页）及 acs-mum.alibabachengdun.com（城盾初始化依赖）；② 默认关 telemetry（同步入 ads analytics）补全 9 项高共识 0 @@ 阿里/O2O/CNAME 遥测端：adash.man.aliyuncs.com（5 源 0 @@ 阿里移动分析）、rum.aliyuncs.com（6 源 0 @@ ARMS 真实用户体验监控）、all.cnzz.com.danuoyi.tbcache.com（4 源 0 @@ CNZZ CNAME 节点）、umeng.com.gds.alibabadns.com（3 源 0 @@ 友盟 GSLB 别名）、adashx.ut.ele.me / h-adashx.ut.ele.me（4 源 0 @@）/ v6-adashx.ut.ele.me / app-monitor.ele.me（3 源 0 @@ 淘宝内嵌饿了么 O2O UT/监控）及 rj.m.taobao.com（2 源）；③ 默认关 simba_click 补全 simaba.taobao.com（3 源 0 @@ 历史变体）、simaba.m.taobao.com 与 simba.m.taobao.com。
+# 2026-11-18 第四轮风控滑块红线与 CNAME 纵深收敛：① 补入阿里 AWSC 滑块/智能验证码核心域 aeis.alicdn.com 入红线与台账排除（避免触发无限滑块或登录风控）；② 默认关 telemetry（同步入 ads analytics）补齐 beacon-api.aliyuncs.com.gds.alibabadns.com（2 源 0 @@，beacon-api.aliyuncs.com GSLB CNAME 别名），triage_exclude 纳入 error.taobao.com.danuoyi.tbcache.com（err.taobao.com CDN 别名）；③ 对照 25 源全部 @@ 例外规则锁定共用根边界（mmstat.com/eg.js 与 count.taobao.com/counter 等 3 源白名单表明核心共用根仅允许精确广告子域/路径）。
+# 2026-11-18 第五轮真机落地与协议破冰指引固化：在 plugins/taobao/README.md 增补 XQUIC/AMDC 会话缓存清除冷启流程、kill-homepage-launch（newface.awesome.get）新版兼容性回退策略、poplayer.template.alibaba.com H5 弹层误杀排查，以及手淘隐私设置 + iOS 27.2+「限制动作数据」/ Android 传感器禁止+GKD 联合方案。
+# 2026-11-18 第六轮 1688 / 菜鸟 / 飞猪 / 饿了么拓展生态深挖与接口边界锁定：① 通过 alimama SDK 组自动注入 5 源 0 @@ 的 match.p4p.1688.com（阿里 1688 网销宝 P4P 竞价广告匹配引擎）；② 默认关 telemetry 增补 1hosts-lite 0 @@ 的菜鸟/飞猪 UT 分片 adashx.ut.cainiao.com / h-adashx.ut.cainiao.com / adashx.ut.fliggy.com / h-adashx.ut.fliggy.com（同步入 ads analytics）；③ 补齐关联生态主族与业务红线：1688.com（主站仅 b2bxad 路径规则，全族不整域黑洞）、pass.1688.com（3 清单 @@||pass.1688.com^$subdocument 登录入口白名单）、cainiao.com（菜鸟主族不整域黑洞）、fliggy.com（飞猪主族不整域黑洞）、ele.me（饿了么/淘宝闪购主族不整域黑洞），并将社区实证拦截易白屏或断单的 grand.ele.me、client-api.ele.me 与 newton-api.ele.me（饿了么客户端及闪购强依赖业务接口，社区实证拦截引发白屏或下单失败）写入红线与台账排除，cui.m.1688.com 按单源移动 UI 排除；④ 核查确认 mtop.taobao.cloudvideo（含商品详情视频）、mtop.taobao.search 与 mtop.relationrecommend 均属混装业务接口，不盲目整口 reject_dict。
 # 本文件由 tools/build-apps.py 从 src/apps/taobao.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -31,7 +37,7 @@
 
 [Argument]
 
-cleanAds = switch,true,type=boolean,tag=mtop 同域广告与开屏素材拦截（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：acs.m.taobao.com / guide-acs.m.taobao.com 的 10 条广告 mtop 路径在 request 阶段直接 reject_dict(200) 终止；gw/heic.alicdn.com 开屏推广大图路径用 reject_img(200) 返回 1px 透明图。需已安装并信任 Loon 证书。
+cleanAds = switch,true,type=boolean,tag=mtop 同域广告与开屏素材拦截（默认开）,desc=启用 Loon 原生 [Rewrite] v2 引擎复写：acs.m.taobao.com / guide-acs.m.taobao.com 的 13 条广告 mtop 路径在 request 阶段直接 reject_dict(200) 终止；gw/heic.alicdn.com 开屏推广大图路径用 reject_img(200) 返回 1px 透明图。需已安装并信任 Loon 证书。
 
 [Rule]
 
@@ -53,17 +59,23 @@ DOMAIN-SUFFIX,tanx.com,REJECT
 DOMAIN,adash-emas.cn-hangzhou.aliyuncs.com,REJECT
 DOMAIN,adashx.m.taobao.com,REJECT
 DOMAIN,adashx4yt.m.taobao.com,REJECT
+DOMAIN,aecpm.alicdn.com,REJECT
+DOMAIN,afp.alicdn.com,REJECT
+DOMAIN,afpmm.alicdn.com,REJECT
 DOMAIN,alimama.alicdn.com,REJECT
 DOMAIN,atanx.alicdn.com,REJECT
-DOMAIN,audid-api.taobao.com,REJECT
+DOMAIN,atanx2.alicdn.com,REJECT
 DOMAIN,dsp.simba.taobao.com,REJECT
+DOMAIN,gma.alicdn.com,REJECT
 DOMAIN,h-adashx.ut.taobao.com,REJECT
-DOMAIN,hudong.alicdn.com,REJECT
-DOMAIN,ossgw.alicdn.com,REJECT
+DOMAIN,ilce.alicdn.com,REJECT
+DOMAIN,kb-render.alicdn.com,REJECT
+DOMAIN,match.p4p.1688.com,REJECT
 DOMAIN,poplayer.template.alibaba.com,REJECT
 DOMAIN,rtb.julang.taobao.com,REJECT
 DOMAIN,srd.simba.taobao.com,REJECT
 DOMAIN,stat.simba.taobao.com,REJECT
+DOMAIN,strip.taobaocdn.com,REJECT
 DOMAIN,tmatch.simba.taobao.com,REJECT
 DOMAIN,tns.simba.taobao.com,REJECT
 DOMAIN,wcp.taobao.com,REJECT
@@ -78,42 +90,96 @@ DOMAIN,wcp.taobao.com,REJECT
 *.tanx.com = 127.0.0.1
 adash-emas.cn-hangzhou.aliyuncs.com = 127.0.0.1
 adashx.m.taobao.com = 127.0.0.1
+aecpm.alicdn.com = 127.0.0.1
+afp.alicdn.com = 127.0.0.1
+afpmm.alicdn.com = 127.0.0.1
 alimama.alicdn.com = 127.0.0.1
 alimama.cn = 127.0.0.1
 alimama.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
-audid-api.taobao.com = 127.0.0.1
+atanx2.alicdn.com = 127.0.0.1
+gma.alicdn.com = 127.0.0.1
+ilce.alicdn.com = 127.0.0.1
+kb-render.alicdn.com = 127.0.0.1
+match.p4p.1688.com = 127.0.0.1
 mmstat.com = 127.0.0.1
 poplayer.template.alibaba.com = 127.0.0.1
 rtb.julang.taobao.com = 127.0.0.1
+strip.taobaocdn.com = 127.0.0.1
 tanx.com = 127.0.0.1
 tns.simba.taobao.com = 127.0.0.1
 wcp.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 阿里广告/UT 独立端点（置信 B）
-# h-adashx.ut.taobao.com=AdashX 广告/UT 分片；ossgw.alicdn.com=广告素材网关；hudong.alicdn.com=互动广告素材；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch/stat/srd.simba.taobao.com=Simba 直通车竞价、定向与曝光统计子域（其余 atanx、tns.simba、adashx.m、wcp、audid-api、poplayer、rtb.julang 已由上方 sdks:["alimama"] 统一注入，此处不重复声明）。均为精确广告子域，媒体主域 alicdn.com 不整域。
+# h-adashx.ut.taobao.com=AdashX 广告/UT 分片；adashx4yt.m.taobao.com=优土侧 AdashX 分片；dsp/tmatch/stat/srd.simba.taobao.com=Simba 直通车竞价、定向与曝光统计子域（其余 atanx/atanx2/afpmm/afp/ilce/strip.taobaocdn/kb-render/gma/aecpm/tns.simba/adashx.m/wcp/poplayer/rtb.julang 已由上方 sdks:["alimama"] 统一注入；audid-api/ossgw 已移入红线，hudong 移入默认关 ali_optional）。均为精确广告子域，媒体主域 alicdn.com 不整域。
 # 证据: https://kelee.one/
 # 证据: https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Loon/Advertising/Advertising.list
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 adashx4yt.m.taobao.com = 127.0.0.1
 dsp.simba.taobao.com = 127.0.0.1
 h-adashx.ut.taobao.com = 127.0.0.1
-hudong.alicdn.com = 127.0.0.1
-ossgw.alicdn.com = 127.0.0.1
 srd.simba.taobao.com = 127.0.0.1
 stat.simba.taobao.com = 127.0.0.1
 tmatch.simba.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
+# 阿里互动与促销活动资源（默认关）（置信 C）
+# hudong.alicdn.com 在 25 源开源黑名单 0 命中，承载淘宝/天猫互动活动与大促会场 H5 静态资源；仅想彻底屏蔽互动活动、且能接受点不开活动页时可选开启，默认关。
+# 证据: https://kelee.one/
+# （默认关闭的组：整组注释，取消注释即启用）
+# hudong.alicdn.com = 127.0.0.1
+
+# ------------------------------------------------------------
 # UT 埋点（默认关）（置信 B）
-# ut.taobao.com / umengacs.m.taobao.com / umengjmacs.m.taobao.com / abtest.alibaba.com=阿里 UT/友盟埋点与 AB 实验分流；关闭统计不等于去广告，默认关，需要隐私优先再开。
+# ut.taobao.com / adash*（含 adash-c / h-adashx4yt）全系 UT/AdashX 分片与 IPv6 节点 / ae-alimelog & alimelog / retcode.taobao.com（ARMS 前端监控）/ umdc.aliapp.org（崩溃/行为采集）/ umengacs / umengjmacs / hydra & abtest & dmtracking & dmtracking2 & stat.alibaba.com=阿里 UT 埋点、性能监测与实验分流；关闭统计不等于去广告，默认关，需要隐私优先再开。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # （默认关闭的组：整组注释，取消注释即启用）
 # abtest.alibaba.com = 127.0.0.1
+# adash-c.m.taobao.com = 127.0.0.1
+# adash-c.ut.taobao.com = 127.0.0.1
+# adash.m.taobao.com = 127.0.0.1
+# adash.man.aliyuncs.com = 127.0.0.1
+# adashbc.m.taobao.com = 127.0.0.1
+# adashbc.ut.taobao.com = 127.0.0.1
+# adashx.ut.alibaba.com = 127.0.0.1
+# adashx.ut.cainiao.com = 127.0.0.1
+# adashx.ut.ele.me = 127.0.0.1
+# adashx.ut.fliggy.com = 127.0.0.1
+# adashx.ut.taobao.com = 127.0.0.1
+# adashx4ae.ut.taobao.com = 127.0.0.1
+# adashx4id.ut.taobao.com = 127.0.0.1
+# adashx4sg.ut.taobao.com = 127.0.0.1
+# adashxgc.ut.taobao.com = 127.0.0.1
+# ae-alimelog.taobao.com = 127.0.0.1
+# alimelog.taobao.com = 127.0.0.1
+# all.cnzz.com.danuoyi.tbcache.com = 127.0.0.1
+# app-monitor.ele.me = 127.0.0.1
+# beacon-api.aliyuncs.com.gds.alibabadns.com = 127.0.0.1
+# c-adash.m.taobao.com = 127.0.0.1
+# dmtracking.alibaba.com = 127.0.0.1
+# dmtracking2.alibaba.com = 127.0.0.1
+# h-adashx.ut.alibaba.com = 127.0.0.1
+# h-adashx.ut.cainiao.com = 127.0.0.1
+# h-adashx.ut.ele.me = 127.0.0.1
+# h-adashx.ut.fliggy.com = 127.0.0.1
+# h-adashx4ae.ut.taobao.com = 127.0.0.1
+# h-adashx4id.ut.taobao.com = 127.0.0.1
+# h-adashx4sg.ut.taobao.com = 127.0.0.1
+# h-adashx4yt.ut.taobao.com = 127.0.0.1
+# hydra.alibaba.com = 127.0.0.1
+# m-adash.m.taobao.com = 127.0.0.1
+# retcode.taobao.com = 127.0.0.1
+# rj.m.taobao.com = 127.0.0.1
+# rum.aliyuncs.com = 127.0.0.1
+# stat.alibaba.com = 127.0.0.1
+# umdc.aliapp.org = 127.0.0.1
+# umeng.com.gds.alibabadns.com = 127.0.0.1
 # umengacs.m.taobao.com = 127.0.0.1
 # umengjmacs.m.taobao.com = 127.0.0.1
 # ut.taobao.com = 127.0.0.1
+# v6-adashx.ut.ele.me = 127.0.0.1
+# v6-adashx.ut.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 淘宝客/联盟归因（默认关）（置信 B）
@@ -123,23 +189,34 @@ tmatch.simba.taobao.com = 127.0.0.1
 # tunion-api.m.taobao.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 阿里 AMDC HTTPDNS 调度（默认关）（置信 B）
-# amdc.m.taobao.com / amdcopen.m.taobao.com=阿里 HTTPDNS 调度；拦后若 App 无回退可能拖慢建连，默认关。
+# 阿里 AMDC / 多线 HTTPDNS 调度（默认关）（置信 B）
+# amdc.m.taobao.com / amdcopen.m.taobao.com / umc.danuoyi.alicdn.com（阿里云 CDN /multi_dns_resolve 多线 HTTPDNS）=阿里 HTTPDNS 调度；拦后若 App/CDN 无回退可能拖慢建连或影响图床调度，默认关。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # （默认关闭的组：整组注释，取消注释即启用）
 # amdc.m.taobao.com = 127.0.0.1
 # amdcopen.m.taobao.com = 127.0.0.1
+# umc.danuoyi.alicdn.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 阿里妈妈直通车点击跳转/外链（默认关）（置信 B）
-# mclick.simba.taobao.com / redirect.simba.taobao.com / textlink.simba.taobao.com / click.mz.simba.taobao.com / click.tz.simba.taobao.com=阿里妈妈直通车推广商品点击跳转与追踪；拦截后在搜索列表点带「广告」标的商品会打不开，默认关，需彻底绝育推广点击再开。
+# 直通车推广点击/跳转（simba.taobao.com / click.taobao.com / g.click.taobao.com）与爱淘宝/热卖导购落地域（re/ai.taobao.com、show.re.taobao.com）：若只拦截点击跳转不拦截商品搜索页内的推广展示，结果只是点进推广宝贝/返利导购卡死——默认关。
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcards/pro.txt
 # （默认关闭的组：整组注释，取消注释即启用）
+# ai.m.taobao.com = 127.0.0.1
+# ai.taobao.com = 127.0.0.1
 # click.mz.simba.taobao.com = 127.0.0.1
+# click.taobao.com = 127.0.0.1
 # click.tz.simba.taobao.com = 127.0.0.1
+# g.click.taobao.com = 127.0.0.1
 # mclick.simba.taobao.com = 127.0.0.1
+# re.m.taobao.com = 127.0.0.1
+# re.taobao.com = 127.0.0.1
 # redirect.simba.taobao.com = 127.0.0.1
+# show.re.taobao.com = 127.0.0.1
+# simaba.m.taobao.com = 127.0.0.1
+# simaba.taobao.com = 127.0.0.1
+# simba.m.taobao.com = 127.0.0.1
 # textlink.simba.taobao.com = 127.0.0.1
 
 
@@ -202,10 +279,13 @@ request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taoba
 request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.taobao\.(?:volvo\.secondfloor\.getconfig|wireless\.home\.newface\.awesome\.get)/ then reject_dict(200)
 
 # kill-damai-popup: 淘系内大麦演出商业推广弹窗拉取接口（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.damai\.mec\.popup\.get(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.damai\.mec\.popup\.get(?:\/|\?|$)/ then reject_dict(200)
 
 # kill-homepage-launch: 首页商业启动营销拉取接口（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
-request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.mos\.app\.homepage\.launch(\?|$)/ then reject_dict(200)
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.alibaba\.mos\.app\.homepage\.launch(?:\/|\?|$)/ then reject_dict(200)
+
+# kill-home-splash: 手淘首页开屏广告专口拉取（来源 https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/AllInOne/AllInOne.plugin）
+request if ${cleanAds} == true && ${url} ~= /^https:\/\/(?:guide-)?acs\.m\.taobao\.com\/gw\/mtop\.taobao\.wireless\.home\.splash\.awesome\.get(?:\/|\?|$)/ then reject_dict(200)
 
 # ------------------------------------------------------------
 # 请求阶段透明图替换（reject_img(200)）：共享图床开屏大图路径

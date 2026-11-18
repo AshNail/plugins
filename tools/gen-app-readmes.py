@@ -337,6 +337,16 @@ def render(app, sdklib, ads_groups):
         lines += ["", "证据："]
         for src in enh.get("sources", []):
             lines.append(f"- {src}")
+    rollout = app.get("rollout") or []
+    if rollout:
+        lines += ["", "## 怎么落实（分层落地与客户端协同）"]
+        for sec in rollout:
+            if sec.get("title"):
+                lines += ["", f"### {sec['title']}", ""]
+            else:
+                lines.append("")
+            for item in sec.get("items", []):
+                lines.append(f"- {item}")
     lines += ["", "## 红线与天花板（如实）", ""]
     for c in app.get("comment", []):
         lines.append(f"- {c}")

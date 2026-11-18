@@ -17,11 +17,16 @@
 - `业务·逆地理编码` ← `apsrgeo.amap.com`
 - `业务·基站定位服务` ← `cgicol.amap.com`, `dualstack-cgicol.amap.com`
 
-## `banks` — 生效黑洞 8 域；缺口候选 A:0 B:0 C:2（已裁决排除 0 条；已收录但默认关闭 1 条）
+## `banks` — 生效黑洞 7 域；缺口候选 A:0 B:0 C:4（已裁决排除 0 条；已收录但默认关闭 1 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
 | `ads.95516.com` | 3: anti-ad,awa,hagezi-pro | 已收录·默认关 |
+
+裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
+- `核心银行与卡权益红线` ← `ad.abchina.com`, `jf365.boc.cn`, `cdn2.jf365.boc.cn`, `marketing.unionpayintl.com`, `v.icbc.com.cn`, `msmp.abchina.com.cn`, `tysdk.95516.com`, `content.95516.com`, `switch.cup.com.cn`, `pv.elife.icbc.com.cn`, `xykpay.3d2.icbc.com.cn`, `trip.cmbchina.com`, `base.95516.com`, `account.95516.com`, `www.abchina.com.cn`, `yunbusiness.ccb.com`, `login-service.mobile-bank.psbc.com`, `mobile-bank.psbc.com`, `wallet.95516.com`, `buy.ccb.com`, `m.icbc.com.cn`
+- `非银行品牌误配（历史误收录）` ← `marketing.ccbtechnology.com`, `*.ccbtechnology.com`
+- `C 级单源/内网 APM（不默认拦截）` ← `oisc.icbc.com.cn`
 
 ## `bilibili` — 生效黑洞 6 域；缺口候选 A:0 B:0 C:1（已裁决排除 1 条；已收录但默认关闭 0 条）
 
@@ -41,10 +46,15 @@
 
 无 A/B 级缺口候选。
 
-## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:13（已裁决排除 11 条；已收录但默认关闭 17 条）
+## `jd` — 生效黑洞 5 域；缺口候选 A:0 B:0 C:17（已裁决排除 12 条；已收录但默认关闭 21 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
+| `atom-log.3.cn` | 4: adguard-dns,adrules,anti-ad,easyprivacy | 已收录·默认关 |
+| `cactus.joybuy.com` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 排除·交易/风控红线 |
+| `clk-m.joybuy.com` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
+| `h5log.joybuy.com` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
+| `log-h5.imdada.cn` | 4: adrules,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
 | `mllog.jd.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
 | `sgm-w.jd.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 已收录·默认关 |
 | `uranus.jd.com` | 4: anti-ad,awa,easyprivacy,hagezi-pro | 已收录·默认关 |
@@ -83,7 +93,9 @@
 - `消息/凭证红线` ← `msg.m.*`
 - `商品图 CDN 放行` ← `img-x.jd.com`, `img2.*`, `*.360buyimg.com`
 - `基础设施红线` ← `dns.*`, `blackhole*`, `h5speed.*`, `gia.*`, `gias.*`, `dgstatic.*`, `wl.jd.com`, `policy.*`, `kepler.*`, `union.jd.com`, `cps.*`, `jrclick.*`
-- `C 级单源不收` ← `u.x.jd.com`, `bdsp.x.jd.com`, `du.jd.com`, `nfa.jd.com`, `c-nfa.jd.com`, `firevent.jd.com`, `stat.m.jd.com`, `ads.union.jd.com`, `jzt.jd.com`
+- `业务·京准通商家投放后台` ← `jzt.jd.com`
+- `C 级单源/风控运维不收` ← `blackhole-m.*`, `ddms.*`
+- `3.cn 商品价库与静态白名单红线` ← `p.3.cn`, `c0.3.cn`, `jstatic.3.cn`, `cactus.joybuy.com`
 
 ## `mba-dashi` — 生效黑洞 68 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
@@ -209,26 +221,68 @@
 
 无 A/B 级缺口候选。
 
-## `taobao` — 生效黑洞 21 域；缺口候选 A:0 B:0 C:7（已裁决排除 0 条；已收录但默认关闭 10 条）
+## `taobao` — 生效黑洞 27 域；缺口候选 A:0 B:0 C:24（已裁决排除 14 条；已收录但默认关闭 33 条）
 
 | A 候选（≥3 源） | 源 | 状态 |
 |---|---|---|
+| `rum.aliyuncs.com` | 6: adguard-dns,anti-ad,easyprivacy,hagezi-pro,peterlowe,stevenblack | 已收录·默认关 |
+| `aplus.alibaba.com` | 5: adguard-dns,adrules,anti-ad,easyprivacy,hagezi-pro | 排除·统计初始化依赖（拦截易致网页白屏/卡开屏） |
+| `audid-api.taobao.com` | 5: adaway,adguard-dns,adwars,awa,stevenblack | 排除·基础设施/安全风控与页面引擎红线 |
+| `fourier.alibaba.com` | 5: adguard-dns,adrules,anti-ad,easyprivacy,hagezi-pro | 排除·统计初始化依赖（拦截易致网页白屏/卡开屏） |
+| `adash.m.taobao.com` | 4: adguard-dns,adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `adashbc.ut.taobao.com` | 4: adwars,anti-ad,awa,hagezi-pro | 已收录·默认关 |
 | `adashx4ae.ut.taobao.com` | 4: adaway,adguard-dns,hagezi-pro,stevenblack | 已收录·默认关 |
 | `adashxgc.ut.taobao.com` | 4: adwars,anti-ad,awa,hagezi-pro | 已收录·默认关 |
+| `dmtracking2.alibaba.com` | 4: adguard-dns,hagezi-pro,peterlowe,stevenblack | 已收录·默认关 |
+| `fourier.taobao.com` | 4: adguard-dns,anti-ad,easyprivacy,hagezi-pro | 排除·统计初始化依赖（拦截易致网页白屏/卡开屏） |
+| `tunion-api.m.taobao.com` | 4: adguard-dns,adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `umdc.aliapp.org` | 4: adrules,adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `accscdn.m.taobao.com` | 3: adguard-dns,anti-ad,hagezi-pro | 排除·基础设施/安全风控与页面引擎红线 |
+| `acs4baichuan.m.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 排除·业务·阿里百川电商跳转与授权套件 |
+| `adash.man.aliyuncs.com` | 3: adguard-dns,adwars,anti-ad | 已收录·默认关 |
+| `adashbc.m.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `adashx.ut.ele.me` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `all.cnzz.com.danuoyi.tbcache.com` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `baichuan-sdk.taobao.com` | 3: anti-ad,awa,hagezi-pro | 排除·业务·阿里百川电商跳转与授权套件 |
+| `dmtracking.alibaba.com` | 3: hagezi-pro,peterlowe,stevenblack | 已收录·默认关 |
+| `h-adashx.ut.ele.me` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
 | `h-adashx4ae.ut.taobao.com` | 3: adguard-dns,hagezi-pro,stevenblack | 已收录·默认关 |
 | `h-adashx4yt.ut.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `hybrid.miniapp.taobao.com` | 3: anti-ad,awa,hagezi-pro | 排除·基础设施/安全风控与页面引擎红线 |
+| `hydra.alibaba.com` | 3: adaway,anti-ad,stevenblack | 已收录·默认关 |
+| `mum.alibabachengdun.com` | 3: adguard-dns,anti-ad,hagezi-pro | 排除·统计初始化依赖（拦截易致网页白屏/卡开屏） |
+| `nbsdk-baichuan.taobao.com` | 3: adguard-dns,anti-ad,hagezi-pro | 排除·业务·阿里百川电商跳转与授权套件 |
+| `openjmacs.m.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 排除·关联·跨 App 阿里长连接通道（高德/优酷） |
+| `sjarvis.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 排除·基础设施/安全风控与页面引擎红线 |
+| `stat.alibaba.com` | 3: adguard-dns,hagezi-pro,stevenblack | 已收录·默认关 |
+| `umeng.com.gds.alibabadns.com` | 3: adwars,anti-ad,hagezi-pro | 已收录·默认关 |
+| `youku-acs.m.taobao.com` | 3: adwars,anti-ad,hagezi-pro | 排除·关联·跨 App 阿里长连接通道（高德/优酷） |
 
 | B 候选（2 源） | 源 | 状态 |
 |---|---|---|
+| `adashx.ut.alibaba.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
 | `adashx.ut.taobao.com` | 2: hagezi-pro,stevenblack | 已收录·默认关 |
 | `adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
+| `ai.m.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `ai.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `app-monitor.ele.me` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `c-adash.m.taobao.com` | 2: adwars,anti-ad | 已收录·默认关 |
+| `gaode-jmacs.m.taobao.com` | 2: anti-ad,hagezi-pro | 排除·关联·跨 App 阿里长连接通道（高德/优酷） |
+| `h-adashx.ut.alibaba.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
 | `h-adashx4id.ut.taobao.com` | 2: adguard-dns,hagezi-pro | 已收录·默认关 |
-| `mclick.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
-| `redirect.simba.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `m-adash.m.taobao.com` | 2: adwars,anti-ad | 已收录·默认关 |
+| `re.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
+| `retcode.taobao.com` | 2: easyprivacy,hagezi-pro | 已收录·默认关 |
+| `umc.danuoyi.alicdn.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 | `v6-adashx.ut.taobao.com` | 2: anti-ad,hagezi-pro | 已收录·默认关 |
 
 裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
 - `业务·直通车收藏与卖家移动后台` ← `fav.simba.taobao.com`, `m.simba.taobao.com`
+- `基础设施/安全风控与页面引擎红线` ← `audid-api.*`, `audid-api-sg.*`, `sdkinit.taobao.com`, `tbskip.taobao.com`, `err.taobao.com`, `error.taobao.com.danuoyi.tbcache.com`, `aeis.alicdn.com`, `sjarvis.*`, `cdn.ynuf.*`, `tce.alicdn.com`, `dorangesource.alicdn.com`, `ossgw.alicdn.com`, `accscdn.*`, `hybrid.miniapp.*`, `asearch.alicdn.com`, `pass.1688.com`, `grand.ele.me`, `client-api.ele.me`, `newton-api.ele.me`
+- `业务·1688 移动端 UI 与非纯广告子域（单源不收）` ← `cui.m.1688.com`
+- `统计初始化依赖（拦截易致网页白屏/卡开屏）` ← `mum.alibabachengdun.*`, `acs-mum.alibabachengdun.*`, `fourier.*`, `aplus.alibaba.com`
+- `业务·阿里百川电商跳转与授权套件` ← `baichuan-sdk.*`, `nbsdk-baichuan.*`, `acs4baichuan.*`
+- `关联·跨 App 阿里长连接通道（高德/优酷）` ← `gaode-jmacs.*`, `openjmacs.*`, `youku-acs.*`
 
 ## `wechat` — 生效黑洞 36 域；缺口候选 A:0 B:0 C:1（已裁决排除 0 条；已收录但默认关闭 1 条）
 
@@ -246,7 +300,7 @@
 裁决台账（命中即排除；改台账需改 App JSON 并重新生成）：
 - `业务·广告宣传官网与旧版嵌入源（非客户端投放域）` ← `advertising.twitter.com`, `syndication-o.twitter.com`
 
-## `xianyu` — 生效黑洞 15 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
+## `xianyu` — 生效黑洞 23 域；缺口候选 A:0 B:0 C:0（已裁决排除 0 条；已收录但默认关闭 0 条）
 
 无 A/B 级缺口候选。
 

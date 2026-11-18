@@ -120,7 +120,7 @@ Biliverse 的 Rewrite 版把 JSON 接口整体重定向到第三方网关 `app.n
 | `[MITM]` | `hostname = %APPEND% ...` **【未收录】** | 解密 | ⚪ 未文档化：保留待真机取证（§9.3） |
 | `[MITM]` | `h2 = true` **【未收录】** | 解密 | ⚪ 未文档化：防御性冗余，不进能力口径（§9.3） |
 | `[MITM]` | `*` / `?` 通配、`-` 排除 **【文档】** | 解密 | ✅ `ads?-normal*.zijieapi.com`（第二轮） |
-| `[IP Rewrite]` | 单 IPv4 `drop` | TUN（最早） | 🟡 16 条全注释 |
+| `[IP Rewrite]` | 单 IPv4 `drop` | TUN（最早） | 🟡 17 条全注释 |
 | `[General]` | `dns/doh/doh3-server` | 解析 | ✅ ads |
 | `[Argument]` | `switch` / `input` / `select` | 配置 | ✅ |
 | 通知 | `$notification.post` + `openUrl` + `clipboard` | 输出 | ✅ 点通知复制诊断（第二轮） |
@@ -149,7 +149,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | 位置 | 内容 | 现状（v2.8.1 / v0.8.0 后） |
 |---|---|---|
 | `soda.plugin` / `douyin.plugin` 的 `[Rule]` 段 | 5 行 `DOMAIN,...,REJECT` 严格模式 | **已删除**：被 `blockAdDomains` + QUIC 回退取代，不再提供“手改注释”的分叉 |
-| `ads.plugin` 的 `[IP Rewrite]` 段 | 16 条 HTTPDNS 单 IPv4 `drop` | 仍注释：这些 IP 可能与其他业务共用，属于“用户该自己决定”的可选项 |
+| `ads.plugin` 的 `[IP Rewrite]` 段 | 17 条 HTTPDNS 单 IPv4 `drop` | 仍注释：这些 IP 可能与其他业务共用，属于“用户该自己决定”的可选项 |
 | `ads.plugin` 的 `PROTOCOL,STUN` | WebRTC 防泄漏 | 仍注释：会打断部分 App 的语音/视频，同上 |
 
 **这就是「全部开关化」原则的隐性代价**：`[Rule]`/`[Rewrite]`/`[MITM]`/`[IP Rewrite]` 都是静态配置，一旦坚持「一切进 `[Argument]`」，等价于**永久放弃静态层**。
@@ -469,7 +469,7 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 
 ### 9.7 文档里的数字也是数据源（第二十四轮补上门禁）
 
-一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`3123 条生效 Host`、`19 个 App 插件`、
+一个仓库里最容易陈旧的句子不是配置，是「一共有多少条」：`3130 条生效 Host`、`19 个 App 插件`、
 `官方文档 26 页`、`2258 断言`。它们今天都对，但只对是因为有人记得改——而这类声明会被读者当成
 **风险面的规模**来用：加一批域名忘了改文档，读者就照着虚高（或虚低）的数字判断该不该装。
 
@@ -477,10 +477,10 @@ Scheme 时把 `loon://` 整段换成 `https://www.nsloon.com/openloon/`，两者
 
 | 文档里的声明 | 机器出口 |
 |---|---|
-| `plugins/ads/README.md` 的分组条数、生效/注释 Host、exact/wildcard、通配与家族拆分、可选 Rule 的 27/16/1 | `tools/build-ads.py --stats-json` |
+| `plugins/ads/README.md` 的分组条数、生效/注释 Host、exact/wildcard、通配与家族拆分、可选 Rule 的 29/16/1 | `tools/build-ads.py --stats-json` |
 | 规模页 `docs/repo-metrics.md` 的正文页数、能力表 176 条与五档分布、旁路路径数、广告类型数、上游黑名单家数、App 插件数 / 覆盖 App 数 / 增强层个数 | `tokens.json`、`loon-coverage --check`、`bypass-audit --check`、`ad-surface-audit --check`、`app-coverage-audit.SOURCE_NAMES`、`src/apps/*.json` |
 | 「N 套件 ×2 = M 套件 / K 断言」与 `tests/README.md` 的断言分布表 | `tests/run-all.py` 本次实跑的 per-suite 计数 |
-| 本节自己的 `3123 条生效 Host`、`19 个 App 插件`、「官方文档 26 页」、「能力表 176 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
+| 本节自己的 `3130 条生效 Host`、`19 个 App 插件`、「官方文档 26 页」、「能力表 176 条」 | 同一批出口（ads 计数在同一次 lint 进程里缓存复用） |
 | 文档里复述的「门禁管了 N 条声明」与 `readme numbers: N …` 成功行 | 同一次 lint 真实核对成功的条数 |
 | 文档任意一行同时出现 `test_xxx` 与「N 断言」 | 该套件本次实跑数（查不到套件名直接报错） |
 | 真机清单的 J 段插件数、正文页数、`ads=<版本>` 式版本引用 | `src/apps/*.json`、`tokens.json`、各插件 `#!version` |
@@ -501,7 +501,7 @@ Scheme 导入种类 6→7），分属四个不同出口——说明「数字散�
 `红线（绝不进任何拦截组）：mapi.m.jd.com / cactus.jd.com / dns.jd.com …`。没有任何门禁能回答
 「这条规则碰没碰红线」，因为红线在一个字符串里，规则在另一个数组里。
 
-第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 153 条 App 红线，覆盖 19 个 App 的红线声明）：
+第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 212 条 App 红线，覆盖 19 个 App 的红线声明）：
 
 | 字段 | 作用 |
 |---|---|

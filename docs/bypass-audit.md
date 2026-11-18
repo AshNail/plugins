@@ -42,7 +42,7 @@
 | 1 | 公网 DoH 走域名 | App 自带 DoH（`https://dns.google/dns-query`），在 443 上把域名解析做掉，系统 DNS 与 `[Host]` 都碰不到。 | `[Host]` 把已知 DoH 入口域名映射到 127.0.0.1（DNS 阶段生效，不需要解密，QUIC 也一样拦）。 | 已封死 |
 | 2 | DoT / DoQ 853 端口 | App 自带 DoT（TCP 853）或 DoQ（UDP 853），绕过 Loon 的 DNS。 | `DEST-PORT,853,REJECT`——端口在连接层可见，不需要域名也不需要解密。 | 已封死 |
 | 3 | HTTPDNS 走域名 | SDK 请求 `xxxhttpdns.xxx.com` 换回广告域的真实 IP，再用 IP 直连，绕开系统 DNS 与 `[Host]` 黑洞。 | `[Host]` 黑洞已知域名 + `DOMAIN-KEYWORD,httpdns,REJECT-DROP` 吃未知域名 + `USER-AGENT` UA 特征兜底。 | 已封死 |
-| 4 | IPv6 / AAAA 旁路 | `[Host]` 里 3123 条生效黑洞（另有 218 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。 | 官方 `Rule/` 明确「目标地址为域名时，先匹配域名规则（先于 DNS 解析，不区分地址族；20 万条以内 < 1 ms + LRU 缓存）」：`DOMAIN` / `DOMAIN-SUFFIX` 同步拒绝 IPv4 与 IPv6/AAAA 连接。同时 `[Host]` 继续保留 `127.0.0.1` 应对直接 IPv4 查询；比实验性质的 `[Host]` 多行 `ip-mode:v4-only` 零风险。 | 已封死 |
+| 4 | IPv6 / AAAA 旁路 | `[Host]` 里 3130 条生效黑洞（另有 272 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。 | 官方 `Rule/` 明确「目标地址为域名时，先匹配域名规则（先于 DNS 解析，不区分地址族；20 万条以内 < 1 ms + LRU 缓存）」：`DOMAIN` / `DOMAIN-SUFFIX` 同步拒绝 IPv4 与 IPv6/AAAA 连接。同时 `[Host]` 继续保留 `127.0.0.1` 应对直接 IPv4 查询；比实验性质的 `[Host]` 多行 `ip-mode:v4-only` 零风险。 | 已封死 |
 | 5 | 长连接 / 私有协议下发广告配置 | 广告配置通过长连接或私有 TCP 协议下发，不走 HTTP，`[MITM]` 与脚本都看不到内容。 | `[Host]` 域名黑洞：连都连不上，长连接也建立不起来——**DNS 层对协议形态免疫**。 | 已封死 |
 | 6 | QUIC / HTTP3 绕过解密 | 广告请求走 UDP 443，`[MITM]` 只处理 TCP，脚本根本不执行。 | 按域 `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC)),REJECT` 逼回 TCP+TLS；**不做**全局 `PROTOCOL,QUIC,REJECT`。 | 已封死 |
 | 7 | Loon 跑在直连模式 | `running_model = 0` 时 Loon 不走规则、不进 MITM、不跑脚本，插件完全不生效，而界面上只显示「直连」两个字。 | `$config.getConfig()` 读 `running_model`，状态页点名告警并给处置建议。 | 已封死 |
@@ -85,7 +85,7 @@
 
 ### 4. IPv6 / AAAA 旁路 · 已封死
 
-**怎么绕**　`[Host]` 里 3123 条生效黑洞（另有 218 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。
+**怎么绕**　`[Host]` 里 3130 条生效黑洞（另有 272 条默认注释）只映射 IPv4（`127.0.0.1`）。若仅靠 `[Host]`，Loon 放行 AAAA 记录时 App 仍可走 IPv6 直连绕过。
 
 **Loon 的手段**　官方 `Rule/` 明确「目标地址为域名时，先匹配域名规则（先于 DNS 解析，不区分地址族；20 万条以内 < 1 ms + LRU 缓存）」：`DOMAIN` / `DOMAIN-SUFFIX` 同步拒绝 IPv4 与 IPv6/AAAA 连接。同时 `[Host]` 继续保留 `127.0.0.1` 应对直接 IPv4 查询；比实验性质的 `[Host]` 多行 `ip-mode:v4-only` 零风险。
 
@@ -97,7 +97,7 @@
 
 **Loon 的手段**　`[Host]` 域名黑洞：连都连不上，长连接也建立不起来——**DNS 层对协议形态免疫**。
 
-**怎么证伪**　这条「已封死」依赖的是 DNS 层主力（3123 条生效黑洞）而不是解密层；若某天把主力改成规则层或脚本层，这条会立刻降级为 partial。
+**怎么证伪**　这条「已封死」依赖的是 DNS 层主力（3130 条生效黑洞）而不是解密层；若某天把主力改成规则层或脚本层，这条会立刻降级为 partial。
 
 ### 6. QUIC / HTTP3 绕过解密 · 已封死
 

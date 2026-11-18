@@ -1,19 +1,19 @@
-#!name=广告平台拦截器 · 3.5.3+ 全开版 v2.8.33
+#!name=广告平台拦截器 · 3.5.3+ 全开版 v2.8.38
 #!desc=Loon 3.5.3(1008)+ 全开版：激活无红线冲突 DOMAIN-WILDCARD 广告子域/数字分片通配与 [IP Rewrite] HTTPDNS TUN 阶段拦截，叠加 pre-DNS 双栈与 [Host]；零证书全量生效。
 #!author=edy
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://cdn.adguard.com/public/Adguard/Common/logo.png
 #!system=iOS,iPadOS,tvOS
 #!loon_version=3.5.3(1008)
-#!date=2026-11-17 17:20
+#!date=2026-11-18 14:15
 #!tag=广告拦截,DNS,HTTPDNS,DOMAIN-WILDCARD,IP Rewrite,3.5.3+
 #!type=normal
 #!source=d7340a12207f83aaf70560c4e515aad8c766a8b183a63ed49a5d6bed8ba483fc
-# version=2.8.33
+# version=2.8.38
 # docs=https://github.com/AshNail/plugins/blob/main/plugins/ads-next/README.md
 
 # ============================================================================
-# 广告平台拦截器 · 3.5.3+ 全开版 v2.8.33
+# 广告平台拦截器 · 3.5.3+ 全开版 v2.8.38
 # ----------------------------------------------------------------------------
 # 工作机制：单插件 = [Host] DNS 广告拦截 + [Rule] HTTPDNS/DoT 兜底 + [General] IP 形式 DoH 加密解析。
 # 核心 [Host] 把广告专域、HTTPDNS/私有 DoH、公网 DoH 入口映射到 127.0.0.1；DNS 阶段生效，HTTP/3 同样拦截。
@@ -1457,10 +1457,13 @@ DOMAIN,adxserver.ad.cmvideo.cn,REJECT
 DOMAIN,adxstatic.vivo.com.cn,REJECT
 DOMAIN,adxu-bigo-sg.heytapmobile.com,REJECT
 DOMAIN,adzp.cn,REJECT
+DOMAIN,aecpm.alicdn.com,REJECT
 DOMAIN,aedns.weixin.qq.com,REJECT
 DOMAIN,affiliate.dtiserv.com,REJECT
 DOMAIN,affiliates.thrixxx.com,REJECT
+DOMAIN,afp.alicdn.com,REJECT
 DOMAIN,afp.m1905.com,REJECT
+DOMAIN,afpmm.alicdn.com,REJECT
 DOMAIN,agn.aty.sohu.com,REJECT
 DOMAIN,ahoy-internal-ads-hv.b-cdn.net,REJECT
 DOMAIN,al.autohome.com.cn,REJECT
@@ -1517,7 +1520,7 @@ DOMAIN,asia-prt-stsdk.vivoglobal.com,REJECT
 DOMAIN,asia-stsdk.vivoglobal.com,REJECT
 DOMAIN,assp.sohu.com,REJECT
 DOMAIN,atanx.alicdn.com,REJECT
-DOMAIN,audid-api.taobao.com,REJECT
+DOMAIN,atanx2.alicdn.com,REJECT
 DOMAIN,ax.ifeng.com,REJECT
 DOMAIN,baidu1.cardbaobao.com,REJECT
 DOMAIN,baidu1.codejie.net,REJECT
@@ -1720,6 +1723,7 @@ DOMAIN,ggx01.miguvideo.com,REJECT
 DOMAIN,ggx03.miguvideo.com,REJECT
 DOMAIN,ggx10.miguvideo.com,REJECT
 DOMAIN,ggxwb.miguvideo.com,REJECT
+DOMAIN,gma.alicdn.com,REJECT
 DOMAIN,go.hangzhou.com.cn,REJECT
 DOMAIN,goblin.hupu.com,REJECT
 DOMAIN,gorgon.youdao.com,REJECT
@@ -1781,7 +1785,9 @@ DOMAIN,i16-tb.isnssdk.com,REJECT
 DOMAIN,iad.g.163.com,REJECT
 DOMAIN,ichannel.isnssdk.com,REJECT
 DOMAIN,ifacelog.iqiyi.com,REJECT
+DOMAIN,ilce.alicdn.com,REJECT
 DOMAIN,image.p4p.sogou.com,REJECT
+DOMAIN,imageadv.ccb.com,REJECT
 DOMAIN,imasdk.googleapis.com,REJECT
 DOMAIN,img1.18183.com,REJECT
 DOMAIN,imgaliyun.da.mgtv.com,REJECT
@@ -1812,6 +1818,7 @@ DOMAIN,iyes.youku.com,REJECT
 DOMAIN,jiaoben.ganji.cn,REJECT
 DOMAIN,jioads.akamaized.net,REJECT
 DOMAIN,js-ad.a.yximgs.com,REJECT
+DOMAIN,kb-render.alicdn.com,REJECT
 DOMAIN,kpshx.douguo.com,REJECT
 DOMAIN,kuaishou.httpdns.pro,REJECT
 DOMAIN,kuyun.com,REJECT
@@ -1834,10 +1841,9 @@ DOMAIN,mads.amazon.com,REJECT
 DOMAIN,mail-ads.google.com,REJECT
 DOMAIN,market.178.com,REJECT
 DOMAIN,market.21cn.com,REJECT
-DOMAIN,marketing.ccbtechnology.com,REJECT
-DOMAIN,marketing.unionpayintl.com,REJECT
 DOMAIN,masdk.3g.qq.com,REJECT
 DOMAIN,masque-ads.b-cdn.net,REJECT
+DOMAIN,match.p4p.1688.com,REJECT
 DOMAIN,matwbp.iask.sina.com.cn,REJECT
 DOMAIN,mbads.paas.cmbchina.com,REJECT
 DOMAIN,mbdlog.iqiyi.com,REJECT
@@ -2014,6 +2020,7 @@ DOMAIN,startapp.com,REJECT
 DOMAIN,static-ssp.yidianzixun.com,REJECT
 DOMAIN,static.ad.libimseti.cz,REJECT
 DOMAIN,stnetsdk.vivo.com.cn,REJECT
+DOMAIN,strip.taobaocdn.com,REJECT
 DOMAIN,stsdk.vivoglobal.com,REJECT
 DOMAIN,sugar.zhihu.com,REJECT
 DOMAIN,supersonicads-a.akamaihd.net,REJECT
@@ -2227,6 +2234,9 @@ DOMAIN-WILDCARD,dns[0-9]*.nextdns.io,REJECT
 # —— 百度 HTTPDNS 唯一 BGP anycast VIP（旧组里的 186.76.76.200 是笔误：
 # 官方文档任何版本都不存在该 IP，只有 180.76.76.200）——
 # IP-CIDR,180.76.76.200/32,REJECT,no-resolve
+# —— 京东 HTTPDNS 接入点（dns.jd.com 默认列 jd 红线；极严格防旁路可选开）——
+# IP-CIDR,101.124.19.122/32,REJECT,no-resolve
+# IP-CIDR6,2402:db40:5100:1011::5/128,REJECT,no-resolve
 # —— 可选：公共 DNS 解析器 IP 直连阻断（默认关闭）——
 # 旁路形状：App 不请求 DoH 域名，而是直连 8.8.8.8:443 / 1.1.1.1:853。
 # 此时连接层根本没有「域名」：[Host] 黑洞、DOMAIN-KEYWORD、URL-REGEX 全部失效，
@@ -2353,6 +2363,8 @@ DOMAIN-WILDCARD,dns[0-9]*.nextdns.io,REJECT
 43.132.55.55 = drop
 # —— 百度 HTTPDNS 唯一 BGP anycast VIP ——
 180.76.76.200 = drop
+# —— 京东 HTTPDNS 接入单 IP（dns.jd.com 默认列 jd 红线）——
+101.124.19.122 = drop
 
 
 [Host]
@@ -2551,12 +2563,13 @@ miniapp-ad.cdn.bcebos.com = 127.0.0.1
 # ============================================================================
 # 阿里妈妈 / TanX / 阿里广告监测
 # ----------------------------------------------------------------------------
-# 阿里妈妈投放、TanX 广告交易、mmstat 广告监测。alimama.com 本身是广告平台域，可整域处理。
+# 阿里妈妈投放、TanX 广告交易、mmstat 广告监测、Simba 直通车与创意渲染 CDN。alimama.com/cn、tanx.com、mmstat.com 本身是广告/统计平台域，可整域处理。2026-11-18 第一轮移除误杀订单页的 audid-api.taobao.com（已进 taobao.json 红线），并补齐 atanx2/afpmm/afp/ilce/kb-render.alicdn.com 与 strip.taobaocdn.com 六个 3~7 源 0 @@ 纯广告域；第二轮再补 3~4 源 0 @@ 的 gma.alicdn.com 与 aecpm.alicdn.com（经审排除托管 DinamicX/Weex 页面模板的 ossgw.alicdn.com 与 CDN Multi-DNS 调度 umc.danuoyi.alicdn.com）；第五轮补入 5 源 0 @@ 的 1688 P4P 网销宝竞价匹配引擎 match.p4p.1688.com。
 # ============================================================================
 tanx.com = 127.0.0.1
 *.tanx.com = 127.0.0.1
 alimama.com = 127.0.0.1
 *.alimama.com = 127.0.0.1
+match.p4p.1688.com = 127.0.0.1
 mmstat.com = 127.0.0.1
 *.mmstat.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
@@ -2565,16 +2578,23 @@ tns.simba.taobao.com = 127.0.0.1
 alimama.cn = 127.0.0.1
 *.alimama.cn = 127.0.0.1
 wcp.taobao.com = 127.0.0.1
-audid-api.taobao.com = 127.0.0.1
 poplayer.template.alibaba.com = 127.0.0.1
 adashx.m.taobao.com = 127.0.0.1
 adash-emas.cn-hangzhou.aliyuncs.com = 127.0.0.1
 rtb.julang.taobao.com = 127.0.0.1
+atanx2.alicdn.com = 127.0.0.1
+afpmm.alicdn.com = 127.0.0.1
+afp.alicdn.com = 127.0.0.1
+ilce.alicdn.com = 127.0.0.1
+strip.taobaocdn.com = 127.0.0.1
+kb-render.alicdn.com = 127.0.0.1
+gma.alicdn.com = 127.0.0.1
+aecpm.alicdn.com = 127.0.0.1
 
 # ============================================================================
 # 中国广告联盟 / 媒体广告位 / 广告监测
 # ----------------------------------------------------------------------------
-# AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。2026-10-30 频道补充：ems.youku.com（优酷广告端点，4 源）、adapi.izuiyou.com（皮皮搞笑广告 API，5 源）、ubixioe.com（第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue #33），均精确域或整域广告专域。2026-10-30 公开仓库补充：sdkapp.uve.weibo.com / adimg.uve.weibo.com / biz.weibo.com / alitui.weibo.com（微博 SDK 广告配置、广告图床、开屏广告与阿里妈妈推广位，分别 3/3/3/3+ 源）；均为精确主机，刻意不写 =uve.weibo.com——RuCu6 微博插件对该域显式 DIRECT，整域会误伤正常接口。同日再补 ad.maoyan.com（猫眼广告专域，AWAvenue 精确 + hagezi 通配 + fmz200/blackmatrix7 主机规则）与 ads-shopping.shouqianba.com（收钱吧小程序广告域，anti-AD + AWAvenue + hagezi），两者均为广告专用子域。2026-10-30 第十一轮按精确域比对五份公开清单，再补 16 个 ≥3 源国内媒体/工具广告专域：腾讯音乐 adcdn/adclick/adexpo（音频广告素材、点击、曝光）、腾讯视频 adstextview（广告文本位）、喜马拉雅 adse/adse.wsa（音频广告服务）、酷狗 adsfile.bssdlbig/ads.service（广告文件与投放服务）、小红书 ads-img-qc/ads-video-qc/ads-video-al（广告图/视频 CDN）、新浪 adbox（广告位）、搜狐 go（广告跳转）、中华网 union（广告联盟）、高德 optimus-ads（地图广告引擎）、蜻蜓 ad-cdn（音频广告 CDN）。全部精确主机；媒体主域仍不整域封禁。2026-11 第十三轮全网覆盖探索补入：vlion.cn（瑞狮网络，移动广告投放与SSP平台，5 源）、zhangyuyidong.cn（章鱼移动，移动应用广告聚合与变现平台，5 源）、scupio.com（Scupio酷比，移动原生与信息流广告SDK，4 源）、geecradv.com（极策广告GeeCR，移动广告网络，4 源）、bdad.123pan.cn（123网盘广告展示分发端点，5 源）、bu1.duba.com（金山毒霸弹窗与推广位分发端点，7 源）。 2026-11-16 协同全网开源清单补 14 个 ≥3 源精确广告专域（0 @@ 例外、不碰主域）：网易有道广告 SDK 与 DSP（ad-sdk-config.youdao.com / adpublish.ydstatic.com / dsp.youdao.com）、网易精确广告子域（adgeo.163.com / g1.163.com / yt-adv.bn.netease.com / yaolu.mh.163.com / yaolu.yuedu.163.com）、乐播投屏开屏与贴片广告域（ad/adc/adcdn/adeng.hpplay.cn，保留 hpplay.cn 投屏发现/控制主域）、点冠/趣头条广告 SDK CDN（cdn.aiclk.com）及阿里云 OSS 广告素材桶（cdn-ads.oss-cn-shanghai.aliyuncs.com）。 2026-11-17 全网 25 源零例外深挖补 5 域：mobaliyun.res.mgtv.com（芒果TV 移动端广告资源 CDN，7 源）、ssp.moeli.net（广告自助投放 SSP，8 源）、ssp.zf313.com（8 源 SSP）、=ad4.com.cn（6 源国内广告网络）与 ssp.hinet.net（中华电信 HiNet SSP 精确主机，9 源，保留 hinet.net 主域）。
+# AdView、多盟、秒针、AdMaster、MediaV，以及搜狐/新浪/B站/京东/网易/搜狗等媒体的广告子域。媒体主域一律不整域封禁。2026-10 审计补入（均 ≥5 源、域名语义自证；未逐域抓包）：ad-api.cnblogs.com、abroad-ad.kingsoft-office-service.com、dsp.ali213.net、pg-ad-b1.nosdn.127.net、static-ssp.yidianzixun.com、ssp.21ic.com、ad.cctv.com、ad.gmw.cn。2026-10 再补 ykad-data.youku.com（优酷广告数据）、de.as.pptv.com（PPTV 广告服务器）、adpai.thepaper.cn（澎湃广告位），均 7 源、精确主机。2026-10 再补 bd1.guancha.cn（观察者网 m 站广告脚本，AdGuard 条件 $domain=m.guancha.cn）、ggs.myzaker.com（ZAKER 广告服务器）、d2.sina.com.cn（新浪广告脚本/对象），均 7 源、精确主机。2026-10 再补 50bang.org（广告/流量联盟，上游列出 union2/guess 广告子域），6 源整域拦截。2026-10 再补 adinall.com（聚告 AdinALL，程序化广告流量交易平台，公开官网与第三方共享清单可核实）。2026-10-30 频道补充：ems.youku.com（优酷广告端点，4 源）、adapi.izuiyou.com（皮皮搞笑广告 API，5 源）、ubixioe.com（第三方广告 SDK 数据/下发域，3 源 + 公开抓包 issue #33），均精确域或整域广告专域。2026-10-30 公开仓库补充：sdkapp.uve.weibo.com / adimg.uve.weibo.com / biz.weibo.com / alitui.weibo.com（微博 SDK 广告配置、广告图床、开屏广告与阿里妈妈推广位，分别 3/3/3/3+ 源）；均为精确主机，刻意不写 =uve.weibo.com——RuCu6 微博插件对该域显式 DIRECT，整域会误伤正常接口。同日再补 ad.maoyan.com（猫眼广告专域，AWAvenue 精确 + hagezi 通配 + fmz200/blackmatrix7 主机规则）与 ads-shopping.shouqianba.com（收钱吧小程序广告域，anti-AD + AWAvenue + hagezi），两者均为广告专用子域。2026-10-30 第十一轮按精确域比对五份公开清单，再补 16 个 ≥3 源国内媒体/工具广告专域：腾讯音乐 adcdn/adclick/adexpo（音频广告素材、点击、曝光）、腾讯视频 adstextview（广告文本位）、喜马拉雅 adse/adse.wsa（音频广告服务）、酷狗 adsfile.bssdlbig/ads.service（广告文件与投放服务）、小红书 ads-img-qc/ads-video-qc/ads-video-al（广告图/视频 CDN）、新浪 adbox（广告位）、搜狐 go（广告跳转）、中华网 union（广告联盟）、高德 optimus-ads（地图广告引擎）、蜻蜓 ad-cdn（音频广告 CDN）。全部精确主机；媒体主域仍不整域封禁。2026-11 第十三轮全网覆盖探索补入：vlion.cn（瑞狮网络，移动广告投放与SSP平台，5 源）、zhangyuyidong.cn（章鱼移动，移动应用广告聚合与变现平台，5 源）、scupio.com（Scupio酷比，移动原生与信息流广告SDK，4 源）、geecradv.com（极策广告GeeCR，移动广告网络，4 源）、bdad.123pan.cn（123网盘广告展示分发端点，5 源）、bu1.duba.com（金山毒霸弹窗与推广位分发端点，7 源）。 2026-11-16 协同全网开源清单补 14 个 ≥3 源精确广告专域（0 @@ 例外、不碰主域）：网易有道广告 SDK 与 DSP（ad-sdk-config.youdao.com / adpublish.ydstatic.com / dsp.youdao.com）、网易精确广告子域（adgeo.163.com / g1.163.com / yt-adv.bn.netease.com / yaolu.mh.163.com / yaolu.yuedu.163.com）、乐播投屏开屏与贴片广告域（ad/adc/adcdn/adeng.hpplay.cn，保留 hpplay.cn 投屏发现/控制主域）、点冠/趣头条广告 SDK CDN（cdn.aiclk.com）及阿里云 OSS 广告素材桶（cdn-ads.oss-cn-shanghai.aliyuncs.com）。 2026-11-17 全网 25 源零例外深挖补 5 域：mobaliyun.res.mgtv.com（芒果TV 移动端广告资源 CDN，7 源）、ssp.moeli.net（广告自助投放 SSP，8 源）、ssp.zf313.com（8 源 SSP）、=ad4.com.cn（6 源国内广告网络）与 ssp.hinet.net（中华电信 HiNet SSP 精确主机，9 源，保留 hinet.net 主域）。 2026-11-18 银行深挖复核：补建行 Cookie 政策与 1hosts-lite/HaGeZi PRO 双实证的 imageadv.ccb.com；剔除美商误配 marketing.ccbtechnology.com 与银联国际卡权益门户 marketing.unionpayintl.com；ad.icbc/boc/bankcomm/psbc 在 25 源公开清单 0 命中，按既有守卫保留精确低风险子域。
 # ============================================================================
 adview.cn = 127.0.0.1
 *.adview.cn = 127.0.0.1
@@ -2721,6 +2741,7 @@ saxn.sina.com.cn = 127.0.0.1
 cpu.baidu.com = 127.0.0.1
 ads.xiaohongshu.com = 127.0.0.1
 adv.ccb.com = 127.0.0.1
+imageadv.ccb.com = 127.0.0.1
 ad.icbc.com.cn = 127.0.0.1
 ad.boc.cn = 127.0.0.1
 ad.bankcomm.com = 127.0.0.1
@@ -2906,8 +2927,6 @@ udiab1.jianshu.com = 127.0.0.1
 apilog-web.acfun.cn = 127.0.0.1
 ads.cup.com.cn = 127.0.0.1
 mbads.paas.cmbchina.com = 127.0.0.1
-marketing.ccbtechnology.com = 127.0.0.1
-marketing.unionpayintl.com = 127.0.0.1
 ipinyou.com.cn = 127.0.0.1
 *.ipinyou.com.cn = 127.0.0.1
 ads-union.jd.com = 127.0.0.1
@@ -3140,7 +3159,7 @@ ssp.hinet.net = 127.0.0.1
 # ============================================================================
 # 国内平台广告候选：语义存疑 / 证据不足（默认关）
 # ----------------------------------------------------------------------------
-# 两类默认注释候选，逐条取消前先确认对应功能无异常。语义存疑（域名不专属于广告，可能共用配置/静态资源）：sdkconfig.video.qq.com=腾讯视频 SDK 配置端（拦后可能影响播放器远程配置）、sdkapp.mobile.sina.cn=新浪移动 SDK 配置端（第三方 App 的微博登录/分享可能共用）、rs.sinajs.cn=新浪共享静态资源主机（页面 JS 可能同源）。证据不足/上游 @@ 例外：ad.qq.com=腾讯广告主门户/落地页（仍兼门户用途不收）、ad.kuwo.cn=酷狗广告域（0 源；同族 mobilead.kuwo.cn 已在生效组）、ad.csdn.net=CSDN 广告域（1 源）、adcdn.pingan.com（4 家上游无条件 @@ 白名单放行）、sax.sina.com.cn（adguard-dns 无条件 @@||sax.sina.com.cn^| 与 3 份中文清单 @@||sax.sina.com.cn/video/newimpress? 放行；保留 r.sax/saxn/sax8 生效）、da.mgtv.com 与 m.da.mgtv.com（adguard-cn/easylist-cn/adrules/adguard-mobile 存在 /m/player? 与 /m5/page? 播放器放行，改由 cn_union 仅封 18 个纯广告投放子域）、ad4.on.cc（3 份中文清单存在 12 条 /web/www/delivery/ 放行）、pv.sohu.com（中文清单 @@||pv.sohu.com/suv/ 与 cityjson 放行）。注：ad.qingting.fm 经 7 份上游清单交叉验证且零 @@ 例外，于 v2.8.32 升入 cn_union。ads.95516.com 不放进来：banks 插件已记录 REJECT 后 analytics.95516.com 重试风暴与 anti-AD @@ 例外，且属银联主域红线。 2026-11-16 v2.8.31 双向 @@ 收敛：adnet.qq.com（25 源仅 anti-AD 单源收录，且 adguard-cn/easylist-cn/adrules 三方设 @@||adnet.qq.com^$~third-party，属腾讯广告开放平台官网）与 ad.vivo.com.cn（25 源仅 anti-AD 单源，3 份中文清单设 @@||ad.vivo.com.cn^$~third-party）由生效组降入默认关观察组。
+# 两类默认注释候选，逐条取消前先确认对应功能无异常。语义存疑（域名不专属于广告，可能共用配置/静态资源）：sdkconfig.video.qq.com=腾讯视频 SDK 配置端（拦后可能影响播放器远程配置）、sdkapp.mobile.sina.cn=新浪移动 SDK 配置端（第三方 App 的微博登录/分享可能共用）、rs.sinajs.cn=新浪共享静态资源主机（页面 JS 可能同源）。证据不足/上游 @@ 例外：ad.qq.com=腾讯广告主门户/落地页（仍兼门户用途不收）、ad.kuwo.cn=酷狗广告域（0 源；同族 mobilead.kuwo.cn 已在生效组）、ad.csdn.net=CSDN 广告域（1 源）、adcdn.pingan.com（4 家上游无条件 @@ 白名单放行）、sax.sina.com.cn（adguard-dns 无条件 @@||sax.sina.com.cn^| 与 3 份中文清单 @@||sax.sina.com.cn/video/newimpress? 放行；保留 r.sax/saxn/sax8 生效）、da.mgtv.com 与 m.da.mgtv.com（adguard-cn/easylist-cn/adrules/adguard-mobile 存在 /m/player? 与 /m5/page? 播放器放行，改由 cn_union 仅封 18 个纯广告投放子域）、ad4.on.cc（3 份中文清单存在 12 条 /web/www/delivery/ 放行）、pv.sohu.com（中文清单 @@||pv.sohu.com/suv/ 与 cityjson 放行）、ad.3.cn（虽达 3 源但 adguard-cn/adrules/easylist-cn 设 @@||ad.3.cn/ads/mgets?$domain=jd.com）。注：ad.qingting.fm 经 7 份上游清单交叉验证且零 @@ 例外，于 v2.8.32 升入 cn_union。ads.95516.com 不放进来：banks 插件已记录 REJECT 后 analytics.95516.com 重试风暴与 anti-AD @@ 例外，且属银联主域红线。 2026-11-16 v2.8.31 双向 @@ 收敛：adnet.qq.com（25 源仅 anti-AD 单源收录，且 adguard-cn/easylist-cn/adrules 三方设 @@||adnet.qq.com^$~third-party，属腾讯广告开放平台官网）与 ad.vivo.com.cn（25 源仅 anti-AD 单源，3 份中文清单设 @@||ad.vivo.com.cn^$~third-party）由生效组降入默认关观察组。
 #
 # ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
 # ============================================================================
@@ -3158,6 +3177,8 @@ ssp.hinet.net = 127.0.0.1
 # pv.sohu.com = 127.0.0.1
 # adnet.qq.com = 127.0.0.1
 # ad.vivo.com.cn = 127.0.0.1
+# ad.3.cn = 127.0.0.1
+# api.dsp.yhd.com = 127.0.0.1
 
 # ============================================================================
 # Google Ads / AdMob / Ad Manager
@@ -5669,7 +5690,7 @@ doh.mullvad.net = 127.0.0.1
 # ============================================================================
 # 应用 / Web 统计（可选，默认注释）
 # ----------------------------------------------------------------------------
-# Google Analytics/Firebase（含 app-measurement / app-analytics-services / firebaselogging / crashlytics）、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Mixpanel、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats，以及 2026-10-27 真机日志实锤的 腾讯 Beacon/APM（rmonitor / h.trace / unitelogreport）、美团 dreport/wreport、JPush 统计、BOSS 直聘 APM、微信 badjs、起点 upush 等。2026-10-30 频道补充 yandexmetrica.com（Yandex Metrica，5 源）与 shuzilm.cn（数字联盟设备指纹，5 源）。2026-10-30 公开仓库补充 datacollection.uve.weibo.com（微博用户数据采集，anti-AD + fmz200 两源）。2026-10-30 第十一轮补 12 个 ≥3 源国内埋点/日志端点：sbeacon.sina（新浪 Beacon）、track/aty.sohu（搜狐曝光与统计）、adashbc/adashxgc.ut.taobao（阿里 UT/AdashX 分片）、stat.y.qq 与 monitor.music.qq（腾讯/QQ 音乐统计）、mssdk.volces（火山引擎 SDK 监控）、logs/dualstack-logs.amap 与 optimus-ads 同族的日志端、log.web.kugou（酷狗日志）、log.aliyuncs（阿里云 SLB 日志）。2026-11 补 log.sina.cn（新浪日志/埋点）、analytics.mobile.yandex.net（Yandex 移动分析精确主机）与 amung.us（Web 实时追踪小部件），均 6 源收录于默认注释组。默认注释；会让统计报表与部分实验/远程配置失效。
+# Google Analytics/Firebase（含 app-measurement / app-analytics-services / firebaselogging / crashlytics）、友盟、CNZZ、TalkingData、GrowingIO、神策、百度统计、Mixpanel、Yandex、Pinterest、LinkedIn、Yahoo、Crazy Egg（cetrk）、Wizaly、Stat.pl、Soicos、New Relic（nr-data）、WordPress Stats，以及 2026-10-27 真机日志实锤的 腾讯 Beacon/APM（rmonitor / h.trace / unitelogreport）、美团 dreport/wreport、JPush 统计、BOSS 直聘 APM、微信 badjs、起点 upush 等。2026-10-30 频道补充 yandexmetrica.com（Yandex Metrica，5 源）与 shuzilm.cn（数字联盟设备指纹，5 源）。2026-10-30 公开仓库补充 datacollection.uve.weibo.com（微博用户数据采集，anti-AD + fmz200 两源）。2026-10-30 第十一轮补 12 个 ≥3 源国内埋点/日志端点：sbeacon.sina（新浪 Beacon）、track/aty.sohu（搜狐曝光与统计）、adashbc/adashxgc.ut.taobao（阿里 UT/AdashX 分片）、stat.y.qq 与 monitor.music.qq（腾讯/QQ 音乐统计）、mssdk.volces（火山引擎 SDK 监控）、logs/dualstack-logs.amap 与 optimus-ads 同族的日志端、log.web.kugou（酷狗日志）、log.aliyuncs（阿里云 SLB 日志）。2026-11 补 log.sina.cn（新浪日志/埋点）、analytics.mobile.yandex.net（Yandex 移动分析精确主机）与 amung.us（Web 实时追踪小部件），均 6 源收录于默认注释组。默认注释；会让统计报表与部分实验/远程配置失效。 2026-11-18 补 16 个阿里 UT/AdashX/retcode/umdc、招行 metric-sz.ccd 与京东 stat.m/firevent/du 遥测/事件端（默认关）。
 #
 # ---- 默认关闭：逐行取消行首的 '# ' 后生效 ----
 # ============================================================================
@@ -5832,6 +5853,58 @@ doh.mullvad.net = 127.0.0.1
 # log5-lf.qishui.com = 127.0.0.1
 # sdc.pingan.com = 127.0.0.1
 # analytics.mailmunch.co = 127.0.0.1
+# adash.m.taobao.com = 127.0.0.1
+# adashbc.m.taobao.com = 127.0.0.1
+# adashx4ae.ut.taobao.com = 127.0.0.1
+# h-adashx4ae.ut.taobao.com = 127.0.0.1
+# adashx4id.ut.taobao.com = 127.0.0.1
+# h-adashx4id.ut.taobao.com = 127.0.0.1
+# adashx.ut.taobao.com = 127.0.0.1
+# adashx.ut.alibaba.com = 127.0.0.1
+# h-adashx.ut.alibaba.com = 127.0.0.1
+# v6-adashx.ut.taobao.com = 127.0.0.1
+# retcode.taobao.com = 127.0.0.1
+# umdc.aliapp.org = 127.0.0.1
+# metric-sz.ccd.cmbchina.com = 127.0.0.1
+# stat.m.jd.com = 127.0.0.1
+# firevent.jd.com = 127.0.0.1
+# du.jd.com = 127.0.0.1
+# c-adash.m.taobao.com = 127.0.0.1
+# m-adash.m.taobao.com = 127.0.0.1
+# atom-log.3.cn = 127.0.0.1
+# hydra.alibaba.com = 127.0.0.1
+# dmtracking.alibaba.com = 127.0.0.1
+# dmtracking2.alibaba.com = 127.0.0.1
+# stat.alibaba.com = 127.0.0.1
+# adash-c.m.taobao.com = 127.0.0.1
+# adash-c.ut.taobao.com = 127.0.0.1
+# ae-alimelog.taobao.com = 127.0.0.1
+# alimelog.taobao.com = 127.0.0.1
+# h-adashx4yt.ut.taobao.com = 127.0.0.1
+# adash.man.aliyuncs.com = 127.0.0.1
+# rum.aliyuncs.com = 127.0.0.1
+# all.cnzz.com.danuoyi.tbcache.com = 127.0.0.1
+# umeng.com.gds.alibabadns.com = 127.0.0.1
+# adashx.ut.ele.me = 127.0.0.1
+# h-adashx.ut.ele.me = 127.0.0.1
+# v6-adashx.ut.ele.me = 127.0.0.1
+# app-monitor.ele.me = 127.0.0.1
+# rj.m.taobao.com = 127.0.0.1
+# log-h5.imdada.cn = 127.0.0.1
+# clk-m.joybuy.com = 127.0.0.1
+# h5log.joybuy.com = 127.0.0.1
+# beacon.tingyun.com = 127.0.0.1
+# wkrd.tingyun.com = 127.0.0.1
+# networkbench.com = 127.0.0.1
+# *.networkbench.com = 127.0.0.1
+# oneupload.bonree.com = 127.0.0.1
+# beacon-api.aliyuncs.com.gds.alibabadns.com = 127.0.0.1
+# click.yhd.com = 127.0.0.1
+# tracker.yhd.com = 127.0.0.1
+# adashx.ut.cainiao.com = 127.0.0.1
+# h-adashx.ut.cainiao.com = 127.0.0.1
+# adashx.ut.fliggy.com = 127.0.0.1
+# h-adashx.ut.fliggy.com = 127.0.0.1
 
 # ============================================================================
 # 与按 App 插件红线冲突的候选（默认注释）

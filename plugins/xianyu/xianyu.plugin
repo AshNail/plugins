@@ -53,11 +53,19 @@ DOMAIN-SUFFIX,mmstat.com,REJECT
 DOMAIN-SUFFIX,tanx.com,REJECT
 DOMAIN,adash-emas.cn-hangzhou.aliyuncs.com,REJECT
 DOMAIN,adashx.m.taobao.com,REJECT
+DOMAIN,aecpm.alicdn.com,REJECT
+DOMAIN,afp.alicdn.com,REJECT
+DOMAIN,afpmm.alicdn.com,REJECT
 DOMAIN,alimama.alicdn.com,REJECT
 DOMAIN,atanx.alicdn.com,REJECT
-DOMAIN,audid-api.taobao.com,REJECT
+DOMAIN,atanx2.alicdn.com,REJECT
+DOMAIN,gma.alicdn.com,REJECT
+DOMAIN,ilce.alicdn.com,REJECT
+DOMAIN,kb-render.alicdn.com,REJECT
+DOMAIN,match.p4p.1688.com,REJECT
 DOMAIN,poplayer.template.alibaba.com,REJECT
 DOMAIN,rtb.julang.taobao.com,REJECT
+DOMAIN,strip.taobaocdn.com,REJECT
 DOMAIN,tns.simba.taobao.com,REJECT
 DOMAIN,tunion-api.m.taobao.com,REJECT
 DOMAIN,wcp.taobao.com,REJECT
@@ -72,14 +80,22 @@ DOMAIN,wcp.taobao.com,REJECT
 *.tanx.com = 127.0.0.1
 adash-emas.cn-hangzhou.aliyuncs.com = 127.0.0.1
 adashx.m.taobao.com = 127.0.0.1
+aecpm.alicdn.com = 127.0.0.1
+afp.alicdn.com = 127.0.0.1
+afpmm.alicdn.com = 127.0.0.1
 alimama.alicdn.com = 127.0.0.1
 alimama.cn = 127.0.0.1
 alimama.com = 127.0.0.1
 atanx.alicdn.com = 127.0.0.1
-audid-api.taobao.com = 127.0.0.1
+atanx2.alicdn.com = 127.0.0.1
+gma.alicdn.com = 127.0.0.1
+ilce.alicdn.com = 127.0.0.1
+kb-render.alicdn.com = 127.0.0.1
+match.p4p.1688.com = 127.0.0.1
 mmstat.com = 127.0.0.1
 poplayer.template.alibaba.com = 127.0.0.1
 rtb.julang.taobao.com = 127.0.0.1
+strip.taobaocdn.com = 127.0.0.1
 tanx.com = 127.0.0.1
 tns.simba.taobao.com = 127.0.0.1
 wcp.taobao.com = 127.0.0.1

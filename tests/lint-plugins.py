@@ -2269,12 +2269,41 @@ def _check_ads_plugin_variant(rel_path: str, is_next: bool, protected: set[str])
         if marker not in raw:
             errors.append(f"{rel_path}: optional measurement block missing: {marker}")
 
-    for domain in ("is.snssdk.com", "graph.facebook.com", "branch.io", "ad.abchina.com"):
+    for domain in (
+        "is.snssdk.com",
+        "graph.facebook.com",
+        "branch.io",
+        "ad.abchina.com",
+        "marketing.ccbtechnology.com",
+        "marketing.unionpayintl.com",
+        "audid-api.taobao.com",
+        "audid-api-sg.taobao.com",
+        "ossgw.alicdn.com",
+        "ad.3.cn",
+        "content.95516.com",
+        "switch.cup.com.cn",
+        "pv.elife.icbc.com.cn",
+        "xykpay.3d2.icbc.com.cn",
+        "trip.cmbchina.com",
+        "base.95516.com",
+        "account.95516.com",
+        "cactus.joybuy.com",
+        "sdkinit.taobao.com",
+        "tbskip.taobao.com",
+        "aeis.alicdn.com",
+        "buy.ccb.com",
+        "m.icbc.com.cn",
+        "pass.1688.com",
+        "grand.ele.me",
+        "client-api.ele.me",
+        "newton-api.ele.me",
+    ):
         if domain in exact or domain in wildcard:
             errors.append(f"{rel_path}: excluded shared host is active: {domain}")
 
     for domain in (
         "adv.ccb.com",
+        "imageadv.ccb.com",
         "ad.icbc.com.cn",
         "ad.boc.cn",
         "ad.bankcomm.com",

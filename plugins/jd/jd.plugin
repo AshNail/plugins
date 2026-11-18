@@ -4,11 +4,11 @@
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ba/ae/95/baae952e-c408-d213-b249-fb4755687ac4/AppIcon-0-0-1x_U007epad-0-1-0-0-85-220.png/512x512bb.jpg
 #!system=iOS,iPadOS,tvOS,macOS
-#!date=2026-11-06
+#!date=2026-11-18
 #!tag=去广告,京东,JD
 #!type=normal
 #!source=6c374cf0b06364a78850470299fe36d35bd5fb7a02b611804318511ea2ce1226
-# version=1.0.3
+# version=1.0.9
 # docs=https://github.com/AshNail/plugins/blob/main/plugins/jd/README.md
 
 # ========================================================================
@@ -22,6 +22,11 @@
 # 第三方 ADN 未取证：京东 iOS 是否调用穿山甲/优量汇/快手等外部变现 SDK 没有可引用的官方 SDK 目录证据，本插件不挂 SDK 组；若真机抓包发现，直接开 ads.plugin 对应组即可。
 # 频道情报核对（2026-10-30）：「广告必须死」公开频道（GitCube / Aa28413761）给出 m.360buyimg.com/mobilecms/s1125x2436_jfs* 开屏图 REJECT-IMG 方案，需 MITM 图片 CDN；京东属证书固定类 App、本插件红线零证书（lint APP_NO_ENHANCE_SLUGS 锁定），故拒收。频道清单中的 janapi/dns.jd.com 也命中本插件明文红线，同样拒收。确需路径级开屏去图只能在主配置自行 MITM，并自担 h5st 风控风险。
 # 本插件 [Host]/[Rule] 全设备生效（Loon 无法按 App 限定）：同一广告/埋点域跨 App 共享黑洞，'按 App 插件'只是分组开关；与全局 ads 插件配合使用。
+# 2026-11-18 25 源全网复核与 HTTPDNS 旁路勘察：① 纠偏原 triage_exclude「C 级单源不收」分类：25 源交叉显示 ads.union.jd.com（3 源，0 @@，京东联盟投放，与已生效 ads-union.jd.com 并列）、nfa.jd.com（3 源，0 @@，loadFa.action 前端广告组件加载与反作弊）、c-nfa.jd.com（2 源，0 @@）、bdsp.x.jd.com（2 源，0 @@，Bidding DSP 竞价投放，与 dsp-x.jd.com 同属 .x.jd.com 族）、u.x.jd.com（2 源，0 @@，与 u-x.jd.com 同族）实已达 B 级多源，迁入默认关 jd_ad_watchlist；stat.m.jd.com / firevent.jd.com / du.jd.com（均 2 源，0 @@）迁入默认关 jd_telemetry；② jzt.jd.com 实为京准通商家投放平台后台（2 源），按业务后台口径保留排除；blackhole-m.m.jd.com（1 源，与红线 blackhole.m 同族风控/日志）与 ddms.jd.com（1 源，分布式设备运维）按 C 级单源保留排除；③ 记录 HTTPDNS 接入点情报：dns.jd.com 常见 IPv4 节点为 101.124.19.122，因高版本京东 api.m.jd.com 强证书固定与 h5st（cactus.jd.com）强校验，dns.jd.com 仍列红线且维持零证书边界。
+# 2026-11-18 第二轮 .3.cn 域族与双栈 HTTPDNS 深挖：① 将 .3.cn 盲区纳入覆盖审计后证实：atom-log.3.cn 获 4 源（adguard-dns/adrules/anti-ad/easyprivacy）0 @@ 收录，属行为日志上报域，迁入默认关 jd_telemetry；ad.3.cn 虽达 3 源但 adguard-cn/adrules/easylist-cn 三方均设 @@||ad.3.cn/ads/mgets?$domain=jd.com 放行旧模块/TV 展示，绝不默认生效，仅收于默认关 jd_ad_watchlist 并标注 3 条 @@ 风险；② 3.cn 整族（*.3.cn 不整域）、p.3.cn（商品实时定价接口）、c0.3.cn（商品库存接口）、jstatic.3.cn（AdRules 设 @@ 白名单）写入红线与台账排除，防误伤交易价库与页面静态资源；③ 补齐 dns.jd.com 双栈 HTTPDNS 接入点 101.124.19.122（IPv4）与 2402:db40:5100:1011::5（IPv6）情报，对应 IP-CIDR/IP-CIDR6 与 IP Rewrite 仅作为默认注释防旁路可选项录于 ads.plugin。
+# 2026-11-18 第三轮关联子生态与协议边界深挖：① 纳入京东秒送/达达快送 imdada.cn 与京东国际 joybuy.com 25 源全网交叉验证：log-h5.imdada.cn（4 源 0 @@，京东秒送 H5 行为日志）、clk-m.joybuy.com（5 源 0 @@）、h5log.joybuy.com（5 源 0 @@）收入默认关 jd_telemetry；joybuy.com / imdada.cn 整族与 cactus.joybuy.com（5 源，h5st 风控签名镜像，同 cactus.jd.com 拦=下单失败）写入红线与台账排除；② 复核京东 13/14+ 客户端协议边界：api.m.jd.com 的 functionId=start / home_launchConfig / hotWords 虽在早期 QX/Loon 重写流行，但现代版本叠加 OkHttp CertificatePinner + 自定义 TrustManager 强证书固定与 HTTPDNS 直连，非 Root/Frida 环境开启 MITM 会直接报网络错误，故 jd.plugin 维持零证书边界；③ 补充实证为什么 3.cn 根域必列红线：AdRules/EasyPrivacy 仅拦截 ||3.cn/cesu/r? 路径级测速上报，3.cn 根域直接承载商品口令短链（https://3.cn/xxx），绝不做根域黑洞。
+# 2026-11-18 第四轮真机落地与系统级摇一摇协同固化：在 plugins/jd/README.md 补齐从 Loon 主配置 hijack-dns/domain-reject-mode、ads/ads-next 可选双栈 HTTPDNS IP（101.124.19.122/32 与 2402:db40:5100:1011::5/128）启用时机、App 内隐私推荐关闭到 iOS 27.2+「限制动作数据」与 Android 传感器禁止 + GKD 跳开屏的完整执行路径。
+# 2026-11-18 第五轮京东全资 1 号店子生态补全：扩展审计纳入 yhd.com 族并锁定 yhd.com（1 号店全族不整域黑洞）红线；将 anti-ad + yhosts 0 @@ 共识的 api.dsp.yhd.com 并入默认关 jd_ad_watchlist，click.yhd.com 与 tracker.yhd.com 并入默认关 jd_telemetry（同步合入 ads 默认关组）。
 # 本文件由 tools/build-apps.py 从 src/apps/jd.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -55,7 +60,7 @@ skdisplay.jd.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 竞价/曝光/点击监测与语义待核实广告域（默认关）（置信 B）
-# x.jd.com 族（x/im-x/u-x/wn.x）是广告竞价、曝光与 winnotice 监测；im-x 另有公开的 /dsp/np?log= 广告落地链，但多份 wskey 抓取教程显示 im-x/msg.m 请求携带登录凭证——**im-x 永不默认开**，msg.m 已列红线。sgm-w 被微信开放平台高风险域名单与 EasyPrivacy 同时收录，语义仍不明确（sgm-m1/sgm-w1 兄弟域不加剧）；cm/cc.m/jrad 语义未核实。默认关，先在日志确认域名真实出现、再逐条试开；u.x 单源未收。
+# x.jd.com 族（x/im-x/u-x/u.x/wn.x/bdsp.x）是广告竞价、DSP、曝光与 winnotice 监测；ads.union.jd.com / nfa.jd.com / c-nfa.jd.com 为前端广告位与联盟投放接口（25 源达 2~3 源 0 @@）；ad.3.cn 虽达 3 源但 adguard-cn/adrules/easylist-cn 存在 3 条 @@ 例外（/ads/mgets?$domain=jd.com），绝不默认生效；cm/cc.m/jrad/sgm-w 语义待真机逐域核实。全组默认关，先在日志确认域名真实出现、再逐条试开。
 # 证据: https://github.com/TG-Twilight/AWAvenue-Ads-Rule/issues/48
 # 证据: https://blog.csdn.net/m0_66942852/article/details/123033488
 # 证据: https://www.cnblogs.com/BYGAO/p/14866075.html
@@ -64,36 +69,52 @@ skdisplay.jd.com = 127.0.0.1
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
 # （默认关闭的组：整组注释，取消注释即启用）
+# ad.3.cn = 127.0.0.1
+# ads.union.jd.com = 127.0.0.1
+# api.dsp.yhd.com = 127.0.0.1
+# bdsp.x.jd.com = 127.0.0.1
+# c-nfa.jd.com = 127.0.0.1
 # cc.m.jd.com = 127.0.0.1
 # cm.jd.com = 127.0.0.1
 # im-x.jd.com = 127.0.0.1
 # jrad.jd.com = 127.0.0.1
+# nfa.jd.com = 127.0.0.1
 # sgm-w.jd.com = 127.0.0.1
 # u-x.jd.com = 127.0.0.1
+# u.x.jd.com = 127.0.0.1
 # wn.x.jd.com = 127.0.0.1
 # x.jd.com = 127.0.0.1
 
 # ------------------------------------------------------------
 # 埋点/日志/推荐回流（默认关，隐私收益）（置信 A）
-# uranus=京东统一埋点上报（公开的埋点助手工具明确抓 Uranus 上报）、mercury=页面埋点 log.gif、knicks=推荐位点击回流（rec_common_clk）、mllog/xlog/log/jcm/hermes=日志与采集，均默认关。收益是隐私与流量，可能影响推荐反馈；不影响交易前先抓包确认。
+# uranus/mercury/knicks/mllog/xlog/log/jcm/hermes/orbit/mars/anti-sdk-report/ex.m/jra/dsap/cltm/sgm-m/stat.m/firevent/du/atom-log.3.cn/log-h5.imdada.cn/clk-m.joybuy.com/h5log.joybuy.com=行为埋点、性能日志、秒送/国际端点击回流与推广事件上报，均默认关（不影响购物交易前提下提供隐私开关）。
 # 证据: https://developer.jdcloud.com/article/3431
 # 证据: https://www.cnblogs.com/qizhang0828/p/10874065.html
 # 证据: https://github.com/privacy-protection-tools/anti-AD
 # 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
 # （默认关闭的组：整组注释，取消注释即启用）
 # anti-sdk-report.m.jd.com = 127.0.0.1
+# atom-log.3.cn = 127.0.0.1
+# click.yhd.com = 127.0.0.1
+# clk-m.joybuy.com = 127.0.0.1
 # cltm.jd.com = 127.0.0.1
 # dsap.jd.com = 127.0.0.1
+# du.jd.com = 127.0.0.1
 # ex.m.jd.com = 127.0.0.1
+# firevent.jd.com = 127.0.0.1
+# h5log.joybuy.com = 127.0.0.1
 # hermes.jd.com = 127.0.0.1
 # jcm.jd.com = 127.0.0.1
 # jra.jd.com = 127.0.0.1
 # knicks.jd.com = 127.0.0.1
+# log-h5.imdada.cn = 127.0.0.1
 # log.jd.com = 127.0.0.1
 # mars.jd.com = 127.0.0.1
 # mercury.jd.com = 127.0.0.1
 # mllog.jd.com = 127.0.0.1
 # orbit.jd.com = 127.0.0.1
 # sgm-m.jd.com = 127.0.0.1
+# stat.m.jd.com = 127.0.0.1
+# tracker.yhd.com = 127.0.0.1
 # uranus.jd.com = 127.0.0.1
 # xlog.jd.com = 127.0.0.1
