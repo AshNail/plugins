@@ -140,6 +140,12 @@
       "trackId": 600273928,
       "seller": "China Unionpay Co.,Ltd."
     },
+    "banks-mitm": {
+      "app": "云闪付（banks-mitm 与 banks 共用官方商店图标）",
+      "bundleId": "com.unionpay.chsp",
+      "trackId": 600273928,
+      "seller": "China Unionpay Co.,Ltd."
+    },
     "ads": {
       "app": "广告平台拦截器 · All-in-One（非单一 App）"
     }

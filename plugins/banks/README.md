@@ -1,12 +1,12 @@
-# 银行 App 聚合 · 遥测瘦身 v1.3.1
+# 银行 App 聚合 · 遥测瘦身 v1.4.1
 
-> 覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与招行/浦发/云闪付自建商业广告专域精准拦截(新增建行 imageadv.ccb.com, 剔除美商误配 ccbtechnology 与银联国际卡权益门户 unionpayintl);登录/支付/付款码/动账提醒零接触红线;内置 SSL Pinning 纯连接层零证书零 MITM。
+> 覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银/工商银行(含工银e生活)/建设银行(含建行生活)/邮储银行(含邮储信用卡)/动卡空间/阳光惠生活/发现精彩/兴业生活/全民生活/平安口袋银行/华彩生活:中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与全国性股份制银行及其信用卡产品 App 的自建商业广告专域精准拦截与安全红线隔离;披露掌上生活与买单吧开屏同域混装、SSL Pinning 与预缓存物理天花板,并提供全套 Loon 协同/端内开关/URL Scheme 冷启绕过与防摇一摇方案;内置 SSL Pinning 纯连接层零证书零 MITM。
 
-版本 **1.3.7** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
+版本 **1.4.1** ｜ 功能基线 Loon **3.5.1(983)**+ （iOS/tvOS 口径；Mac 版是 0.x 独立一条线，插件头不声明门槛）｜ 零证书 · 零 MITM · 零脚本（纯 `[Host]`/`[Rule]`）
 
 ## 安装
 
-[![一键导入 banks.plugin](https://img.shields.io/badge/Loon-导入%E9%93%B6%E8%A1%8C%20App%20%E8%81%9A%E5%90%88%20%C2%B7%20%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB%20v1.3.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbanks%2Fbanks.plugin)
+[![一键导入 banks.plugin](https://img.shields.io/badge/Loon-导入%E9%93%B6%E8%A1%8C%20App%20%E8%81%9A%E5%90%88%20%C2%B7%20%E9%81%A5%E6%B5%8B%E7%98%A6%E8%BA%AB%20v1.4.1-red?style=for-the-badge&logo=safari&logoColor=white)](https://www.nsloon.com/openloon/import?plugin=https%3A%2F%2Fraw.githubusercontent.com%2FAshNail%2Fplugins%2Fmain%2Fplugins%2Fbanks%2Fbanks.plugin)
 
 ```text
 https://raw.githubusercontent.com/AshNail/plugins/main/plugins/banks/banks.plugin
@@ -18,36 +18,49 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/banks/banks.plugi
 |---|---|---|---|
 | 已证实的自建/自营广告端点 | A | 启用 | 六大国有银行(工行/建行/农行/中行/交行/邮储)+招行+云闪付自建广告投放与视觉营销域名。2026-11-18 补建行官网 Cookie 政策实证且 1hosts-lite/HaGeZi PRO 双收的 imageadv.ccb.com；剔除误配美商 MSP 的 marketing.ccbtechnology.com 与银联国际卡权益门户 marketing.unionpayintl.com；注：ad.icbc/boc/bankcomm/psbc 在 25 源开源黑名单 0 命中，按既有守卫保留零风险精确子域。 |
 | 穿山甲企业内网解析域 | A | 启用 | *.alliance.com.corpqueue.net=穿山甲 SDK 内置企业内网主机名(私有 TLD 防劫持),外部网络只产生 DNS 探测噪音,黑洞零副作用;对装了穿山甲的 App 普遍有效。 |
+| 浦发银行开屏广告专用后端（默认关） | B | 默认关闭 | lban.spdb.com.cn=浦发银行客户端开屏/营销接口后端（/mspmk-web-component/getAdvList.ah 与 prefetchAdvList.ah）；多家 Surge/QX/Hosts 去广告库独立收录且 0 @@ 例外，但 27 份通用 DNS 黑名单 0 命中，默认关、经 Loon 请求日志核对后按需试开。 |
 | 云闪付 ads/analytics 主接口（默认关） | B | 默认关闭 | ads.95516.com + analytics.95516.com + analytics.95516.com.wscdns.com（网宿 CDN CNAME 别名）=云闪付开屏推广与分析；部分设备实证 REJECT 后触发重试风暴，默认关。 |
-| 银行日志上报单源候选（默认关） | B | 默认关闭 | 银行日志/指标/灰度/APM 监测端点：log.cmbchina.com（招行日志，3 源）、metric-sz.ccd.cmbchina.com（招行卡中心深圳指标，HaGeZi PRO 收录）、sdc.pingan.com 与 adcdn.pingan.com（平安，存在多源 @@ 例外）、beacon.tingyun.com / wkrd.tingyun.com / api.networkbench.com / dc1.networkbench.com（基调听云 APM）及 oneupload.bonree.com（博睿 APM），均默认关。 |
+| 银行日志与行为上报候选（默认关） | B | 默认关闭 | 银行日志/指标/APM/行为埋点端点：log.cmbchina.com（招行日志，3 源）、metric-sz.ccd.cmbchina.com（招行卡中心深圳指标，HaGeZi PRO 收录）、firefly.abchina.com.cn（农行 /firefly-collection/Collect 行为采集端点）、sdc.pingan.com 与 adcdn.pingan.com（平安，存在多源 @@ 例外）、beacon.tingyun.com / wkrd.tingyun.com / api.networkbench.com / dc1.networkbench.com（基调听云 APM）及 oneupload.bonree.com（博睿 APM），均默认关；浦大喜奔《个人信息共享清单》披露的 TalkingData 等商业分析域由 ads 插件默认关 analytics 组统一承接。 |
 | pre-DNS 双栈防旁路 | A | 启用 | 由生效 `[Host]` 精确派生 `DOMAIN-SUFFIX`/`DOMAIN` REJECT，在 DNS 解析前同步阻断 IPv4 与 IPv6/AAAA，防止单装插件时 AAAA 旁路。共 7 条。 |
 
 ## 怎么落实（分层落地与客户端协同）
 
-### 1. Loon 主配置协同与代理检测防闪退
+### 1. 为何单装 banks.plugin 仍无法消除「掌上生活 / 买单吧 / 六大行」开屏广告（实证根因）
 
-- 插件搭配：安装 `ads.plugin`（或 `ads-next.plugin`，二选一）+ `banks.plugin`；主配置 `[General]` 加入 `hijack-dns = *:53` 与 `domain-reject-mode = DNS`。本插件严格保持零 MITM（`enhance: null`），切勿手动将任何银行/银联域名写入 `[MITM]` `hostname`。
+- **同域混装无法在 DNS 层切割**：**掌上生活**开屏配置与动态渲染走 `mlife.cmbchina.com` / `az1mbasecc.bas.cmbchina.com`（`/preCacheAdvertiseSec`）与 `intellicc.bas.cmbchina.com`（`/getDynamicDataSec`），开屏素材走 `res.cc.cmbimg.com`（`/fsp/File/AdPlatformPublic/`）、`s3gw.cmbimg.com`（`/mbappinitads/`）与 `resource.cmbchina.com`（`/fsp/File/ClientFacePublic/`）；**买单吧**开屏/引导页与弹窗走 `creditcardapp.bankcomm.com`（`/mapp/common/queryGuidePageAds.do`、`getPopAds.do` / `qryPopAds.do`），广告图走 `creditcard.bankcomm.com`（`/tfimg/public00/M00/`）。这些域名同时承载登录、查账、还款或 UI 图床，DNS 层整域黑洞必致功能瘫痪；纯 DNS 唯一可安全拦截的仅 `mbads.paas.cmbchina.com` 等独立广告子域。
+- **SSL Pinning + 国密校验阻断常规 MITM**：六大行与信用卡 App 普遍对核心 API 网关启用证书绑定或完整性校验（`Walvez/surge-startup-ads` 与社区长期反馈：把 `mlife.cmbchina.com` / `az1mbasecc.bas.cmbchina.com` / `creditcardapp.bankcomm.com` 放进 `[MITM]` 极易触发「网络异常」「设置页打不开」或闪退）。**本插件严格保持零证书零 MITM**；同时 `preCacheAdvertiseSec` 等接口会在上一次启动把开屏图预缓存到本地沙盒。
+- **其它信用卡与生活端同理**：`image2.elife.icbc.com.cn`（工银e生活）、`yunbusiness.ccb.com`（建行生活 `txcode=A3341A00*`）、`enjoy.cdn-static.abchina.com.cn`（农行）、`mbs.boc.cn`（中行 `/advertType/`）、`d.psbc.com:9091`（邮储信用卡）、`image.spdbccc.com.cn`（浦大喜奔）、`m.creditcard.ecitic.com` / `m.citiccardcdn.citicbank.com`（动卡空间）、`yghsh.cebbank.com` / `static.cebbank.com`（阳光惠生活）、`static.95508.com`（发现精彩）、`images.cib.com.cn`（兴业生活）、`rs.creditcard.cmbc.com.cn`（全民生活）、`static.creditcard.hxb.com.cn`（华彩生活）、`iobs.pingan.com.cn`（平安口袋银行）全部受同域混装与证书策略约束。完整全系对照分析见 `docs/banks-creditcard-ad-removal.md`。
+
+### 2. Loon 主配置协同与代理检测防闪退
+
+- 插件搭配：安装 `ads.plugin`（或 `ads-next.plugin`，二选一）+ `banks.plugin`；主配置 `[General]` 加入 `hijack-dns = *:53` 与 `domain-reject-mode = DNS`。本插件严格保持零 MITM（`enhance: null`），切勿将银行核心 API 网关写入 `[MITM]` `hostname`。
 - 排查 Wi-Fi 代理残留：iOS 前往 `设置 → 无线局域网 → 当前 Wi-Fi 详情 → HTTP 代理`，确认处于 `关闭`（避免 Charles/抓包遗留的 `127.0.0.1` 触发银行检测）。
 - 主配置 `skip-proxy` 直连豁免：若农行/建行/邮储/工行提示「检测到代理」，在主配置 `[General]` 的 `skip-proxy` 用英文逗号追加 `www.abchina.com.cn, msmp.abchina.com.cn, yunbusiness.ccb.com, login-service.mobile-bank.psbc.com, mobile-bank.psbc.com`（Loon 会原生合并列表，**禁写 Surge 的 `%APPEND%`**；本插件不擅自改写用户全局 `skip-proxy`）。
-- 主配置 `[Rule]` 顶部按需显式直连：`DOMAIN-SUFFIX,icbc.com.cn,DIRECT`、`DOMAIN-SUFFIX,ccb.com,DIRECT`、`DOMAIN-SUFFIX,abchina.com.cn,DIRECT`、`DOMAIN-SUFFIX,boc.cn,DIRECT`、`DOMAIN-SUFFIX,bankcomm.com,DIRECT`、`DOMAIN-SUFFIX,psbc.com,DIRECT`、`DOMAIN-SUFFIX,95516.com,DIRECT`。
+- 主配置 `[Rule]` 顶部按需显式直连：`DOMAIN-SUFFIX,icbc.com.cn,DIRECT`、`DOMAIN-SUFFIX,ccb.com,DIRECT`、`DOMAIN-SUFFIX,abchina.com.cn,DIRECT`、`DOMAIN-SUFFIX,boc.cn,DIRECT`、`DOMAIN-SUFFIX,bankcomm.com,DIRECT`、`DOMAIN-SUFFIX,psbc.com,DIRECT`、`DOMAIN-SUFFIX,95516.com,DIRECT`、`DOMAIN-SUFFIX,cmbchina.com,DIRECT`、`DOMAIN-SUFFIX,cmbimg.com,DIRECT`、`DOMAIN-SUFFIX,spdb.com.cn,DIRECT`、`DOMAIN-SUFFIX,spdbccc.com.cn,DIRECT`、`DOMAIN-SUFFIX,ecitic.com,DIRECT`、`DOMAIN-SUFFIX,cebbank.com,DIRECT`、`DOMAIN-SUFFIX,95508.com,DIRECT`、`DOMAIN-SUFFIX,cib.com.cn,DIRECT`、`DOMAIN-SUFFIX,cmbc.com.cn,DIRECT`、`DOMAIN-SUFFIX,pingan.com,DIRECT`、`DOMAIN-SUFFIX,hxb.com.cn,DIRECT`。
 - 仍触发风控弹窗时的两种无感兜底：① 将 Loon 切换为纯 TUN（点击 `loon://proxymode=tun`，避免向系统注入 `NEProxySettings` HTTP 代理标记）；② 对强检 `NEVPNStatus` 的银行，在 iOS「快捷指令 → 个人自动化 → App」配置打开对应银行 App 时「立即运行」`loon://off`、关闭时自动执行 `loon://on`。（说明：`DOMAIN,msmp.abchina.com.cn,REJECT` 属社区风控偏方而非去广告，存在阻断农行安全监测的风险，本插件红线维持放行。）
 
-### 2. 六大行 + 信用卡 + 云闪付 客户端内官方降噪开关（必做）
+### 3. 六大行 + 十大信用卡 + 云闪付 客户端内官方降噪开关（必做）
 
 - **工商银行 / 工银e生活**：`我的 → 设置 → 个性化设置 → 个性化推荐`（关闭）。
 - **建设银行 / 建行生活**：`我的 → 设置 → 隐私管理 → 个性化推荐管理`（关闭个性化内容推荐与个性化广告推荐）。
 - **中国银行**（原「缤纷生活」App 已于 2026 年 6 月 30 日 24 时全面停服并迁入「中国银行」App）：`我的 → 设置 → 个性化设置`（或在隐私与安全内隐私管理入口关闭个性化推荐）。
-- **农业银行 / 交通银行（含买单吧） / 邮储银行**：各行 `我的 → 设置 → 隐私设置 / 个性化推荐` 关闭（买单吧：`我的 → 消费者权益保护 → 其他授权管理`；邮储亦可致电 `95580` 转人工申请关闭个性化推荐）。
+- **农业银行 / 交通银行（含买单吧） / 邮储银行（含邮储信用卡）**：农行/交行在 `我的 → 设置 → 隐私设置 / 个性化推荐` 关闭；买单吧：`我的 → 消费者权益保护 → 其他授权管理`（关闭使用过程信息管理与个性化推荐）；邮储/邮储信用卡：`我的 → 设置 → 个性化推荐 / 菜单智能推荐` 关闭（未见入口可致电 `95580` 转人工申请关闭）。
 - **招商银行 / 掌上生活 / 浦大喜奔 / 云闪付**：招行 `我的 → 设置 → 安全中心 → 设备管理 → 允许个性化推荐` 关闭；掌上生活 `我的 → 设置 → 隐私管理 → 个性化推荐设置` 关闭；浦大喜奔 `我的 → 设置 → 用户保护中心 → 个性化推荐设置` 关闭；云闪付 `我的 → 设置 → 隐私设置 → 个性化推荐设置` 关闭。
+- **动卡空间 / 阳光惠生活 / 发现精彩 / 兴业生活 / 全民生活 / 平安口袋银行 / 华彩生活**：动卡空间 `首页 → 个人中心 → 设置 → 隐私设置 → 个性化广告推荐`；阳光惠生活 `我的 → 设置 → 隐私管理 → 个性化推荐设置`；全民生活 `我的 → 设置 → 隐私管理 → 个性化推荐设置`；平安口袋银行 `我的 → 设置 → 授权管理 → 个性化推荐设置`；发现精彩 / 兴业生活 / 华彩生活 在 `我的 → 设置 → 隐私设置 / 授权管理` 关闭个性化推荐与营销通知。
 
-### 3. Android 无障碍（GKD）风控与 iOS 传感器防摇一摇
+### 4. iOS 快捷指令 URL Scheme 冷启绕过 + 传感器防摇一摇
 
-- **Android 慎用无障碍跳开屏**：六大行普遍检索系统已启用的 `AccessibilityService`（反电诈与防远控校验）。仅在 GKD 内把银行加入免打扰（DND）名单**不会**移除系统无障碍服务列表，仍可能触发风险警告或强退；可行方案是在 MacroDroid/Tasker 配合 Shizuku 于银行前台时自动暂停无障碍服务，或将银行 App 放入 **Island（工作资料）** 沙箱隔离运行。
-- **iOS 摇一摇防误触**：升级至 **iOS 27.2+**（2026-10-27 上线，需登录中国大陆 Apple ID）可在 `设置 → 隐私与安全 → 运动与健身 → 限制动作数据 → 编辑` 中勾选易乱跳 App，从系统底层切断传感器触发跳转。
+- **iOS URL Scheme 快捷指令替身图标（实测绕过冷启开屏思路）**：通过「快捷指令 → 打开 URL → 添加到主屏幕」替掉原桌面图标，部分版本外部唤醒会跳过冷启开屏直接进主页——**掌上生活** `cmblife://`、**买单吧** `mdb://`、**招商银行** `cmbmobilebank://`、**工商银行** `com.icbc.iphoneclient://`、**农业银行** `bankabc://`、**中国银行** `BOCMBCIphone://`、**建设银行** `ccbmobilebank://`、**邮储银行** `psbcmbank://`、**云闪付** `upwallet://`、**浦大喜奔** `spdbccc://`、**动卡空间** `citicbankdkkj://`、**阳光惠生活** `yghsh://`、**平安口袋银行** `paesuperbank://`。（注：国有大行部分新版仍可能校验或回落展示开屏，且 iOS 快捷指令唤起顶部会闪烁灵动岛横幅。）
+- **iOS 摇一摇物理阻断**：升级至 **iOS 27.2+**（2026-10-27 上线，需登录中国大陆 Apple ID）可在 `设置 → 隐私与安全 → 运动与健身 → 限制动作数据 → 编辑` 中勾选 **掌上生活、买单吧、六大行** 等 App，从系统底层切断陀螺仪/加速度计跳转。
 
-### 4. 默认关闭组试开与回滚
+### 5. Android 无障碍（GKD）反诈风控规避
 
-- `unionpay_optional`（`ads.95516.com` / `analytics.95516.com.wscdns.com`）与 `bank_telemetry`（`metric-sz.ccd.cmbchina.com` 及 `TingYun` / `NetworkBench` / `Bonree` 遥测端）：仅当 Loon 请求日志确认对应域实际发起且有降噪需求时再逐行取消注释；出现按钮卡死、重试风暴或转账校验异常时立即恢复注释。
+- **Android 慎用无障碍跳开屏**：六大行与掌上生活/买单吧普遍检索系统已启用的 `AccessibilityService`（反电诈与防远控校验）。注意 `AIsouler/GKD_subscription` 已于 2026 年初停止维护（需改用社区模板规则），且仅在 GKD 内把银行加入免打扰（DND）名单**不会**移除系统无障碍服务列表，仍可能触发风险警告或强退；可行方案是在 MacroDroid/Tasker 配合 Shizuku 于银行前台时自动暂停无障碍服务，或将银行 App 放入 **Island（工作资料）** 沙箱隔离运行；同时在系统权限中禁止各银行的「身体传感器 / 设备动作与方向」权限。
+
+### 6. 默认关闭组试开与可选 MITM 伴随插件
+
+- `spdb_ad_optional`（`lban.spdb.com.cn`）、`unionpay_optional`（`ads.95516.com` / `analytics.95516.com.wscdns.com`）与 `bank_telemetry`（`firefly.abchina.com.cn` / `metric-sz.ccd.cmbchina.com` / `TingYun` / `NetworkBench` / `Bonree`）：仅当 Loon 请求日志确认对应域实际发起且有降噪需求时再逐行取消注释；出现按钮卡死、重试风暴或转账校验异常时立即恢复注释。
+- **可选 MITM 静态广告图与浦发开屏净化（[`banks-mitm.plugin`](../banks-mitm/README.md)）**：本仓库已把无需碰核心交易网关的非 Pinning 静态图床（掌上生活 `res.cc.cmbimg.com/fsp/File/AdPlatformPublic/`、`s3gw.cmbimg.com/mbappinitads/`、`pic1cdn.cmbchina.com/appinitads/`；工行 `v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/`；广发发现精彩 `static.95508.com` 广告目录）及浦发 `lban.spdb.com.cn/mspmk-web-component/(getAdvList|prefetchAdvList).ah` 做成独立可选插件 `plugins/banks-mitm/banks-mitm.plugin`（原生 `[Rewrite]` v2 + 3 组 `[Argument]` 独立开关，绝不触碰 `mlife`/`az1mbasecc`/`creditcardapp`/`wallet.95516.com` 核心网关）；如启用它清理浦发开屏，请保持本插件中的 `# lban.spdb.com.cn = 127.0.0.1` 处于注释状态。
 
 ## 红线与天花板（如实）
 
@@ -62,6 +75,7 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/banks/banks.plugi
 - 2026-11-18 第四轮 3D-Secure 支付网关 / @@ 白名单与听云博睿 APM 收敛：① 扫描 25 源全部 @@ 例外并结合 UnionPay_remove_ads_with_ssl_unpinning.js 补入 4 项红线：xykpay.3d2.icbc.com.cn（工行信用卡 3D-Secure /acs-auth-web/js/fingerprint2.min.js 支付验证，2 源设 @@ 白名单）、trip.cmbchina.com（招行商旅门户，3 源设 @@ 白名单）、base.95516.com 与 account.95516.com（云闪付强 SSL Pinning 核心界面接口，非去校验修改版启用 MITM 即断）；② 针对六大行官方《第三方SDK目录》实名披露的基调听云/博睿 APM 上报端，将 beacon.tingyun.com（4 源 0 @@）、wkrd.tingyun.com（3 源 0 @@）、api.networkbench.com / dc1.networkbench.com 及 oneupload.bonree.com 收录至默认关 bank_telemetry（同步于 ads 默认关 analytics 收 =networkbench.com），不误触 tingyun.com 门户且避免同步依赖引发偶发加载卡顿。
 - 2026-11-18 第五轮真机落地与代理检测红线核实：① 核查中国银行公告：原信用卡「缤纷生活」App 已于 2026 年 6 月 30 日 24 时全面停服，服务整合迁入「中国银行」App（积分 365 域 jf365.boc.cn 等仍维持红线）；② 按社区 skip-proxy 实证与支付主链路补入 5 项红线永不拦截：www.abchina.com.cn（农行主域与 skip-proxy 核心）、yunbusiness.ccb.com（建行生活与 skip-proxy 核心）、login-service.mobile-bank.psbc.com 与 mobile-bank.psbc.com（邮储手机银行登录与 skip-proxy 核心）、wallet.95516.com（云闪付支付与卡包核心链路）；③ 完整 Loon 主配置 skip-proxy（原生自动合并、禁写 %APPEND%）、纯 TUN / 快捷指令 loon://off 与 loon://on 自动化、六大行+信用卡+云闪付端内隐私关闭路径、Android 无障碍/GKD 反诈风控规避及 iOS 27.2+ 限制动作数据方案生成至 plugins/banks/README.md。
 - 2026-11-18 第六轮子门户反隐藏规则核查与官方《第三方SDK目录》合规交叉复检：① 逐行复核 25 源原始规则排查银行扩张域：剔除并锁定 buy.ccb.com（建行善融商务，25 源仅在 adguard-cn/adrules/easylist-cn 含 #@ 样式反隐藏例外）与 m.icbc.com.cn（工行手机网页版银行入口，仅 adguard-mobile 含首页 CSS 元素选择器）进红线与台账排除，防止误作 DNS 广告黑洞；② 核查六大行官网《第三方SDK目录》及开源 UnionPay_remove_ads 证据：各大行核心交易端均受监管禁止接入第三方商业广告联盟 SDK，推送转向手机厂商系统通道并辅以个推/极光，APM 仅含经安全审计的基调听云/博睿/Bugly 等，而云闪付 UnionPay_remove_ads 所涉 wallet.95516.com/s/wl/icon/long 需去 SSL Pinning 方能介入、维持红线天花板；全链路汇总部署指引同步落盘至 docs/banks-jd-taobao-rollout.md。
+- 2026-11-18 第七轮全国性银行信用卡 App 与掌上生活/买单吧开屏深挖：① 彻底查明掌上生活与买单吧仍出现开屏广告的三重根因——掌上生活开屏预缓存走 mlife.cmbchina.com 与 az1mbasecc.bas.cmbchina.com（/preCacheAdvertiseSec）、动态渲染走 intellicc.bas.cmbchina.com（/getDynamicDataSec）、图片素材走 res.cc.cmbimg.com（/fsp/File/AdPlatformPublic/）、s3gw.cmbimg.com（/mbappinitads/）与 resource.cmbchina.com（/fsp/File/ClientFacePublic/），且 ccclub.cmbchina.com 经 blackmatrix7 issue #972 实证拦截会打断招行信用卡页、site.cc.cmbimg.com 托管官方 AppSDK 清单；买单吧开屏/弹窗走 creditcardapp.bankcomm.com（/mapp/common/queryGuidePageAds.do 与 getPopAds.do/qryPopAds.do），静态物料走 creditcard.bankcomm.com（/tfimg/public00/M00/）。上述主机均属业务 API 网关或共享静态 CDN 且受 SSL Pinning/完整性校验保护，DNS 层整域黑洞必断正常功能，仅可通过本地极限策略或 URL Scheme 冷启（cmblife:// 与 mdb://）协同规避，而 vads.bankcomm.cn 仅见历史 IPA 记录且 27 源 0 命中暂不启用。② 补齐全国性银行主族与六大行/信用卡共用 CDN 红线：*.cmbimg.com / *.bankcomm.cn / *.psbc.com.cn / *.95599.cn（3 源 @@||95599.cn^*ad）/ *.ecitic.com（3 源 @@||ecitic.com/source/*/pop）/ *.citicbank.com / *.cebbank.com / *.cebbank.com.cn / *.cgbchina.com.cn / *.95508.com / *.cib.com.cn / *.cmbc.com.cn（3 源 #@/.adBox 与 @@||cmbc.com.cn^*ads/）/ *.hxb.com.cn / *.pingan.com.cn / *.unionpay.com（3 源 @@||online.unionpay.com/ads/$script），以及具体共用网关/图床主机 online.unionpay.com、elife.icbc.com.cn、image2.elife.icbc.com.cn、enjoy.cdn-static.abchina.com.cn（农行共享应用与下载分发 CDN）、midc.cdn-static.abchina.com.cn、cdn1.mbs.boc.cn、mlife.jf365.boc.cn（原缤纷生活 2026-06-30 停服迁入中国银行）、d.psbc.com（邮储 :9091/mcc/resources 网关，误拦伤转账与首页）、image.spdbccc.com.cn（浦大喜奔共享图床）、m.creditcard.ecitic.com / imcs.citicbank.com / m.citiccardcdn.citicbank.com（动卡空间）、yghsh.cebbank.com / static.cebbank.com（阳光惠生活）、static.95508.com（发现精彩）、images.cib.com.cn（兴业生活）、rs.creditcard.cmbc.com.cn（全民生活）、static.creditcard.hxb.com.cn（华彩生活）、iobs.pingan.com.cn（平安对象存储）。③ 新增两个默认关闭的 B 级可观测分组：spdb_ad_optional（lban.spdb.com.cn，浦发 /mspmk-web-component/getAdvList.ah 与 prefetchAdvList.ah 开屏接口）与 bank_telemetry 增补 firefly.abchina.com.cn（农行 /firefly-collection/Collect 行为采集端点）；浦大喜奔披露的 TalkingData 等商业分析端已由 ads 默认关 analytics 组统一覆盖。
 
 ## 证据与验证
 
@@ -69,4 +83,4 @@ https://raw.githubusercontent.com/AshNail/plugins/main/plugins/banks/banks.plugi
 - 生效判读：Loon 日志中被本插件命中的域名应显示 `Host Map IP:127.0.0.1`；REJECT-DROP 无日志回包属正常。
 - 源文件：`src/apps/banks.json`，改源后 `npm run build:apps`。本 README 由 `tools/gen-app-readmes.py` 生成。
 
-统计：精确/通配黑洞 19 条，[Rule] 9 条。
+统计：精确/通配黑洞 21 条，[Rule] 9 条。

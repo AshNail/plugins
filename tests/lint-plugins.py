@@ -2293,6 +2293,37 @@ def _check_ads_plugin_variant(rel_path: str, is_next: bool, protected: set[str])
         "aeis.alicdn.com",
         "buy.ccb.com",
         "m.icbc.com.cn",
+        "ccclub.cmbchina.com",
+        "mlife.cmbchina.com",
+        "az1mbasecc.bas.cmbchina.com",
+        "intellicc.bas.cmbchina.com",
+        "res.cc.cmbimg.com",
+        "s3gw.cmbimg.com",
+        "resource.cmbchina.com",
+        "site.cc.cmbimg.com",
+        "creditcardapp.bankcomm.com",
+        "creditcard.bankcomm.com",
+        "online.unionpay.com",
+        "elife.icbc.com.cn",
+        "image2.elife.icbc.com.cn",
+        "enjoy.cdn-static.abchina.com.cn",
+        "midc.cdn-static.abchina.com.cn",
+        "cdn1.mbs.boc.cn",
+        "mlife.jf365.boc.cn",
+        "d.psbc.com",
+        "image.spdbccc.com.cn",
+        "m.creditcard.ecitic.com",
+        "imcs.citicbank.com",
+        "m.citiccardcdn.citicbank.com",
+        "yghsh.cebbank.com",
+        "static.cebbank.com",
+        "static.95508.com",
+        "images.cib.com.cn",
+        "rs.creditcard.cmbc.com.cn",
+        "static.creditcard.hxb.com.cn",
+        "iobs.pingan.com.cn",
+        "pic1cdn.cmbchina.com",
+        "cmbc.maam.cc",
         "pass.1688.com",
         "grand.ele.me",
         "client-api.ele.me",
@@ -2729,7 +2760,10 @@ def root_machine_numbers():
         1 for p in app_jsons if json.loads(p.read_text(encoding="utf-8")).get("enhance")
     )
     banks = [p for p in app_jsons if p.stem == "banks"]
-    numbers["apps"] = numbers["app_plugins"] - len(banks) + (bank_app_count() if banks else 0)
+    companions = [p for p in app_jsons if json.loads(p.read_text(encoding="utf-8")).get("companion_of")]
+    numbers["apps"] = (
+        numbers["app_plugins"] - len(banks) - len(companions) + (bank_app_count() if banks else 0)
+    )
     return numbers
 
 
@@ -3695,12 +3729,31 @@ def check_mitm_reach():
         bad += 1
         errors.append(message)
 
+    BANKS_MITM_FORBIDDEN_CORE_HOSTS = {
+        "mlife.cmbchina.com", "az1mbasecc.bas.cmbchina.com", "intellicc.bas.cmbchina.com",
+        "ccclub.cmbchina.com", "trip.cmbchina.com", "creditcardapp.bankcomm.com",
+        "creditcard.bankcomm.com", "wallet.95516.com", "base.95516.com",
+        "account.95516.com", "content.95516.com", "switch.cup.com.cn", "tysdk.95516.com",
+        "online.unionpay.com", "marketing.unionpayintl.com", "mbs.boc.cn",
+        "cdn1.mbs.boc.cn", "jf365.boc.cn", "cdn2.jf365.boc.cn", "mlife.jf365.boc.cn",
+        "yunbusiness.ccb.com", "buy.ccb.com", "www.abchina.com.cn", "msmp.abchina.com.cn",
+        "enjoy.cdn-static.abchina.com.cn", "d.psbc.com",
+        "login-service.mobile-bank.psbc.com", "mobile-bank.psbc.com",
+        "pv.elife.icbc.com.cn", "elife.icbc.com.cn", "xykpay.3d2.icbc.com.cn",
+        "m.icbc.com.cn", "m.creditcard.ecitic.com", "imcs.citicbank.com",
+    }
+
     for path in sorted(ROOT.glob("plugins/*/*.plugin")):
         rel = path.relative_to(ROOT)
         slug = path.parent.name
-        enh = (apps.get(slug) or {}).get("enhance") or {}
+        app_cfg = apps.get(slug) or {}
+        companion_of = app_cfg.get("companion_of")
+        if companion_of and companion_of not in apps:
+            fail(f"{rel}: companion_of 指向不存在的父插件 {companion_of!r}")
+        enh = app_cfg.get("enhance") or {}
         declared = {h.lower() for h in (enh.get("mitm_hosts") or [])}
         active_layer = bool(enh.get("active"))
+        allowed_slugs = {slug} | ({companion_of} if companion_of else set())
         rendered = set()
         live = 0
         for commented, item in mitm_hostname_entries(path):
@@ -3713,11 +3766,19 @@ def check_mitm_reach():
                     "整段默认注释是仓库纪律（不装证书 = 永不生效）；要默认启用就得在 "
                     "src/apps/<slug>.json 里声明 enhance.active=true，由生成器整段产出"
                 )
+            if companion_of == "banks":
+                rx = module.hostname_glob_regex(item)
+                for core in BANKS_MITM_FORBIDDEN_CORE_HOSTS:
+                    if item == core or rx.fullmatch(core):
+                        fail(
+                            f"{rel}: banks-mitm [MITM] hostname {item!r} 触碰强 Pinning / "
+                            f"核心交易红线网关 {core!r}（严禁解密核心网关）"
+                        )
             for entry in entries:
                 if not module.mitm_reaches(item, entry):
                     continue
                 reachable += 1
-                if entry["slug"] != slug:
+                if entry["slug"] not in allowed_slugs:
                     fail(
                         f"{rel}: [MITM] hostname {item!r} 罩住 {module.describe(entry)}——"
                         "别的 App 声明绝不碰的主机，不许出现在本插件的解密名单里"

@@ -1,5 +1,5 @@
-#!name=银行 App 聚合 · 遥测瘦身 v1.3.1
-#!desc=覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银:中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与招行/浦发/云闪付自建商业广告专域精准拦截(新增建行 imageadv.ccb.com, 剔除美商误配 ccbtechnology 与银联国际卡权益门户 unionpayintl);登录/支付/付款码/动账提醒零接触红线;内置 SSL Pinning 纯连接层零证书零 MITM。
+#!name=银行 App 聚合 · 遥测瘦身 v1.4.1
+#!desc=覆盖掌上生活/买单吧/浦发银行(含浦大喜奔)/云闪付/中国银行/农行掌银/工商银行(含工银e生活)/建设银行(含建行生活)/邮储银行(含邮储信用卡)/动卡空间/阳光惠生活/发现精彩/兴业生活/全民生活/平安口袋银行/华彩生活:中国大陆六大国有银行(工行/建行/农行/中行/交行/邮储)与全国性股份制银行及其信用卡产品 App 的自建商业广告专域精准拦截与安全红线隔离;披露掌上生活与买单吧开屏同域混装、SSL Pinning 与预缓存物理天花板,并提供全套 Loon 协同/端内开关/URL Scheme 冷启绕过与防摇一摇方案;内置 SSL Pinning 纯连接层零证书零 MITM。
 #!author=edy
 #!homepage=https://github.com/AshNail/plugins
 #!icon=https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f1/6a/4e/f16a4eb9-1de3-833f-0f56-df39c3df6d09/AppIcon-0-1x_U007ephone-0-1-0-sRGB-85-220-0.png/512x512bb.jpg
@@ -8,11 +8,11 @@
 #!tag=隐私,银行,遥测
 #!type=normal
 #!source=89193a15f5d07258f3e0b273c805de2475505942577ad53af7c4a6b6eeadd2d4
-# version=1.3.7
+# version=1.4.1
 # docs=https://github.com/AshNail/plugins/blob/main/plugins/banks/README.md
 
 # ========================================================================
-# 银行 App 聚合 · 遥测瘦身 v1.3.1
+# 银行 App 聚合 · 遥测瘦身 v1.4.1
 # ------------------------------------------------------------------------
 # 域名映射纠错（防后续维护者凭品牌名加规则,均为 A 级官方验证）：掌上生活=招商信用卡,域在 cmbchina.com/cmbimg.com——cmbc.com.cn 是民生银行!;买单吧=交通信用卡,域在 bankcomm.com——spdbccc.com.cn 是浦发信用卡中心(浦大喜奔)!;adspdbl.com 是 Triplelift 系停放域、iabchina.cn 是 IAB 行业组织,都与浦发/农行无关。
 # 红线（绝不出现）：各银行主域整族（*.cmbchina.com/*.bankcomm.com/*.spdb.com.cn/*.95528.cn/*.spdbccc.com.cn/*.95516.com/*.cup.com.cn/*.boc.cn/*.abchina.com 的 DOMAIN-SUFFIX 级操作）/ wap.cmpassport.com+e.189.cn+ms.zzx9.cn(一键登录) / getui+gepush(买单吧与中行的唯一自建推送,杀了=交易提醒消失) / wallet.95516.com+mobilepaybeta.95516.com(付款码/HCE) / cfca.com.cn(数字证书扫码付) / cmbc.maam.cc(招行行内嵌优量汇测试域,黑洞会触发招行侧异常)。
@@ -25,6 +25,7 @@
 # 2026-11-18 第四轮 3D-Secure 支付网关 / @@ 白名单与听云博睿 APM 收敛：① 扫描 25 源全部 @@ 例外并结合 UnionPay_remove_ads_with_ssl_unpinning.js 补入 4 项红线：xykpay.3d2.icbc.com.cn（工行信用卡 3D-Secure /acs-auth-web/js/fingerprint2.min.js 支付验证，2 源设 @@ 白名单）、trip.cmbchina.com（招行商旅门户，3 源设 @@ 白名单）、base.95516.com 与 account.95516.com（云闪付强 SSL Pinning 核心界面接口，非去校验修改版启用 MITM 即断）；② 针对六大行官方《第三方SDK目录》实名披露的基调听云/博睿 APM 上报端，将 beacon.tingyun.com（4 源 0 @@）、wkrd.tingyun.com（3 源 0 @@）、api.networkbench.com / dc1.networkbench.com 及 oneupload.bonree.com 收录至默认关 bank_telemetry（同步于 ads 默认关 analytics 收 =networkbench.com），不误触 tingyun.com 门户且避免同步依赖引发偶发加载卡顿。
 # 2026-11-18 第五轮真机落地与代理检测红线核实：① 核查中国银行公告：原信用卡「缤纷生活」App 已于 2026 年 6 月 30 日 24 时全面停服，服务整合迁入「中国银行」App（积分 365 域 jf365.boc.cn 等仍维持红线）；② 按社区 skip-proxy 实证与支付主链路补入 5 项红线永不拦截：www.abchina.com.cn（农行主域与 skip-proxy 核心）、yunbusiness.ccb.com（建行生活与 skip-proxy 核心）、login-service.mobile-bank.psbc.com 与 mobile-bank.psbc.com（邮储手机银行登录与 skip-proxy 核心）、wallet.95516.com（云闪付支付与卡包核心链路）；③ 完整 Loon 主配置 skip-proxy（原生自动合并、禁写 %APPEND%）、纯 TUN / 快捷指令 loon://off 与 loon://on 自动化、六大行+信用卡+云闪付端内隐私关闭路径、Android 无障碍/GKD 反诈风控规避及 iOS 27.2+ 限制动作数据方案生成至 plugins/banks/README.md。
 # 2026-11-18 第六轮子门户反隐藏规则核查与官方《第三方SDK目录》合规交叉复检：① 逐行复核 25 源原始规则排查银行扩张域：剔除并锁定 buy.ccb.com（建行善融商务，25 源仅在 adguard-cn/adrules/easylist-cn 含 #@ 样式反隐藏例外）与 m.icbc.com.cn（工行手机网页版银行入口，仅 adguard-mobile 含首页 CSS 元素选择器）进红线与台账排除，防止误作 DNS 广告黑洞；② 核查六大行官网《第三方SDK目录》及开源 UnionPay_remove_ads 证据：各大行核心交易端均受监管禁止接入第三方商业广告联盟 SDK，推送转向手机厂商系统通道并辅以个推/极光，APM 仅含经安全审计的基调听云/博睿/Bugly 等，而云闪付 UnionPay_remove_ads 所涉 wallet.95516.com/s/wl/icon/long 需去 SSL Pinning 方能介入、维持红线天花板；全链路汇总部署指引同步落盘至 docs/banks-jd-taobao-rollout.md。
+# 2026-11-18 第七轮全国性银行信用卡 App 与掌上生活/买单吧开屏深挖：① 彻底查明掌上生活与买单吧仍出现开屏广告的三重根因——掌上生活开屏预缓存走 mlife.cmbchina.com 与 az1mbasecc.bas.cmbchina.com（/preCacheAdvertiseSec）、动态渲染走 intellicc.bas.cmbchina.com（/getDynamicDataSec）、图片素材走 res.cc.cmbimg.com（/fsp/File/AdPlatformPublic/）、s3gw.cmbimg.com（/mbappinitads/）与 resource.cmbchina.com（/fsp/File/ClientFacePublic/），且 ccclub.cmbchina.com 经 blackmatrix7 issue #972 实证拦截会打断招行信用卡页、site.cc.cmbimg.com 托管官方 AppSDK 清单；买单吧开屏/弹窗走 creditcardapp.bankcomm.com（/mapp/common/queryGuidePageAds.do 与 getPopAds.do/qryPopAds.do），静态物料走 creditcard.bankcomm.com（/tfimg/public00/M00/）。上述主机均属业务 API 网关或共享静态 CDN 且受 SSL Pinning/完整性校验保护，DNS 层整域黑洞必断正常功能，仅可通过本地极限策略或 URL Scheme 冷启（cmblife:// 与 mdb://）协同规避，而 vads.bankcomm.cn 仅见历史 IPA 记录且 27 源 0 命中暂不启用。② 补齐全国性银行主族与六大行/信用卡共用 CDN 红线：*.cmbimg.com / *.bankcomm.cn / *.psbc.com.cn / *.95599.cn（3 源 @@||95599.cn^*ad）/ *.ecitic.com（3 源 @@||ecitic.com/source/*/pop）/ *.citicbank.com / *.cebbank.com / *.cebbank.com.cn / *.cgbchina.com.cn / *.95508.com / *.cib.com.cn / *.cmbc.com.cn（3 源 #@/.adBox 与 @@||cmbc.com.cn^*ads/）/ *.hxb.com.cn / *.pingan.com.cn / *.unionpay.com（3 源 @@||online.unionpay.com/ads/$script），以及具体共用网关/图床主机 online.unionpay.com、elife.icbc.com.cn、image2.elife.icbc.com.cn、enjoy.cdn-static.abchina.com.cn（农行共享应用与下载分发 CDN）、midc.cdn-static.abchina.com.cn、cdn1.mbs.boc.cn、mlife.jf365.boc.cn（原缤纷生活 2026-06-30 停服迁入中国银行）、d.psbc.com（邮储 :9091/mcc/resources 网关，误拦伤转账与首页）、image.spdbccc.com.cn（浦大喜奔共享图床）、m.creditcard.ecitic.com / imcs.citicbank.com / m.citiccardcdn.citicbank.com（动卡空间）、yghsh.cebbank.com / static.cebbank.com（阳光惠生活）、static.95508.com（发现精彩）、images.cib.com.cn（兴业生活）、rs.creditcard.cmbc.com.cn（全民生活）、static.creditcard.hxb.com.cn（华彩生活）、iobs.pingan.com.cn（平安对象存储）。③ 新增两个默认关闭的 B 级可观测分组：spdb_ad_optional（lban.spdb.com.cn，浦发 /mspmk-web-component/getAdvList.ah 与 prefetchAdvList.ah 开屏接口）与 bank_telemetry 增补 firefly.abchina.com.cn（农行 /firefly-collection/Collect 行为采集端点）；浦大喜奔披露的 TalkingData 等商业分析端已由 ads 默认关 analytics 组统一覆盖。
 # 本文件由 tools/build-apps.py 从 src/apps/banks.json 生成，不要手改生成物。
 # ========================================================================
 
@@ -74,6 +75,13 @@ imageadv.ccb.com = 127.0.0.1
 mbads.paas.cmbchina.com = 127.0.0.1
 
 # ------------------------------------------------------------
+# 浦发银行开屏广告专用后端（默认关）（置信 B）
+# lban.spdb.com.cn=浦发银行客户端开屏/营销接口后端（/mspmk-web-component/getAdvList.ah 与 prefetchAdvList.ah）；多家 Surge/QX/Hosts 去广告库独立收录且 0 @@ 例外，但 27 份通用 DNS 黑名单 0 命中，默认关、经 Loon 请求日志核对后按需试开。
+# 证据: https://github.com/blackmatrix7/ios_rule_script
+# （默认关闭的组：整组注释，取消注释即启用）
+# lban.spdb.com.cn = 127.0.0.1
+
+# ------------------------------------------------------------
 # 云闪付 ads/analytics 主接口（默认关）（置信 B）
 # ads.95516.com + analytics.95516.com + analytics.95516.com.wscdns.com（网宿 CDN CNAME 别名）=云闪付开屏推广与分析；部分设备实证 REJECT 后触发重试风暴，默认关。
 # 证据: https://github.com/blackmatrix7/ios_rule_script/issues/493
@@ -83,14 +91,15 @@ mbads.paas.cmbchina.com = 127.0.0.1
 # analytics.95516.com.wscdns.com = 127.0.0.1
 
 # ------------------------------------------------------------
-# 银行日志上报单源候选（默认关）（置信 B）
-# 银行日志/指标/灰度/APM 监测端点：log.cmbchina.com（招行日志，3 源）、metric-sz.ccd.cmbchina.com（招行卡中心深圳指标，HaGeZi PRO 收录）、sdc.pingan.com 与 adcdn.pingan.com（平安，存在多源 @@ 例外）、beacon.tingyun.com / wkrd.tingyun.com / api.networkbench.com / dc1.networkbench.com（基调听云 APM）及 oneupload.bonree.com（博睿 APM），均默认关。
+# 银行日志与行为上报候选（默认关）（置信 B）
+# 银行日志/指标/APM/行为埋点端点：log.cmbchina.com（招行日志，3 源）、metric-sz.ccd.cmbchina.com（招行卡中心深圳指标，HaGeZi PRO 收录）、firefly.abchina.com.cn（农行 /firefly-collection/Collect 行为采集端点）、sdc.pingan.com 与 adcdn.pingan.com（平安，存在多源 @@ 例外）、beacon.tingyun.com / wkrd.tingyun.com / api.networkbench.com / dc1.networkbench.com（基调听云 APM）及 oneupload.bonree.com（博睿 APM），均默认关；浦大喜奔《个人信息共享清单》披露的 TalkingData 等商业分析域由 ads 插件默认关 analytics 组统一承接。
 # 证据: https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt
 # （默认关闭的组：整组注释，取消注释即启用）
 # adcdn.pingan.com = 127.0.0.1
 # api.networkbench.com = 127.0.0.1
 # beacon.tingyun.com = 127.0.0.1
 # dc1.networkbench.com = 127.0.0.1
+# firefly.abchina.com.cn = 127.0.0.1
 # log.cmbchina.com = 127.0.0.1
 # metric-sz.ccd.cmbchina.com = 127.0.0.1
 # oneupload.bonree.com = 127.0.0.1
