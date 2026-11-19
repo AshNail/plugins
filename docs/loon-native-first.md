@@ -105,7 +105,7 @@ Biliverse 的 Rewrite 版把 JSON 接口整体重定向到第三方网关 `app.n
 | `[Rule]` | `AND` / `OR` / `NOT` 逻辑组合 | 规则 | ✅ `AND,((DOMAIN-SUFFIX,…),(PROTOCOL,QUIC))` |
 | `[Rule]` | `REJECT` / `-DROP` / `-DICT` | 规则 | ✅ |
 | `[Rule]` | `REJECT-IMG` / `REJECT-ARRAY` | 规则 | ❌ 见 §9.1 |
-| `[Rewrite]` | `reject` 族六种（含 `reject_video`） | 复写（规则匹配前）**【文档】** | ✅ qidian v4.0.0 的 31 条 response 复写里 `reject_dict` / `response.json.delete` / `replace` / `jq` 均生效；xianyu 注释层另有 `response.json.jq` ×15；其余见 §9.1 |
+| `[Rewrite]` | `reject` 族六种（含 `reject_video`） | 复写（规则匹配前）**【文档】** | ✅ qidian v4.0.0 的 31 条 response 复写里 `reject_dict` / `response.json.delete` / `replace` / `jq` 均生效；`banks-mitm` v1.1.0 对招商掌上生活 `AdPlatformPublic` 视频开屏使用 `reject_video(200)`；xianyu 注释层另有 `response.json.jq` ×15；其余见 §9.1 |
 | `[Rewrite]` | `header-add` / `header-del` / `header-replace` | 复写 | ❌ 评估后放弃（E2） |
 | `[Rewrite]` | URL 重写 / 302 / 307 | 复写 | ❌ |
 | `[Rewrite]` v2 | `response.body.mock(...)` / `response.header.set(...)` | 复写 | ❌ **实证可用** |
@@ -384,7 +384,7 @@ Loon 的能力按「能否在运行时改变」分成三层。本仓库只建设
 | `reject(status)` / `reject(status, body)` | ❌ | 空包与文本包的 `Content-Type` 是 `text/plain`，按 JSON 解的 SDK 会进错误分支 |
 | `reject_img(status)` | ✅ | 共享图床（meituan `p0/p1/flowplus/img.meituan.net`、taobao `gw.alicdn.com`）下的广告目录路径在 request 阶段返回 200 + 1×1 GIF，避免图片加载器进入破损图重试分支 |
 | `reject_array(status)` | 🟡 | 端点响应必须是数组时才换（`[]`）；目前没有一个这样的上报接口 |
-| `reject_video(status)` | 🟡 | 开屏/激励素材若**直接在 MITM 可见的接口上返回视频字节**，用空视频比空包友好（播放器解码成功、不进重试）。现实里素材都走 CDN 域名拦截，用不上 |
+| `reject_video(status)` | ✅ | `banks-mitm` v1.1.0 对招行掌上生活 `res.cc.cmbimg.com/fsp/File/AdPlatformPublic/` 下的 `.mp4/.mov` 视频开屏物料先于图片规则返回 200 空 MP4（避免对视频请求回 1px GIF）；外链视频广告 CDN 仍走域名黑洞不进 MITM |
 | `*.header.add/set/del/replace` | ⚠️ 一处 | 我们改 Body 不改头，唯一的例外是 `Accept-Encoding` 降级：soda/douyin 设 `gzip`；qidian v4.0.0 已不用这条（E2，见 §4）。`del`/`replace` 仍全线禁止 |
 | `*.body.replace(Regex, …)` | ❌ | 正文级正则替换对 JSON 不安全：嵌套括号、转义序列、同名字段都会误伤。字段级裁剪必须走解析 |
 | `*.json.add/replace/delete(KeyPath)` | ✅ | 在无响应脚本的端点上直接执行固定键删改（soda `/luna/me`、qqnews `adList`、xianyu 搜索发现/订单流删键），引擎底层自动完成 gzip/br 解压，与脚本严格二选一（§8） |
@@ -501,7 +501,7 @@ Scheme 导入种类 6→7），分属四个不同出口——说明「数字散�
 `红线（绝不进任何拦截组）：mapi.m.jd.com / cactus.jd.com / dns.jd.com …`。没有任何门禁能回答
 「这条规则碰没碰红线」，因为红线在一个字符串里，规则在另一个数组里。
 
-第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 267 条 App 红线，覆盖 20 个 App 的红线声明）：
+第二十七轮把它结构化成 `src/apps/<slug>.json` 的 `redlines`（当前 297 条 App 红线，覆盖 20 个 App 的红线声明）：
 
 | 字段 | 作用 |
 |---|---|

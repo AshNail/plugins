@@ -1,49 +1,61 @@
 {
   "slug": "banks-mitm",
   "companion_of": "banks",
-  "name": "银行与信用卡 · 静态广告CDN与专域接口净化（可选MITM） v1.0.0",
-  "desc": "banks.plugin 配套可选 MITM 增强插件（默认启用 6 条路径级原生 [Rewrite] v2 规则 + 6 条 QUIC 回退，按开关分流控制）：针对招商掌上生活（AdPlatformPublic / mbappinitads / appinitads 静态开屏图 CDN reject_img(200)）、浦发/浦大喜奔（lban.spdb.com.cn getAdvList/prefetchAdvList.ah reject_dict(200)）、工商银行（ADResources/WAP/advertisement reject_img(200)）与广发发现精彩（static.95508.com 广告图目录 reject_img(200)）；严格隔离所有强 SSL Pinning 核心交易/支付网关与买单吧主网关 creditcardapp.bankcomm.com。需安装并完全信任 Loon CA 证书后启用。",
-  "version": "1.0.0",
-  "date": "2026-11-18",
+  "name": "银行与信用卡 · 静态广告CDN与专域接口净化（可选MITM） v1.1.0",
+  "desc": "banks.plugin 配套可选 MITM 增强插件（默认启用 8 条路径级原生 [Rewrite] v2 规则 + 7 条 QUIC 回退，按开关分流控制）：针对招商掌上生活（res.cc.cmbimg.com/fsp/File/AdPlatformPublic/ 视频开屏 reject_video(200) + 静态图 reject_img(200)、s3gw.cmbimg.com 与双生域 s3gw.cmbimg.cn /mbappinitads/、pic1cdn.cmbchina.com/appinitads/）、浦发/浦大喜奔（lban.spdb.com.cn getAdvList/prefetchAdvList.ah reject_dict(200)）、工商银行（v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/ reject_img(200)）与广发发现精彩（static.95508.com ads/popupads/advertising 目录 reject_img(200)）；严格隔离所有强 SSL Pinning 核心交易/支付网关与买单吧双线主网关 creditcardapp.bankcomm.com / creditcardapp.bankcomm.cn 及 mbmodule-openapi.paas.cmbchina.com。需安装并完全信任 Loon CA 证书后启用。",
+  "version": "1.1.0",
+  "date": "2026-11-19",
   "loonVersion": "3.5.1(983)",
   "tag": "去广告,银行,信用卡,MITM",
   "icon": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/f1/6a/4e/f16a4eb9-1de3-833f-0f56-df39c3df6d09/AppIcon-0-1x_U007ephone-0-1-0-sRGB-85-220-0.png/512x512bb.jpg",
   "comment": [
     "定位边界：本插件是 zero-MITM 底座插件 banks.plugin 的显式可选（opt-in）MITM 配套增强插件——不希望任何银行流量走 CA 解密的用户只装 banks.plugin 即可；仅在确认 Loon 已安装并完全信任根证书、且希望在 Loon 内一键开关静态广告图 CDN 与非核心广告后端路径级清理时，再叠加启用本插件。",
-    "硬性隔离红线（绝不写入 mitm_hosts，由 tests/lint-plugins.py check_banks_mitm_guard 反向锁死）：mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com（掌上生活与招行强 Pinning 核心 API 与权益网关，社区实证放入 MITM 易致设置页打不开或网络异常）、creditcardapp.bankcomm.com / creditcard.bankcomm.com（买单吧主网关与通用 FastDFS 图床）、wallet.95516.com / base.95516.com / account.95516.com（云闪付强 Pinning 核心接口）、mbs.boc.cn（中行主网关）、yunbusiness.ccb.com（建行生活核心）、www.abchina.com.cn / msmp.abchina.com.cn（农行核心与风控通道）、d.psbc.com / login-service.mobile-bank.psbc.com / mobile-bank.psbc.com（邮储核心网关）。",
-    "诚实效果预期（掌上生活 & 买单吧）：① 掌上生活（招商银行信用卡）：本插件只解密静态图床 res.cc.cmbimg.com / s3gw.cmbimg.com / pic1cdn.cmbchina.com 的纯广告子目录并通过 reject_img(200) 返回 200 + 1px 透明 GIF；由于主 API preCacheAdvertiseSec 会在上一次启动把开屏图预缓存到本地沙盒，安装后需先划掉掌上生活后台并清理缓存（或等待当期预缓存过期）方能观测效果，且开屏容器若展示本地兜底/第一方卡片位属客户端原生限制。② 买单吧（交通银行信用卡）：其开屏接口 queryGuidePageAds.do/getPopAds.do 与全部交易共用强 Pinning 主网关 creditcardapp.bankcomm.com，图片走通用 /tfimg/public00/M00/，Loon 无法在不触碰主网关的前提下安全切除，因此本插件不覆盖买单吧，买单吧仍依赖零证书 banks.plugin + 端内权限关闭 + iOS 快捷指令 mdb:// 绕过。",
-    "规则来源可追溯：res.cc.cmbimg.com/fsp/File/AdPlatformPublic/、s3gw.cmbimg.com/mbappinitads/ 与 pic1cdn.cmbchina.com/appinitads/ 来自社区实证开屏/初始化广告素材路径；lban.spdb.com.cn/mspmk-web-component/(getAdvList|prefetchAdvList).ah 来自 blackmatrix7/ios_rule_script（使用 reject_dict(200) 比 DNS 黑洞更细粒度且规避误伤其它 web-component）；v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/ 来自 AdGuard-CN 与 AdRules（$domain 过滤路径规则）；static.95508.com/(mmg/images/ads|icppweb/images/modelMaterial/advertising)/ 来自公开广发发现精彩纯广告素材路径。"
+    "硬性隔离红线（绝不写入 mitm_hosts，由 tests/lint-plugins.py check_banks_mitm_guard 反向锁死）：mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / mbmodule-openapi.paas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com（掌上生活与招行强 Pinning 核心 API、积存金 PaaS 与权益网关，社区实证放入 MITM 易致设置页打不开或网络异常）、creditcardapp.bankcomm.com / creditcardapp.bankcomm.cn / creditcard.bankcomm.com（买单吧双线主网关与通用 FastDFS 图床）、wallet.95516.com / base.95516.com / account.95516.com（云闪付强 Pinning 核心接口）、mbs.boc.cn（中行主网关）、yunbusiness.ccb.com（建行生活核心）、www.abchina.com.cn / msmp.abchina.com.cn / mobilepaas.abchina.com.cn（农行核心、风控与 mPaaS /mgw.htm 网关）、d.psbc.com / login-service.mobile-bank.psbc.com / mobile-bank.psbc.com（邮储核心网关），以及 yghsh.cebbank.com / static.cebbank.com / rs.creditcard.cmbc.com.cn / static.creditcard.hxb.com.cn / images.cib.com.cn / m.citiccardcdn.citicbank.com（业务与功能图标混装共享 CDN）。",
+    "诚实效果预期（掌上生活 & 买单吧）：① 掌上生活（招商银行信用卡）：本插件只解密静态图床 res.cc.cmbimg.com / s3gw.cmbimg.com / s3gw.cmbimg.cn / pic1cdn.cmbchina.com 的纯广告子目录，并在 AdPlatformPublic 目录按视频（.mp4/.mov -> reject_video(200)）与静态图（reject_img(200)）两段精准有序拦截；由于主 API preCacheAdvertiseSec 会在上一次启动把开屏图预缓存到本地沙盒，安装后需先划掉掌上生活后台并清理缓存（或等待当期预缓存过期）方能观测效果，且开屏容器若展示本地兜底/第一方卡片位属客户端原生限制。② 买单吧（交通银行信用卡）：其开屏接口 queryGuidePageAds.do / getPopAds.do / qryLaunchAds.do / qryPopAds.do 与全部交易共用强 Pinning 双线主网关 creditcardapp.bankcomm.com / creditcardapp.bankcomm.cn，图片走通用 /tfimg/public00/M00/ 与 /tofimg/，Loon 无法在不触碰主网关的前提下安全切除，因此本插件不覆盖买单吧，买单吧仍依赖零证书 banks.plugin + 官方关怀版 + 端内权限关闭 +（带冷启局限说明的）URL Scheme 协同。",
+    "规则来源可追溯：res.cc.cmbimg.com/fsp/File/AdPlatformPublic/（含 .mp4 视频开屏与图片素材）、s3gw.cmbimg.com/mbappinitads/、s3gw.cmbimg.cn/mbappinitads/ 与 pic1cdn.cmbchina.com/appinitads/ 来自社区实证开屏/初始化广告素材路径；lban.spdb.com.cn/mspmk-web-component/(getAdvList|prefetchAdvList).ah 来自 blackmatrix7/ios_rule_script（使用 reject_dict(200) 比 DNS 黑洞更细粒度且规避误伤其它 web-component）；v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/ 来自 AdGuard-CN 与 AdRules（$domain 过滤路径规则）；static.95508.com/(mmg/images/ads|mmg/ciop/sysabbr/cmep/images/(app)?popupads|icppweb/images/modelMaterial/advertising)/ 来自 blackmatrix7 与 AdRules 公开广发发现精彩纯广告与弹窗素材路径。"
   ],
   "redlines": [
     {
       "domain": "mlife.cmbchina.com",
       "kind": "host",
-      "quote": "mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com",
+      "quote": "mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / mbmodule-openapi.paas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com",
       "why": "掌上生活强 Pinning 主业务网关，禁止入 MITM 或黑洞"
     },
     {
       "domain": "az1mbasecc.bas.cmbchina.com",
       "kind": "host",
-      "quote": "mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com",
+      "quote": "mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / mbmodule-openapi.paas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com",
       "why": "掌上生活新版 Edge 强 Pinning 核心通信网关，禁止入 MITM 或黑洞"
     },
     {
       "domain": "intellicc.bas.cmbchina.com",
       "kind": "host",
-      "quote": "mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com",
+      "quote": "mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / mbmodule-openapi.paas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com",
       "why": "掌上生活智能动态渲染网关，禁止入 MITM 或黑洞"
     },
     {
       "domain": "creditcardapp.bankcomm.com",
       "kind": "host",
-      "quote": "creditcardapp.bankcomm.com / creditcard.bankcomm.com（买单吧主网关与通用 FastDFS 图床）",
+      "quote": "creditcardapp.bankcomm.com / creditcardapp.bankcomm.cn / creditcard.bankcomm.com（买单吧双线主网关与通用 FastDFS 图床）",
       "why": "买单吧强 Pinning 唯一主网关，禁止入 MITM 或黑洞"
+    },
+    {
+      "domain": "creditcardapp.bankcomm.cn",
+      "kind": "host",
+      "quote": "creditcardapp.bankcomm.com / creditcardapp.bankcomm.cn / creditcard.bankcomm.com（买单吧双线主网关与通用 FastDFS 图床）",
+      "why": "买单吧 .cn 双生强 Pinning 主网关，禁止入 MITM 或黑洞"
     },
     {
       "domain": "creditcard.bankcomm.com",
       "kind": "host",
-      "quote": "creditcardapp.bankcomm.com / creditcard.bankcomm.com（买单吧主网关与通用 FastDFS 图床）",
+      "quote": "creditcardapp.bankcomm.com / creditcardapp.bankcomm.cn / creditcard.bankcomm.com（买单吧双线主网关与通用 FastDFS 图床）",
       "why": "买单吧通用 FastDFS 共享图床，路径与业务图混装"
+    },
+    {
+      "domain": "mbmodule-openapi.paas.cmbchina.com",
+      "kind": "host",
+      "quote": "mlife.cmbchina.com / az1mbasecc.bas.cmbchina.com / intellicc.bas.cmbchina.com / mbmodule-openapi.paas.cmbchina.com / ccclub.cmbchina.com / trip.cmbchina.com",
+      "why": "招行强 Pinning PaaS OpenAPI 网关，承载积存金行情等核心业务，禁止入 MITM 或黑洞"
     },
     {
       "domain": "wallet.95516.com",
@@ -66,8 +78,14 @@
     {
       "domain": "msmp.abchina.com.cn",
       "kind": "host",
-      "quote": "www.abchina.com.cn / msmp.abchina.com.cn（农行核心与风控通道）",
+      "quote": "www.abchina.com.cn / msmp.abchina.com.cn / mobilepaas.abchina.com.cn（农行核心、风控与 mPaaS /mgw.htm 网关）",
       "why": "农业银行移动安全监测与风控通道，禁止入 MITM 或黑洞"
+    },
+    {
+      "domain": "mobilepaas.abchina.com.cn",
+      "kind": "host",
+      "quote": "www.abchina.com.cn / msmp.abchina.com.cn / mobilepaas.abchina.com.cn（农行核心、风控与 mPaaS /mgw.htm 网关）",
+      "why": "农业银行 Alipay mPaaS 核心移动网关，禁止入 MITM 或黑洞"
     },
     {
       "domain": "d.psbc.com",
@@ -80,7 +98,7 @@
   "groups": [],
   "enhance": {
     "active": true,
-    "intro": "本插件仅针对非核心静态图床 CDN 与独立广告后端启用 Loon 原生 [Rewrite] v2 复写（零 JS 脚本，按 3 个独立 [Argument] 开关分别启停）：① cleanCmbSplash：拦截掌上生活纯广告图目录（res.cc.cmbimg.com/fsp/File/AdPlatformPublic/、s3gw.cmbimg.com/mbappinitads/、pic1cdn.cmbchina.com/appinitads/）返回 reject_img(200)；② cleanSpdbAds：精确拦截浦发/浦大喜奔 lban.spdb.com.cn/mspmk-web-component/(getAdvList|prefetchAdvList).ah 返回 reject_dict(200)；③ cleanBankCdnAds：拦截工商银行 v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/ 与广发发现精彩 static.95508.com/(mmg/images/ads|icppweb/images/modelMaterial/advertising)/ 返回 reject_img(200)。配套 6 条 HTTP/3 (QUIC) 回退规则防止绕过。",
+    "intro": "本插件仅针对非核心静态图床 CDN 与独立广告后端启用 Loon 原生 [Rewrite] v2 复写（零 JS 脚本，按 3 个独立 [Argument] 开关分别启停）：① cleanCmbSplash：在掌上生活 AdPlatformPublic 目录按视频开屏（.mp4/.mov -> reject_video(200)）与图片开屏（reject_img(200)）两段有序拦截，并双线拦截 s3gw.cmbimg.com / s3gw.cmbimg.cn 的 mbappinitads/ 与 pic1cdn.cmbchina.com/appinitads/；② cleanSpdbAds：精确拦截浦发/浦大喜奔 lban.spdb.com.cn/mspmk-web-component/(getAdvList|prefetchAdvList).ah 返回 reject_dict(200)；③ cleanBankCdnAds：拦截工商银行 v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/ 与广发发现精彩 static.95508.com 广告及 appPopupAds 目录返回 reject_img(200)。配套 7 条 HTTP/3 (QUIC) 回退规则防止绕过。",
     "sources": [
       "https://github.com/AdguardTeam/AdguardFilters",
       "https://github.com/Cats-Team/AdRules",
@@ -91,8 +109,8 @@
       {
         "name": "cleanCmbSplash",
         "default": "true",
-        "tag": "掌上生活静态开屏图 CDN（默认开）",
-        "desc": "拦截招商掌上生活静态图床纯广告路径（AdPlatformPublic / mbappinitads / appinitads）返回 200 + 1px GIF，不碰 mlife / az1mbasecc / intellicc / ccclub 核心网关。"
+        "tag": "掌上生活静态/视频开屏 CDN（默认开）",
+        "desc": "双线拦截招商掌上生活静态图床纯广告路径（AdPlatformPublic 含 .mp4/.mov 视频开屏 reject_video(200) 与图片 reject_img(200)、s3gw.cmbimg.com 与 s3gw.cmbimg.cn mbappinitads / pic1cdn appinitads），不碰 mlife / az1mbasecc / intellicc / mbmodule-openapi / ccclub 核心网关。"
       },
       {
         "name": "cleanSpdbAds",
@@ -104,13 +122,14 @@
         "name": "cleanBankCdnAds",
         "default": "true",
         "tag": "工行与发现精彩静态广告目录（默认开）",
-        "desc": "精确拦截工行 v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/ 与广发发现精彩 static.95508.com 广告素材目录，返回 reject_img(200)。"
+        "desc": "精确拦截工行 v.icbc.com.cn/userfiles/(ADResources|Resources/WAP/advertisement)/ 与广发发现精彩 static.95508.com 广告/popupads 素材目录，返回 reject_img(200)。"
       }
     ],
     "quic_fallback": true,
     "mitm_hosts": [
       "res.cc.cmbimg.com",
       "s3gw.cmbimg.com",
+      "s3gw.cmbimg.cn",
       "pic1cdn.cmbchina.com",
       "lban.spdb.com.cn",
       "v.icbc.com.cn",
@@ -118,30 +137,52 @@
     ],
     "rewrite": [
       {
+        "id": "kill-cmb-adplatform-video",
+        "group": "请求阶段视频与透明图两段拦截（reject_video(200) / reject_img(200)）：招商/掌上生活开屏物料 CDN",
+        "stage": "request",
+        "gate": "cleanCmbSplash",
+        "endpoint": "res.cc.cmbimg.com/fsp/File/AdPlatformPublic/",
+        "url": "^https://res\\.cc\\.cmbimg\\.com/fsp/File/AdPlatformPublic/.*\\.(?:mp4|mov)(?:\\?|$)",
+        "action": "reject_video(200)",
+        "note": "掌上生活 AdPlatformPublic 视频开屏物料优先命中 reject_video(200)，避免把 .mp4/.mov 响应成 GIF",
+        "source": "https://site.cc.cmbimg.com/AgreementManager/agreement/AppSDK.html"
+      },
+      {
         "id": "kill-cmb-adplatform",
-        "group": "请求阶段透明图替换（reject_img(200)）：招商/掌上生活静态广告图目录",
+        "group": "请求阶段视频与透明图两段拦截（reject_video(200) / reject_img(200)）：招商/掌上生活开屏物料 CDN",
         "stage": "request",
         "gate": "cleanCmbSplash",
         "endpoint": "res.cc.cmbimg.com/fsp/File/AdPlatformPublic/",
         "url": "^https://res\\.cc\\.cmbimg\\.com/fsp/File/AdPlatformPublic/",
         "action": "reject_img(200)",
-        "note": "掌上生活 AdPlatformPublic 纯广告物料目录（跳过核心 API，仅替换静态图）",
+        "note": "掌上生活 AdPlatformPublic 纯广告图片物料目录（非视频物料兜底返回 1px 透明 GIF）",
         "source": "https://site.cc.cmbimg.com/AgreementManager/agreement/AppSDK.html"
       },
       {
         "id": "kill-cmb-mbappinitads",
-        "group": "请求阶段透明图替换（reject_img(200)）：招商/掌上生活静态广告图目录",
+        "group": "请求阶段视频与透明图两段拦截（reject_video(200) / reject_img(200)）：招商/掌上生活开屏物料 CDN",
         "stage": "request",
         "gate": "cleanCmbSplash",
         "endpoint": "s3gw.cmbimg.com/mbappinitads/",
         "url": "^https://s3gw\\.cmbimg\\.com/mbappinitads/",
         "action": "reject_img(200)",
-        "note": "招行与掌上生活 S3 对象存储 mbappinitads 启动初始化广告目录",
+        "note": "招行与掌上生活 S3 对象存储 mbappinitads 启动初始化广告目录（.com）",
+        "source": "https://github.com/blackmatrix7/ios_rule_script"
+      },
+      {
+        "id": "kill-cmb-mbappinitads-cn",
+        "group": "请求阶段视频与透明图两段拦截（reject_video(200) / reject_img(200)）：招商/掌上生活开屏物料 CDN",
+        "stage": "request",
+        "gate": "cleanCmbSplash",
+        "endpoint": "s3gw.cmbimg.cn/mbappinitads/",
+        "url": "^https://s3gw\\.cmbimg\\.cn/mbappinitads/",
+        "action": "reject_img(200)",
+        "note": "招行与掌上生活双生域名 s3gw.cmbimg.cn 下的 mbappinitads 启动初始化广告目录",
         "source": "https://github.com/blackmatrix7/ios_rule_script"
       },
       {
         "id": "kill-cmb-pic1cdn-ads",
-        "group": "请求阶段透明图替换（reject_img(200)）：招商/掌上生活静态广告图目录",
+        "group": "请求阶段视频与透明图两段拦截（reject_video(200) / reject_img(200)）：招商/掌上生活开屏物料 CDN",
         "stage": "request",
         "gate": "cleanCmbSplash",
         "endpoint": "pic1cdn.cmbchina.com/appinitads/",
@@ -178,9 +219,9 @@
         "stage": "request",
         "gate": "cleanBankCdnAds",
         "endpoint": "static.95508.com/",
-        "url": "^https://static\\.95508\\.com/(?:mmg/images/ads|icppweb/images/modelMaterial/advertising)/",
+        "url": "^https://static\\.95508\\.com/(?:mmg/images/ads|mmg/ciop/sysabbr/cmep/images/(?:app)?popupads|icppweb/images/modelMaterial/advertising)/",
         "action": "reject_img(200)",
-        "note": "广发银行发现精彩共享 CDN 下的 ads 与 advertising 静态素材子目录",
+        "note": "广发银行发现精彩共享 CDN 下的 ads、popupads 与 advertising 静态素材子目录",
         "source": "https://github.com/Cats-Team/AdRules"
       }
     ]
@@ -189,7 +230,7 @@
     {
       "title": "1. 前置条件（必须与底座搭配、且先信任 Loon CA 证书）",
       "items": [
-        "先启用 `ads.plugin`（或 `ads-next.plugin`）+ 零证书底座 [`banks.plugin`](../banks/README.md)，再启用本插件（`banks-mitm.plugin` 只管 6 台静态 CDN/广告后端的 MITM 路径复写，不重复产出 `[Host]`/`[Rule]` 黑洞）。",
+        "先启用 `ads.plugin`（或 `ads-next.plugin`）+ 零证书底座 [`banks.plugin`](../banks/README.md)，再启用本插件（`banks-mitm.plugin` 只管 7 台静态 CDN/广告后端的 MITM 路径复写，不重复产出 `[Host]`/`[Rule]` 黑洞）。",
         "**不要在 `banks.plugin` 中同时取消 `# lban.spdb.com.cn = 127.0.0.1` 的注释**：同一主机若同时被 DNS 黑洞，HTTPS 请求在 DNS 阶段就被掐死，无法进入路径级 `reject_dict(200)`。",
         "必须在系统里**安装并完全信任 Loon CA 根证书**（iOS：`设置 → 通用 → 关于本机 → 证书信任设置`）并开启 Loon 全局 MITM 开关；若设备未装证书，**请勿安装本插件**（仅保留 `banks.plugin`）。"
       ]
@@ -197,15 +238,15 @@
     {
       "title": "2. 首次启用与掌上生活预缓存刷新",
       "items": [
-        "启用本插件并信任 CA 后，**上划彻底杀掉掌上生活 / 浦大喜奔 / 工行 / 发现精彩后台**；如果掌上生活此前通过 `preCacheAdvertiseSec` 已经把开屏图写入本地沙盒，可先清除 App 缓存（或在当期物料过期后观察下一次新开屏）。",
-        "在 Loon「最近请求」日志中验证：当上述 App 拉取开屏素材时，对应路径命中 `[Rewrite]` 的 `reject_img(200)` / `reject_dict(200)`，同时账单、还款、转账卡片无白屏或 TLS 握手报错。"
+        "启用本插件并信任 CA 后，**上划彻底杀掉掌上生活 / 浦大喜奔 / 工行 / 发现精彩后台**；如果掌上生活此前通过 `preCacheAdvertiseSec` 已经把开屏图/视频写入本地沙盒，可先清除 App 缓存（或在当期物料过期后观察下一次新开屏）。",
+        "在 Loon「最近请求」日志中验证：当上述 App 拉取开屏素材时，对应路径命中 `[Rewrite]` 的 `reject_video(200)` / `reject_img(200)` / `reject_dict(200)`，同时账单、还款、转账卡片无白屏、功能图标无裂图或 TLS 握手报错。"
       ]
     },
     {
       "title": "3. 单家开关回退与能力边界（重要）",
       "items": [
-        "如果任一银行新版突然对上述 6 台静态 CDN 之一开启证书绑定导致局部图片裂开或弹窗，直接在 Loon 本插件详情页关闭对应开关（`cleanCmbSplash` / `cleanSpdbAds` / `cleanBankCdnAds`）；若仅关闭开关仍因 MITM 握手被拦截（Loon 的 `[MITM] hostname` 只要启用插件即生效），则直接停用本插件，仅保留零证书的 `banks.plugin`。",
-        "本插件**故意不包含买单吧（`creditcardapp.bankcomm.com`）、六大行强固定交易网关与云闪付核心接口**：买单吧开屏仍需依赖 `banks.plugin`、端内「消费者权益保护 → 其他授权管理」关闭，以及 iOS 快捷指令 `mdb://` 冷启绕过与 iOS 27.2+「限制动作数据」（见 `docs/banks-creditcard-ad-removal.md`）。"
+        "如果任一银行新版突然对上述 7 台静态 CDN 之一开启证书绑定导致局部图片裂开或弹窗，直接在 Loon 本插件详情页关闭对应开关（`cleanCmbSplash` / `cleanSpdbAds` / `cleanBankCdnAds`）；若仅关闭开关仍因 MITM 握手被拦截（Loon 的 `[MITM] hostname` 只要启用插件即生效），则直接停用本插件，仅保留零证书的 `banks.plugin`。",
+        "本插件**故意不包含买单吧（`creditcardapp.bankcomm.com` / `creditcardapp.bankcomm.cn`）、六大行强固定交易网关与云闪付核心接口**：买单吧开屏仍需依赖 `banks.plugin` + 官方「关怀版」+ 端内「消费者权益保护 → 其他授权管理」关闭，以及 iOS 27.2+「限制动作数据」（裸 `mdb://` 新版冷启多已不再跳过开屏，见 `docs/banks-creditcard-ad-removal.md`）。"
       ]
     }
   ]

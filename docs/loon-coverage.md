@@ -18,7 +18,7 @@
 | 传输层 | 4 | 0 | 5 | 0 | 0 | **100%** |
 | 规则层 | 12 | 7 | 9 | 1 | 0 | **63%** |
 | Host 层 | 2 | 4 | 2 | 0 | 0 | **33%** |
-| 复写层 | 8 | 6 | 13 | 0 | 0 | **57%** |
+| 复写层 | 9 | 6 | 12 | 0 | 0 | **60%** |
 | 脚本层 | 22 | 13 | 12 | 0 | 0 | **63%** |
 | 脚本属性 | 6 | 0 | 1 | 0 | 0 | **100%** |
 | 参数层 | 6 | 0 | 0 | 0 | 0 | **100%** |
@@ -27,7 +27,7 @@
 | 旧版语法 | 1 | 0 | 1 | 0 | 0 | **100%** |
 | 分发 | 0 | 0 | 0 | 2 | 0 | **0%** |
 | 元数据 | 11 | 1 | 3 | 0 | 0 | **92%** |
-| **合计** | **81** | **32** | **51** | **12** | **0** | **72%** |
+| **合计** | **82** | **32** | **50** | **12** | **0** | **72%** |
 
 ## 传输层
 
@@ -106,7 +106,7 @@
 | `reject_dict(status)` | ✅ 已用 | 已落地 |
 | `reject_img(status)` | ✅ 已用 | 共享图床（meituan p[0-9]/flowplus/img.meituan.net、taobao gw.alicdn.com）下的广告目录路径在 request 阶段返回 200 + 1px GIF，避免图片加载器进入破损图重试分支，并支持 `${cleanAds} == true` 开关控制 |
 | `reject_array(status)` | 🟡 可用未用 | 2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` 全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条：样本 + enhance.url_regex 白名单 + 来源登记 |
-| `reject_video(status)` | ❌ 判死 | 同上，视频素材域名不进 MITM |
+| `reject_video(status)` | ✅ 已用 | banks-mitm 对掌上生活 AdPlatformPublic 视频开屏（.mp4/.mov）先于图片规则返回 200 空 MP4，避免对视频响应 1px GIF；外链视频广告 CDN 仍不进 MITM |
 | `request.header.add/set/del/replace` | ✅ 已用 | 用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian force-identity），防止 br/zstd 压缩响应穿透脚本层 |
 | `response.header.add/set/del/replace` | 🟡 可用未用 | 响应头改写要让位给脚本（脚本自己回 `X-Soda-Plugin` 诊断头），两层同时改会互相覆盖 |
 | `request.body.replace` | ❌ 判死 | 正文级正则对 JSON 不安全（可能命中字符串内部的同名字段） |

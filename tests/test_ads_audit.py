@@ -118,6 +118,62 @@ class AuditTests(unittest.TestCase):
         out = json.loads(res.stdout)
         self.assertEqual([it['card_goto'] for it in out['data']['items']], ['av', 9])
 
+    def test_banks_zero_mitm_and_joint_stock_protection(self):
+        """Ensure banks.plugin stays zero-MITM and protects all Big-6 + 12 joint-stock + key city bank roots."""
+        import json
+
+        banks_cfg = json.loads((ROOT / 'src/apps/banks.json').read_text(encoding='utf-8'))
+        banks_plugin = (ROOT / 'plugins/banks/banks.plugin').read_text(encoding='utf-8')
+        protected = set(json.loads((ROOT / 'src/ads/protected-roots.json').read_text(encoding='utf-8'))['roots'])
+
+        self.assertIsNone(banks_cfg.get('enhance'))
+        for forbidden_section in ('[MITM]', '[Rewrite]', '[Script]'):
+            self.assertNotIn(f'\n{forbidden_section}\n', banks_plugin)
+        self.assertIn('# lban.spdb.com.cn = 127.0.0.1', banks_plugin)
+
+        required_bank_roots = {
+            'icbc.com.cn', 'ccb.com', 'ccb.com.cn', 'abchina.com', 'abchina.com.cn', '95599.cn',
+            'boc.cn', 'bankofchina.com', 'bankcomm.com', 'bankcomm.cn', 'psbc.com', 'psbc.com.cn',
+            'cmbchina.com', 'cmbimg.com', 'cmbimg.cn', 'spdb.com.cn', 'spdbccc.com.cn', '95528.cn',
+            'ecitic.com', 'citicbank.com', 'cebbank.com', 'cebbank.com.cn', 'cgbchina.com.cn',
+            '95508.com', 'cib.com.cn', 'cibfintech.com', 'cmbc.com.cn', 'hxb.com.cn', 'pingan.com',
+            'pingan.com.cn', 'czbank.com', 'cbhb.com.cn', 'hfbank.com.cn', 'bosc.cn',
+            'bankofbeijing.com.cn', '95516.com', 'cup.com.cn', 'unionpay.com', 'unionpayintl.com',
+        }
+        self.assertTrue(required_bank_roots.issubset(protected))
+        redline_families = {r['domain'] for r in banks_cfg['redlines'] if r['kind'] == 'family'}
+        self.assertTrue(required_bank_roots.issubset(redline_families))
+
+    def test_banks_mitm_ordering_quic_and_core_gateway_isolation(self):
+        """Ensure banks-mitm checks splash video before image fallback and isolates pinned core gateways."""
+        import json
+
+        mitm_cfg = json.loads((ROOT / 'src/apps/banks-mitm.json').read_text(encoding='utf-8'))
+        mitm_plugin = (ROOT / 'plugins/banks-mitm/banks-mitm.plugin').read_text(encoding='utf-8')
+        rewrites = mitm_cfg['enhance']['rewrite']
+        ids = [r['id'] for r in rewrites]
+        self.assertIn('kill-cmb-adplatform-video', ids)
+        self.assertIn('kill-cmb-adplatform', ids)
+        self.assertLess(ids.index('kill-cmb-adplatform-video'), ids.index('kill-cmb-adplatform'))
+        self.assertEqual(rewrites[ids.index('kill-cmb-adplatform-video')]['action'], 'reject_video(200)')
+        self.assertEqual(rewrites[ids.index('kill-cmb-adplatform')]['action'], 'reject_img(200)')
+
+        # Plugin-level rewrite order must preserve video-before-image matching and exact QUIC fallbacks.
+        self.assertLess(mitm_plugin.index('reject_video(200)'), mitm_plugin.index('reject_img(200)'))
+        self.assertNotIn('\n[Host]\n', mitm_plugin)
+        hosts = mitm_cfg['enhance']['mitm_hosts']
+        for host in hosts:
+            self.assertIn(f'AND,((DOMAIN-SUFFIX,{host}),(PROTOCOL,QUIC)),REJECT', mitm_plugin)
+
+        pinned_core = {
+            'mlife.cmbchina.com', 'az1mbasecc.bas.cmbchina.com', 'intellicc.bas.cmbchina.com',
+            'mbmodule-openapi.paas.cmbchina.com', 'creditcardapp.bankcomm.com',
+            'creditcardapp.bankcomm.cn', 'creditcard.bankcomm.com', 'wallet.95516.com',
+            'mobilepaas.abchina.com.cn', 'yunbusiness.ccb.com', 'mbs.boc.cn', 'd.psbc.com',
+            'oisc.icbc.com.cn', 'per.spdb.com.cn', 'ebank.spdb.com.cn',
+        }
+        self.assertTrue(pinned_core.isdisjoint(set(hosts)))
+
 
 if __name__ == '__main__':
     unittest.main()

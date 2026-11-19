@@ -354,9 +354,9 @@ CAPABILITIES = [
          why="2026-11-06 全语料复核（app2smile adsense.js：穿山甲 `status_code` / 优量汇 `ret` / 快手 `result` "
              "全部对象包络；wool_scripts 与开源模块中无一条真实调用），仍无顶层数组端点。启用门槛与规则层同条："
              "样本 + enhance.url_regex 白名单 + 来源登记"),
-    dict(layer="复写层", key="w-reject-video", name="`reject_video(status)`", expect="reject",
+    dict(layer="复写层", key="w-reject-video", name="`reject_video(status)`", expect="used",
          probe=r"then\s+reject_video\s*\(", href=DOC + "/Rewrite/rewrite_v2",
-         why="同上，视频素材域名不进 MITM"),
+         why="banks-mitm 对掌上生活 AdPlatformPublic 视频开屏（.mp4/.mov）先于图片规则返回 200 空 MP4，避免对视频响应 1px GIF；外链视频广告 CDN 仍不进 MITM"),
     dict(layer="复写层", key="w-req-header", name="`request.header.add/set/del/replace`", expect="used",
          probe=r"then\s+request\.header\.(add|set|del|replace)\s*\(", href=DOC + "/Rewrite/rewrite_v2",
          why="用 `set` 把 Accept-Encoding 固定为 gzip（soda/douyin）或 identity（qidian force-identity），"
